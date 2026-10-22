@@ -4,7 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { everydayFixture } from './everyday-city-fixture';
-import { ASSET_REVISION, BUILDING_CATALOG } from '../../src/shared/catalog';
+import { BUILDING_CATALOG } from '../../src/shared/catalog';
 import { rainPose } from '../../src/client/city-everyday-life';
 import { openMapCity } from './map-navigation';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
@@ -38,6 +38,7 @@ test('fresh MCP completions open every institution after the construction reveal
   test.setTimeout(160000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   try {
     await f.focus(f.pendingSchool);
+    await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
     const shop = f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'SHOP')!;
     const fire = f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'FIRE')!;
     for (const [task, kind] of [[f.pendingSchool, 'OPEN_SCHOOL'], [f.pendingKindergarten, 'OPEN_KINDERGARTEN'], [shop, 'OPEN_SHOP'], [fire, 'OPEN_FIRE'], [f.pendingHome, 'OPEN_BUILDING']] as const) {
@@ -78,6 +79,45 @@ test('fresh MCP completions open every institution after the construction reveal
     await page.reload(); await openMapCity(page); await expect(f.host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
     expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
     expect(errors).toEqual([]);
+  } finally { await f.cleanup(); }
+});
+
+clockSceneTest('paused native pan shows two distant institutions without task navigation and spends exactly 400ms each', async ({ page }, info) => {
+  test.setTimeout(90000); await page.setViewportSize({ width: 720, height: 640 }); await installSceneClock(page);
+  const f = await everydayFixture(page);
+  try {
+    await f.focus(f.pendingSchool);
+    await expect(page).toHaveURL(url => url.pathname === '/' && url.searchParams.get('cityId') === f.city.id);
+    await expect(page.locator('.task-modal')).toHaveCount(0);
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    const institutions = f.tasks.filter(task => BUILDING_CATALOG.find(asset => asset.key === task.visualAssetKey)?.educationKind);
+    const center = (task: typeof institutions[number]) => ({ x: task.footprint.reduce((sum, cell) => sum + cell.x + .5, 0) / task.footprint.length,
+      y: task.footprint.reduce((sum, cell) => sum + cell.y + .5, 0) / task.footprint.length });
+    const pair = institutions.flatMap(first => institutions.filter(second => first.id !== second.id).map(second => ({ first, second,
+      distance: Math.hypot(center(first).x - center(second).x, center(first).y - center(second).y) }))).sort((a, b) => b.distance - a.distance)[0]!;
+    expect(pair.distance).toBeGreaterThan(20);
+    await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+    const evidence = [];
+    for (const task of [pair.first, pair.second]) {
+      const before = await page.evaluate(() => ({ now: Date.now(), url: location.href, historyLength: history.length }));
+      await f.panFocus(task, true);
+      const after = await page.evaluate(() => ({ now: Date.now(), url: location.href, historyLength: history.length, task: history.state?.task }));
+      expect(after.now - before.now).toBe(400);
+      expect(after.url).toBe(before.url); expect(after.historyLength).toBe(before.historyLength); expect(after.task).toBeUndefined();
+      await expect(page.locator('.task-modal')).toHaveCount(0);
+      await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+      const visible = await f.host.evaluate((el, footprint) => {
+        const host = el as HTMLElement, canvas = host.querySelector('canvas')!, scale = Number(host.dataset.renderScale) * 8;
+        const x = Number(host.dataset.cameraWorldX), y = Number(host.dataset.cameraWorldY);
+        return footprint.every(cell => (cell.x - x) * scale + canvas.clientWidth / 2 >= 0
+          && (cell.x + 1 - x) * scale + canvas.clientWidth / 2 <= canvas.clientWidth
+          && (cell.y - y) * scale + canvas.clientHeight / 2 >= 0
+          && (cell.y + 1 - y) * scale + canvas.clientHeight / 2 <= canvas.clientHeight);
+      }, task.footprint);
+      expect(visible, `Institution #${task.taskNumber} must actually be in the viewport`).toBe(true);
+      evidence.push({ taskId: task.id, before, after, visible });
+    }
+    await writeFile(info.outputPath('paused-native-pan.json'), JSON.stringify({ distance: pair.distance, evidence }, null, 2));
   } finally { await f.cleanup(); }
 });
 
@@ -389,19 +429,27 @@ clockSceneTest('school bus delivers children through the real school entrance in
 
 test('authored sprite atlas uses the current revision and stays stable across zoom and compact resize', async ({ page }, info) => {
   test.setTimeout(120000); await page.setViewportSize({ width: 1440, height: 1100 });
+  // The production E2E server consumes the verified build. A separate CI job
+  // can encode the same pixels differently from the checkout's source PNGs.
+  const runtimeManifest = JSON.parse(readFileSync('dist/public/game-assets/v5/manifest.json', 'utf8')) as { assetRevision: string; propAtlas: { path: string } };
+  const assetRevision = runtimeManifest.assetRevision;
+  expect(assetRevision).toMatch(/^[a-f0-9]{16}$/);
+  expect(runtimeManifest.propAtlas.path).toBe('atlas/props-v1.png');
   const errors: string[] = [], standalone: string[] = [], atlasHashes: string[] = [], scales: number[] = [];
   const atlasReads: Promise<void>[] = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('request', r => { if (/\/props\/[^/]+\.png/.test(r.url())) standalone.push(r.url()); });
   page.on('response', response => {
-    if (response.url().includes(`/revisions/${ASSET_REVISION}/atlas/props-v1.png`) && response.ok())
+    if (response.url().includes(`/revisions/${assetRevision}/atlas/props-v1.png`) && response.ok())
       atlasReads.push(response.body().then(body => { atlasHashes.push(createHash('sha256').update(body).digest('hex')); })
         .catch(error => { errors.push(String(error)); }));
   });
-  const expectedAtlas = createHash('sha256').update(readFileSync('public/game-assets/v5/atlas/props-v1.png')).digest('hex');
+  const expectedAtlas = createHash('sha256').update(readFileSync(`dist/public/game-assets/v5/${runtimeManifest.propAtlas.path}`)).digest('hex');
   const f = await everydayFixture(page);
   try {
     await f.focus(f.tasks[0]!);
+    const bootstrap = await page.request.get('/api/bootstrap'); expect(bootstrap.ok()).toBe(true);
+    expect(await bootstrap.json()).toMatchObject({ worldManifest: { assetRevision } });
     await expect.poll(() => atlasHashes).toContain(expectedAtlas);
     const canvas = page.locator('.world-canvas canvas');
     const zoom = async (delta: number, target: number, name: string) => {
@@ -430,6 +478,6 @@ test('authored sprite atlas uses the current revision and stays stable across zo
     await safe(f.host); await Promise.all(atlasReads);
     await expect(f.host).toHaveAttribute('data-resident-center-errors', '0');
     expect(standalone).toEqual([]); expect(errors).toEqual([]);
-    await writeFile(info.outputPath('sprite-projection-runtime.json'), JSON.stringify({ assetRevision: ASSET_REVISION, expectedAtlas, atlasHashes, scales, errors, standalone }, null, 2));
+    await writeFile(info.outputPath('sprite-projection-runtime.json'), JSON.stringify({ assetRevision, expectedAtlas, atlasHashes, scales, errors, standalone }, null, 2));
   } finally { await f.cleanup(); }
 });

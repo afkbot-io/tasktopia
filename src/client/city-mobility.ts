@@ -864,7 +864,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       for (const actor of candidates) {
         const moving = actor.route.length >= 2;
         const start = moving ? actor.next : actor.current;
-        const search = carRoutes(start, moving ? actor.current : actor.previous, undefined, role === 'BUS' || role === 'SCHOOL_BUS' ? 64 : 28);
+        const search = carRoutes(start, moving ? actor.current : actor.previous, targets.length === 1 ? targets[0] : undefined, role === 'BUS' || role === 'SCHOOL_BUS' ? 64 : 28);
         for (const target of targets) {
           if (!safeDestination(target) || closures.has(key(target))) continue;
           const suffix = search.routeTo(target);

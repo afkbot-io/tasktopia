@@ -3,6 +3,13 @@ import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { BootstrapDto,RealtimeEvent } from "../../src/shared/contracts";
 import { chunkPayloadContentHash } from "../../src/server/world/chunk-payload-hash";
 import { openMapCity } from "./map-navigation";
+import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
+
+// Сохраняем вызовы, сеть, исходники и итоговый PNG. Повторные автоматические
+// снимки canvas не являются частью проверяемой работы города.
+test.use({ trace: { mode: 'retain-on-failure', snapshots: false, screenshots: false, sources: true } });
+test.beforeEach(async ({ page }) => { await installCityPreparationDiagnostics(page); });
+test.afterEach(async ({ page }, info) => { await attachCityPreparationFailure(page, info); });
 
 async function enterCity(page:Page) {
   await page.addInitScript(() => {
@@ -48,6 +55,90 @@ test("a hung authoritative refresh expires without destroying the city and a rea
   await expect.poll(()=>reads).toBeGreaterThan(beforeRetry);
   await expect(page.getByRole("alert")).toHaveCount(0);
   expect(await identity!.evaluate(node=>node.isConnected)).toBe(true);
+});
+
+test("a movement timeout keeps its native retry after a same-range camera pan",async({page},info)=>{
+ test.setTimeout(90_000);
+ type YieldGateWindow=Window&{qaMovementYield:{arm():void;release():void;state():{captured:boolean;held:number}}};
+ const errors:string[]=[],movementErrors:string[]=[],reads:string[]=[];
+ page.on("pageerror",error=>errors.push(error.message));
+ page.on("console",message=>{if(message.type()==="error"&&message.text().startsWith("City movement preparation failed"))movementErrors.push(message.text());});
+ page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+ await page.clock.install();
+ await page.addInitScript(()=>{
+   const NativeChannel=window.MessageChannel,queued:Array<()=>void>=[];
+   let armed=false,captured=false,holding=true;
+   class FirstMovementYield extends NativeChannel{
+     constructor(){super();
+       const owned=armed&&!captured&&document.querySelector<HTMLElement>(".world-canvas")?.dataset.movementPreparing==="true";
+       if(!owned)return;
+       captured=true;const send=this.port2.postMessage.bind(this.port2);
+       this.port2.postMessage=((...args:Parameters<MessagePort["postMessage"]>)=>{
+         if(holding)queued.push(()=>send(...args));else send(...args);
+       }) as MessagePort["postMessage"];
+     }
+   }
+   window.MessageChannel=FirstMovementYield;
+   Object.assign(window,{qaMovementYield:{arm:()=>{armed=true;},state:()=>({captured,held:queued.length}),
+     release:()=>{holding=false;for(const send of queued.splice(0))send();if(window.MessageChannel===FirstMovementYield)window.MessageChannel=NativeChannel;}}});
+ });
+ let releaseAmbient!:()=>void;
+ const ambientGate=new Promise<void>(resolve=>{releaseAmbient=resolve;});
+ await page.route("**/micro-ambient/**",async route=>{await ambientGate;await route.continue().catch(()=>undefined);});
+ try{
+   const host=await enterCity(page),canvas=host.getByLabel("Интерактивная карта города"),identity=await canvas.elementHandle();
+   await expect(host).toHaveAttribute("data-ground-bake-queue","0");
+   await expect(host).not.toHaveAttribute("data-ambient-assets","ready");
+   // Find two real camera positions in one already prepared chunk range.
+   // Returning between these positions cannot legitimately rebuild movement.
+   let sameRange:string|null=null;
+   for(let step=0;step<4&&sameRange===null;step++){
+     const range=await host.getAttribute("data-chunk-range"),x=await host.getAttribute("data-camera-world-x"),skipped=Number(await host.getAttribute("data-skipped-reconciles")??0);
+     await canvas.focus();await page.keyboard.press("ArrowRight");
+     await expect.poll(()=>host.getAttribute("data-camera-world-x")).not.toBe(x);
+     await expect.poll(async()=>Number(await host.getAttribute("data-skipped-reconciles")??0)>skipped||await host.getAttribute("data-chunk-range")!==range).toBe(true);
+     await expect(host).toHaveAttribute("data-camera-presentation-pending","false");
+     await expect(host).toHaveAttribute("data-loading","false");
+     if(await host.getAttribute("data-chunk-range")===range&&Number(await host.getAttribute("data-skipped-reconciles")??0)>skipped)sameRange=range;
+   }
+   expect(sameRange,"A native pan must have two positions inside the same prepared range").not.toBeNull();
+   await expect(host).toHaveAttribute("data-ground-bake-queue","0");
+   // Pause while sprites are gated, then arm only the next movement channel.
+   // Existing React channels and all later preparations keep native delivery.
+   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+   await page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield.arm());
+   releaseAmbient();await expect(host).toHaveAttribute("data-ambient-assets","ready");
+   await page.clock.runFor(16);
+   await expect.poll(()=>page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield.state())).toEqual({captured:true,held:1});
+   await expect(host).toHaveAttribute("data-movement-preparing","true");
+   await expect(host).not.toHaveAttribute("data-mobility-ready","true");
+   await page.clock.fastForward(20_000);
+   const failure=page.getByRole("alert").filter({hasText:"Не удалось подготовить движение в городе"});
+   await expect(failure).toBeVisible();await expect(failure.getByRole("button",{name:"Повторить",exact:true})).toBeVisible();
+   await expect(host).toHaveAttribute("data-movement-preparing","false");
+   expect(movementErrors).toHaveLength(1);
+   const before={x:await host.getAttribute("data-camera-world-x"),skipped:Number(await host.getAttribute("data-skipped-reconciles")??0)};
+   await page.clock.resume();await canvas.focus();await page.keyboard.press("ArrowLeft");
+   await expect.poll(()=>host.getAttribute("data-camera-world-x")).not.toBe(before.x);
+   await expect.poll(async()=>Number(await host.getAttribute("data-skipped-reconciles")??0)).toBeGreaterThan(before.skipped);
+   await expect(host).toHaveAttribute("data-chunk-range",sameRange!);
+   await expect(host).toHaveAttribute("data-loading","false");
+   await info.attach("movement-timeout-after-pan",{body:JSON.stringify({before,failureVisible:await failure.isVisible(),after:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:"application/json"});
+   await page.screenshot({path:info.outputPath("movement-timeout-after-pan.png")});
+   await expect(failure).toBeVisible();
+   await expect(host).not.toHaveAttribute("data-mobility-ready","true");
+   await page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield.release());
+   await failure.getByRole("button",{name:"Повторить",exact:true}).click();
+   await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
+   await expect(host).toHaveAttribute("data-walk-network-builds","1");await expect(failure).toHaveCount(0);
+   expect(await identity!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
+   expect(reads.filter(path=>path.endsWith("/scene"))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+   expect(errors).toEqual([]);expect(movementErrors).toHaveLength(1);
+   await info.attach("movement-timeout-retry",{body:JSON.stringify({before,after:await host.evaluate(node=>({...((node as HTMLElement).dataset)})),movementErrors,reads}),contentType:"application/json"});
+ }finally{
+   releaseAmbient();await page.clock.resume().catch(()=>undefined);
+   await page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield?.release()).catch(()=>undefined);
+ }
 });
 
 test("same render content advances publication fences without decoding, rebaking or recompiling paths",async({page})=>{
@@ -189,7 +280,7 @@ test("focused keyboard camera controls preserve canonical data and ignore task d
  expect(reads.filter(path=>path.endsWith("/scene"))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
  const search=page.getByLabel("Поиск здания по номеру или названию");await search.fill("1");await page.keyboard.press("ArrowRight");
  const stationary=await host.getAttribute("data-camera-world-x");await page.keyboard.press("Home");expect(await host.getAttribute("data-camera-world-x")).toBe(stationary);
- await page.getByRole("option").first().click();await expect(page.locator("#task-title")).toBeVisible();
+ await page.locator(".task-search-results").getByRole("option").first().click();await expect(page.locator("#task-title")).toBeVisible();
  const inDialog=await host.getAttribute("data-camera-world-x");await page.keyboard.press("ArrowLeft");await page.keyboard.press("Home");
  expect(await host.getAttribute("data-camera-world-x")).toBe(inDialog);
 });

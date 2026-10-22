@@ -13,6 +13,7 @@ import { cinematicMarkerMatches } from "../city-cinematics";
 import { playCitySound, silenceCityAudio, unlockCityAudio, cityAudioMetrics } from "../city-audio";
 import { planCityParking } from "../city-parking";
 import { createCityEntityCollector } from "../city-entity-collector";
+import { createRequiredEntityAssets } from "../city-entity-assets";
 import { createCityMovementDependencies,needsMovementPreparation } from "../city-movement-dependencies";
 import { CanonicalCityData } from "../canonical-city-data";
 import { planCityResidency, taskIntersectsResidentBounds } from "../city-residency";
@@ -39,6 +40,8 @@ import { AdaptiveWorldQuality } from "../adaptive-world-quality";
 import { readWorldPreferences, subscribeWorldPreferences } from "../world-preferences";
 import { planConstructionLife, constructionWorkerPose, type ConstructionLifeSite } from "../construction-life";
 import { dependencySegments, type MapDependencySelection } from "../map-dependencies";
+import { createTaskFocusView } from "../task-focus-view";
+import { taskAttentionAlpha } from "../task-focus-presentation";
 import { blockPlaqueRange } from "../../shared/block-plaque";
 import { visibleMapPaddingReady, waitForVisibleMapWork } from "../map-frame-work";
 import { planCityRailway, railwayIntersectsRect, type CityRailway } from "../city-railway";
@@ -76,6 +79,7 @@ import { loadGameAssets } from "../game-asset-loader";
 import { AssetLease, leasedAssetCount } from "../asset-lease-registry";
 import { mapInvalidationAffectsCity, mapInvalidationImpact, type MapInvalidation } from "../map-invalidation";
 import { BoundedMapRefresh } from "../bounded-map-refresh";
+import { cityRetryPlan } from "../city-retry-plan";
 import { drainGroundBakeFrame, INITIAL_GROUND_BAKE_BUDGET_MS, type GroundBakeWork } from "../ground-bake-budget";
 import { createGroundTerrainSampler } from "../ground-terrain-sampler";
 import { CityRoadPadding, type CityRoadPaddingChunk } from "../city-road-padding";
@@ -134,7 +138,6 @@ import { taskParkDecorLayout, taskParkingMarkings } from "../../shared/task-park
 import { publicSpaceRenderStage } from "../../shared/public-space-stage";
 import {
   CONSTRUCTION_DETAIL_SPEC_BY_KEY,
-  CONSTRUCTION_TILE_KEYS,
   constructionStageLayout,
   type ConstructionDetailPlacement,
   type ConstructionTile,
@@ -390,7 +393,7 @@ function drawRoad(cell: RoadCellDto, surfaces: Map<string, SurfaceCellDto>, road
   return group;
 }
 
-function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Container): Container {
+export function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Container): Container {
   const group = new Container();
   group.eventMode = "static";
   group.cursor = "help";
@@ -398,12 +401,10 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
   group.hitArea = territory;
   group.interactiveChildren = false;
   const graphics = new Graphics();
-  const hit = new Graphics();
   const cells = new Set(district.cells.map(key));
   const color = Number.parseInt(district.color.slice(1), 16);
   for (const cell of district.cells) {
     const p = position(cell);
-    hit.rect(p.x, p.y, CELL_SIZE, CELL_SIZE);
     for (let direction = 0; direction < GRID_DIRECTIONS.length; direction += 1) {
       const delta = GRID_DIRECTIONS[direction]!;
       if (cells.has(key({ x: cell.x + delta.x, y: cell.y + delta.y }))) continue;
@@ -414,8 +415,9 @@ function drawDistrictBoundary(district: ChunkDistrictDto, tooltipLayer: Containe
     }
   }
   graphics.stroke({ color, width: district.status === "ACTIVE" ? 2.6 : 1.2, alpha: district.status === "ACTIVE" ? 1 : 0.62, cap: "square" });
-  hit.fill({ color, alpha: 0.001 });
-  group.addChild(hit, graphics);
+  // Semantic territory already owns every hit, including detached parcels.
+  // Drawing a nearly invisible quad per cell only adds mesh/upload work.
+  group.addChild(graphics);
   let tooltip: Container | undefined;
   let tooltipHeight = 0;
   const showTooltip = (event: FederatedPointerEvent) => {
@@ -915,78 +917,6 @@ function requiredGroundAssets(chunks: Iterable<Pick<ChunkDto, "terrain">>, lod: 
   return [...urls];
 }
 
-function requiredEntityAssets(chunks: Iterable<ChunkDto>, lod: MapLod, extraTasks: Iterable<ChunkTaskDto> = []): string[] {
-  const urls = new Set<string>();
-  urls.add(PROP_SPRITES["active-district-flag"]!);
-  const addTaskAssets = (tasks: Iterable<ChunkTaskDto>) => {
-    for (const task of tasks) {
-      const entry = transportBuildingArt(task).entry;
-      if (lod === "DETAIL") {
-        if (task.visualKind === "PARK") {
-          for (const { x, y, role } of greenAreaSurfaceLayout(task.footprint, parkStage(task.stage), task.visualAssetKey)) {
-            if (role === "WATER" || role === "MEADOW") urls.add(gameAssetUrl(atlasTerrainTile(role === "WATER" ? "shallow_water" : "meadow", "city", x, y, 0).url));
-          }
-          for (const placement of taskParkDecorLayout(task.footprint, parkStage(task.stage), task.visualAssetKey, task.taskNumber)) {
-            const metadata = PROP_CATALOG[placement.kind];
-            if (metadata) urls.add(metadata.path);
-            const litKey = illuminatedPropKey(placement.kind);
-            if (litKey !== placement.kind && PROP_CATALOG[litKey]) urls.add(PROP_CATALOG[litKey]!.path);
-          }
-        } else {
-          if (task.stage < 5) for (const key of CONSTRUCTION_TILE_KEYS) urls.add(TILE_SPRITES[key]!);
-          if (task.stage <= 2) {
-          const entrance = entry.entrances[0] ?? { side: "S" as const, offset: Math.floor(entry.footprint.width / 2) };
-          const construction = constructionStageLayout(entry.footprint, entrance, task.stage, task.taskNumber);
-          for (const detail of construction.details) urls.add(PROP_SPRITES[detail.key]!);
-          }
-          if (task.stage > 2) urls.add(entry.stages[task.stage - 1]!);
-          for (const cell of taskPlatformCells(task.footprint, task.stage)) {
-            const presentation = taskPlatformCellPresentation(entry);
-            if (presentation.family === "terrain") urls.add(gameAssetUrl(
-              atlasTerrainTile(atlasTerrainKindFromWorld(presentation.key), "city", cell.x, cell.y, 0).url,
-            ));
-          }
-        }
-        if (incidentVisualProfile(task).burning) {
-          urls.add(microIncidentResponder(entry.spriteSize.width).visual.url);
-        }
-      }
-    }
-  };
-  addTaskAssets(extraTasks);
-  for (const chunk of chunks) {
-    addTaskAssets(chunk.tasks);
-    for (const feature of lod === "DETAIL" ? chunk.worldFeatures : []) {
-      if (feature.kind === "RUIN") {
-        urls.add(PROP_SPRITES["compact-construction-bricks"]!);
-        urls.add(PROP_SPRITES["compact-construction-sand"]!);
-      }
-      if (feature.assetKind === "PROP") {
-        const metadata = PROP_CATALOG[feature.assetKey];
-        if (metadata) urls.add(metadata.path);
-      } else if (feature.assetKind === "BUILDING") {
-        urls.add(getBuilding(feature.assetKey).stages[4]!);
-      }
-    }
-    if (lod !== "DETAIL") continue;
-    for (const decoration of chunk.decorations) {
-      const metadata = PROP_CATALOG[decoration.kind];
-      if (!metadata) continue;
-      if (isAnimatedDecoration(decoration.kind)) urls.add(metadata.path);
-    }
-  }
-  if (lod === "DETAIL") {
-    urls.add(PROP_ATLAS.path);
-    urls.add(gameAssetUrl(atlasTerrainTile("grass", "city", 0, 0, 0).url));
-    urls.add(gameAssetUrl(atlasTerrainTile("meadow", "city", 0, 0, 0).url));
-    urls.add(PROP_SPRITES["traffic-light-red"]!);
-    urls.add(PROP_SPRITES["traffic-light-green"]!);
-  }
-  // Parks, construction details and lights use the exact authored atlas frames.
-  // One leased sheet replaces many tiny sequential HTTP/1 image requests.
-  return [...new Set([...urls].map(url => propFrameByUrl.has(url) ? PROP_ATLAS.path : url))];
-}
-
 function ambientDetailAssets(): string[] {
   return microAmbientAssetUrls();
 }
@@ -1041,10 +971,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   const renderTransportSelectionRef=useRef<(()=>void)|null>(null);
   useEffect(()=>{selectedTransportRef.current=selectedTransportRoute;renderTransportSelectionRef.current?.();},[selectedTransportRoute,firstFrameReady]);
   const dependencyRef = useRef(dependencies);
-  const attentionRef = useRef(attentionIds);
+  const attentionRef = useRef<ReadonlySet<string> | undefined>(attentionIds === undefined ? undefined : new Set(attentionIds));
   const renderAttentionRef = useRef<(() => void) | null>(null);
   useEffect(() => { dependencyRef.current = dependencies; renderAttentionRef.current?.(); }, [dependencies]);
-  useLayoutEffect(() => { attentionRef.current = attentionIds; renderAttentionRef.current?.(); }, [attentionIds]);
+  useLayoutEffect(() => { attentionRef.current = attentionIds === undefined ? undefined : new Set(attentionIds); renderAttentionRef.current?.(); }, [attentionIds]);
 
   const districtLayerRef = useRef<Container | null>(null);
   const districtTooltipLayerRef = useRef<Container | null>(null);
@@ -1211,8 +1141,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     };
     const chunks = new Map<string, ChunkDto>();
     const entityChunks = new Map<string, ChunkDto>();
-    const collectCityEntities = createCityEntityCollector();
+    // CITY uses the separate complete canonical terrain for walking/physics.
+    // The resident visual projection never reads another terrain index.
+    const collectCityEntities = createCityEntityCollector({ includeTerrain: !focusCityId });
     const collectCanonicalCityEntities = createCityEntityCollector();
+    const requiredEntityAssets = createRequiredEntityAssets();
     const entityChunkLods = new Map<string, MapLod>();
     const chunkLods = new Map<string, MapLod>();
     const chunkDataCache = new Map<string, ChunkDto>();
@@ -1335,25 +1268,16 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       const attentionLayer = new Graphics({ label: "task-attention", eventMode: "none" });
       world.addChild(attentionLayer);
       let attentionTasks: ReadonlyMap<string, ChunkTaskDto> = new Map();
+      let focusDistrictIds: ReadonlySet<string> = new Set();
+      let applyTaskFocus = () => {};
+      let applyCinematicAttention = () => {};
       const renderAttention = () => {
         if (disposed) return;
         attentionLayer.clear();
         let count = 0;
-        for (const id of attentionRef.current ?? []) {
-          const task = attentionTasks.get(id);
-          if (!task) continue;
-          count++;
-          const owned = new Set(task.footprint.map(c => `${c.x},${c.y}`));
-          for (const c of task.footprint) {
-            const x = c.x * CELL_SIZE, y = c.y * CELL_SIZE;
-            if (!owned.has(`${c.x},${c.y - 1}`)) attentionLayer.moveTo(x,y).lineTo(x+CELL_SIZE,y);
-            if (!owned.has(`${c.x + 1},${c.y}`)) attentionLayer.moveTo(x+CELL_SIZE,y).lineTo(x+CELL_SIZE,y+CELL_SIZE);
-            if (!owned.has(`${c.x},${c.y + 1}`)) attentionLayer.moveTo(x,y+CELL_SIZE).lineTo(x+CELL_SIZE,y+CELL_SIZE);
-            if (!owned.has(`${c.x - 1},${c.y}`)) attentionLayer.moveTo(x,y).lineTo(x,y+CELL_SIZE);
-          }
-        }
-        attentionLayer.stroke({ color: 0xffdd70, width: 2, alpha: 1 });
+        for (const id of attentionRef.current ?? []) if (attentionTasks.has(id)) count++;
         host.dataset.attentionTasks = String(count);
+        host.dataset.attentionActive = String(attentionRef.current !== undefined);
         const segments = dependencySegments(dependencyRef.current, attentionTasks);
         for (const { source, target } of segments) {
           const x = source.x * CELL_SIZE, y = source.y * CELL_SIZE;
@@ -1364,7 +1288,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         }
         attentionLayer.stroke({ color: 0x7ee2e2, width: 1.5, alpha: .9 });
         host.dataset.dependencyEdges = String(segments.length);
-
+        applyTaskFocus();
       };
       renderAttentionRef.current = renderAttention;
       let developmentSignature = "";
@@ -1659,6 +1583,18 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       // `viewBounds`, otherwise the camera appears frozen at 160x100 cells.
       let currentViewBounds = initialViewBoundsRef.current;
       let currentLod: MapLod = focusCityId ? "DETAIL" : world.scale.x < DETAIL_LOD_SCALE ? "OVERVIEW" : "DETAIL";
+      const taskFocus = createTaskFocusView();
+      startupDisposers.push(() => taskFocus.destroy());
+      applyTaskFocus = () => {
+        const stats = taskFocus.update({ tasks: attentionTasks, buildings: taskBuildingViews,
+          platforms: taskPlatformViews, incidents: incidentViews, activeDistrictIds: focusDistrictIds,
+          matches: attentionRef.current, detail: currentLod === "DETAIL" });
+        host.dataset.attentionDimmedTasks = String(stats.dimmed);
+        host.dataset.taskSprintBadges = String(stats.badges);
+        host.dataset.taskSprintBadgeTextures = String(stats.textures);
+        host.dataset.attentionDimAlpha = "0.16";
+        applyCinematicAttention();
+      };
       let ambientAssetsReady = false;
       let ambientAssetsPromise: Promise<void> | undefined;
       const redrawBackdrop = () => {
@@ -1931,6 +1867,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           cinematicEvents.delete(frame.taskId);
         },
       });
+      applyCinematicAttention = () => cinematicView.setTaskOpacity(id => taskAttentionAlpha(id, attentionRef.current));
       const updateCinematics = () => {
         const state = cinematicView.update(performance.now());
         applyWalkReservations();
@@ -1973,6 +1910,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         cinematicEvents.set(task.id, { task: prior?.task ?? task, event: { ...event,
           type: prior?.event.type === "task.transferred" && event.type === "task.status_changed" ? "task.transferred" : event.type,
           newBounds: event.newBounds ?? prior?.event.newBounds } });
+        applyCinematicAttention();
         updateCinematics(); return true;
       };
       const syncCinematicTargets = (features: ReadonlyMap<string, WorldFeatureDto>) => {
@@ -2434,7 +2372,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           const fade = groundFades[index]!;
           fade.elapsed += elapsed;
           const alpha = Math.min(1, fade.elapsed / fade.duration);
-          for (const container of fade.containers) if (!container.destroyed) container.alpha = alpha;
+          for (const container of fade.containers) if (!container.destroyed) taskFocus.setFadeOpacity(container, alpha);
           if (alpha >= 1) groundFades.splice(index, 1);
         }
         for (let index = celebrations.length - 1; index >= 0; index -= 1) {
@@ -3437,7 +3375,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
               if (worldKind) registerWorldObject(view, worldKind);
               layer.addChild(view);
               if (!reducedMotion) {
-                view.alpha = 0;
+                taskFocus.setFadeOpacity(view, 0);
                 groundFades.push({ containers: [view], elapsed: 0, duration: 280 });
               }
             },
@@ -3543,7 +3481,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         }
         const developmentTasks = developmentGeometry?.tasks ?? tasks;
         attentionTasks = canonical.tasks;
-        renderAttention();
+        focusDistrictIds = new Set([...canonical.districts.values()].filter(district => district.status === "ACTIVE").map(district => district.id));
         const developmentDistricts = developmentGeometry?.districts ?? districts;
         const districtStatuses = new Map<string, ChunkTaskDto["status"][]>();
         for (const task of developmentTasks.values()) {
@@ -3792,6 +3730,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           entityReplacementCount += 1;
         }
         syncCinematicTargets(features);
+        renderAttention();
         sortWorldObjects();
         host!.dataset.entityViews = String(
           districtViews.size + taskPlatformViews.size + taskBuildingViews.size + incidentViews.size
@@ -4072,14 +4011,14 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           .map(task=>[task.id,task]));
         host.dataset.cityInitialPrefetchTasks=String(openingTasks.size);
         host.dataset.cityInitialPrefetchChunks=String(openingKeys.size);
+        // Terrain takes the first request slots; bounded entity prefetch runs
+        // concurrently. Final publication still awaits all required assets.
+        void assetLease.load(requiredEntityAssets([],"DETAIL",openingTasks.values()),loadTextureAssets).catch(()=>undefined);
         await terrainAssets;
         cityTerrainAtlasesReady = true;
         host.dataset.cameraPaddingAtlasPreloadMs = (performance.now() - preloadStarted).toFixed(2);
         host.dataset.cameraPaddingAtlasFamilies = String(cityTerrainKinds.length);
         if (disposed) return;
-        // Essential terrain gets the first request slots. The same complete
-        // sprite prefetch now overlaps canonical decode and ground preparation.
-        void assetLease.load(requiredEntityAssets([],"DETAIL",openingTasks.values()),loadTextureAssets).catch(()=>undefined);
         installCityRoadPadding(cityScene);
         installCompletedSnapshotTasks(cityScene);
         citySceneChunkCount = cityScene.chunks.length;
@@ -4796,7 +4735,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             loadRetryAttempt = 0;
             // An older viewport bake may finish after a newer scene refresh
             // failed. Finishing that old work cannot acknowledge the failure.
-            if (!sceneDirty) {
+            if (!sceneDirty && !movementPreparationFailed) {
               delete host!.dataset.loadError;
               setMapLoadError(undefined);
             }
@@ -4815,7 +4754,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         if (!options.isRetry) {
           window.clearTimeout(loadRetryTimer);
           loadRetryAttempt = 0;
-          setMapLoadError(undefined);
+          if (!movementPreparationFailed) setMapLoadError(undefined);
         }
         const nextLod = lodForScale(world.scale.x);
         const camera = cityCamera.pending ?? {x:world.x,y:world.y,scale:world.scale.x};
@@ -5189,9 +5128,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           void loadVisible({ forceKeys, rebuildMovement });
         },
         retry() {
-          if(movementPreparationFailed){movementPreparationFailed=false;setMapLoadError(undefined);scheduleEntityReconcile(true);return;}
+          const retry=cityRetryPlan({hasScene:!!cityScene,sceneDirty,sceneDirtyMovement,movementFailed:movementPreparationFailed});
+          if(retry.kind==="SCENE"){
+            movementPreparationFailed=false;
+            refreshSceneAndRender(retry.rebuildMovement);return;
+          }
+          if(retry.kind==="MOVEMENT"){movementPreparationFailed=false;setMapLoadError(undefined);scheduleEntityReconcile(true);return;}
           if(transportAssetFailures.size){railwaySignature='';portSignature='';syncCityRailway();}
-          if (cityScene && sceneDirty) { refreshSceneAndRender(sceneDirtyMovement); return; }
           retryFailedPadding(paddingTerrain);
           refreshCameraPadding();
           desiredRange = "";
@@ -5273,7 +5216,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         if (reducedMotion) {
           clearCinematics(); clearRoadEvent(); clearEveryday();
           for (const fade of groundFades.splice(0)) for (const container of fade.containers) {
-            if (!container.destroyed) container.alpha = 1;
+            if (!container.destroyed) taskFocus.setFadeOpacity(container, 1);
           }
           for (const celebration of celebrations.splice(0)) for (const particle of celebration.particles) particle.view.destroy();
           animateCameraZoom({ deltaMS: 1_000 });

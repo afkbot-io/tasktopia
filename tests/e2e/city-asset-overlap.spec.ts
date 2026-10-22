@@ -1,5 +1,10 @@
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test } from "@playwright/test";
+import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
+
+test.use({ trace: { mode: 'retain-on-failure', snapshots: false, screenshots: false, sources: true } });
+test.beforeEach(async ({ page }) => { await installCityPreparationDiagnostics(page); });
+test.afterEach(async ({ page }, info) => { await attachCityPreparationFailure(page, info); });
 
 const fixtureEmail=process.env.E2E_CITY_EMAIL??"demo@tasktopia.local";
 const fixturePassword=process.env.E2E_CITY_PASSWORD??"tasktopia-demo";

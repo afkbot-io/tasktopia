@@ -22,6 +22,8 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .game-popover-panel button { min-height:44px;border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-control);text-align:left;padding:8px 10px;color:var(--game-ink);background:var(--ui-raised);cursor:pointer; }
 .game-popover-panel button:hover { background:var(--ui-hover); }
 .game-popover-panel .map-attention { display:grid;gap:6px; }
+.game-popover-panel:has(> .map-attention) { max-height:calc(100dvh - 80px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain; }
+.game-popover-panel .task-sprint-legend ul { grid-template-columns:minmax(0,1fr); }
 .game-popover-panel .map-attention button { width:100%; }
 .game-popover-panel .map-attention button[aria-pressed="true"] { background:var(--ui-selected);border-color:var(--ui-accent); }
 .map-legend-panel p,.map-legend-panel dd { color:var(--ui-muted);font-size:12px; }
@@ -119,6 +121,11 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
  .game-popover summary,.map-toolbar .map-legend summary {padding:0 6px;height:44px;min-width:44px; }
  .map-toolbar .world-preferences { display:none; }
  .world-menu .game-popover-panel { position:fixed;top:62px;right:12px;max-height:calc(100dvh - 74px);overflow-y:auto;overscroll-behavior:contain; }
+ .game-popover-panel:has(> .map-attention) {
+  position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));
+  max-height:calc(100dvh - 74px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+  overflow-y:auto;overscroll-behavior:contain;
+ }
  .city-directory { top:10px;right:10px;max-width:calc(100% - 20px);max-height:calc(100% - 86px); }
  .task-inspector-backdrop { padding:0; }
  .task-modal.task-inspector { width:100%;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border-width:0;border-radius:0; }

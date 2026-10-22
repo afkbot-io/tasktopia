@@ -61,11 +61,47 @@ export async function everydayFixture(page: Page) {
   const focus = async (task: TaskDto) => { await page.goto(taskLink(user.countryId, task)); await expect(page.locator('#task-title')).toContainText(task.title);
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click(); await ready(); };
   const panFocus = async (task: TaskDto, pausedClock = false) => {
-    await page.getByLabel('Поиск здания по номеру или названию').fill(String(task.taskNumber));
+    // Search opens a card; closing it intentionally restores the preceding
+    // map pose. These scene tests need a real pan without changing history.
+    await expect(page).toHaveURL(url => url.pathname === '/' && url.searchParams.get('countryId') === user.countryId && url.searchParams.get('cityId') === task.cityId);
+    await expect(page.locator('.task-modal')).toHaveCount(0);
+    const bounds = task.siteBounds ?? {
+      minX: Math.min(...task.footprint.map(cell => cell.x)), maxX: Math.max(...task.footprint.map(cell => cell.x)),
+      minY: Math.min(...task.footprint.map(cell => cell.y)), maxY: Math.max(...task.footprint.map(cell => cell.y)),
+    };
+    const canvas = host.locator('canvas'), box = await canvas.boundingBox(); expect(box).not.toBeNull();
+    const camera = await host.evaluate(el => {
+      const host = el as HTMLElement, canvas = host.querySelector('canvas')!;
+      return { x: Number(host.dataset.cameraWorldX), y: Number(host.dataset.cameraWorldY), scale: Number(host.dataset.renderScale), width: canvas.clientWidth, height: canvas.clientHeight };
+    });
+    const dx = (camera.x - (bounds.minX + bounds.maxX + 1) / 2) * 8 * camera.scale;
+    const dy = (camera.y - (bounds.minY + bounds.maxY + 1) / 2) * 8 * camera.scale;
+    const tilePixels = 8 * camera.scale;
+    const alreadyVisible = (bounds.minX - camera.x) * tilePixels + camera.width / 2 >= 24
+      && (bounds.maxX + 1 - camera.x) * tilePixels + camera.width / 2 <= camera.width - 24
+      && (bounds.minY - camera.y) * tilePixels + camera.height / 2 >= 24
+      && (bounds.maxY + 1 - camera.y) * tilePixels + camera.height / 2 <= camera.height - 24;
+    const drags = alreadyVisible ? 0 : Math.ceil(Math.max(Math.abs(dx) / (box!.width * .3), Math.abs(dy) / (box!.height * .3)));
+    expect(drags, 'Native scene pan must fit a bounded sequence of viewport gestures').toBeLessThanOrEqual(12);
+    const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+    // Accumulate the intended delta. With paused RAF the renderer deliberately
+    // retains its old presented pose until terrain for the pending pose is ready.
+    for (let index = 0; index < drags; index++) {
+      await page.mouse.move(start.x, start.y); await page.mouse.down();
+      await page.mouse.move(start.x + dx / drags, start.y + dy / drags, { steps: 12 }); await page.mouse.up();
+    }
+    // Preserve the original controlled preparation horizon, including when
+    // the target was already visible. Never await a paused RAF before this.
     if (pausedClock) await page.clock.runFor(400);
-    await page.locator('.task-search-results button').first().click();
-    await expect(page.locator('#task-title')).toContainText(task.title);
-    await page.getByRole('button', { name: 'Закрыть', exact: true }).click(); await ready();
+    await ready(); await expect(host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    await expect.poll(() => host.evaluate((el, rect) => {
+      const host = el as HTMLElement, canvas = host.querySelector('canvas')!, tilePixels = 8 * Number(host.dataset.renderScale);
+      const x = Number(host.dataset.cameraWorldX), y = Number(host.dataset.cameraWorldY);
+      return (rect.minX - x) * tilePixels + canvas.clientWidth / 2 >= 24
+        && (rect.maxX + 1 - x) * tilePixels + canvas.clientWidth / 2 <= canvas.clientWidth - 24
+        && (rect.minY - y) * tilePixels + canvas.clientHeight / 2 >= 24
+        && (rect.maxY + 1 - y) * tilePixels + canvas.clientHeight / 2 <= canvas.clientHeight - 24;
+    }, bounds), { message: `Task #${task.taskNumber} must actually be visible after its native scene pan` }).toBe(true);
   };
   const cleanup = async () => { await page.close(); await client.close(); await db.prepare('DELETE FROM countries WHERE id=?').run(user.countryId); await db.prepare('DELETE FROM users WHERE id=?').run(user.id); await db.close(); };
   return { db, service, user, city, tasks, pendingSchool, pendingKindergarten, pendingHome, call, host, open, focus, panFocus, cleanup };

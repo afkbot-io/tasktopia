@@ -48,7 +48,10 @@ test("requires matching passwords before sending registration", async ({ page })
   await page.getByLabel("Повторите пароль", { exact: true }).fill("different-password-456");
   await page.getByRole("button", { name: "Продолжить" }).click();
 
-  await expect(page.getByRole("alert")).toHaveText("Пароли не совпадают");
+  const confirmation = page.getByLabel("Повторите пароль", { exact: true });
+  await expect(confirmation).toHaveAttribute("aria-invalid", "true");
+  await expect(confirmation).toHaveAccessibleDescription("Пароли не совпадают");
+  await expect(confirmation).toBeFocused();
   expect(registrationRequests).toBe(0);
 });
 

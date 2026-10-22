@@ -72,6 +72,14 @@ export function createCityCinematicView(options: Options) {
     },
     has(id: string) { return shots.has(id); },
     reservedCells() { return reserved; },
+    setTaskOpacity(resolve: (taskId: string) => number) {
+      for (const [id, shot] of shots) {
+        const alpha = resolve(id);
+        for (const view of [shot.building, shot.platform, shot.root, shot.target?.building, shot.target?.platform]) {
+          if (view && !view.destroyed) view.alpha = alpha;
+        }
+      }
+    },
     target(id: string, target: Target) {
       const shot = shots.get(id); if (!shot) return;
       showTargets(shot); shot.target = target;

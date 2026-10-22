@@ -77,7 +77,7 @@ test('touch: каталог районов и задач открывается 
 test('touch: сочетание подсветки переиспользует метаданные и сохраняет камеру и поверхность',async({page})=>{
   const bootstrap=await session(page);const metadata=await loadMapAttention(bootstrap.country.id,bootstrap.initialCity!.id,new AbortController().signal,async path=>{const response=await page.request.get(path);expect(response.ok()).toBe(true);return response.json();});
   const expected=metadata.filter(task=>task.mine&&task.status==='TESTING').length;await page.goto('/');await openMapCity(page);const host=page.locator('.world-canvas');await expect(host).toHaveAttribute('data-city-scene-commit','atomic');
-  await page.getByLabel('Фильтры',{exact:true}).click();const menu=page.getByRole('navigation',{name:'Подсветка построек'});let reads=0;page.on('request',request=>{if(request.url().includes('/api/map-attention?'))reads++;});
+  await page.getByLabel('Фильтры',{exact:true}).click();const menu=page.getByRole('navigation',{name:'Фильтры построек'});let reads=0;page.on('request',request=>{if(request.url().includes('/api/map-attention?'))reads++;});
   const before=await host.evaluate(node=>[node.getAttribute('data-camera-world-x'),node.getAttribute('data-camera-world-y'),node.getAttribute('data-ground-rebuilds')]);
   await menu.getByRole('button',{name:'Мои объекты',exact:true}).click();await expect(menu.getByRole('status')).toContainText('Найдено:');const loaded=reads;
   await menu.getByRole('button',{name:'Приёмка',exact:true}).click();await expect(menu.getByRole('button',{name:'Мои объекты',exact:true})).toHaveAttribute('aria-pressed','true');await expect(menu.getByRole('button',{name:'Приёмка',exact:true})).toHaveAttribute('aria-pressed','true');

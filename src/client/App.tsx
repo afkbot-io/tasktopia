@@ -5,7 +5,7 @@ import { useDialogFocus } from "./use-dialog-focus";
 import { WorldDigest } from "./components/WorldDigest";
 import { MapDependencies } from "./components/MapDependencies";
 import type { MapDependencySelection } from "./map-dependencies";
-import { MapAttention } from "./components/MapAttention";
+import { MapAttention, type MapAttentionSelection } from "./components/MapAttention";
 import { MapLegend } from "./components/MapLegend";
 import { DistrictPlans } from "./components/DistrictPlans";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -137,7 +137,7 @@ export function App() {
   const [revision, setRevision] = useState(0);
   const [planetRevision, setPlanetRevision] = useState(0);
   const [transportRevision,setTransportRevision]=useState(0);
-  const [attention, setAttention] = useState<{ scope: string; ids: string[]; label?:string }>({ scope: "", ids: [] });
+  const [attention, setAttention] = useState<MapAttentionSelection>({ scope: "", ids: [], active: false });
   const [dependencyTask, setDependencyTask] = useState<{ scope: string; id: string }>();
   const [dependencyData, setDependencyData] = useState<{ scope: string; selection?: MapDependencySelection }>({ scope: "" });
   const [documentsOpen, setDocumentsOpen] = useState(false);
@@ -236,7 +236,7 @@ export function App() {
     setSelectedTask(null); setSelectedSite(null); setSelectedArchiveRecord(null);
     setTokensOpen(false); setDirectoryOpen(false); setDirectoryFocus(undefined); setCountryMenuOpen(false); setCountryDialog(null);
     setDocumentsOpen(false); setDevelopmentOpen(false); setAlbumOpen(false); setSelectedTransportRoute(undefined);
-    setAttention({ scope: '', ids: [] }); setDependencyTask(undefined); setDependencyData({ scope: '' }); setNotices([]);
+    setAttention({ scope: '', ids: [], active: false }); setDependencyTask(undefined); setDependencyData({ scope: '' }); setNotices([]);
     eventCountryRef.current = undefined; lastWorldEventIdRef.current = 0;
     clearMapSceneCaches(); clearTaskDetailCache(); clearPlanetAtlasCache(); silenceCityAudio();
     cityViewMemory.clear(); cityRestoreTokensRef.current.clear(); planetViewMemory.clear();
@@ -784,7 +784,7 @@ export function App() {
       </Suspense>
       {activeCity && (effectiveMapMode === "CITY" || preparedCityScene !== null || retainedCityKey===`${bootstrap.country.id}:${activeCity.id}`) && <div aria-hidden={effectiveMapMode !== "CITY"} style={{ position:"absolute", inset:0, visibility:effectiveMapMode === "CITY" ? "visible" : "hidden", pointerEvents:effectiveMapMode === "CITY" ? "auto" : "none" }}>
         <Suspense fallback={<div className="app-loading" role="status">Готовим город…</div>}>
-          <WorldCanvas initialView={cityViewMemory.get(bootstrap.country.id + ':' + activeCity.id)} onViewChange={rememberCityView} restoreView={cityViewRestore?.scope === bootstrap.country.id + ':' + activeCity.id ? cityViewRestore : undefined} onInspectTask={(scope, id) => { void openCanonicalTask(new URLSearchParams({ countryId: scope, id }).toString()); }} selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={selectVisibleTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
+          <WorldCanvas initialView={cityViewMemory.get(bootstrap.country.id + ':' + activeCity.id)} onViewChange={rememberCityView} restoreView={cityViewRestore?.scope === bootstrap.country.id + ':' + activeCity.id ? cityViewRestore : undefined} onInspectTask={(scope, id) => { void openCanonicalTask(new URLSearchParams({ countryId: scope, id }).toString()); }} selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.active && attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={selectVisibleTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
                   setRetainedCityKey(`${bootstrap.country.id}:${activeCity.id}`);
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;

@@ -12,6 +12,17 @@ function fixture(economy=false){
  const target=new Container(),targetPlatform=new Container();target.position.set(100,120);targetPlatform.position.set(92,104);ground.addChild(targetPlatform,target);
  return{ground,layer,airLayer,complete,view,task,building,platform,target,targetPlatform};
 }
+it('applies the current task filter to the captured building, crew and hidden destination without changing reveal ownership',()=>{
+ const f=fixture();f.view.begin({eventId:1,version:2,taskId:'one',kind:'CONSTRUCT',fromStage:1,toStage:2},{task:f.task,building:f.building,platform:f.platform},0);
+ f.view.target('one',{task:f.task,building:f.target,platform:f.targetPlatform,markers:[],version:2});
+ f.view.setTaskOpacity(()=>.16);
+ expect(f.building.alpha).toBe(.16);expect(f.platform.alpha).toBe(.16);expect(f.layer.children[0]!.alpha).toBe(.16);
+ expect(f.target.alpha).toBe(.16);expect(f.target.visible).toBe(false);
+ f.view.update(1200);expect(f.building.alpha).toBe(.16);expect(f.target.visible).toBe(false);
+ f.view.setTaskOpacity(()=>1);expect(f.building.alpha).toBe(1);expect(f.layer.children[0]!.alpha).toBe(1);
+ f.view.clear();expect(f.target.visible).toBe(true);expect(f.target.alpha).toBe(1);
+ f.ground.destroy({children:true});f.layer.destroy({children:true});f.airLayer.destroy({children:true});
+});
 it('conceals authoritative objects until reveal, destroys only its capture and releases every crew object',()=>{
  const f=fixture();expect(f.view.begin({eventId:1,version:2,taskId:'one',kind:'CONSTRUCT',fromStage:1,toStage:2},{task:f.task,building:f.building,platform:f.platform},0)).toBe(true);
  f.view.target('one',{task:{...f.task,stage:2},building:f.target,platform:f.targetPlatform,markers:[],version:2});

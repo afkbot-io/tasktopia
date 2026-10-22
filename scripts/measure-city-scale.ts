@@ -40,6 +40,8 @@ const clientHash = clientDigest.digest("hex");
 const browser = await ({ chromium, firefox, webkit })[profile.engine].launch({ headless: true,
   ...(profile.engine === "chromium" && platform() === "darwin" ? { args: ["--enable-gpu", "--use-angle=metal"] } : {}) });
 const errors: string[] = [], results: Record<string, unknown>[] = [];
+// Runner evidence survives a failed assertion and the original context cleanup.
+const failureEvidence: Record<string, unknown>[] = [];
 let failure: string | null = null;
 
 async function ready(page: Page) {
@@ -83,10 +85,21 @@ try {
   for (let index = 0; index < samplesCount; index++) {
     const context = await browser.newContext({ baseURL: base, viewport: profile.viewport, deviceScaleFactor: profile.dpr,
       hasTouch: profile.touch, isMobile: profile.touch, serviceWorkers: "block" });
+    const consoleMessages: Array<{ at: number; type: string; text: string }> = [];
+    const evidence: Record<string, unknown> = { sample: index, completed: false, lastCompletedStage: "context-created",
+      console: consoleMessages, consoleTruncated: false, coldTelemetryCapturedBeforeMobilityWait: false };
+    failureEvidence.push(evidence);
+    let diagnosticPage: Page | undefined;
     try {
       const login = await context.request.post("/api/auth/login", { data: { email: fixture.email, password: "local-city-scale-fixture-only" } });
       assert.equal(login.status(), 200, "Dedicated fixture login must succeed");
       const page = await context.newPage();
+      diagnosticPage = page;
+      page.on("console", message => {
+        if (message.type() !== "warning" && message.type() !== "error") return;
+        if (consoleMessages.length < 128) consoleMessages.push({ at: Date.now(), type: message.type(), text: message.text().slice(0, 2000) });
+        else evidence.consoleTruncated = true;
+      });
       const paths: string[] = [];
       page.on("pageerror", error => errors.push(error.message));
       page.on("requestfailed", request => { if (!request.failure()?.errorText.includes("ERR_ABORTED")) errors.push(`${new URL(request.url()).pathname}: ${request.failure()?.errorText}`); });
@@ -134,6 +147,7 @@ try {
       }, { token, cityId: fixture.cityId });
       const nodeClockSampleDoneMs = performance.now();
       const clockStart = coldClockStart.clockStart;
+      Object.assign(evidence, { lastCompletedStage: "cold-clock-started", coldClockStart });
       await city(page);
       const legacyColdCityMs = performance.now() - cityStarted, totalAppToCityMs = performance.now() - started;
       const coldClockEnd = await page.evaluate(() =>
@@ -142,6 +156,7 @@ try {
       const coldMetricInput = { nodeStartedMs: cityStarted, nodeClockSampleDoneMs,
         nodeEndedMs: cityStarted + legacyColdCityMs, start: coldClockStart, end: coldClockEnd };
       const coldMetric = calculateColdCityMetric(coldMetricInput), coldCityMs = coldMetric.upperBoundMs;
+      Object.assign(evidence, { lastCompletedStage: "city-first-atomic", coldMetricInput, coldMetric });
       const scene = await (await sceneResponse).json() as CitySceneDto;
       const canonicalTasks = [...new Map([...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)]
         .map(task => [task.id, task])).values()].sort((a, b) => a.taskNumber - b.taskNumber);
@@ -152,13 +167,17 @@ try {
       assert.equal(geometryHash, fixture.geometryHash, "Benchmark may not replace the frozen world geometry");
       const host = page.locator(".world-canvas");
       const coldTelemetry = await host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
+      Object.assign(evidence, { lastCompletedStage: "cold-telemetry", coldTelemetry, coldTelemetryCapturedBeforeMobilityWait: true,
+        canonicalTasks: canonicalTasks.length, geometryHash, sceneChunks: scene.chunks.length });
       const renderer = await host.locator("canvas").evaluate(canvas => {
         const gl = (canvas as HTMLCanvasElement).getContext("webgl2") ?? (canvas as HTMLCanvasElement).getContext("webgl");
         const extension = gl?.getExtension("WEBGL_debug_renderer_info");
         return extension ? gl!.getParameter(extension.UNMASKED_RENDERER_WEBGL) as string : "unavailable";
       });
       await expect(host).toHaveAttribute("data-ground-bake-queue", "0", { timeout: 90_000 });
+      evidence.lastCompletedStage = "ground-ready";
       await expect(host).toHaveAttribute("data-mobility-ready", "true", { timeout: 90_000 });
+      evidence.lastCompletedStage = "mobility-ready";
       await page.waitForTimeout(3000);
       const warmedResources = await resources(page);
       const steadyStart = await page.evaluate(() => performance.now());
@@ -209,13 +228,40 @@ try {
         warmSceneReads: paths.slice(warmReadStart).filter(path => path.endsWith("/scene")),
         frames: distribution(frames.slice(1)), input: distribution(measures.inputSamples),
         heapBefore, heapAfter, heapGrowthBytes: heapAfter && heapBefore ? heapAfter.JSHeapUsedSize! - heapBefore.JSHeapUsedSize! : null,
-        warmedResources, finalResources, ...measures };
+        warmedResources, finalResources, ...measures,
+        steadyWindow: { timeOrigin: coldClockStart.timeOrigin, start: steadyStart, end: steadyEnd } };
       results.push(result);
+      Object.assign(evidence, { lastCompletedStage: "all-metrics-captured", completed: true });
       if (index === 0) await page.screenshot({ path: join(root, "city.png") });
       await writeFile(join(root, `sample-${index}.json`), JSON.stringify(result, null, 2) + "\n");
       console.log(JSON.stringify({ variant, tasks: fixture.tasks, profile: profileName, sample: index, coldCityMs,
         legacyColdCityMs, coldMetric, warmCityMs,
         frames: result.frames, input: result.input, heapGrowthBytes: result.heapGrowthBytes, errors: errors.length }));
+    } catch (error) {
+      Object.assign(evidence, { failedAt: Date.now(), failure: error instanceof Error ? error.message : String(error) });
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const read = diagnosticPage?.evaluate(() => {
+          const host = document.querySelector<HTMLElement>(".world-canvas");
+          const parents = [];
+          for (let element = host; element && parents.length < 8; element = element.parentElement) {
+            const style = getComputedStyle(element);
+            parents.push({ tag: element.tagName, className: element.className, ariaHidden: element.getAttribute("aria-hidden"),
+              hidden: element.hidden, display: style.display, visibility: style.visibility });
+          }
+          return { capturedAt: Date.now(), hidden: document.hidden, visibility: document.visibilityState,
+            dataset: host ? { ...host.dataset } : null, parents,
+            selectedMapButtons: [...document.querySelectorAll('.map-level-nav button[aria-current="page"]')].map(element => element.textContent),
+            alerts: [...document.querySelectorAll('[role="alert"]')].slice(0, 8).map(element => element.textContent?.slice(0, 1000)),
+            resourceTiming: performance.getEntriesByType("resource").slice(0, 1000).map(entry => entry.toJSON()) };
+        }).then(data => ({ coverage: "captured", data }), readError => ({ coverage: "unavailable", reason: String(readError).slice(0, 1000) }));
+        evidence.liveFailure = read ? await Promise.race([read, new Promise(resolve => {
+          timer = setTimeout(() => resolve({ coverage: "unavailable", reason: "failure-read-timeout" }), 3000);
+        })]) : { coverage: "unavailable", reason: "page-not-created" };
+      } catch (captureError) {
+        evidence.liveFailure = { coverage: "unavailable", reason: String(captureError).slice(0, 1000) };
+      } finally { if (timer) clearTimeout(timer); }
+      throw error;
     } finally { await context.close(); }
   }
   assert.deepEqual(errors, []);
@@ -244,7 +290,7 @@ finally {
       "Input metric is native event dispatch to the second RAF, an upper-bound responsiveness proxy, not full-session INP",
       "Three loading samples produce a median/range; no loading p95 claim", "Service workers blocked consistently in both variants"],
     summaries: { coldCityMs: distribution(results.map(value => Number(value.coldCityMs))), warmCityMs: distribution(results.map(value => Number(value.warmCityMs))) },
-    results, errors, generatedAt: new Date().toISOString() };
+    results, errors, failureEvidence, generatedAt: new Date().toISOString() };
   await writeFile(join(root, "report.json"), JSON.stringify(report, null, 2) + "\n");
   await browser.close();
   // Baseline can legitimately miss an announced optimization budget. Candidate
