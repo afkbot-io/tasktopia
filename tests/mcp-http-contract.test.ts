@@ -40,7 +40,7 @@ const errorCode = (value: Awaited<ReturnType<Client["callTool"]>>) => {
 describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000 }, () => {
   let db: Db, app: FastifyInstance, service: AppService, base: string, uploads: string;
   let countryId: string, userId: string, foreignCountryId: string, viewerId: string;
-  let ownerToken: string, readToken: string, viewerToken: string, taskOnlyToken: string;
+  let ownerToken: string, readToken: string, viewerToken: string, taskOnlyToken: string, foreignToken: string;
   let home: TaskDto, foreign: TaskDto, jobId: string, tools: Tool[], client: Client;
   const clients: Client[] = [];
   const connect = async (token = ownerToken, modern = true) => {
@@ -90,6 +90,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     home = await seed(countryId); foreign = await seed(foreignCountryId);
     jobId = (await enqueueWorldGenerationJob(db, countryId, "city.create", "contract-job", { name: "Ожидающий город", idempotencyKey: "contract-job" })).id;
     ownerToken = (await createMcpToken(db, countryId, "Owner", userId)).token;
+    foreignToken = (await createMcpToken(db, foreignCountryId, "Foreign owner", outsider.user.id)).token;
     readToken = (await createMcpToken(db, reader.user.countryId, "Read", reader.user.id, { scopes: ["country:read"] })).token;
     taskOnlyToken = (await createMcpToken(db, taskReader.user.countryId, "Tasks", taskReader.user.id, { scopes: ["tasks:read"] })).token;
     // A token retaining its home-country write scopes still cannot write in a
@@ -130,6 +131,63 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     expect(resources.resources.map(resource => resource.uri)).toEqual(["tasktopia://catalog/buildings"]);
     expect((await legacy.readResource({ uri: `tasktopia://countries/${countryId}` })).contents).toHaveLength(1);
     expect((await client.readResource({ uri: "tasktopia://catalog/buildings" })).contents).toHaveLength(1);
+  });
+
+  it("bounds tool argument complexity before schema validation and keeps serving requests", async () => {
+    const before = await snapshot();
+    // Two root members +9,998 array elements =10,000 total members/elements.
+    expect(result<{ country: { id: string } }>(await call("country.get", { extra: Array(9_998).fill(null) })).country.id).toBe(countryId);
+    const rejected = await call("country.get", { extra: Array(9_999).fill(null) });
+    expect(rejected.isError).toBe(true);
+    expect(JSON.stringify(rejected.content)).toContain("10000");
+    expect(await snapshot()).toEqual(before);
+    expect(result<{ country: { id: string } }>(await call("country.get")).country.id).toBe(countryId);
+  });
+
+  it("accepts the largest legitimate checklist below the tool complexity limit", async () => {
+    const items = Array.from({ length: 50 }, (_, index) => ({ title: `Проверка ${index + 1}`, done: false }));
+    expect(result<unknown[]>(await call("task.checklist_replace", {
+      taskId: home.id, items, idempotencyKey: "complexity-valid-checklist",
+    }))).toHaveLength(50);
+    const persisted = result<TaskDto>(await call("task.get", { taskId: home.id })).checklist!;
+    expect(persisted.map(({ title, done }) => ({ title, done }))).toEqual(items);
+  });
+
+  it.each([true, false])("isolates overlapping HTTP clients with equal JSON-RPC ids (modern=%s)", async modern => {
+    const wireIds: unknown[][] = [[], []], transports: StreamableHTTPClientTransport[] = [];
+    const peers: Client[] = [];
+    let release!: () => void, arrived = 0;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const original = service.getCountry.bind(service);
+    const held = vi.spyOn(service, "getCountry").mockImplementation(async scope => {
+      if (++arrived === 2) release();
+      await gate; return original(scope);
+    });
+    try {
+      for (const [index, token] of [ownerToken, foreignToken].entries()) {
+        const peer = new Client({ name: "isolated-client", version: "1.0.0" }, modern ? { versionNegotiation: { mode: "auto" } } : undefined);
+        const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp`), {
+          requestInit: { headers: { authorization: `Bearer ${token}` } },
+          fetch: (input, init) => {
+            if (typeof init?.body === "string") {
+              const envelope = JSON.parse(init.body) as { method?: string; id?: unknown };
+              if (envelope.method === "tools/call") wireIds[index]!.push(envelope.id);
+            }
+            return fetch(input, init);
+          },
+        });
+        peers.push(peer); transports.push(transport); await peer.connect(transport);
+      }
+      const replies = await Promise.all(peers.map((peer, index) => peer.callTool({ name: "country.get",
+        arguments: { countryId: index ? foreignCountryId : countryId } }, { timeout: 5000 })));
+      expect(arrived).toBe(2);
+      expect(wireIds[0]).toHaveLength(1); expect(wireIds[0]).toEqual(wireIds[1]);
+      expect(wireIds[0]![0]).toBeDefined();
+      expect(replies.map(reply => result<{ country: { id: string } }>(reply).country.id)).toEqual([countryId, foreignCountryId]);
+      expect(transports.map(transport => transport.sessionId)).toEqual([undefined, undefined]);
+    } finally {
+      release(); held.mockRestore(); for (const peer of peers) await peer.close();
+    }
   });
 
   it("executes every advertised tool through HTTP, reads real state and retries every write without new events", async () => {

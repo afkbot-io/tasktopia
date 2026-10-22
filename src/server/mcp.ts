@@ -66,6 +66,7 @@ export async function getMcpAuthentication(db: Db, headers: IncomingHttpHeaders)
 
 export async function createMcpServer(db: Db, service: AppService, identity: McpIdentity): Promise<McpServer> {
   const server = new McpServer({ name: "tasktopia", version: APP_VERSION }, {
+    maxToolInputElements: 10_000,
     instructions: [
       "Tasktopia turns work into a living country: countries contain cities, cities contain districts, and tasks become buildings.",
       "Start with country.list, then pass the chosen countryId to every country-scoped tool. MCP tools never read or change the country selected in the web UI.",

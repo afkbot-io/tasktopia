@@ -5,7 +5,29 @@
 База — `053e061d84dbcafdeaf1841010f9bd2286c9c5f8`, цель выпуска —
 `game3/dev-server/dev/all` через Builder и официальный updater.
 
-**Контрольная точка перед CI на 23 октября: кандидат v6 заморожен; сборка/full TypeScript — PASS.
+**Контрольная точка v7 перед новым CI и scale-проверкой, 23 октября:**
+единственная сборка и полный TypeScript — PASS. Source hash —
+`80b3015a0c1d5f791351290131e816d000c0c32c720beee3cad3612365466b69`.
+MCP client/server/core зафиксированы на 2.3.0, Vite — 8.2.4; audit:
+high 0, critical 0, moderate 6. Остаточные предупреждения проверены по исходникам
+без открытых замечаний. Адресная MCP-регрессия — **33 PASS в 5 файлах**:
+все 50 инструментов вызваны через настоящий HTTP; сложность входа 10000
+принимается, 10001 отклоняется. Compiled MCP smoke новой сборки — PASS: modern/legacy, все 50 инструментов в каталоге, auth/scopes/revocation и границы сложности; business-данные fixture не изменены.
+
+После Vite/Rolldown клиентский JavaScript изменился: 41→36 chunks. Три CSS-файла
+побайтно совпадают, игровые assets `0c759074…` сохранены; 1260 runtime inputs
+совпадают, изменены package/lock и MCP server. **Performance-приёмка v6 не
+переиспользуется для v7.** Новая исходная серия: 4 профиля × 200/1000 × 3 samples,
+всего 24; на этой точке она и новый exact-head CI — PENDING. Равенство server
+bundle само по себе не доказывает применимость после изменения external dependencies.
+
+CI `39864375087` ревизии `a22a23a5…` завершился FAIL на dependency audit:
+build/unit/recovery прошли, MCP/browser — SKIPPED, `test` — FAIL. Пропущенные
+проверки не считаются PASS. Закрыто 29/33 критериев; E01/E02/Q02/Q03 ожидают
+CI/выпуска. [Фиксированные результаты security-preflight](evidence/city-scale-2026-10-22/task-focus-security-v7-preflight.json);
+итоги последующей scale/CI и выпуска публикуются в задаче №53 и PR58.
+
+**Историческая контрольная точка v6 перед CI на 23 октября: кандидат v6 заморожен; сборка/full TypeScript — PASS.
 Performance-приёмка: 21 фактический PASS v5 переиспользуется с исходными
 привязками, три новых Pixel1000-замера v6 — STRICT PASS. Это не новая полная
 матрица 24 v6. На этой точке итоговый CI и выпуск ещё предстоят; их фактический результат публикуется в задаче №53 и PR58.** Source hash v6 —
@@ -88,7 +110,7 @@ page/HTTP errors 0 не означает полного console-аудита. П
 серия v5 завершила 24/24 без функциональных отказов и нарушений геометрии,
 HTTP/canvas, но остаётся STRICT_RED из-за одного 61-мс steady longtask
 Pixel1000 при прежнем бюджете 0 longtasks. Отдельный trace-разбор не
-атрибутировал исходный 61-мс longtask; новая приёмка v6 выше ещё ожидается.
+атрибутировал исходный 61-мс longtask; отдельная приёмка v6 выше завершена.
 Resource/visual PASS не заменяет performance-приёмку.
 [Полная сводка v5](evidence/city-scale-2026-10-22/task-focus-v5-summary.json).
 Нагрузочная серия `v2`
@@ -248,7 +270,7 @@ scope/revocation и error handlers. Эти разные доказательст
 После записей нового runtime image rollback сохраняет текущую БД, а не
 откатывает новые пользовательские данные к старому dump.
 
-Dependency audit: high/critical0, moderate6; зависимости не добавлены.
+Исторический dependency audit этого среза: high/critical0, moderate6; тогда зависимости не добавлялись. Актуальное обновление SDK/Vite описано в контрольной точке v7 выше.
 Браузерная эмуляция не доказывает работу конкретного физического телефона,
 батарею или все GPU. Input second-RAF proxy не называется INP, RGBA estimate
 не называется VRAM, три cold samples дают median/range, а не loading p95.

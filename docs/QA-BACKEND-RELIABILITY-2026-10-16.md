@@ -6,6 +6,27 @@
 публичный backup и managed release фиксируются отдельно. Область общей цели:
 [план и критерии](PLAN-WORLD-RELIABILITY-EVOLUTION-2026-10-16.md).
 
+## Security-контрольная точка v7 — 23 октября, до нового CI
+
+Source `80b3015a0c1d5f791351290131e816d000c0c32c720beee3cad3612365466b69`:
+единственная сборка/full TypeScript — PASS. MCP client/server/core зафиксированы
+на 2.3.0, Vite — 8.2.4; audit high 0, critical 0, moderate 6. Source-review
+остаточных предупреждений — без открытых замечаний.
+
+На обновлённом SDK отдельно выполнены **33 PASS в 5 файлах**. Все 50 MCP tools
+реально вызваны через HTTP; лимит `maxToolInputElements: 10000` проверен
+на принимаемой границе 10000 и отклоняемой 10001. Это новый адресный набор,
+не повторный прогон 181 прежнего теста и не дополнительные 50 тестов поверх него.
+Compiled MCP smoke новой сборки — PASS: modern/legacy, все 50 инструментов в каталоге, auth/scopes/revocation и границы сложности; business-данные fixture не изменены. CI `39864375087` на
+`a22a23a5…` не прошёл audit; build/unit/recovery PASS, MCP/browser SKIPPED,
+`test` FAIL. Требуется новый exact-head CI; skipped не означает PASS.
+
+Изменились external dependencies и compiled client, поэтому старый server
+bundle hash не служит достаточным доказательством переиспользования всех проверок.
+Прежние результаты ниже сохраняют свои ревизии. Новая полная scale-серия v7
+24 samples и новый CI ещё PENDING. [Факты security-preflight](evidence/city-scale-2026-10-22/task-focus-security-v7-preflight.json);
+последующие CI/scale/release результаты фиксируются в задаче №53 и PR58.
+
 ## Проверки и точный подсчёт
 
 | Прогон | Результат | Область |
