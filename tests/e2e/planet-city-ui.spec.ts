@@ -9,6 +9,8 @@ test('планета открывает город напрямую и сохр�
   await page.goto('/');
   await page.getByLabel('Email').fill('demo@tasktopia.local');
   await page.getByLabel('Пароль', { exact: true }).fill('tasktopia-demo');
+  // Очередь декоративного города входа не относится к фоновой CITY-сцене.
+  await expect(page.locator('.auth-city-scene')).toHaveAttribute('data-pending-assets','0');
   requests.length=0;
   await page.getByRole('button',{name:'Открыть страну',exact:true}).click();
   const planet=page.locator('.planet-atlas');

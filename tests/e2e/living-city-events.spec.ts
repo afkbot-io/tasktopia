@@ -144,9 +144,11 @@ test('MCP/WebSocket keeps the old building through all stages, delivers a helico
   await page.screenshot({path:info.outputPath('transfer-carry.png')});
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:10000});
   await f.focus(current);
+  const demolition=await observeCinematics(f.host);
   await f.call('task.delete',{taskId:current.id,confirmTitle:current.title});
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${current.id}:DEMOLISH:COVER`));
-  await page.screenshot({path:info.outputPath('demolish-cover.png')});
+  await expect.poll(async()=> (await demolition.frames()).some(frame=>frame.states.some(state=>state.taskId===current.id&&state.kind==='DEMOLISH'&&state.phase==='COVER')),{timeout:15000}).toBe(true);
+  await info.attach('demolition-published-phases',{body:JSON.stringify(await demolition.frames()),contentType:'application/json'});
+  await page.screenshot({path:info.outputPath('demolish-after-observed-cover.png')});
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
   expect((await f.service.listWorldFeatures(f.user.countryId)).some(feature=>feature.siteMarker?.kind==='RUINED'&&feature.siteMarker.snapshot.taskNumber===current.taskNumber)).toBe(true);
   await page.screenshot({path:info.outputPath('demolish-ruins.png')});
@@ -218,14 +220,30 @@ test('live cards stay current, reconnect skips old events and failed artwork can
   await page.context().setOffline(false);await expect(page.getByRole('button',{name:'Настройки аккаунта, в сети',exact:true})).toBeVisible({timeout:30000});
   await expect(f.host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30000});await expect(f.host).toHaveAttribute('data-city-cinematics','0');
   await openCard();await expect(page.locator('.task-modal .stage-icon')).toHaveText('3');await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+  const baselineTaskBuildingViews=Number(await f.host.getAttribute('data-task-building-views'));expect(baselineTaskBuildingViews).toBeGreaterThan(1);
+  const canvas=await f.host.locator('canvas').elementHandle();expect(canvas).not.toBeNull();
   let failed=0;await page.route('**/stage-4.png',route=>{failed++;return route.fulfill({status:503,body:'Temporary artwork failure'});});
   await f.call('task.set_status',{taskId:f.task.id,status:'TESTING'});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});await expect(f.host).toHaveAttribute('data-cinematic-workers','0');expect(failed).toBeGreaterThan(0);
+  expect(await canvas!.evaluate(node=>node.isConnected&&node===document.querySelector('.world-canvas canvas'))).toBe(true);
+  const afterFailureTaskBuildingViews=Number(await f.host.getAttribute('data-task-building-views'));
+  await info.attach('art-failure-neighbor-buildings',{body:JSON.stringify({baseline:baselineTaskBuildingViews,after:afterFailureTaskBuildingViews,minimum:baselineTaskBuildingViews-1}),contentType:'application/json'});
+  expect(afterFailureTaskBuildingViews,'Unchanged neighboring task buildings survive a single artwork failure').toBeGreaterThanOrEqual(baselineTaskBuildingViews-1);
+  expect(JSON.parse(await f.host.getAttribute('data-realtime-rendered-tasks')??'[]')).toEqual(expect.arrayContaining([{taskId:f.task.id,stage:3}]));
+  await expect(f.host).toHaveAttribute('data-map-active','true');
+  await expect(page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Город',exact:true})).toHaveAttribute('aria-current','page');
+  const retry=page.locator('.world-canvas-wrap .world-streaming-error[role="alert"]').getByRole('button',{name:'Повторить',exact:true});await expect(retry).toBeVisible();
   expect((await f.service.getTask(f.user.countryId,f.task.id)).stage).toBe(4);await page.screenshot({path:info.outputPath('art-failure-no-held-ghost.png')});
   const publishes=Number(await f.host.getAttribute('data-entity-ready-publishes'));
   const recovered=page.waitForResponse(response=>response.url().endsWith('/stage-4.png')&&response.ok(),{timeout:30000});
-  await page.unrouteAll({behavior:'wait'});const retry=page.locator('.map-retry-button');if(await retry.isVisible())await retry.click();await recovered;
-  await expect.poll(async()=>Number(await f.host.getAttribute('data-entity-ready-publishes')),{timeout:30000}).toBeGreaterThan(publishes);await openCard();await expect(page.locator('.task-modal .stage-icon')).toHaveText('4');expect(errors).toEqual([]);
+  await page.unrouteAll({behavior:'wait'});await retry.click();await recovered;
+  await expect.poll(async()=>Number(await f.host.getAttribute('data-entity-ready-publishes')),{timeout:30000}).toBeGreaterThan(publishes);
+  expect(Number(await f.host.getAttribute('data-task-building-views'))).toBe(baselineTaskBuildingViews);
+  expect(JSON.parse(await f.host.getAttribute('data-realtime-rendered-tasks')??'[]')).toEqual(expect.arrayContaining([{taskId:f.task.id,stage:4}]));
+  expect(await canvas!.evaluate(node=>node.isConnected&&node===document.querySelector('.world-canvas canvas'))).toBe(true);
+  await expect(f.host).toHaveAttribute('data-map-active','true');
+  await expect(page.getByRole('navigation',{name:'Уровень карты'}).getByRole('button',{name:'Город',exact:true})).toHaveAttribute('aria-current','page');
+  await openCard();await expect(page.locator('.task-modal .stage-icon')).toHaveText('4');expect(errors).toEqual([]);
  }finally{await page.context().setOffline(false);await f.cleanup();}
 });
 

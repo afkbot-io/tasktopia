@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { createCityMobility } from '../src/client/city-mobility';
+import { advanceCityMobilityFrame, createCityMobility } from '../src/client/city-mobility';
 import { createTaskActivityController } from '../src/client/task-activity-feedback';
 import type { Cell } from '../src/shared/contracts';
 
@@ -31,6 +31,44 @@ it('новый комментарий доставляют существующ�
   expect(f.controller.metrics.delivered).toBe(1);
   expect(f.city.agents.some(a => a.visit)).toBe(false);
   expect(f.city.metrics.pedestrianUnsafeTotal).toBe(0);
+});
+
+it('доставка комментария успевает до прежнего срока 32с при реальных кадрах по 200мс', () => {
+  const cells = Array.from({ length: 64 }, (_, x) => ({ x, y: 0 }));
+  const city = createCityMobility({ roads: new Map(), walkGraph: new Map(cells.map(cell => [`${cell.x},${cell.y}`, cell])),
+    crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['0,0', '63,0']),
+    seed: 19, carLimit: 0, walkerLimit: 2 });
+  const adults = city.agents.filter(agent => agent.kind === 'WALKER' && agent.age === 'ADULT');
+  expect(city.agents).toHaveLength(2); expect(adults).toHaveLength(1);
+  const adult = adults[0]!, target = { x: adult.current.x + (adult.current.x <= 47 ? 16 : -16), y: 0 };
+  expect(Math.abs(target.x - adult.current.x)).toBe(16);
+  expect(city.visitTargets.has(`${target.x},${target.y}`)).toBe(true);
+  const task = { id: 'long-comment-approach', stage: 5, accessPath: [target] }, tasks = new Map([[task.id, task]]);
+  const controller = createTaskActivityController(() => city), options = { enabled: true, reducedMotion: false, economy: false };
+  const residents = city.agents.map(agent => agent.id);
+  expect(controller.begin({ id: 1, worldVersion: 3, type: 'task.comment_added', taskId: task.id,
+    createdAt: new Date(now).toISOString() }, task, now, options)).toBe(true);
+  expect(city.agents.filter(agent => agent.visit).map(agent => agent.id)).toEqual([adult.id]);
+  expect(controller.update(now, tasks, options)[0]).toMatchObject({ phase: 'DELIVER', expiresAt: now + 32_000 });
+  let discussed = false;
+  for (let wall = 200; wall <= 32_000; wall += 200) {
+    advanceCityMobilityFrame(city, 200);
+    const pose = controller.update(now + wall, tasks, options)[0];
+    if (pose?.phase === 'DISCUSS') { expect(pose.arrived).toBeGreaterThan(0); discussed = true; }
+    expect(city.agents.map(agent => agent.id)).toEqual(residents);
+    expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
+  }
+  expect(discussed, 'Fresh delivery must arrive before its unchanged wall-clock TTL').toBe(true);
+  expect(controller.metrics.delivered).toBe(1);
+});
+
+it('один очень долгий кадр выполняет не более пяти обычных физических шагов', () => {
+  const { city } = fixture(), residents = city.agents.map(agent => agent.id), before = city.metrics.fixedSteps;
+  advanceCityMobilityFrame(city, 10_000);
+  const steps = city.metrics.fixedSteps - before;
+  expect(steps).toBeGreaterThan(0); expect(steps).toBeLessThanOrEqual(5);
+  expect(city.agents.map(agent => agent.id)).toEqual(residents);
+  expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
 });
 
 it('повторы и старый replay не доставляют письмо заново, серия комментариев объединяется без новых жителей', () => {

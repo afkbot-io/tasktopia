@@ -95,7 +95,7 @@ import { RollingPerformanceMetric } from "../rolling-performance-metric";
 import { nextSeededRandom, nextWithoutUTurn } from "../agent-routing";
 import { createAgentRoutePlanner,createAgentRoutePlannerAsync } from "../agent-route-planner";
 import { buildingNumberLabel, retainBuildingNumberFont } from "../building-number-label";
-import { createCityMobility,createCityMobilityAsync,prepareCityMobilityNetworkAsync,readPreparedCityMobilityGeometry,type PreparedCityMobilityGeometry } from "../city-mobility";
+import { advanceCityMobilityFrame,createCityMobility,createCityMobilityAsync,prepareCityMobilityNetworkAsync,readPreparedCityMobilityGeometry,type PreparedCityMobilityGeometry } from "../city-mobility";
 import { CityMovementPreparation,prepareLatestCityLife } from "../city-movement-preparation";
 import { yieldPreparationTask } from "../cooperative-preparation";
 import { buildCityWalkNetworkAsync } from "../city-walk-network";
@@ -1146,7 +1146,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     const collectCityEntities = createCityEntityCollector({ includeTerrain: !focusCityId });
     const collectCanonicalCityEntities = createCityEntityCollector();
     const requiredEntityAssets = createRequiredEntityAssets();
+    // Readiness can be invalidated while the last published visual remains
+    // usable. Never remove that source merely because its replacement waits.
     const entityChunkLods = new Map<string, MapLod>();
+    const dirtyEntityKeys = new Set<string>();
     const chunkLods = new Map<string, MapLod>();
     const chunkDataCache = new Map<string, ChunkDto>();
     const chunkPayloadCache = new Map<string, ChunkPayloadDto>();
@@ -1913,9 +1916,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         applyCinematicAttention();
         updateCinematics(); return true;
       };
-      const syncCinematicTargets = (features: ReadonlyMap<string, WorldFeatureDto>) => {
+      const syncCinematicTargets = (features: ReadonlyMap<string, WorldFeatureDto>, publishedTasks: ReadonlyMap<string, ChunkTaskDto>) => {
         for (const [id, { event, task: oldTask }] of cinematicEvents) {
-          const task = attentionTasks.get(id), building = taskBuildingViews.get(id)?.view;
+          const task = publishedTasks.get(id), building = taskBuildingViews.get(id)?.view;
           const markers = [...features.values()].filter(feature => cinematicMarkerMatches(event.type === "task.deleted" ? "DEMOLISH" : event.type === "task.transferred" ? "TRANSFER" : "CONSTRUCT", oldTask, feature))
             .flatMap(feature => { const view = featureViews.get(feature.id); return [view?.platform, view?.visual].filter((v): v is Container => !!v); });
           const bounds = event.newBounds;
@@ -2395,7 +2398,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           const worldNow=readServerWorldTime()??Date.now();
           transportPassengers?.advance(worldNow);
           residentItinerary.update(worldNow,{enabled:activeRef.current&&readWorldPreferences().cityLife,economy,hidden:document.hidden,reducedMotion});
-          mobility.advance(elapsed);
+          advanceCityMobilityFrame(mobility, app.ticker.elapsedMS);
           if(transportPassengers&&simulationTimeMs>=transportMetricsAt){transportMetricsAt=simulationTimeMs+250;host.dataset.transportPassengers=JSON.stringify(transportPassengers.metrics);
             const itinerary=residentItinerary.metrics;host.dataset.residentItineraries=String(itinerary.active);host.dataset.residentItineraryCompleted=String(itinerary.completed);
             host.dataset.residentItineraryCancelled=String(itinerary.cancelled);
@@ -2546,6 +2549,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       const publishEntityChunk = (cacheKey: string, chunk: ChunkDto, lod: MapLod) => {
         entityChunks.set(cacheKey, chunk);
         entityChunkLods.set(cacheKey, lod);
+        dirtyEntityKeys.delete(cacheKey);
         host.dataset.entityReadyPublishes = String(Number(host.dataset.entityReadyPublishes ?? 0) + 1);
       };
       type GroundBakeRequest = GroundBakeWork<unknown> & { key: string };
@@ -2929,7 +2933,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         if (!cityScene || !paintedFrame) return true;
         const range = cityGroundRangeForViewport(pose,pose.scale,app.screen,cityScene.city.bounds,CELL_SIZE,chunkSize);
         const pages = planCityResidency(cityScene.chunks,range,chunkSize).visibleKeys;
-        if ([...pages].some(id=>!groundContainers.get(id)?.overlayView || !groundContainers.get(id)?.terrainView || entityChunkLods.get(id)!=="DETAIL")) return false;
+        if ([...pages].some(id=>!groundContainers.get(id)?.overlayView || !groundContainers.get(id)?.terrainView || entityChunkLods.get(id)!=="DETAIL" || dirtyEntityKeys.has(id))) return false;
         return cameraTerrainPadding(pose,pose.scale,app.screen,cameraBounds(),CELL_SIZE,chunkSize)
           .filter(([x,y])=>!residentTerrainKeys.has(chunkKey(x,y)))
           .every(coordinate=>{const record=paddingTerrain.get(chunkKey(...coordinate));return visibleMapPaddingReady(record);});
@@ -3729,7 +3733,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           });
           entityReplacementCount += 1;
         }
-        syncCinematicTargets(features);
+        syncCinematicTargets(features, tasks);
         renderAttention();
         sortWorldObjects();
         host!.dataset.entityViews = String(
@@ -3755,13 +3759,15 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         if (agentsVisible && needsMovementPreparation({mobilityReady:!!mobility,authoritativeCity:!!cityScene,
           forced:rebuildMovement,geometryChanged:movement.geometry!==movementGeometry,snapshotReady:!cityScene||!canonicalCityData.pending})) {
           lifePreparation.cancel();
-          const existing=mobility,scene=cityScene,preparingEconomy=economy;
+          const existing=mobility,scene=cityScene;
           let preparedLifeRevision=-1;
-          const valid=()=>!disposed&&activeRef.current&&!document.hidden&&economy===preparingEconomy
+          const valid=()=>!disposed&&activeRef.current&&!document.hidden
             &&latestMovement.geometry===movement.geometry&&(!cityScene||!canonicalCityData.pending)&&mobility===existing
             &&(preparedLifeRevision<0||latestMovement.life===preparedLifeRevision);
           let preparationStarted=0;
-          void movementPreparation.request(`${movement.geometry}:${preparingEconomy}`,async signal=>{
+          // Quality changes population limits, not physical geometry. Retain
+          // this preparation and adopt the latest limits in its atomic commit.
+          void movementPreparation.request(String(movement.geometry),async signal=>{
             preparationStarted=performance.now();
             host!.dataset.movementPreparing="true";
             const {roads,surfaces,terrain,tasks,features}=canonical;
@@ -3776,8 +3782,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             const input={roads,walkGraph:walk.walkGraph,crosswalks:walk.crosswalks,activityCells:walk.activityCells,
               buildingEntrances:walk.buildingEntrances,parking,transferCells:new Set(transferProviders.flatMap(provider=>provider.boardingCells.map(key))),
               spawnPriorityCells:[...new Map(transferProviders.filter(provider=>provider.boardingCells.length).map(provider=>[provider.stopId,provider.boardingCells[0]!])).values()],
-              carLimit:Math.min(worldDetailProfile(preparingEconomy).cars,Math.max(3,Math.floor(roads.size/120))),
-              walkerLimit:Math.min(worldDetailProfile(preparingEconomy).walkers,Math.max(6,Math.floor(walk.walkGraph.size/70)))};
+              carLimit:Math.min(worldDetailProfile(economy).cars,Math.max(3,Math.floor(roads.size/120))),
+              walkerLimit:Math.min(worldDetailProfile(economy).walkers,Math.max(6,Math.floor(walk.walkGraph.size/70)))};
             await yieldPreparationTask(signal);
             const next=existing?{prepared:await prepareCityMobilityNetworkAsync(input,{signal}),initial:undefined}
               :{prepared:undefined,initial:await createCityMobilityAsync({...input,seed:sessionSeed},{signal})};
@@ -3817,12 +3823,18 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           },prepared=>{
           const commitStarted=performance.now();
           const {roads,walk,parking,input,next,existingCrosswalks,postOrigins,routes,signalPlan,life,prepareLife}=prepared;
+          const latestInput={...input,
+            carLimit:Math.min(worldDetailProfile(economy).cars,Math.max(3,Math.floor(roads.size/120))),
+            walkerLimit:Math.min(worldDetailProfile(economy).walkers,Math.max(6,Math.floor(walk.walkGraph.size/70)))};
           const {walkGraph,animalGraph,crosswalks,blockedCells}=walk;
           const before=mobilityViews.size+animals.length;
           if(existing&&next.prepared)existing.updateNetworkPrepared(next.prepared,{
-            carLimit:input.carLimit,walkerLimit:input.walkerLimit,spawnPriorityCells:input.spawnPriorityCells,
+            carLimit:latestInput.carLimit,walkerLimit:latestInput.walkerLimit,spawnPriorityCells:latestInput.spawnPriorityCells,
           });
-          else if(next.initial)mobility=next.initial;
+          else if(next.initial){
+            mobility=next.initial;
+            if(input.carLimit!==latestInput.carLimit||input.walkerLimit!==latestInput.walkerLimit)mobility.updateNetwork(latestInput);
+          }
           transportCrosswalkGround.clear();
           for(const id of crosswalks)if(!existingCrosswalks.has(id)) {
             const cell=roads.get(id);if(!cell)continue;
@@ -3834,7 +3846,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           host!.dataset.walkNetworkBuilds=String(Number(host!.dataset.walkNetworkBuilds??0)+1);
           parkingCells=new Set(parking.flatMap(plan=>plan.route.map(key)));
           host!.dataset.parkingLots=String(parking.length);
-          movementInput=input;
+          movementInput=latestInput;
           syncTransportPassengers();
           mobilityPostOrigins=postOrigins;signalPresentation=signalPlan;animalRoutes=routes;
           host!.dataset.mobilityPostPathConflicts = String([...mobilityPostOrigins.values()]
@@ -3883,7 +3895,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           host!.dataset.agentChanges = String(Math.abs(before - mobilityViews.size - animals.length));
           // Asset/motion readiness alone does not change physical paths. Keep
           // the network until immutable geometry, transport or limits change.
-          movementGeometry=movement.geometry;movementEconomy=preparingEconomy;
+          movementGeometry=movement.geometry;movementEconomy=economy;
           if(movementPreparationFailed)setMapLoadError(undefined);
           movementPreparationFailed=false;
           reportMobility();sortWorldObjects();
@@ -4061,6 +4073,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             pendingChunks.delete(dataKey(id,"DETAIL"));
             chunkPayloadCache.delete(dataKey(id,"DETAIL")); chunkDataCache.delete(dataKey(id,"DETAIL"));
             chunks.delete(id); chunkLods.delete(id); entityChunks.delete(id); entityChunkLods.delete(id);
+            dirtyEntityKeys.delete(id);
             removeGround(id,"prune");
           }
           for (const payload of cityScene.chunks) {
@@ -4080,7 +4093,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 const promoted = { ...old, worldVersion: payload.publishedVersion };
                 storeChunkData(id,"DETAIL",promoted);
                 if (chunks.has(id)) chunks.set(id,promoted);
-                if (entityChunks.has(id)) entityChunks.set(id,promoted);
+                if (entityChunks.has(id) && !dirtyEntityKeys.has(id)) entityChunks.set(id,promoted);
               }
             }
           }
@@ -4234,7 +4247,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         valid: () => boolean,
         rebuildMovement: boolean,
       ): Promise<void> => {
-        entityChunkLods.delete(cacheKey);
+        dirtyEntityKeys.add(cacheKey);
         let candidate = patchChunkTaskStatuses(baseChunk, latestTaskStatusPatches);
         let assetFailures = 0;
         while (valid()) {
@@ -4378,6 +4391,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           chunkLods.delete(cacheKey);
           entityChunks.delete(cacheKey);
           entityChunkLods.delete(cacheKey);
+          dirtyEntityKeys.delete(cacheKey);
           removedEntitySource = true;
         }
         if (removedEntitySource) scheduleEntityReconcile(false);
@@ -4490,6 +4504,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                   && chunkLods.get(cacheKey) === lod
                   && groundContainers.get(cacheKey)?.lod === lod
                   && entityChunkLods.get(cacheKey) === lod
+                  && !dirtyEntityKeys.has(cacheKey)
                   && !invalidatedGroundKeys.has(cacheKey)) {
                   const ground = groundContainers.get(cacheKey);
                   if (ground) ground.usedAt = performance.now();
@@ -4674,7 +4689,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 } else {
                   const message = "Не удалось загрузить карту. Проверьте соединение и повторите попытку.";
                   setMapLoadError(message);
-                  onFatalErrorRef.current?.(message);
+                  // A failed refresh/asset must retain the already published
+                  // city and its retry. Only initial entry can fall back out.
+                  if (!paintedFrame) onFatalErrorRef.current?.(message);
                 }
               }
               if (generation === loadGeneration) break;
@@ -4711,6 +4728,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
               chunks.delete(cacheKey);
               entityChunks.delete(cacheKey);
               entityChunkLods.delete(cacheKey);
+              dirtyEntityKeys.delete(cacheKey);
               chunkLods.delete(cacheKey);
               removedEntities = true;
             }
@@ -4770,6 +4788,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const resident = new Set([...chunks.keys()].filter((cacheKey) => (
           chunkLods.get(cacheKey) === nextLod && groundContainers.get(cacheKey)?.lod === nextLod && !invalidatedGroundKeys.has(cacheKey)
           && entityChunkLods.get(cacheKey) === nextLod
+          && !dirtyEntityKeys.has(cacheKey)
           && !options.forceKeys?.has(cacheKey)
         )));
         const plan = progressiveChunkPlan(range, resident);
@@ -5025,7 +5044,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                     if(current&&current.worldVersion>chunk.worldVersion)continue;
                     storeChunkData(cacheKey,refresh.lod,chunk);
                     if(!desiredKeys.has(cacheKey)||chunkLods.get(cacheKey)!==refresh.lod)continue;
-                    chunks.set(cacheKey,chunk);entityChunkLods.delete(cacheKey);
+                    chunks.set(cacheKey,chunk);dirtyEntityKeys.add(cacheKey);
                     void publishEntityWhenReady(cacheKey,chunk,refresh.lod,
                       ()=>!disposed&&desiredKeys.has(cacheKey)&&chunks.get(cacheKey)===chunk,false).catch(()=>{
                       if(!disposed&&snapshot===cityScene)refreshSceneAndRender(false);
@@ -5035,7 +5054,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                   scheduleEntityReconcile(false);
                 }).catch(()=>{if(!disposed&&snapshot===cityScene)refreshSceneAndRender(false);});
               } else for (const [cacheKey, refresh] of decorationRefreshes) {
-                entityChunkLods.delete(cacheKey);
+                dirtyEntityKeys.add(cacheKey);
                 void materializePayload(refresh.payload).then(async (chunk) => {
                   if (disposed || !desiredKeys.has(cacheKey) || chunkLods.get(cacheKey) !== refresh.lod) return;
                   const resident = chunks.get(cacheKey);
@@ -5062,7 +5081,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
               }
               for (const [cacheKey, chunk] of patchedChunks) {
                 if (decorationRefreshes.has(cacheKey)) continue;
-                entityChunkLods.delete(cacheKey);
+                dirtyEntityKeys.add(cacheKey);
                 void publishEntityWhenReady(
                   cacheKey,
                   chunk,

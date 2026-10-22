@@ -8,6 +8,7 @@ import * as mobilityNetwork from '../src/client/city-mobility-network';
 import type { MobilityNetworkInput } from '../src/client/city-mobility-network';
 import type { Cell, RoadCellDto } from '../src/shared/contracts';
 import type { CityWalkInput } from '../src/client/city-walk-network';
+import realCity from './fixtures/city-mobility-real-city.json';
 
 function walkFixture(): CityWalkInput {
   const cells = Array.from({ length: 32 * 20 }, (_, index) => ({ x: index % 32, y: Math.floor(index / 32) }));
@@ -233,6 +234,30 @@ describe('cooperative canonical city preparation', () => {
     expect(clockReads).toBeLessThan(walkGraph.size * 6);
   });
 
+  it('bounds coarse-clock task posts while preparing all residents on a real street network', async () => {
+    const key = (cell: Cell) => `${cell.x},${cell.y}`;
+    const input: CityMobilityInput = {
+      roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),
+      walkGraph: new Map(realCity.walkGraph.map(cell => [key(cell), cell])),
+      crosswalks: new Set(realCity.crosswalks), activityCells: new Set(realCity.activityCells),
+      seed: 73, carLimit: 24, walkerLimit: 32,
+    };
+    const expected = mobility.createCityMobility(input);
+    let posts = 0;
+    const result = await mobility.createCityMobilityAsync(input, { now: () => 0, yieldTask: async () => { posts++; } });
+    expect(result.agents).toHaveLength(56);
+    expect(result.agents).toEqual(expected.agents);
+    for (const elapsed of [50, 500, 2500]) {
+      result.advance(elapsed); expected.advance(elapsed);
+      expect(result.agents).toEqual(expected.agents);
+      expect(result.metrics).toEqual(expected.metrics);
+    }
+    // Cheap graph checkpoints must not turn a bounded population into dozens
+    // of browser tasks. The elapsed-time scheduler still keeps its 4ms budget.
+    expect(posts).toBeGreaterThan(0);
+    expect(posts).toBeLessThanOrEqual(8);
+  });
+
   it('checks network cancellation within one small batch while consuming canonical geometry', async () => {
     const abort = new AbortController(), reason = new Error('network superseded');
     let read = 0, abortedAt = 0, published = false;
@@ -373,10 +398,10 @@ describe('cooperative canonical city preparation', () => {
     const controller = new AbortController();
     let initialYields = 0, published = false; ticks = 0;
     const work = mobility.createCityMobilityAsync(input, { budgetMs: 1, now: () => ticks++, signal: controller.signal,
-      yieldTask: async () => { if (++initialYields > topologyYields + 100) controller.abort(); },
+      yieldTask: async () => { if (++initialYields > topologyYields + 2) controller.abort(); },
     }).then(result => { published = true; return result; });
     await expect(work).rejects.toMatchObject({ name: 'AbortError' });
-    expect(initialYields).toBeGreaterThan(topologyYields + 100);
+    expect(initialYields).toBe(topologyYields + 3);
     expect(published).toBe(false);
   });
 

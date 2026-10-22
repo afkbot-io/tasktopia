@@ -1,0 +1,196 @@
+{
+  "kind": "tasktopia.reliability-v8-preflight",
+  "at": "2026-10-22T23:19:48.475Z",
+  "checkpoint": true,
+  "sourceHash": "60bbf1f11d2a7b9d127ae0bca33bf065e20dcfce1522f2fb15737a613b8b647a",
+  "qualificationHash": "e4aba94b0dd11d8e91e044abe462c20c5c2f54b088158b738b8b5685123e6e8f",
+  "sourceBaseRevision": "704818ee2d7327693e1d0b85cd1d28cfc4246b00",
+  "runtimeInputs": 1263,
+  "unchangedInputsFromV7": 1259,
+  "changed": [
+    "src/client/city-mobility.ts",
+    "src/client/components/WorldCanvas.tsx",
+    "src/client/game-ui.css",
+    "src/client/mobility-route-search.ts"
+  ],
+  "build": {
+    "command": "npm run build (includes full tsc --noEmit)",
+    "passed": true,
+    "attempts": 1,
+    "serverHash": "dbc7be70b6f1fe9db5ff929d72bb799efc496866c6c6cf1de20a283493a4eb22",
+    "clientHash": "732bf627d8d473035edb95dda24b8cd2a4dcc119c8a645ab5bbbb04b70caf7f2",
+    "htmlHash": "516e44e0edecdbaf766da9581fd09a8b78375622aefcb2707c18d2e1948056f0",
+    "distHash": "3e66ad4c2ccdfdc81d331e9057d91684b11743f055de8be71a40eca4d4b34cca",
+    "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+    "assetRevision": "f5ba91abe09a928b",
+    "canonicalFiles": 920,
+    "startupCopies": 822
+  },
+  "backendAndDependencies": {
+    "byteEqualFrozenV7": true,
+    "serverHash": "dbc7be70b6f1fe9db5ff929d72bb799efc496866c6c6cf1de20a283493a4eb22",
+    "note": "Full backend/shared/package/lock and game assets equal v7. Its SDK2.3.0 33-case/5-file HTTP checks and compiled smoke retain their original bindings; not a new MCP run."
+  },
+  "routing": {
+    "publicRed": {
+      "posts": 36,
+      "budget": 8
+    },
+    "green": {
+      "tests": 63,
+      "files": 6,
+      "logSha256": "b8183baccbcdaf1e188d2cc9bbdf07a3c287e88689c9ace857bac6c3d585eb16"
+    },
+    "budgetMs": 4,
+    "operationFallback": 8192,
+    "routeAndPhysicsSemanticsPreserved": true,
+    "note": "Small bounded generator batches; the time budget is soft by one batch. Diagnostic before/after timings are not a performance qualification or a paired speedup claim."
+  },
+  "native": {
+    "passed": 13,
+    "failed": 0,
+    "files": 7,
+    "profiles": {
+      "desktopChromium": 6,
+      "pixelChromium": 4,
+      "iphoneWebkit": 3
+    },
+    "emulationOnly": true,
+    "originalDprAndReadinessBounds": true,
+    "privateAdditionalToolbarProbe": "6bb090a52ba6c00fbf91a44f6d6e3fb342afd6a996fd8a6773f706346b67af4c",
+    "summarySha256": "b13caf8e34364828bec1e57db3d4ff81113d3de89f1fedeb5b3ba0d0d969e7d8",
+    "businessHashUnchanged": true,
+    "workFixturesRegenerated": false,
+    "serverClosed": true,
+    "port5343Free": true,
+    "cases": [
+      {
+        "title": "resident images finishing on the planet do not rebuild the hidden city",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 3344
+      },
+      {
+        "title": "walking routes wait for resident sprites without holding the first city frame",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 2761
+      },
+      {
+        "title": "событие у завершённого дома прибывает, действует и завершается без записей задач",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 2872
+      },
+      {
+        "title": "a quality change keeps the pending physical preparation and adopts the latest population limits",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 4001
+      },
+      {
+        "title": "same render content advances publication fences without decoding, rebaking or recompiling paths",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 4147
+      },
+      {
+        "title": "quality limits preserve the physical walk network and everyday compilation",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 3254
+      },
+      {
+        "title": "a quality change keeps the pending physical preparation and adopts the latest population limits",
+        "project": "touch-iphone",
+        "status": "passed",
+        "durationMs": 2460
+      },
+      {
+        "title": "планета открывает город напрямую и сохраняет камеру без фоновой сцены",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 3963
+      },
+      {
+        "title": "список на 150 городов загружается страницами и ищет город на последней странице",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 466
+      },
+      {
+        "title": "retries a failed second history page before committing a newer WebSocket arrival",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 1532
+      },
+      {
+        "title": "retries a failed second history page before committing a newer WebSocket arrival",
+        "project": "touch-iphone",
+        "status": "passed",
+        "durationMs": 1306
+      },
+      {
+        "title": "мобильная панель: статус, цели 44px и аккаунт на 320/390",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 4004
+      },
+      {
+        "title": "мобильная панель: статус, цели 44px и аккаунт на 320/390",
+        "project": "touch-iphone",
+        "status": "passed",
+        "durationMs": 2684
+      }
+    ]
+  },
+  "fixtures": [
+    {
+      "tasks": 200,
+      "chunks": 20,
+      "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+      "statusCounts": {
+        "COMPLETED": 160,
+        "IN_PROGRESS": 30,
+        "PLANNING": 10
+      },
+      "readOnly": true
+    },
+    {
+      "tasks": 1000,
+      "chunks": 72,
+      "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+      "statusCounts": {
+        "COMPLETED": 800,
+        "IN_PROGRESS": 150,
+        "PLANNING": 50
+      },
+      "readOnly": true
+    }
+  ],
+  "review": {
+    "result": "NO_OPEN_SOURCE_FINDINGS",
+    "scope": "Current4client+5QA delta; earlier full PR reviews retain their own bindings",
+    "sha256": "85458037d39fa110dd872092d74f1cb1fb48a0290bb042d43288f29716448a17",
+    "scmApproval": false
+  },
+  "pending": {
+    "newFull24Performance": true,
+    "newExactHeadCi": true,
+    "managedMerge": true,
+    "managedRelease": true,
+    "publicSmokeAnd300sObservation": true
+  },
+  "history": {
+    "ci704818ee": "Browser1/2/3/4 failures preserved; aggregate failed; not qualified",
+    "v7Performance": "Host prerequisite failed before any browser/sample; preserved, not performance evidence"
+  },
+  "limitations": [
+    "No claimed physical-device test.",
+    "This is a dated preflight; final CI/performance/deployment results belong to Task53 and PR58.",
+    "Native functional checks do not prove all strict scale budgets."
+  ],
+  "historicalCheckpoint": true,
+  "supersededBy": "reliability-v10-preflight.json",
+  "historyAnnotatedAt": "2026-10-22T23:50:59.831Z"
+}

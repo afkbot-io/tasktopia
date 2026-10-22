@@ -28,6 +28,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
     routeCells.push({ x: cell.x || 0, y: cell.y || 0 }); yield;
   }
   let hasNonlocalEdges = false;
+  let boundedDegree = true;
   const outgoing: Array<Array<{ index: number; direction: number }>> = [];
   for (const cell of cells) {
     const nextEdges: Array<{ index: number; direction: number }> = [];
@@ -39,12 +40,19 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
       }
       yield;
     }
+    if (nextEdges.length > 4) boundedDegree = false;
     outgoing.push(nextEdges); yield;
   }
   const root = cells.length * 4;
   const blocked = new Uint8Array(cells.length);
   let blockedIndices: number[] = [];
   function* searchSteps(start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity): Generator<void, MobilityRouteResult, void> {
+    // A grid state has at most four cheap edges. Check the outer time/abort
+    // budget in small batches instead of spending its fallback operation cap
+    // on each state and scheduling needless browser tasks between renders.
+    // Custom graphs with a wider fan-out keep a checkpoint at every state.
+    const batchSize = boundedDegree ? 64 : 1;
+    let work = 0;
     const startIndex = indices.get(key(start));
     const targetIndex = target ? indices.get(key(target)) : undefined;
     if (startIndex === undefined || target && targetIndex === undefined || !(maxCells >= 1)) return { cells: [], routeTo: (): Cell[] => [] };
@@ -62,7 +70,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
       const parents = new Map([[first, -1]]), reached = new Map([[startIndex, first]]);
       const queue = [first], lengths = [1], order = [startIndex];
       search: for (let cursor = 0; cursor < queue.length && cursor < 8_000 && (targetIndex === undefined || !reached.has(targetIndex)); cursor++) {
-        yield;
+        if (++work === batchSize) { work = 0; yield; }
         const state = queue[cursor]!;
         if (lengths[cursor]! >= maxCells) continue;
         const index = state === root ? startIndex : Math.floor(state / 4), direction = state === root ? -1 : state % 4;
@@ -78,7 +86,8 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
         }
       }
       const reachableCells: Cell[] = [];
-      for (const index of order) { reachableCells.push(cells[index]!); yield; }
+      for (const index of order) { reachableCells.push(cells[index]!); if (++work === batchSize) { work = 0; yield; } }
+      if (work) yield;
       return {
         cells: reachableCells,
         routeTo(target: Cell): Cell[] {
@@ -102,7 +111,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
     const queue = [first], order = [startIndex];
     visited[first] = 1; reached[startIndex] = first;
     for (let cursor = 0; cursor < queue.length && cursor < 8_000; cursor++) {
-      yield;
+      if (++work === batchSize) { work = 0; yield; }
       const state = queue[cursor]!;
       const index = state === root ? startIndex : Math.floor(state / 4);
       const direction = state === root ? -1 : state % 4;
@@ -119,7 +128,8 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
       }
     }
     const reachableCells: Cell[] = [];
-    for (const index of order) { reachableCells.push(cells[index]!); yield; }
+    for (const index of order) { reachableCells.push(cells[index]!); if (++work === batchSize) { work = 0; yield; } }
+    if (work) yield;
     return {
       cells: reachableCells,
       routeTo(target: Cell): Cell[] {

@@ -11,6 +11,26 @@ test.use({ trace: { mode: 'retain-on-failure', snapshots: false, screenshots: fa
 test.beforeEach(async ({ page }) => { await installCityPreparationDiagnostics(page); });
 test.afterEach(async ({ page }, info) => { await attachCityPreparationFailure(page, info); });
 
+// Follow the visible desktop/mobile navigation instead of addressing hidden tools.
+async function openWorldPreferences(page:Page,hasTouch:boolean){
+  let preferences=page.locator(".map-toolbar-actions > nav > .world-preferences");
+  if(!await preferences.isVisible()){
+    const menu=page.locator(".world-menu");
+    if(await menu.getAttribute("open")===null){
+      const trigger=menu.locator(":scope > summary");
+      if(hasTouch)await trigger.tap();else await trigger.click();
+    }
+    preferences=menu.locator(".mobile-menu-tools .world-preferences");
+  }
+  await expect(preferences).toBeVisible();
+  if(await preferences.getAttribute("open")===null){
+    const trigger=preferences.locator(":scope > summary");
+    if(hasTouch)await trigger.tap();else await trigger.click();
+  }
+  await expect(preferences.getByLabel("Детализация")).toBeVisible();
+  return preferences;
+}
+
 async function enterCity(page:Page) {
   await page.addInitScript(() => {
     const NativeSocket=window.WebSocket,sockets=new Set<WebSocket>();
@@ -163,12 +183,93 @@ test("same render content advances publication fences without decoding, rebaking
   await expect.poll(counters).toEqual(before);
 });
 
-test("quality limits preserve the physical walk network and everyday compilation",async({page})=>{
+test("a quality change keeps the pending physical preparation and adopts the latest population limits",async({page,hasTouch},info)=>{
+ type QualityYieldWindow=Window&{qaQualityYield:{arm():void;release():void;state():{captured:boolean;held:number;channels:number;firstClosed:boolean;firstStack:string}}};
+ const errors:string[]=[],movementErrors:string[]=[],reads:string[]=[];
+ page.on("pageerror",error=>errors.push(error.message));
+ page.on("console",message=>{if(message.type()==="error"&&message.text().startsWith("City movement preparation failed"))movementErrors.push(message.text());});
+ page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+ await page.clock.install();
+ await page.addInitScript(()=>{
+   const NativeChannel=window.MessageChannel,queued:Array<()=>void>=[];
+   let armed=false,captured=false,holding=true,channels=0,firstClosed=false,firstStack="";
+   class PendingPhysicalYield extends NativeChannel{
+     constructor(){super();
+       const stack=new Error().stack??"";
+       // Existing React scheduling stays native. The gate selects the first
+       // cooperative yield only after the public movement phase has started.
+       if(!armed||document.querySelector<HTMLElement>(".world-canvas")?.dataset.movementPreparing!=="true"||!stack.includes("yieldTask"))return;
+       channels++;if(captured)return;
+       captured=true;firstStack=stack.slice(0,4096);
+       const send=this.port2.postMessage.bind(this.port2),close=this.port1.close.bind(this.port1);
+       this.port1.close=()=>{firstClosed=true;close();};
+       this.port2.postMessage=((...args:Parameters<MessagePort["postMessage"]>)=>{
+         if(holding)queued.push(()=>send(...args));else send(...args);
+       }) as MessagePort["postMessage"];
+     }
+   }
+   window.MessageChannel=PendingPhysicalYield;
+   Object.assign(window,{qaQualityYield:{arm:()=>{armed=true;},state:()=>({captured,held:queued.length,channels,firstClosed,firstStack}),
+     release:()=>{holding=false;for(const send of queued.splice(0))send();if(window.MessageChannel===PendingPhysicalYield)window.MessageChannel=NativeChannel;}}});
+ });
+ let releaseAmbient!:()=>void;
+ const ambientGate=new Promise<void>(resolve=>{releaseAmbient=resolve;});
+ await page.route("**/micro-ambient/**",async route=>{await ambientGate;await route.continue().catch(()=>undefined);});
+ try{
+   const host=await enterCity(page),identity=await host.locator("canvas").elementHandle();
+   await expect(host).toHaveAttribute("data-ground-bake-queue","0");
+   await expect(host).toHaveAttribute("data-world-quality","NORMAL");
+   await expect(host).not.toHaveAttribute("data-ambient-assets","ready");
+   const canonical=await host.getAttribute("data-canonical-task-count");
+   const preferences=await openWorldPreferences(page,hasTouch);
+   await expect(preferences.getByLabel("Детализация")).toHaveValue("NORMAL");
+   // The gate, rather than elapsed renderer time, keeps this exact owner
+   // pending while the user changes quality. Its real deadline is not extended.
+   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+   await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield.arm());
+   releaseAmbient();await expect(host).toHaveAttribute("data-ambient-assets","ready");
+   await page.clock.runFor(16);
+   await expect.poll(()=>page.evaluate(()=>{
+     const {captured,held,channels,firstClosed}=(window as unknown as QualityYieldWindow).qaQualityYield.state();
+     return {captured,held,channels,firstClosed};
+   })).toEqual({captured:true,held:1,channels:1,firstClosed:false});
+   await expect(host).toHaveAttribute("data-movement-preparing","true");
+   await expect(host).not.toHaveAttribute("data-mobility-ready","true");
+   await preferences.getByLabel("Детализация").selectOption("ECONOMY");
+   await expect(host).toHaveAttribute("data-world-quality","ECONOMY");
+   await page.clock.runFor(16);
+   const pending=await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield.state());
+   await info.attach("quality-change-pending-owner",{body:JSON.stringify({pending,dataset:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:"application/json"});
+   expect(pending.firstStack).toContain("yieldTask");
+   expect({channels:pending.channels,firstClosed:pending.firstClosed,held:pending.held},"Quality must retain the first pending physical owner before its native yield is released")
+     .toEqual({channels:1,firstClosed:false,held:1});
+   await expect(host).not.toHaveAttribute("data-mobility-ready","true");
+   await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield.release());
+   await page.clock.resume();
+   await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:15_000});
+   await expect(host).toHaveAttribute("data-movement-preparing","false");
+   await expect(host).toHaveAttribute("data-walk-network-builds","1");
+   await expect(host).toHaveAttribute("data-mobility-network-builds","1");
+   expect(Number(await host.getAttribute("data-cars"))).toBeGreaterThan(0);
+   expect(Number(await host.getAttribute("data-walkers"))).toBeGreaterThan(0);
+   expect(Number(await host.getAttribute("data-cars"))).toBeLessThanOrEqual(8);
+   expect(Number(await host.getAttribute("data-walkers"))).toBeLessThanOrEqual(12);
+   expect(await host.getAttribute("data-canonical-task-count")).toBe(canonical);
+   expect(await identity!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
+   expect(reads.filter(path=>path.endsWith("/scene"))).toHaveLength(1);
+   expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+   expect(errors).toEqual([]);expect(movementErrors).toEqual([]);
+ }finally{
+   releaseAmbient();await page.clock.resume().catch(()=>undefined);
+   await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield?.release()).catch(()=>undefined);
+ }
+});
+
+test("quality limits preserve the physical walk network and everyday compilation",async({page,hasTouch})=>{
   const host=await enterCity(page);
   await expect(host).toHaveAttribute("data-mobility-ready","true");
   const walk=await host.getAttribute("data-walk-network-builds"),life=await host.getAttribute("data-everyday-compiles");
-  const preferences=page.locator(".world-preferences:visible");
-  await preferences.locator("summary").click();
+  const preferences=await openWorldPreferences(page,hasTouch);
   await preferences.getByLabel("Детализация").selectOption("ECONOMY");
   await expect(host).toHaveAttribute("data-world-quality","ECONOMY");
   await expect.poll(async()=>Number(await host.getAttribute("data-cars"))).toBeLessThanOrEqual(8);
@@ -285,7 +386,7 @@ test("focused keyboard camera controls preserve canonical data and ignore task d
  expect(await host.getAttribute("data-camera-world-x")).toBe(inDialog);
 });
 
-test("real resident itinerary compilation reuses the canonical city and bounds existing actors across quality and reduced motion",async({page})=>{
+test("real resident itinerary compilation reuses the canonical city and bounds existing actors across quality and reduced motion",async({page,hasTouch})=>{
  test.skip(process.env.E2E_CITY_200!=="true","Requires the owned dense city with ready homes and institutions");
  const host=await enterCity(page);await expect(host).toHaveAttribute("data-mobility-ready","true");
  await expect.poll(async()=>Number(await host.getAttribute("data-resident-itinerary-homes"))).toBeGreaterThan(0);
@@ -293,7 +394,7 @@ test("real resident itinerary compilation reuses the canonical city and bounds e
  await expect.poll(async()=>Number(await host.getAttribute("data-resident-itineraries"))).toBeGreaterThan(0);
  expect(Number(await host.getAttribute("data-resident-itineraries"))).toBeLessThanOrEqual(4);
  const canonical=await host.getAttribute("data-canonical-task-count"),walk=await host.getAttribute("data-walk-network-builds"),compiles=await host.getAttribute("data-resident-itinerary-compiles");
- const preferences=page.locator(".world-preferences:visible");await preferences.locator("summary").click();await preferences.getByLabel("Детализация").selectOption("ECONOMY");
+ const preferences=await openWorldPreferences(page,hasTouch);await preferences.getByLabel("Детализация").selectOption("ECONOMY");
  await expect(host).toHaveAttribute("data-world-quality","ECONOMY");await expect.poll(async()=>Number(await host.getAttribute("data-resident-itineraries"))).toBeLessThanOrEqual(2);
  expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);expect(await host.getAttribute("data-resident-itinerary-compiles")).toBe(compiles);
  await page.emulateMedia({reducedMotion:"reduce"});await expect(host).toHaveAttribute("data-animation-active","false");await expect(host).toHaveAttribute("data-resident-itineraries","0");

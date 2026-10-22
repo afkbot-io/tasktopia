@@ -28,7 +28,7 @@ test('событие у завершённого дома прибывает, д
  let plan:ReturnType<typeof planCityLife>;
  for(let w=Math.floor(Date.now()/180000);w<Math.floor(Date.now()/180000)+12&&!plan;w++)plan=planCityLife(scene.city.id,sites,w*180000,candidates);
  expect(plan).toBeTruthy();const task=g.tasks.find(t=>t.id===plan!.taskId)!;
- const epoch=plan!.start-6000;
+ const epoch=plan!.start-90000;
  await page.clock.install();
  await page.route('**/api/**',async route=>{const response=await route.fetch();await route.fulfill({response,headers:{...response.headers(),'cache-control':'no-store','x-tasktopia-server-time':String(epoch)}});});
  const writes:string[]=[],errors:string[]=[];page.on('request',r=>{if(r.method()!=='GET'&&new URL(r.url()).pathname.startsWith('/api/'))writes.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
@@ -36,8 +36,35 @@ test('событие у завершённого дома прибывает, д
  await expect(page.locator('#task-title')).toBeVisible();
  await page.getByRole('button',{name:'Закрыть',exact:true}).click();
  await expect(page.locator('.world-canvas')).toHaveAttribute('data-loading','false',{timeout:45000});
- const world=page.locator('.world-canvas');await expect(world).toHaveAttribute('data-city-life-event',plan!.kind,{timeout:15000});
+ const world=page.locator('.world-canvas');
+ // Keep the original 15s preparation bound. Do not spend the ARRIVING window
+ // while cooperative movement preparation and native rendering finish.
+ await expect.poll(()=>world.evaluate(el=>el.dataset.mobilityReady==='true'
+  &&el.dataset.movementPreparing!=='true'&&el.dataset.ambientAssets==='ready'
+  &&Number(el.dataset.cityLifeSites)>0&&Number.isFinite(Number(el.dataset.roadEventServerNow))),{timeout:15000}).toBe(true);
+ await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));
+ const serverNow=()=>world.evaluate(el=>Number(el.dataset.roadEventServerNow));
+ const beforeArrival=await serverNow();expect(Number.isFinite(beforeArrival)).toBe(true);
+ expect(beforeArrival,'Server epoch must be initialized').toBeGreaterThanOrEqual(epoch);
+ expect(beforeArrival,'Initial event must still be in the future').toBeLessThan(plan!.start);
+ const arrivalAt=plan!.start+1000,clockSteps:Array<{before:number;jump:number;after:number}>=[];
+ for(let attempt=0;attempt<8;attempt++){
+  const before=await serverNow();expect(Number.isFinite(before)).toBe(true);
+  if(before>=arrivalAt)break;
+  // ServerWorldClock may slew by +/-10%; use public clock readback instead
+  // of assuming one browser-clock jump lands on the requested server epoch.
+  const jump=Math.max(1,Math.floor((arrivalAt-before)/1.1));
+  await page.clock.fastForward(jump);await page.clock.runFor(100);
+  const after=await serverNow();clockSteps.push({before,jump,after});
+  expect(Number.isFinite(after)).toBe(true);expect(after).toBeGreaterThanOrEqual(before);
+  expect(after,'Clock control must not skip ARRIVING').toBeLessThan(plan!.start+8000);
+ }
+ const arrivedAt=await serverNow();expect(arrivedAt).toBeGreaterThanOrEqual(arrivalAt);
+ expect(arrivedAt).toBeLessThan(plan!.start+8000);
+ await expect(world).toHaveAttribute('data-city-life-planned-task',plan!.taskId);
+ await expect(world).toHaveAttribute('data-city-life-event',plan!.kind,{timeout:15000});
  await expect(world).toHaveAttribute('data-city-life-phase','ARRIVING');
+ await info.attach('life-clock-control',{body:Buffer.from(JSON.stringify({epoch,start:plan!.start,beforeArrival,arrivalAt,arrivedAt,clockSteps,deviceScaleFactor:await page.evaluate(()=>devicePixelRatio)})),contentType:'application/json'});
  await page.clock.fastForward(10000);await expect(world).toHaveAttribute('data-city-life-phase','ACTIVITY');
  await page.screenshot({path:info.outputPath('completed-home-life.png')});
  await page.clock.fastForward(24000);await expect(world).toHaveAttribute('data-city-life-phase','LEAVING');

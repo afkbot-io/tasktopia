@@ -164,6 +164,12 @@ export type CityMobility = {
   readonly visitTargets: ReadonlyMap<string, Cell>;
 };
 
+/** Keep physics on elapsed frame time, with at most five 50 ms steps per frame. */
+export function advanceCityMobilityFrame(city: Pick<CityMobility, 'advance'>, elapsedMs: number): void {
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 0) throw new Error("Mobility elapsed time must be finite and nonnegative");
+  city.advance(Math.min(250, elapsedMs));
+}
+
 type Agent = CityMobilityAgent & {
   baseVariant: string; responseUntil?: number; responseStayMs?: number; responseTarget?: Cell; responseRetryAt?: number;
   visitStayMs?: number; visitUntil?: number; visitDeadline?: number; visitIndoors?: boolean; visitTarget?: Cell; visitRetryAt?: number;
@@ -380,8 +386,9 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
     const turnaround = agent.kind === 'WALKER' && network.transferCells.has(key(agent.current));
     const search = yield* (agent.kind === "CAR" ? carRoutes : walkerRoutes).steps(agent.current, turnaround ? undefined : agent.previous);
     const destinations: Cell[] = [];
+    let scanned = 0;
     for (const cell of search.cells) {
-      yield;
+      if (++scanned === 64) { scanned = 0; yield; }
       if (!safeDestination(cell) || same(cell, agent.current)) continue;
       if (agent.kind === "CAR") { destinations.push(cell); continue; }
       const neighbors = edges(agent.kind).get(key(cell)) ?? [];
@@ -389,6 +396,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       // Same straight-path rest policy as the synchronous controller.
       if (neighbors.length === 2 && neighbors[0]!.x + neighbors[1]!.x === cell.x * 2 && neighbors[0]!.y + neighbors[1]!.y === cell.y * 2) destinations.push(cell);
     }
+    if (scanned) yield;
     let preferred = agent.kind === "WALKER" && agent.steps % 3 === 0 ? destinations.filter(cell => network.buildingEntrances.has(key(cell))) : [];
     if (!preferred.length && agent.kind === "WALKER" && agent.steps % 3 === 0) preferred = destinations.filter(cell => network.activityCells.has(key(cell)));
     if(agent.kind==='CAR'&&agent.steps%3===0&&!network.parkingBays.has(key(agent.current))) {

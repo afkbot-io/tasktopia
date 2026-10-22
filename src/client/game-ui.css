@@ -111,13 +111,13 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
  .map-toolbar .country-title-button strong { max-width:100px;font-size:12px; }
 }
 @media(max-width:600px) {
- .app-header.map-toolbar {gap:5px;padding:6px;height:56px;min-height:56px;grid-template-columns:minmax(52px,1fr) minmax(64px,1.2fr) auto; }
+ .app-header.map-toolbar {gap:5px;padding:6px;height:56px;min-height:56px;grid-template-columns:minmax(44px,1fr) minmax(64px,1.2fr) auto; }
  .map-toolbar-location { gap:0; }
  .map-toolbar-location:has(.header-city) .country-title-button { display:none; }
  .map-toolbar .header-city { display:grid;padding:0;border:0; }
  .map-toolbar .header-city strong { max-width:90px;font-size:12px; }
  .map-toolbar-actions nav { gap:3px; }
- .map-toolbar-actions .map-legend:not(.world-preferences),.map-toolbar-actions .profile-presence { display:none; }
+ .map-toolbar-actions .map-legend:not(.world-preferences) { display:none; }
  .game-popover summary,.map-toolbar .map-legend summary {padding:0 6px;height:44px;min-width:44px; }
  .map-toolbar .world-preferences { display:none; }
  .world-menu .game-popover-panel { position:fixed;top:62px;right:12px;max-height:calc(100dvh - 74px);overflow-y:auto;overscroll-behavior:contain; }
