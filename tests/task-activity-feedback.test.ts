@@ -157,3 +157,73 @@ it('свежий комментарий после истечения срока
   expect(f.controller.update(later,f.tasks,f.options)).toHaveLength(1);
   expect(f.controller.metrics).toMatchObject({started:2,merged:0});
 });
+
+function framedCommentLine() {
+  const cells = Array.from({ length: 128 }, (_, x) => ({ x, y: 0 }));
+  const city = createCityMobility({ roads: new Map(), walkGraph: new Map(cells.map(cell => [`${cell.x},${cell.y}`, cell])),
+    crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['0,0', '127,0']),
+    seed: 19, carLimit: 0, walkerLimit: 2 });
+  expect(city.agents).toHaveLength(2);
+  expect(city.agents.filter(agent => agent.age === 'ADULT')).toHaveLength(1);
+  return city;
+}
+
+it('после медленных кадров не обещает доставку дольше доступной физики, оставляя прежний шестисекундный сигнал', () => {
+  const slow = framedCommentLine(), healthy = framedCommentLine();
+  for (let frame = 0; frame < 10; frame++) {
+    advanceCityMobilityFrame(slow, 400);
+    advanceCityMobilityFrame(healthy, 250);
+  }
+  // Same seed/population and exactly2500ms of real fixed-step physics. Only
+  // the observed wall-frame history differs; no pose, route or clock is set.
+  expect(slow.metrics.fixedSteps).toBe(50);
+  expect(healthy.metrics.fixedSteps).toBe(50);
+  expect(slow.agents).toEqual(healthy.agents);
+  const adult = slow.agents.find(agent => agent.age === 'ADULT')!;
+  expect(['east', 'west']).toContain(adult.direction);
+  const moving = adult.progress > 0 && adult.current.x !== adult.next.x;
+  const start = moving ? adult.next : adult.current, direction = adult.direction === 'east' ? 1 : -1;
+  const cells = Math.ceil(21_000 * adult.speed), target = { x: start.x + direction * cells, y: 0 };
+  const freeFlowMs = (cells + (moving ? 1 - adult.progress : 0)) / adult.speed;
+  expect(slow.visitTargets.has(`${target.x},${target.y}`)).toBe(true);
+  expect(cells + (moving ? 2 : 1)).toBeLessThanOrEqual(48);
+  expect(freeFlowMs).toBeGreaterThan(20_000);
+  expect(freeFlowMs).toBeLessThan(24_000);
+  const task = { id: 'slow-frame-comment', stage: 5, accessPath: [target] }, tasks = new Map([[task.id, task]]);
+  const options = { enabled: true, reducedMotion: false, economy: false };
+  const event = { id: 1, worldVersion: 3, type: 'task.comment_added' as const, taskId: task.id, createdAt: new Date(now).toISOString() };
+  const slowController = createTaskActivityController(() => slow), healthyController = createTaskActivityController(() => healthy);
+  const before = slow.agents, ids = before.map(agent => agent.id);
+  expect(slowController.begin(event, task, now, options)).toBe(true);
+  expect(healthyController.begin(event, task, now, options)).toBe(true);
+  const slowInitial = slowController.update(now, tasks, options)[0], slowAfterBegin = slow.agents;
+  expect(healthyController.update(now, tasks, options)[0]).toMatchObject({ phase: 'DELIVER', expiresAt: now + 32_000 });
+  const slowInitialSteps = slow.metrics.fixedSteps;
+  let slowDiscussed = false, healthyDiscussed = false, slowAtSixSeconds: unknown;
+  for (let frame = 1; frame <= 128; frame++) {
+    if (frame <= 80) {
+      const steps = slow.metrics.fixedSteps; advanceCityMobilityFrame(slow, 400);
+      expect(slow.metrics.fixedSteps - steps).toBeLessThanOrEqual(5);
+      const poses = slowController.update(now + frame * 400, tasks, options);
+      slowDiscussed = slowDiscussed || poses.some(pose => pose.phase === 'DISCUSS' && pose.arrived > 0);
+      if (frame === 15) slowAtSixSeconds = poses;
+    }
+    const steps = healthy.metrics.fixedSteps; advanceCityMobilityFrame(healthy, 250);
+    expect(healthy.metrics.fixedSteps - steps).toBeLessThanOrEqual(5);
+    const poses = healthyController.update(now + frame * 250, tasks, options);
+    healthyDiscussed = healthyDiscussed || poses.some(pose => pose.phase === 'DISCUSS' && pose.arrived > 0);
+    for (const city of [slow, healthy]) {
+      expect(city.agents.map(agent => agent.id)).toEqual(ids);
+      expect(city.metrics.vehicleUnsafeTotal + city.metrics.pedestrianUnsafeTotal + city.metrics.vehiclePedestrianUnsafeTotal).toBe(0);
+    }
+  }
+  // The positive control must really deliver. A failed setup is not admission RED.
+  expect(healthyDiscussed).toBe(true); expect(healthyController.metrics.delivered).toBe(1);
+  expect((slow.metrics.fixedSteps - slowInitialSteps) * 50).toBe(20_000);
+  expect(slowDiscussed).toBe(false); expect(slowController.metrics.delivered).toBe(0);
+  const diagnostic = { freeFlowMs, target, slowInitial, slowAfterBegin, before };
+  expect(slowInitial, `SLOW_FRAME_ADMISSION: ${JSON.stringify(diagnostic)}`)
+    .toMatchObject({ phase: 'SIGNAL', visitors: [], arrived: 0, expiresAt: now + 6000 });
+  expect(slowAfterBegin).toEqual(before);
+  expect(slowAtSixSeconds).toEqual([]);
+});

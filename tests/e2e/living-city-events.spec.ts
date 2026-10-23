@@ -1,5 +1,6 @@
 import { observeCinematics } from './city-cinematic-observer';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
+import { sceneClockStepTowardStart } from '../scene-clock-step';
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
@@ -366,7 +367,7 @@ clockSceneTest('all seven road scenes dispatch moving services, close and reopen
    await expect(f.host).toHaveAttribute('data-road-event-server-now',/\d{13}/);
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
     const now=Number(await f.host.getAttribute('data-road-event-server-now')),next=Number(await f.host.getAttribute('data-road-event-next-start'));
-    await page.clock.fastForward(Math.max(100,Math.round(next-now)+300));await page.clock.runFor(100);
+    await page.clock.fastForward(sceneClockStepTowardStart(now,next));await page.clock.runFor(100);
    }
    await expect.poll(()=>f.host.getAttribute('data-road-event'),{timeout:3000}).not.toBe('');
    const kind=(await f.host.getAttribute('data-road-event'))!,duplicate=kinds.has(kind);kinds.add(kind);
@@ -429,17 +430,28 @@ test('native road captures cover every scene without adding standalone props or 
 
 test('deleting cargo in flight demolishes the authoritative destination without reserving former lots',async({page},info)=>{
  test.setTimeout(90000);await page.setViewportSize({width:1440,height:1100});const f=await fixture(page);
+ let inFlightDeleteObserver:Awaited<ReturnType<typeof observeCinematics>>|undefined;
  try{
   await f.focus(f.task);await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});await f.call('task.set_status',{taskId:f.task.id,status:'IN_PROGRESS',progress:40});
   await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
   const destination=(await f.service.listDistricts(f.user.countryId,f.city.id)).find(d=>d.status==='PLANNED')!;
   let current=await f.call('task.transfer',{taskId:f.task.id,targetDistrictId:destination.id});await expect(f.host).toHaveAttribute('data-cinematic-phases',/TRANSFER:CARRY/);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:10000});await f.focus(current);
+  inFlightDeleteObserver=await observeCinematics(f.host);
   const formerOrigin={...current.origin};current=await f.call('task.transfer',{taskId:f.task.id,targetDistrictId:f.task.districtId});await expect(f.host).toHaveAttribute('data-cinematic-phases',/TRANSFER:CARRY/);
-  await f.call('task.delete',{taskId:current.id,confirmTitle:current.title});await expect(f.host).toHaveAttribute('data-cinematic-phases',/DEMOLISH:WORK/);
-  expect(JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0]).toMatchObject({kind:'DEMOLISH',oldVisible:true,aircraftVisible:false});
-  await page.screenshot({path:info.outputPath('in-flight-delete-work.png')});await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  let publishedDemolitionWork:{taskId:string;kind:string;phase:string;oldVisible:boolean;aircraftVisible:boolean}|undefined;
+  await f.call('task.delete',{taskId:current.id,confirmTitle:current.title});
+  await expect.poll(async()=>{
+   publishedDemolitionWork=(await inFlightDeleteObserver!.frames()).flatMap(frame=>frame.states).find(state=>state.taskId===current.id&&state.kind==='DEMOLISH'&&state.phase==='WORK'&&state.oldVisible===true&&state.aircraftVisible===false);
+   return !!publishedDemolitionWork;
+  },{timeout:15000}).toBe(true);
+  expect(publishedDemolitionWork).toMatchObject({taskId:current.id,kind:'DEMOLISH',phase:'WORK',oldVisible:true,aircraftVisible:false});
+  await page.screenshot({path:info.outputPath('in-flight-delete-after-published-work.png')});await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
   const sites=(await f.service.listWorldFeatures(f.user.countryId)).filter(feature=>feature.siteMarker?.snapshot.taskNumber===current.taskNumber);
   expect(sites.filter(feature=>feature.siteMarker?.kind==='RELOCATED')).toHaveLength(0);expect(sites.some(site=>site.origin.x===formerOrigin.x&&site.origin.y===formerOrigin.y)).toBe(false);const ruined=sites.find(feature=>feature.siteMarker?.kind==='RUINED')!;
   expect(ruined.origin).toEqual(current.origin);await expect(f.host).toHaveAttribute('data-cinematic-workers','0');await page.screenshot({path:info.outputPath('in-flight-delete-final-sites.png')});
- }finally{await f.cleanup();}
+ }finally{
+  try{
+   if(inFlightDeleteObserver)await info.attach('in-flight-delete-published-phases',{body:JSON.stringify(await inFlightDeleteObserver.frames()),contentType:'application/json'});
+  }finally{await f.cleanup();}
+ }
 });

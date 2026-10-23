@@ -141,7 +141,7 @@ export type CityExternalCarrier={id:string;position:Cell;doors:readonly Cell[];b
 export type CityMobility = {
   updateNetwork(input: MobilityNetworkInput & MobilityPopulationSettings): void;
   updateNetworkPrepared(prepared: PreparedCityMobilityNetwork, settings?: MobilityPopulationSettings): void;
-  advance(elapsedMs: number): void;
+  advance(elapsedMs: number, frameElapsedMs?: number): void;
   setRoadClosures(cells: ReadonlySet<string>): void;
   setWalkClosures(cells: ReadonlySet<string>): void;
   roadEventSites(): RoadEventSite[];
@@ -164,10 +164,10 @@ export type CityMobility = {
   readonly visitTargets: ReadonlyMap<string, Cell>;
 };
 
-/** Keep physics on elapsed frame time, with at most five 50 ms steps per frame. */
+/** Keep at most five 50 ms steps; report the original frame for deadline admission. */
 export function advanceCityMobilityFrame(city: Pick<CityMobility, 'advance'>, elapsedMs: number): void {
   if (!Number.isFinite(elapsedMs) || elapsedMs < 0) throw new Error("Mobility elapsed time must be finite and nonnegative");
-  city.advance(Math.min(250, elapsedMs));
+  city.advance(Math.min(250, elapsedMs), elapsedMs);
 }
 
 type Agent = CityMobilityAgent & {
@@ -343,6 +343,25 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
   const limits = { CAR: Math.max(0, Math.min(48, Math.floor(input.carLimit))), WALKER: Math.max(0, Math.min(64, Math.floor(input.walkerLimit))) };
   const reservations = new Map<string, Reservation>();
   const metrics: CityMobilityMetrics = { vehicleSteps: 0, walkerSteps: 0, vehicleUnsafePairs: 0, pedestrianUnsafePairs: 0, vehiclePedestrianUnsafePairs: 0, vehicleUnsafeTotal: 0, pedestrianUnsafeTotal: 0, vehiclePedestrianUnsafeTotal: 0, maxVehicleWaitMs: 0, maxWalkerWaitMs: 0, peakVehicleWaitMs: 0, peakWalkerWaitMs: 0, completedTrips: 0, crossingsCompleted: 0, fixedSteps: 0, networkBuilds: 1, closureBuilds: 0, responseTrips: 0, cancelledPassengers: 0 };
+  // Recent active frames estimate how much physics fits a wall-clock deadline.
+  // Fixed storage avoids per-frame allocations. A suspension has at most2s of
+  // weight and is forgotten by the next healthy frame, rather than penalizing
+  // visits with a lifetime average. Future traffic or frame stalls remain unknown.
+  const frameElapsedSamples = new Float64Array(128), frameAdvanceSamples = new Float64Array(128);
+  let frameStart = 0, frameCount = 0, frameElapsedTotal = 0, frameAdvanceTotal = 0;
+  const forgetFrame = () => {
+    frameElapsedTotal -= frameElapsedSamples[frameStart]!; frameAdvanceTotal -= frameAdvanceSamples[frameStart]!;
+    frameStart = (frameStart + 1) % frameElapsedSamples.length; frameCount--;
+  };
+  const recordFrame = (advancedMs: number, elapsedMs: number) => {
+    if (!elapsedMs) return;
+    if (frameCount === frameElapsedSamples.length) forgetFrame();
+    const duration = Math.min(2000, elapsedMs), advanced = advancedMs / elapsedMs * duration;
+    const index = (frameStart + frameCount) % frameElapsedSamples.length;
+    frameElapsedSamples[index] = duration; frameAdvanceSamples[index] = advanced; frameCount++;
+    frameElapsedTotal += duration; frameAdvanceTotal += advanced;
+    while (frameCount > 1 && frameElapsedTotal > 2000) forgetFrame();
+  };
   let agentsSnapshot: readonly CityMobilityAgent[] = [], signalSnapshot: readonly CityMobilitySignal[] = [];
   const random = () => { const result = nextSeededRandom(rng); rng = result.state; return result.value; };
   const graph = (kind: Agent["kind"]) => kind === "CAR" ? network.cars : network.walkers;
@@ -945,6 +964,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       const candidates = actors.filter(actor => actor.kind === 'WALKER' && (!actor.visit || actorIds?.includes(actor.id) && actor.visit.id === id)
         && (!actorIds || actorIds.includes(actor.id)) && !actor.carrier && actor.activity !== 'INSIDE');
       const bounded = Number.isFinite(travelBudgetMs);
+      if (bounded && frameElapsedTotal > 0) travelBudgetMs *= Math.max(0, Math.min(1, frameAdvanceTotal / frameElapsedTotal));
       // Ordinary visits retain their existing neighbourhood order. A shortest
       // free-flow ETA is useful for a deadline, but ignores platform queues.
       const ordinary = bounded ? [] : candidates.sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x - a.next.x) + Math.abs(c.y - a.next.y)))
@@ -1090,8 +1110,12 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       const route = carRoutes(from, { x: from.x - role.dx, y: from.y - role.dy }, to, 64).routeTo(to);
       return route.length >= 2 && route.length <= 64;
     },
-    advance(elapsedMs) {
+    advance(elapsedMs, frameElapsedMs) {
       if (!Number.isFinite(elapsedMs) || elapsedMs < 0) throw new Error("Mobility elapsed time must be finite and nonnegative");
+      if (frameElapsedMs !== undefined) {
+        if (!Number.isFinite(frameElapsedMs) || frameElapsedMs < elapsedMs) throw new Error("Frame elapsed time must be finite and cover advanced physics");
+        recordFrame(elapsedMs, frameElapsedMs);
+      }
       remainder += elapsedMs;
       let stepped = false;
       while (remainder + EPSILON >= STEP_MS) { remainder = Math.max(0, remainder - STEP_MS); step(); stepped = true; }

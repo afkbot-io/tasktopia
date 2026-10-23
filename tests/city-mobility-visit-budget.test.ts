@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { createCityMobility, type CityMobilityInput } from '../src/client/city-mobility';
+import { advanceCityMobilityFrame, createCityMobility, type CityMobilityInput } from '../src/client/city-mobility';
 import type { Cell } from '../src/shared/contracts';
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
@@ -77,4 +77,62 @@ it.each([0, -1, Number.NaN, -Infinity])('некорректный бюджет %
   const { city, adult } = fixture(), before = city.agents;
   expect(city.dispatchVisit('invalid-budget', [{ x: adult.current.x + 1, y: 0 }], 1, 5000, false, [adult.id], budget)).toEqual([]);
   expect(city.agents).toEqual(before);
+});
+
+function warmFramePair() {
+  const slow = fixture().city, healthy = fixture().city;
+  for (let frame = 0; frame < 10; frame++) {
+    advanceCityMobilityFrame(slow, 400); advanceCityMobilityFrame(healthy, 250);
+  }
+  expect(slow.metrics.fixedSteps).toBe(50); expect(healthy.metrics.fixedSteps).toBe(50);
+  expect(slow.agents).toEqual(healthy.agents);
+  return { slow, healthy };
+}
+function twentyOneSecondApproach(city: ReturnType<typeof createCityMobility>) {
+  const adult = city.agents.find(agent => agent.age === 'ADULT')!;
+  expect(['east', 'west']).toContain(adult.direction);
+  const moving = adult.progress > 0 && adult.current.x !== adult.next.x;
+  const start = moving ? adult.next : adult.current, direction = adult.direction === 'east' ? 1 : -1;
+  const cells = Math.ceil(21_000 * adult.speed), target = { x: start.x + direction * cells, y: 0 };
+  const freeFlowMs = (cells + (moving ? 1 - adult.progress : 0)) / adult.speed;
+  expect(city.visitTargets.has(key(target))).toBe(true);
+  expect(cells + (moving ? 2 : 1)).toBeLessThanOrEqual(48);
+  expect(freeFlowMs).toBeGreaterThan(20_000); expect(freeFlowMs).toBeLessThan(24_000);
+  return { adult, target, freeFlowMs };
+}
+it('общий конечный бюджет учитывает потерянную физическую ёмкость медленных кадров без смены позы', () => {
+  const { slow, healthy } = warmFramePair(), { adult, target, freeFlowMs } = twentyOneSecondApproach(slow);
+  const before = slow.agents;
+  expect(healthy.dispatchVisit('frame-capacity', [target], 1, 5000, false, [adult.id], 24_000)).toEqual([adult.id]);
+  expect(slow.dispatchVisit('frame-capacity', [target], 1, 5000, false, [adult.id], 24_000),
+    `FREE_FLOW_MS: ${freeFlowMs};10x400ms wall retained only2500ms physics`).toEqual([]);
+  expect(slow.agents).toEqual(before);
+});
+it.each([undefined, Infinity])('медленные кадры сохраняют ordinary selection и физические позы без конечного бюджета (%s)', budget => {
+  const { slow, healthy } = warmFramePair(), { target } = twentyOneSecondApproach(slow), before = slow.agents;
+  const selected = slow.dispatchVisit('ordinary-frame-control', [target], 1, 5000, false, undefined, budget);
+  const control = healthy.dispatchVisit('ordinary-frame-control', [target], 1, 5000, false, undefined, budget);
+  expect(selected.length).toBeGreaterThan(0); expect(selected).toEqual(control);
+  expect(slow.agents).toEqual(healthy.agents);
+  expect(slow.agents.map(agent => agent.position)).toEqual(before.map(agent => agent.position));
+  expect(slow.agents.map(agent => agent.id)).toEqual(before.map(agent => agent.id));
+});
+it('после двух секунд здоровых кадров конечный бюджет снова допускает настоящий подход', () => {
+  const { slow: city } = warmFramePair();
+  for (let frame = 0; frame < 8; frame++) advanceCityMobilityFrame(city, 250);
+  const { adult, target } = twentyOneSecondApproach(city), before = city.agents;
+  expect(city.dispatchVisit('recovered-frame-capacity', [target], 1, 5000, false, [adult.id], 24_000)).toEqual([adult.id]);
+  expect(city.agents.map(agent => agent.position)).toEqual(before.map(agent => agent.position));
+  expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
+});
+it('один огромный кадр сохраняет предел пяти шагов и не подавляет admission после здорового окна 2с', () => {
+  const { city } = fixture(), beforeSteps = city.metrics.fixedSteps;
+  advanceCityMobilityFrame(city, 10_000);
+  expect(city.metrics.fixedSteps - beforeSteps).toBeGreaterThan(0);
+  expect(city.metrics.fixedSteps - beforeSteps).toBeLessThanOrEqual(5);
+  for (let frame = 0; frame < 8; frame++) advanceCityMobilityFrame(city, 250);
+  const { adult, target } = twentyOneSecondApproach(city), before = city.agents;
+  expect(city.dispatchVisit('after-gap-frame-capacity', [target], 1, 5000, false, [adult.id], 24_000)).toEqual([adult.id]);
+  expect(city.agents.map(agent => agent.position)).toEqual(before.map(agent => agent.position));
+  expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
 });
