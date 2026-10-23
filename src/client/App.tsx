@@ -56,7 +56,7 @@ const TaskModal = lazy(() => import("./components/TaskModal").then((module) => (
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
-type SessionState = "INITIALIZING" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
+type SessionState = "INITIALIZING" | "SIGNING_OUT" | "ANONYMOUS" | "AUTHENTICATED" | "RECOVERABLE_ERROR";
 type CityFocus = Pick<CityDto, "id" | "name" | "center" | "bounds">;
 type BuildingNavigationTarget = Pick<BuildingEventContext, "id" | "origin" | "city">;
 
@@ -105,6 +105,7 @@ export function App() {
   const [bootstrapRefresh, setBootstrapRefresh] = useState(0);
   const sessionGenerationRef = useRef(0);
   const authenticationEpochRef=useRef(0);
+  const logoutEpochRef = useRef<number | undefined>(undefined);
   const [renderedAuthenticationEpoch, setRenderedAuthenticationEpoch] = useState(0);
   const bootstrapLoadRef = useRef(new CoalescedRefresh());
   const bootstrapAbortRef = useRef<AbortController | undefined>(undefined);
@@ -275,32 +276,44 @@ export function App() {
     }
   }, [mapMode, cancelPendingNavigation]);
   const logout = useCallback(async () => {
-    authenticationEpochRef.current++;
-    setRenderedAuthenticationEpoch(authenticationEpochRef.current);
-    silenceCityAudio();
+    if (logoutEpochRef.current === authenticationEpochRef.current) return;
+    const epoch = ++authenticationEpochRef.current;
+    logoutEpochRef.current = epoch;
+    // Revoke mutable authority before React can render a replacement socket
+    // effect, or the server can disconnect the session during the POST.
+    eventCountryRef.current = undefined;
+    setRenderedAuthenticationEpoch(epoch);
     invalidateCountrySelections();
-    sessionGenerationRef.current += 1;
     bootstrapAbortRef.current?.abort();
-    mapTransitionAbortRef.current?.abort();
-    setMapTransition(null);
-    clearMapSceneCaches();
-    clearTaskDetailCache();
-    clearPlanetAtlasCache();
-    await clearPushSubscriptionForLogout();
-    await api("/api/auth/logout", { method: "POST" });
     clearPrivateSessionUi();
     setBootstrap(null);
-    setFocusCity(null);
-    setFocusTask(null);
-    setPreparedCityScene(null);
-    setRetainedCityKey(null);
-    setSelectedTask(null);
-    setSessionState("ANONYMOUS");
+    setSessionState("SIGNING_OUT");
     setAuthError("");
-    planetViewMemory.clear();
-    setTokensOpen(false);
-    setNotices([]);
-  }, [planetViewMemory, clearPrivateSessionUi]);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15_000);
+    let stopWaiting!: () => void;
+    const interrupted = new Promise<never>((_, reject) => {
+      stopWaiting = () => reject(controller.signal.reason);
+      controller.signal.addEventListener("abort", stopWaiting, { once: true });
+    });
+    const ownsLogout = () => epoch === authenticationEpochRef.current && logoutEpochRef.current === epoch;
+    try {
+      await Promise.race([clearPushSubscriptionForLogout(controller.signal), interrupted]);
+      if (!ownsLogout()) return;
+      await api("/api/auth/logout", { method: "POST", signal: controller.signal });
+      if (ownsLogout()) setSessionState("ANONYMOUS");
+    } catch {
+      if (ownsLogout()) {
+        setAuthError("Не удалось подтвердить выход. Повторите проверку подключения.");
+        setSessionState("RECOVERABLE_ERROR");
+      }
+    } finally {
+      window.clearTimeout(timeout);
+      controller.signal.removeEventListener("abort", stopWaiting);
+      controller.abort();
+      if (logoutEpochRef.current === epoch) logoutEpochRef.current = undefined;
+    }
+  }, [clearPrivateSessionUi]);
 
   const applyBootstrap = useCallback((next: BootstrapDto, requestedMode?: MapLevel, preserveTransition = false) => {
     sessionGenerationRef.current += 1;
@@ -331,6 +344,7 @@ export function App() {
   }, []);
 
   const load = useCallback(() => bootstrapLoadRef.current.request(async () => {
+    if (logoutEpochRef.current === authenticationEpochRef.current) return;
     const generation = sessionGenerationRef.current;
     const controller = new AbortController();
     bootstrapAbortRef.current = controller;
@@ -628,17 +642,17 @@ export function App() {
     setAttentionRevision(value=>value+1);
   }, []);
   useEffect(() => {
-    if (!countryId) return;
+    if (!countryId || !matchesRealtimeScope(countryId, renderedAuthenticationEpoch, eventCountryRef.current, authenticationEpochRef.current)) return;
+    const epoch = renderedAuthenticationEpoch;
     let active = true;
     let disconnect: (() => void) | undefined;
+    const currentScope = () => active && matchesRealtimeScope(countryId, epoch, eventCountryRef.current, authenticationEpochRef.current);
     void import("socket.io-client").then(({ io }) => {
-      if (!active) return;
+      if (!currentScope()) return;
       const socket = io({ path: "/socket.io", withCredentials: true });
       let connectedOnce = false;
       let sessionCheck: Promise<void> | undefined;
       let sessionRetry: number | undefined;
-      const epoch = authenticationEpochRef.current;
-      const currentScope = () => active && matchesRealtimeScope(countryId, epoch, eventCountryRef.current, authenticationEpochRef.current);
       const recheckSession = () => {
         if (!currentScope() || sessionCheck) return;
         sessionCheck = load().then(() => {
@@ -651,10 +665,13 @@ export function App() {
       };
       const replay = new RealtimeReplay({
         countryId, cursor: () => lastWorldEventIdRef.current,
-        read: (cursor, signal) => api<RealtimeEvent[]>(`/api/events?after=${cursor}`, { signal }),
+        read: (cursor, signal) => currentScope()
+          ? api<RealtimeEvent[]>(`/api/events?after=${cursor}`, { signal })
+          : Promise.reject(new DOMException('Replay cancelled', 'AbortError')),
         apply: applyRealtimeEvent, online: value => { if (currentScope()) setOnline(value); },
         commitCursor: cursor => { if (currentScope()) lastWorldEventIdRef.current = cursor; },
         resynchronize: async signal => {
+          if (!currentScope() || signal.aborted) throw new DOMException('Recovery cancelled', 'AbortError');
           const epoch = authenticationEpochRef.current;
           try {
             const next = await api<BootstrapDto>('/api/bootstrap', { signal });
@@ -694,7 +711,7 @@ export function App() {
     return () => { active = false; disconnect?.(); };
   }, [applyRealtimeEvent, countryId, invalidateForeignTransport, load, renderedAuthenticationEpoch]);
 
-  if (sessionState === "INITIALIZING" && !bootstrap) return <div className="app-loading" role="status"><div className="loader-square" /><span>{taskEntry ? "Открываем задачу…" : "Открываем мир…"}</span></div>;
+  if (sessionState === "SIGNING_OUT" || sessionState === "INITIALIZING" && !bootstrap) return <div className="app-loading" role="status"><div className="loader-square" /><span>{sessionState === "SIGNING_OUT" ? "Выходим из аккаунта…" : taskEntry ? "Открываем задачу…" : "Открываем мир…"}</span></div>;
   if (sessionState === "ANONYMOUS" || sessionState === "RECOVERABLE_ERROR" || !bootstrap) {
     return <AuthScreen initialError={sessionState === "RECOVERABLE_ERROR" ? authError : ""} onAuthenticated={load} />;
   }

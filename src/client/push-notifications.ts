@@ -83,11 +83,13 @@ export async function disablePushNotifications(): Promise<PushUiState> {
   return { kind: "disabled", message: "Push-уведомления отключены на этом устройстве." };
 }
 
-export async function clearPushSubscriptionForLogout(): Promise<void> {
-  if (!browserSupportsPush()) return;
+export async function clearPushSubscriptionForLogout(signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted || !browserSupportsPush()) return;
   const registration = await activeRegistration().catch(() => undefined);
+  if (signal?.aborted) return;
   const subscription = await registration?.pushManager.getSubscription().catch(() => null);
-  if (!subscription) return;
-  await api("/api/push/subscriptions", { method: "DELETE", json: { endpoint: subscription.endpoint } }).catch(() => undefined);
+  if (!subscription || signal?.aborted) return;
+  await api("/api/push/subscriptions", { method: "DELETE", signal, json: { endpoint: subscription.endpoint } }).catch(() => undefined);
+  if (signal?.aborted) return;
   await subscription.unsubscribe().catch(() => false);
 }
