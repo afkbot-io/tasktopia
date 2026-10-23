@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 async function login(page: Page) {
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
 }
 

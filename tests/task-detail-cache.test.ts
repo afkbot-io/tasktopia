@@ -27,3 +27,12 @@ it("uses canonical UUID links and retains explicit country for legacy task numbe
   expect(taskResolutionQuery(new URL("https://example.test/task/7"))).toBe("number=7");
   expect(taskResolutionQuery(new URL("https://example.test/"))).toBeNull();
 });
+
+it.each(["task.renamed", "task.status_changed", "task.deleted"])("invalidates a legacy dependent task after %s while keeping an unrelated full task", async type => {
+  clearTaskDetailCache();
+  const a = { id: "a", dependencies: [{ id: "b" }] } as TaskDto, c = { id: "c", dependencies: [{ id: "other" }] } as TaskDto;
+  await loadTaskDetail("country", "a", async () => a); await loadTaskDetail("country", "c", async () => c);
+  invalidateTaskDetails({ countryId: "country", id: 1, worldVersion: 1, createdAt: "2026-10-16", type, payload: { taskId: "b" } });
+  expect(peekTaskDetail("country", "a")).toBeUndefined(); expect(peekTaskDetail("country", "c")).toBe(c);
+  clearTaskDetailCache();
+});

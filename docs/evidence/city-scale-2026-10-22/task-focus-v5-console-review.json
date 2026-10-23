@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "kind": "OFFLINE_CONSOLE_REVIEW_WITH_LIMITED_SOURCE_INFERENCE",
+  "sourceHash": "f58376d7d761cc45627ac4ea61d832674212a60fa4c8f920aed20b7b19343fe5",
+  "rootAcceptedLimitedClassification": true,
+  "coverage": {
+    "reports": 8,
+    "sampleResults": 24,
+    "boundedConsoleSnapshots": 24,
+    "completedSnapshots": 24,
+    "warningMessages": 54,
+    "consoleErrorMessages": 0,
+    "otherConsoleMessageTypes": {},
+    "reportErrors": 0,
+    "truncatedSnapshots": 0
+  },
+  "warningGroups": [
+    {
+      "category": "HARNESS_SERVICE_WORKER_BLOCKED",
+      "messageSummary": "Service Worker registration blocked by Playwright",
+      "count": 24,
+      "exactRawTextSha256": "7c247915a6102bc050349adcfad2bb0e2ba2a7f711b03f33080b19d0c24fa03b"
+    },
+    {
+      "category": "BROWSER_WEBGL_CONTEXT_LOST_WARNING",
+      "messageSummary": "WebGL context was lost.",
+      "count": 6,
+      "exactRawTextSha256": "505a5b0ff5bba2b9fadd52f0d9e80569771c6680cc2c0e43fb750ed599c1ff04"
+    },
+    {
+      "category": "BROWSER_WEBGL_UPLOAD_DEPRECATION",
+      "messageSummary": "texImage: Alpha-premult and y-flip are deprecated for non-DOM-Element uploads.",
+      "count": 12,
+      "exactRawTextSha256": "4086a1fbbc03f5e8ea0669b1d4b63e054f34d07b7355f93ae70e4aaf002c776d"
+    },
+    {
+      "category": "BROWSER_WEBGL_TEXTURE_LAZY_INITIALIZATION",
+      "messageSummary": "drawElementsInstanced: Tex image TEXTURE_2D level 0 is incurring lazy initialization.",
+      "count": 6,
+      "exactRawTextSha256": "d8cf2cdde103d8c4fb4cf3852336a46132a61ac3a37e03180db48095d99cf3fc"
+    },
+    {
+      "category": "BROWSER_WEBGL_DEBUG_API_DEPRECATION",
+      "messageSummary": "WEBGL_debug_renderer_info is deprecated in Firefox; use RENDERER.",
+      "count": 6,
+      "exactRawTextSha256": "42306a3a87ef83c93f22ce4e4d685c0ac7c996df1fa3d210840b2fbb3ea553d6"
+    }
+  ],
+  "rawEvidenceHashes": {
+    "consoleGroupingSha256": "78ad4241fe34e9ebf21bf1e7d61e2750297609e2ba5a76872039c3190600dada",
+    "featureProbeReviewSha256": "e0c277b793bd0fac42652e7b0ea8288f903666e19d762db02cef0d402ea2c8d7",
+    "matrixReports": [
+      {
+        "tasks": 200,
+        "profile": "desktop-chromium",
+        "sha256": "0a15bda31bb3e1c7023ef695916a69ee93c52cc1227b78357d7acb45a7c0496d",
+        "completedSamples": 3,
+        "consoleWarnings": 3,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      },
+      {
+        "tasks": 200,
+        "profile": "desktop-firefox",
+        "sha256": "8f56ad865030c815529beb698539e7b0f4a34af15ac93e34bc83acf3a8c153e8",
+        "completedSamples": 3,
+        "consoleWarnings": 18,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      },
+      {
+        "tasks": 200,
+        "profile": "pixel-chromium",
+        "sha256": "cc90a10e01a4e26cd9e0efa148067e839753df453ad7ee23acdf2cd83e0074d5",
+        "completedSamples": 3,
+        "consoleWarnings": 3,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      },
+      {
+        "tasks": 200,
+        "profile": "iphone-webkit",
+        "sha256": "9c95f08914e529f716347cdcf3b9d231bbaa106bdced33b8d0d151fc4e396eed",
+        "completedSamples": 3,
+        "consoleWarnings": 3,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      },
+      {
+        "tasks": 1000,
+        "profile": "desktop-chromium",
+        "sha256": "2ede1e27ffab45f4a741b63b50e0d52f1729c97ed243bbe16eb7f87111fc5534",
+        "completedSamples": 3,
+        "consoleWarnings": 3,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      },
+      {
+        "tasks": 1000,
+        "profile": "desktop-firefox",
+        "sha256": "9087c3967224c716f9dbbeb540326febc18f16d677906a5bf1062696847a684d",
+        "completedSamples": 3,
+        "consoleWarnings": 18,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      },
+      {
+        "tasks": 1000,
+        "profile": "pixel-chromium",
+        "sha256": "fc64e1a90c018eb881d602ab3cdfdcdef22d3bd22ebd06af6c5f03b80e7266e5",
+        "completedSamples": 3,
+        "consoleWarnings": 3,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      },
+      {
+        "tasks": 1000,
+        "profile": "iphone-webkit",
+        "sha256": "8bb60aa200647653d8e62ed5e16d6132fdc6f7bad4de28ed7f0a94ff38b2f6ce",
+        "completedSamples": 3,
+        "consoleWarnings": 3,
+        "consoleErrors": 0,
+        "consoleTruncated": false
+      }
+    ]
+  },
+  "featureProbeInference": {
+    "scope": "Только шесть предупреждений Firefox в двух наборах по три сохранённых запуска; вывод не распространяется на прочие потери контекста.",
+    "pixiVersion": "8.19.0",
+    "callChain": [
+      "WorldCanvas app.init({preference:\"webgl\"})",
+      "Application.init → autoDetectRenderer",
+      "autoDetectRenderer → isWebGLSupported",
+      "isWebGLSupported creates temporary canvas/WebGL context, then WEBGL_lose_context.loseContext()",
+      "Cached _isWebGLSupported prevents a second probe within that module instance"
+    ],
+    "sources": [
+      {
+        "source": "node_modules/pixi.js/lib/utils/browser/isWebGLSupported.mjs",
+        "lines": [
+          6,
+          7,
+          17,
+          18,
+          21,
+          23
+        ],
+        "sha256": "112c9bc37578ebf6e22b3dca0144e3bec512f65fe3f84f2904eac79cb447ebf9"
+      },
+      {
+        "source": "node_modules/pixi.js/lib/rendering/renderers/autoDetectRenderer.mjs",
+        "lines": [
+          32,
+          35,
+          53
+        ],
+        "sha256": "24f624db8145eb1407cbed5c385bca718fb4533d53504d4ed3877a3098ee2b0c"
+      },
+      {
+        "source": "node_modules/pixi.js/lib/app/Application.mjs",
+        "lines": [
+          49,
+          52
+        ],
+        "sha256": "8b4ad57b5b4ea1aa0ee104c4405c25716c5f7de6c8df71c71b6c2f2b3e4bb9ed"
+      },
+      {
+        "source": "src/client/components/WorldCanvas.tsx",
+        "lines": [
+          1120,
+          1199
+        ],
+        "sha256": "06aa605316f5b4f6db8a2bda7ce1f05caed86ddd4ddbd5a64c474fc0368efcae"
+      }
+    ],
+    "compiledOrigin": {
+      "assetFile": "WorldCanvas-DSeXNI0W.js",
+      "warningLine": 2,
+      "bundleSha256": "76d258496ba96fdbc53cf3767cd7d33a35c2fb907b23245d1fb1b52422e7b1a5",
+      "sourceMapSha256": "af5c0538265f872f45dec4f5b793e328452c3e32be5716a7c6756c820da11813",
+      "webglLoseExtensionTokens": 1,
+      "loseContextCalls": 1,
+      "loseContextCallLines": [
+        2
+      ],
+      "onlyLoseContextSource": "pixi.js/lib/utils/browser/isWebGLSupported.mjs",
+      "mappedProbeSha256": "112c9bc37578ebf6e22b3dca0144e3bec512f65fe3f84f2904eac79cb447ebf9",
+      "mappedSourceEqualsInstalled": true,
+      "glContextSystemAbsentFromThisChunk": true
+    },
+    "timing": [
+      {
+        "tasks": 200,
+        "sample": 0,
+        "warningAfterBrowserTimeOriginMs": 718,
+        "firstFrameMs": 1533,
+        "warningBeforeFirstFrameMs": 815,
+        "ambientAtColdTelemetry": "ready",
+        "completed": true
+      },
+      {
+        "tasks": 200,
+        "sample": 1,
+        "warningAfterBrowserTimeOriginMs": 536,
+        "firstFrameMs": 1340,
+        "warningBeforeFirstFrameMs": 804,
+        "ambientAtColdTelemetry": "ready",
+        "completed": true
+      },
+      {
+        "tasks": 200,
+        "sample": 2,
+        "warningAfterBrowserTimeOriginMs": 724,
+        "firstFrameMs": 1661,
+        "warningBeforeFirstFrameMs": 937,
+        "ambientAtColdTelemetry": "ready",
+        "completed": true
+      },
+      {
+        "tasks": 1000,
+        "sample": 0,
+        "warningAfterBrowserTimeOriginMs": 844,
+        "firstFrameMs": 2771,
+        "warningBeforeFirstFrameMs": 1927,
+        "ambientAtColdTelemetry": "ready",
+        "completed": true
+      },
+      {
+        "tasks": 1000,
+        "sample": 1,
+        "warningAfterBrowserTimeOriginMs": 731,
+        "firstFrameMs": 2152,
+        "warningBeforeFirstFrameMs": 1421,
+        "ambientAtColdTelemetry": "ready",
+        "completed": true
+      },
+      {
+        "tasks": 1000,
+        "sample": 2,
+        "warningAfterBrowserTimeOriginMs": 701,
+        "firstFrameMs": 2000,
+        "warningBeforeFirstFrameMs": 1299,
+        "ambientAtColdTelemetry": "ready",
+        "completed": true
+      }
+    ],
+    "conclusion": "Совпадение warning asset/line, единственного compiled loseContext вызова и source map поддерживает ограниченный вывод о намеренной проверке WebGL в isWebGLSupported."
+  },
+  "limits": [
+    "В сохранённых окнах 0 console errors и 54 warnings; усечений нет.",
+    "В журнале нет стека вызова и идентификатора WebGL-контекста. Классификация основана на исходниках и сохранённых событиях, без нового запуска.",
+    "Точное время ambient-ready в этих шести запусках не сохранено; время atomic-ready его не заменяет.",
+    "Сопоставление console wall clock и browser performance.timeOrigin показывает порядок фаз, а не субмиллисекундный CPU-профиль.",
+    "Общее состояние GPU/драйвера не проверено; вывод не переносится на иные потери контекста.",
+    "Причина 61-мс steady longtask на Pixel1000 этим ревью не установлена; вердикт STRICT_RED не изменён.",
+    "Сводка не содержит идентификаторов фикстур, URI, credentials, raw URLs, приватных путей артефактов или абсолютных путей хоста."
+  ],
+  "action": "Не менять production-код по этим предупреждениям без нового подтверждённого дефекта.",
+  "newBrowserExecutions": 0,
+  "productionChanges": 0
+}

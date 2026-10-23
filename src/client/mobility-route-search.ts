@@ -1,4 +1,12 @@
 import type { Cell } from "../shared/contracts";
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "./cooperative-preparation";
+
+export type MobilityRouteResult = { cells: Cell[]; routeTo(target: Cell): Cell[] };
+export type MobilityRouteSearch = {
+  (start: Cell, previous?: Cell, target?: Cell, maxCells?: number): MobilityRouteResult;
+  steps(start: Cell, previous?: Cell, target?: Cell, maxCells?: number): Generator<void, MobilityRouteResult, void>;
+  setBlocked(closedCells: ReadonlySet<string>): void;
+};
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 const heading = (a: Cell, b: Cell) => b.x > a.x ? 1 : b.x < a.x ? 3 : b.y > a.y ? 2 : 0;
@@ -6,23 +14,45 @@ const heading = (a: Cell, b: Cell) => b.x > a.x ? 1 : b.x < a.x ? 3 : b.y > a.y 
 /** Compile one immutable topology once. Search keeps heading-aware reachability,
  * straight-first stable BFS order and the existing 8,000-state work ceiling.
  * Numeric states avoid coordinate strings and sorting at every visited edge. */
-export function createMobilityRouteSearch(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>) {
-  const cells = [...graph.values()];
-  // Graph values can carry road metadata and signed zero; physical route
-  // endpoints are plain coordinates, as in the original edge traversal.
-  const routeCells = cells.map(cell => ({ x: cell.x || 0, y: cell.y || 0 }));
-  const indices = new Map(cells.map((cell, index) => [key(cell), index]));
+export function createMobilityRouteSearch(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>): MobilityRouteSearch {
+  return completePreparation(createMobilityRouteSearchSteps(graph, edges));
+}
+export function createMobilityRouteSearchAsync(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>, options: CooperativePreparationOptions = {}): Promise<MobilityRouteSearch> {
+  return prepareCooperatively(createMobilityRouteSearchSteps(graph, edges), options);
+}
+export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>): Generator<void, MobilityRouteSearch, void> {
+  const cells: Cell[] = [], routeCells: Cell[] = [], indices = new Map<string, number>();
+  // Preserve physical coordinates, metadata on result.cells and graph order.
+  for (const cell of graph.values()) {
+    indices.set(key(cell), cells.length); cells.push(cell);
+    routeCells.push({ x: cell.x || 0, y: cell.y || 0 }); yield;
+  }
   let hasNonlocalEdges = false;
-  const outgoing = cells.map(cell => (edges.get(key(cell)) ?? []).flatMap(next => {
-    const index = indices.get(key(next));
-    if (index === undefined) return [];
-    if (Math.abs(next.x - cell.x) + Math.abs(next.y - cell.y) > 1) hasNonlocalEdges = true;
-    return [{ index, direction: heading(cell, next) }];
-  }));
+  let boundedDegree = true;
+  const outgoing: Array<Array<{ index: number; direction: number }>> = [];
+  for (const cell of cells) {
+    const nextEdges: Array<{ index: number; direction: number }> = [];
+    for (const next of edges.get(key(cell)) ?? []) {
+      const index = indices.get(key(next));
+      if (index !== undefined) {
+        if (Math.abs(next.x - cell.x) + Math.abs(next.y - cell.y) > 1) hasNonlocalEdges = true;
+        nextEdges.push({ index, direction: heading(cell, next) });
+      }
+      yield;
+    }
+    if (nextEdges.length > 4) boundedDegree = false;
+    outgoing.push(nextEdges); yield;
+  }
   const root = cells.length * 4;
   const blocked = new Uint8Array(cells.length);
   let blockedIndices: number[] = [];
-  const search = (start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity) => {
+  function* searchSteps(start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity): Generator<void, MobilityRouteResult, void> {
+    // A grid state has at most four cheap edges. Check the outer time/abort
+    // budget in small batches instead of spending its fallback operation cap
+    // on each state and scheduling needless browser tasks between renders.
+    // Custom graphs with a wider fan-out keep a checkpoint at every state.
+    const batchSize = boundedDegree ? 64 : 1;
+    let work = 0;
     const startIndex = indices.get(key(start));
     const targetIndex = target ? indices.get(key(target)) : undefined;
     if (startIndex === undefined || target && targetIndex === undefined || !(maxCells >= 1)) return { cells: [], routeTo: (): Cell[] => [] };
@@ -40,6 +70,7 @@ export function createMobilityRouteSearch(graph: ReadonlyMap<string, Cell>, edge
       const parents = new Map([[first, -1]]), reached = new Map([[startIndex, first]]);
       const queue = [first], lengths = [1], order = [startIndex];
       search: for (let cursor = 0; cursor < queue.length && cursor < 8_000 && (targetIndex === undefined || !reached.has(targetIndex)); cursor++) {
+        if (++work === batchSize) { work = 0; yield; }
         const state = queue[cursor]!;
         if (lengths[cursor]! >= maxCells) continue;
         const index = state === root ? startIndex : Math.floor(state / 4), direction = state === root ? -1 : state % 4;
@@ -54,8 +85,11 @@ export function createMobilityRouteSearch(graph: ReadonlyMap<string, Cell>, edge
           if (next.index === targetIndex) break search;
         }
       }
+      const reachableCells: Cell[] = [];
+      for (const index of order) { reachableCells.push(cells[index]!); if (++work === batchSize) { work = 0; yield; } }
+      if (work) yield;
       return {
-        cells: order.map(index => cells[index]!),
+        cells: reachableCells,
         routeTo(target: Cell): Cell[] {
           const index = indices.get(key(target));
           const firstState = index === undefined ? undefined : reached.get(index);
@@ -77,6 +111,7 @@ export function createMobilityRouteSearch(graph: ReadonlyMap<string, Cell>, edge
     const queue = [first], order = [startIndex];
     visited[first] = 1; reached[startIndex] = first;
     for (let cursor = 0; cursor < queue.length && cursor < 8_000; cursor++) {
+      if (++work === batchSize) { work = 0; yield; }
       const state = queue[cursor]!;
       const index = state === root ? startIndex : Math.floor(state / 4);
       const direction = state === root ? -1 : state % 4;
@@ -92,8 +127,11 @@ export function createMobilityRouteSearch(graph: ReadonlyMap<string, Cell>, edge
         queue.push(nextState);
       }
     }
+    const reachableCells: Cell[] = [];
+    for (const index of order) { reachableCells.push(cells[index]!); if (++work === batchSize) { work = 0; yield; } }
+    if (work) yield;
     return {
-      cells: order.map(index => cells[index]!),
+      cells: reachableCells,
       routeTo(target: Cell): Cell[] {
         const targetIndex = indices.get(key(target));
         if (targetIndex === undefined || reached[targetIndex] === -1) return [];
@@ -104,8 +142,10 @@ export function createMobilityRouteSearch(graph: ReadonlyMap<string, Cell>, edge
         return route.reverse();
       },
     };
-  };
+  }
+  const search = (start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity) => completePreparation(searchSteps(start, previous, target, maxCells));
   return Object.assign(search, {
+    steps: searchSteps,
     setBlocked(closedCells: ReadonlySet<string>): void {
       // Only changed closure cells are touched. The immutable topology and
       // earlier route results survive; a closed starting cell can still exit.

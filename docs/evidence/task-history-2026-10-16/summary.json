@@ -1,0 +1,77 @@
+{
+  "criterion": "U04",
+  "date": "2026-10-16",
+  "status": "PASS",
+  "scope": "Отображение разрешённых before→after и настоящего account label после открытия Истории; запрещённые UUID/Markdown/internal поля не отображаются.",
+  "test": {
+    "path": "tests/e2e/task-card-paging.spec.ts",
+    "currentSha256": "88b10ad975ffe4b63d59e35d01526537b65edb7523e61b97918abb3bbf96cb02",
+    "browserTestedSha256": "3312529c11c77ec846c6550dc0f907735b9c49f7def889380374749e18e15a88",
+    "postBrowserWriterCorrection": "После2PASS исправлено только неверное имя evidence flag: перечислены type/actor/actorUserId/details. Assertions, native flow и runtime не менялись; первоначальный raw сохранён."
+  },
+  "runtime": {
+    "snapshot": "final-candidate-v2",
+    "sourceHash": "0929eddf5da7f54685ad352d0816b7fa41c6d73069e97e8cc76b8ef60fd8dfb4",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "ef5749e52e0aeb57af0b157f7af2f10ea06d622b4fb27a4fb6f37547e6cd02ae"
+  },
+  "inputBoundary": {
+    "card": "Настоящий production GET /api/tasks/:id/card с явнымcountryId; Card response не перехватывается.",
+    "events": "Настоящая первая events-page сохраняет IDs/counts/items/cursor/context; только первая запись получает controlled type/actor/actorUserId/details. Имя и ID взяты из реальногоbootstrap.",
+    "writes": "Только login-сессия в отдельнойdemo40taskfixture; task/event/geometry DB mutations отсутствуют, frozen200/1000 untouched."
+  },
+  "native": {
+    "profiles": [
+      "Chromium desktop/Metal",
+      "iPhone13 WebKit emulation/nativeDPR3/trustedtap"
+    ],
+    "passed": 2,
+    "durationMs": 2650.657,
+    "errors": 0,
+    "lazyEventsReads": 1,
+    "limit": 50,
+    "allowedRows": [
+      "Название: исходное→новое",
+      "Прогресс:30%→80%",
+      "Этап: В работе→Приёмка",
+      "Ответственный: Не задано→реальныйbootstrap.user.name"
+    ],
+    "forbidden": [
+      "rawUUID",
+      "description Markdown",
+      "actorUserId",
+      "token",
+      "systemAnalysis",
+      "internalToken"
+    ],
+    "panelHorizontalOverflow": false,
+    "screenshotsViewed": [
+      "iPhone task-history-values.png"
+    ],
+    "report": {
+      "path": ".builder/world-perf-20261016/u04-history-native-results.json",
+      "sha256": "c3388496795d5619c47fbf30023dd0a69a80015a7f95063cb336546e98c0d4da"
+    },
+    "log": ".builder/world-perf-20261016/u04-history-native-driver.log",
+    "browsersClosed": true,
+    "owned5311StoppedExit0": true
+  },
+  "staticChecks": {
+    "eslint": "PASS",
+    "strictTypescript": "PASS",
+    "logs": [
+      ".builder/world-perf-20261016/u04-history-eslint.log",
+      ".builder/world-perf-20261016/u04-history-tsc.log"
+    ]
+  },
+  "sourceEvidence": {
+    "producer": "tests/task-scalar-history.test.ts",
+    "presentation": "tests/task-history-presentation.test.ts",
+    "ui": "src/client/components/TaskModal.tsx:235"
+  },
+  "limits": [
+    "Не заявляется реальная запись контролируемогоhistorical event в БД; producer отдельно проверен PostgreSQLintegration.",
+    "Это новыйfocused browser evidence существующей реализации, без production изменений и без RED→GREENclaim.",
+    "Не повторялись прочиеCardсценарии/полнаяматрица, performanceилифизическиетелефоны."
+  ]
+}

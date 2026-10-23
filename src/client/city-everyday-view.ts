@@ -19,7 +19,13 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
   let cells: Cell[] = [], lastWeatherFrame = -1;
   let lastRainPhase = '', animalEpisode = '', dogOwner = '', scatterAt: number | undefined;
   root.addChild(weather, stall, ...animals, cues);
-  const hideActivity = () => { stall.visible = false; cues.clear(); for (const animal of animals) animal.visible = false; };
+  const hideActivity = () => {
+    stall.visible = false;
+    // Clearing an already empty Graphics still invalidates Pixi's batch
+    // instructions for the whole parent render group on every idle frame.
+    if (cues.context.instructions.length) cues.clear();
+    for (const animal of animals) animal.visible = false;
+  };
   return {
     root,
     compile(walk: ReadonlyMap<string, Cell>, roads: ReadonlyMap<string, Cell>, blocked: ReadonlySet<string>) {

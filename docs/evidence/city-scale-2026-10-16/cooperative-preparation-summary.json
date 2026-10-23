@@ -1,0 +1,1704 @@
+{
+  "date": "2026-10-16",
+  "status": "SEMANTIC_PARITY_NATIVE_PASS_FINALV4_STRICT36_COMPLETE_STRICT_RED",
+  "description": "Подготовка канонических WALK/network/routes/sites/stops перенесена в кооперативные pure builders. Применение к живой симуляции остаётся синхронным, после проверки владельца и актуальной semantic life revision.",
+  "qualification": {
+    "semanticOldRuntimeParity": "PASS",
+    "independentSourceReview": "PASS",
+    "producerPublicRegression": "PASS",
+    "newImmutableNativeReadiness5sAndReturn20s": "PASS_21_OF_21_AT_353BF444",
+    "newOriginalStrictMatrix36": "STRICT_RED_FINAL_V4",
+    "previousFinalV2": {
+      "status": "RED",
+      "samples": 36,
+      "profiles": 12,
+      "strictPassingProfiles": 4,
+      "budgetViolations": 24
+    },
+    "preDepth651aNative": "PASS_9_OF_9",
+    "preDepth651aOriginalFourProfileProbe": "RED_3_METRIC_VIOLATIONS_IN_4_SINGLE_SAMPLES",
+    "preInitial831102Native": "PASS_18_OF_18",
+    "preInitial831102OriginalFourProfileProbe": "RED_2_METRIC_VIOLATIONS_IN_4_SINGLE_SAMPLES",
+    "roadStaticOld053eAndCBDParity": "PASS_ONE_READONLY_ACTUAL_200_1000_RUN_8_ROAD_STATES_EACH",
+    "newFinalV4": {
+      "status": "STRICT_RED",
+      "samples": 36,
+      "profiles": 12,
+      "strictPassingProfiles": 11,
+      "budgetViolations": 3
+    },
+    "previousFinalV3": {
+      "status": "RED",
+      "samples": 36,
+      "profiles": 12,
+      "strictPassingProfiles": 9,
+      "budgetViolations": 4
+    },
+    "effectivePerformanceCoverage": "PASS_11_LEGACY_NODE_UPPERBOUND_PROFILES_PLUS_PAIRED_V2_FF200"
+  },
+  "baseline": {
+    "revision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+    "source": "exact git053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+    "exactOriginalFiles": {
+      "src/client/city-walk-network.ts": "16473e862db14ed6396e45d26c7e9e6c15083ec6f6e6bb1bae9bf6ca95ec1ea7",
+      "src/client/city-mobility-network.ts": "58397fee989ab4d2bf04ca2928e1ca20677f3f9f0c40e1d55006340ed775e099",
+      "src/client/mobility-route-search.ts": "cc3691f4720f47ebf1f6de070a73b29403fa644ddd2a622ef588c8a20041a76f",
+      "src/client/city-mobility.ts": "80f5f145f2df56c4809c09f8e9cea87fbdb44910f9eb5e8105ae9318b27e41c3",
+      "src/client/city-life.ts": "7b921c4971cd0ddae157518d43995d2547f6f19ee9879766bb923eadfa4a76cf",
+      "src/client/city-everyday-life.ts": "b417319fe651fb094559381cf4b10cc0d3d58c147a442f04a20f2edf09634c94",
+      "src/client/agent-route-planner.ts": "fea18d19226e6a4d9c69ff4e86a65ab7ee14f80d13b2baf6a2d55bf0dbb33cae",
+      "src/client/task-incidents.ts": "4f276a9f4199725aaac63d23d402581d24b9c6e001bac0c208338ea78aa1cab6"
+    },
+    "sourceProof": {
+      "path": ".builder/world-reliability-evolution-20261016/backend/cooperative-preparation/baseline-source-final-proof.json",
+      "sha256": "e6c5b5c7d8d70fc0e68568ad12d81888a486e7b6f54c8e9c10f90ccd9e0143bb"
+    },
+    "scope": "Восемь модулей взяты из exact git053e; type imports удаляются bundler, исходный baseline runtime не переписан."
+  },
+  "pairedProof": {
+    "path": ".builder/world-reliability-evolution-20261016/backend/cooperative-preparation/paired-final-old053e-proof.json",
+    "sha256": "6158c10e96cdc5fccc7fa297be90cda9d0f849437844e8dc0f90ff4ec923e5e6",
+    "sourceManifest": {
+      "path": ".builder/world-reliability-evolution-20261016/backend/cooperative-preparation/paired-final-source-manifest.json",
+      "sha256": "2b816141720ae57d0c9acbc494e6b8efa1e5f282fe101e1c72329edf16d740e7"
+    },
+    "driverSha256": "aef588f0ab318b0d3c439fcfa4e7d7ae2b5a599af1b939ad97f2b904c7c7d93e",
+    "bundleSha256": "e32381b687c505e369a57c653c49af4c9c5053f771d8cbe3c86dbec4d3c44c23",
+    "executionCountAfterSuccessfulBuild": 1,
+    "beforeAfterFrozenManifestMatches": true,
+    "sourceSha256AtProof": {
+      "src/client/cooperative-preparation.ts": "d8d726f4031c1e1b6bf04c371c70f96ec8b9b486b18e230be93fbc5afae13691",
+      "src/client/city-walk-network.ts": "fdc6fc5f67d01614c27c2e3d13fbb5f0ac0fdc9cb632ae924b1b36b4314ffe7f",
+      "src/client/city-mobility-network.ts": "4209ed8daa7a92970678dd2f6d424618ee3e57f2f6d7cd45b95c0d8dc6dc3eed",
+      "src/client/mobility-route-search.ts": "f73e51863b2e039e08387ed5ec3b1bdf19d8ad653f2a6fcd244426e76d6b141f",
+      "src/client/city-mobility.ts": "923839f43c1eb71d485e436521991dbdcaba572d1e219cf7a219b01807fa0dd4",
+      "src/client/agent-route-planner.ts": "00cf333f3b40cef0e3c1932d323b43d2e4e804774df9af992e4a60c620ca5679",
+      "src/client/city-life.ts": "1380da8883d9b90f45738383e4d32dcf921f118269b527efc2feb5ecc1d935dd",
+      "src/client/city-everyday-life.ts": "477e06e9d53aea4b97f8d4c8d4806d12c3bef472de71dcb5843eba02cb2c6235",
+      "src/client/city-everyday-controller.ts": "189334935cb23fe2ee5c2f64a178269faa5a3deeff26d6ca942fa12d20954a81",
+      "src/client/components/WorldCanvas.tsx": "efcbc433f4227cf255932c119bf30d3cc77a1f7981f6cba515f9db493e0dbb79",
+      "src/client/city-movement-preparation.ts": "405d9ca852c0f04283bea56f0d80261fb0a2dcfdd12bb41b5892d528ec5bb4d8",
+      "tests/city-cooperative-preparation.test.ts": "0902d8a379144327e798adf6cb4b0ac5ee3d9bcea5866471da3a8f5d0507c2ce",
+      "tests/cooperative-stable-sort.test.ts": "437ac340a993d7f0a4964d4163361742d56257756ee4b8ce410384b1e9a3c1f3",
+      "tests/city-life-preparation.test.ts": "125acef7f04b6b62f643280605b23ee70b6b67ddf5a6d0dea2d962c22f9c5541"
+    },
+    "seed": 73,
+    "motionHorizonMs": 500,
+    "semantics": [
+      "Полные Map/Set и их порядок, графовые рёбра, зоны, подписи topology.",
+      "Детерминированные начальные56 actors и500ms движения без смены seed/физики.",
+      "cityLifeSites и everyday sites/stops: старые exports равны новым sync и cooperative outputs.",
+      "Восемь animal route/RNG cases на каждый фактический200/1000 набор.",
+      "Input/scene hashes до/после неизменны; PostgreSQL default_transaction_read_only=on, migrate:false."
+    ],
+    "results": [
+      {
+        "tasks": 200,
+        "fixtureGeometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+        "sceneHash": "bed2508ab7ec021201ad867fa6bdb87e9edd198df2df65cb94c507142c15bbde",
+        "walkInputHash": "205da0191fad2321130fff8a5a8bf7bd7fd9b8f70bd12b6c53a7674e6ec15219",
+        "walkOutputHash": "55d17d2a074f028890024b245c321f1c6d36f092ad213ac17d36d1a9bee68dc6",
+        "topologyInputHash": "40d2d22b8674a0b4d819c397845313e29cd056b03aab4e2f896ba2c0e8f933a4",
+        "topologyHash": "67e5d1f276fbde51315d12605fa16cbae008bd465693a8b7d43a89e4fe8dfe09",
+        "spawnHash": "db5d95674f5eefc3c0affa27de990f762a5d866841e3eb4e44acf963118ab15e",
+        "motionHash": "f8a186b6dcda8b1e23daeec3a6f6a2ebdd610cd493a41a86d2477f15580d57a2",
+        "roads": 7338,
+        "canonicalWalkingCells": 11288,
+        "navigableWalkers": 8141,
+        "zones": 1214,
+        "actors": 56,
+        "lifeSites": 160,
+        "lifeSitesHash": "a7a3e0adaea4ab8260a7e70ed1438285a2dbc0526f13bf8f194b61ba8b8b151a",
+        "everydaySites": 155,
+        "everydaySitesHash": "8fb67de65bd5f6a02a907027931162d44041ed566b2c49695dd44e5c154a108e",
+        "transitStops": 16,
+        "transitStopsHash": "b7540a9349ab0dac5be35debef1024440fa45db375aa109bda3f2ecb616a981b",
+        "animalGround": 18841,
+        "animalRouteCases": 8,
+        "animalRoutesHash": "eebf48efc460ea0ce6bbfee5c38c8df735ed6471c8d46de2de623d5de4d5c41c",
+        "lifeInputHash": "becbe2ee8f83a62e7732fb30133ca54b3763039374736ead44ba0c5e1ecb1bb4",
+        "everydayInputHash": "ac2e910d50ec9af1a6c63a049f534179b7da8a2d1c9e46f26c3ce6a5613b12a9",
+        "animalInputHash": "f892cb62baaa227a570bb379731273255ff7928e245f16dbd74b0920b6205cb7",
+        "yieldCount": 205,
+        "seed": 73,
+        "inputMutation": false,
+        "databaseReadOnly": true,
+        "exactOld053eEquivalent": true
+      },
+      {
+        "tasks": 1000,
+        "fixtureGeometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "sceneHash": "85d0422dd7e477f3dd1b7fc720642d93933e9fefe1848996e4f1ed064692b513",
+        "walkInputHash": "e79dfd6bff521caad5eaf24155f4c07508468c8764a00868599a0e91b43ae82f",
+        "walkOutputHash": "8a74d690b149ce6635504f6d4c25728342d9dc516de6bb2b491d2916cb55c5f6",
+        "topologyInputHash": "c739846b8ff6ea6064c6cf034e7fd205f2aa8f81000cf1f36af2304e4d4e49d7",
+        "topologyHash": "337f4d2928d6491bd0980a81714568369cd84a0ced5a6e59a92e135a29431bfd",
+        "spawnHash": "db31bdd3dc7816115e932fdbe941babe1145486ee92a7c3c2c8938a929cdaa03",
+        "motionHash": "948a9dc522ca6eb59b77a0bbc99913e2f82e83aa75146d15447c4626c67fd464",
+        "roads": 33558,
+        "canonicalWalkingCells": 53580,
+        "navigableWalkers": 37857,
+        "zones": 5742,
+        "actors": 56,
+        "lifeSites": 800,
+        "lifeSitesHash": "51a3027e3ec0a8810414d4bda502dbb479cba852b15be7f33314bb6336f9c6e3",
+        "everydaySites": 694,
+        "everydaySitesHash": "17e3580e34bc86ee5006858003545cbf06bdbdd133c0dfe193ed0e2da26a1975",
+        "transitStops": 16,
+        "transitStopsHash": "bc1390dd9ad926b8d4dcc36cf81498034f080ab65f32578cad4733c7a642ac58",
+        "animalGround": 59825,
+        "animalRouteCases": 8,
+        "animalRoutesHash": "67f8bb220d5cb5ebe9d20fc5f2d9b1b00db1c0603279ab835a1e30ae502eb464",
+        "lifeInputHash": "b7c2c3b46b4fd2f83df893bc853c8032f46cabd21f8d306a76b28c44a110fd73",
+        "everydayInputHash": "be1aaee6151737a0b85d83f2d7493dd553e929201fd8669956fd798350e4dbdb",
+        "animalInputHash": "ac41d3a3e5e8f644fb369c4f50bc3dafd5b9ba437854941fc30da0539c31ded5",
+        "yieldCount": 554,
+        "seed": 73,
+        "inputMutation": false,
+        "databaseReadOnly": true,
+        "exactOld053eEquivalent": true
+      }
+    ],
+    "scope": "Один завершённый независимый pure/runtime proof на двух исходных синтетических городах.7,71s — длительность инструмента, не browser performance."
+  },
+  "adoption": {
+    "guards": [
+      "Required isCurrent до любых live writes.",
+      "Latest life revision и geometry/owner валидируются владельцем непосредственно перед commit.",
+      "Во время await не сохраняются poses/visits/closures. Commit обращается к актуальным actors/visits через текущий controller/mobility.",
+      "Readonly prepared geometry не выдаёт live mutators; canDrive планирует новую topology, временные closures проверяются живым dispatcher."
+    ],
+    "scheduler": {
+      "defaultBudgetMs": 4,
+      "frozenClockOperationCap": 8192,
+      "stableNativeRun": 256,
+      "mergeCheckpointOutputs": 64,
+      "networkLocalCheckpointUnits": 16,
+      "note": "Soft budget по ограниченному canonical step; это не обещание hard real-time на любом устройстве."
+    }
+  },
+  "publicProducerRegression": {
+    "summary": {
+      "path": "docs/evidence/life-preparation-2026-10-16/summary.json",
+      "sha256": "276e563179298c879eebbcb219875f8fc51f2d0caa492002cf205fa59758c5b7"
+    },
+    "focused": {
+      "files": 5,
+      "passed": 46,
+      "newCases": 7,
+      "durationSeconds": 3.84
+    },
+    "typeScript": "PASS",
+    "eslint": "PASS",
+    "cases": [
+      "literal route/order and immutable inputs",
+      "park pad coordinates/paths and old curb identities",
+      "real reachable school curb pair and non-overlapping queue/shelter",
+      "held road scan abort before full-city read, no live director writes",
+      "held canonical city life batch abort, no publication",
+      "stage and role revision changes reject stale prepared state",
+      "fresh latest-input commit cancels invalid visit while retaining current actor positions"
+    ],
+    "network": {
+      "path": ".builder/world-reliability-evolution-20261016/backend/cooperative-preparation/handoff-network-batch.json",
+      "sha256": "10a3dfea2fc0c7cbcc16bc1631eb9fe94a7503f5108c61b790d78989c4b501a0",
+      "status": "source-and-semantic-regression-passed-native-performance-pending",
+      "redGreen": [
+        {
+          "red": "network-batch-red.log",
+          "symptom": "clockReads62260 exceeded24576 for4096protected cells",
+          "green": "network-batch-green.log:24PASS2files"
+        },
+        {
+          "red": "network-child-boundary-red.log",
+          "symptom": "After cancellation at final child curb probe, parent still read geometry (7roadchecks instead5)",
+          "green": "network-child-boundary-green.log:25PASS2files; no parent reads after cancelled partial child"
+        }
+      ],
+      "finalChecks": {
+        "unit": "25PASS(19cooperative+6network), not a fullproject suite",
+        "types": "types-network-child.log:exit0",
+        "lint": "lint-network-child.log:exit0",
+        "diffCheck": "owned paths only",
+        "independentOld053e": "paired-final-old053e-proof.json:2actual200/1000 fixtures, readonly/no mutation, exact outputs+order+RNG"
+      }
+    },
+    "countNote": "46 life/director,25 network,15 geometry-view и18 sorter — отдельные перекрывающиеся scoped проверки разных checkpoint. Они не складываются в общий итог проекта и не заменяют final qualification."
+  },
+  "independentReviews": [
+    {
+      "path": ".builder/world-reliability-evolution-20261016/root/review-prepared-geometry.json",
+      "sha256": "06caac2664567a26ac5cd8d3114acc3bba32ab181c609131c4289a38742e62fe",
+      "status": "no-open-actionable-findings-in-reviewed-source",
+      "sourceSha256": {
+        "src/client/city-mobility.ts": "923839f43c1eb71d485e436521991dbdcaba572d1e219cf7a219b01807fa0dd4",
+        "tests/city-cooperative-preparation.test.ts": "6a1de4872344f9b43a0ec4cdf9790650f50b1d892da5e63fc91f71670f606f1b"
+      },
+      "findings": [],
+      "reviewed": [
+        "Private-backed readonly maps/sets do not expose mutator methods or backing collections through forEach; cell copies are lazy/cached/frozen.",
+        "Zones preserve canonical ordering and expose frozen bounds/posts/origins, prepared incrementally.",
+        "Valid WeakSet and claimed guards reject cloned/invalid/adopted planning capability before live state mutation.",
+        "Planning canDrive reads new canonical route search without old closures; actual adoption retains current closures/poses/visits/settings.",
+        "Tests cover mutation attempts, cached identity, invalid/claimed capability, new canonical canDrive and current closure dispatch."
+      ],
+      "limits": [
+        "Combined WC/everyday integration and original5s/20s/software-renderer qualification remain pending.",
+        "Initial factory also builds readonly zone wrappers once; runtime cost must be included in final benchmark."
+      ]
+    },
+    {
+      "path": ".builder/world-reliability-evolution-20261016/root/review-network-batch.json",
+      "sha256": "a64d04a2fd1215dc8ce9e97620298f1d244325c2f5ed70581a12ca91c2964432",
+      "status": "no-open-actionable-findings-native-performance-pending",
+      "sourceSha256": {
+        "src/client/city-mobility-network.ts": "4209ed8daa7a92970678dd2f6d424618ee3e57f2f6d7cd45b95c0d8dc6dc3eed",
+        "tests/city-cooperative-preparation.test.ts": "0902d8a379144327e798adf6cb4b0ac5ee3d9bcea5866471da3a8f5d0507c2ce"
+      },
+      "findings": [],
+      "reviewed": [
+        "Local checkpoints only; sort/signature/graph ordering and BFS/seed rules unchanged.",
+        "Delegated spine and signature phases flush their residual local batch; native stable sort checkpoints stay independent.",
+        "Public deterministic scheduling-work and frozen-clock/elapsed/abort probes cover reduced overhead and bounded work.",
+        "Full independent actualold053e200/1000 extended proof and raw ledger read; this is not a browser performance pass."
+      ],
+      "limits": [
+        "Default-browser original5s/20s and strict36 qualification still pending; no timeout/FPS/quality relaxation."
+      ]
+    },
+    {
+      "path": ".builder/world-reliability-evolution-20261016/backend/review-cooperative-stable-sort.json",
+      "sha256": "1912124406ae2ee8a9c4b34e964b4124be05c4608cd710113803a8e7fdc338ae",
+      "status": "reviewed-no-open-P1-P2",
+      "sourceSha256": {
+        "src/client/cooperative-preparation.ts": "d8d726f4031c1e1b6bf04c371c70f96ec8b9b486b18e230be93fbc5afae13691",
+        "tests/cooperative-stable-sort.test.ts": "437ac340a993d7f0a4964d4163361742d56257756ee4b8ce410384b1e9a3c1f3"
+      },
+      "findings": [],
+      "reviewed": [
+        "Сбор исходного Iterable сохраняет порядок и не сортирует входной массив.",
+        "Каждый native run ограничен256 значениями; .sort(compare) работает на slice и сохраняет равные ключи.",
+        "Merge берёт левое значение при compare<=0; порядок равных ключей сохраняется между runs; каждая ширина полностью заполняет target перед swap.",
+        "Пустые/одиночные массивы и неполные последние runs обрабатываются без дыр/потери значений.",
+        "Между merge checkpoints не более64 выходных значений; tailcopy также учитывается.",
+        "Внешние4ms/abort checks не изменены; исключение comparator/generator передаётся наружу через существующий finally/cleanup.",
+        "Тест независимого oracle .slice().sort(compare) покрывает32768 и границы255/256/257/1025, tie acrossruns; тест cancellation демонстрирует abort partial consumption и отсутствие publish."
+      ],
+      "limits": [
+        "4ms остаётся soft budget по одному bounded step: native sort256 +copy, либо64mergeoutputs. Host-dependent время native run не доказано этим read-only pass.",
+        "Регрессии/18PASS сообщил root; reviewer повторно их не запускал. Native browser performance/5s readiness остаются pending renderer."
+      ]
+    },
+    {
+      "path": ".builder/world-reliability-evolution-20261016/backend/review-life-preparation.json",
+      "sha256": "e93f0fa3e8fb397eea9f9ff6ded7bad884f753e31cc65945e9fe5ec65f37544d",
+      "status": "reviewed-no-open-P1-P2",
+      "sourceSha256": {
+        "src/client/city-life.ts": "1380da8883d9b90f45738383e4d32dcf921f118269b527efc2feb5ecc1d935dd",
+        "src/client/city-everyday-life.ts": "477e06e9d53aea4b97f8d4c8d4806d12c3bef472de71dcb5843eba02cb2c6235",
+        "src/client/city-everyday-controller.ts": "189334935cb23fe2ee5c2f64a178269faa5a3deeff26d6ca942fa12d20954a81",
+        "tests/city-life-preparation.test.ts": "125acef7f04b6b62f643280605b23ee70b6b67ddf5a6d0dea2d962c22f9c5541"
+      },
+      "findings": [],
+      "reviewed": [
+        "cityLife task dedup/last value, id locale order, eligible states/incident checks, BFS direction/order/96bound/reverse result preserved.",
+        "Everyday canonical role priority, park footprint/pad sorting/hashed rotation, nearby target stable ordering and route128bound preserved.",
+        "Transit lane/anchor/candidate ordering, right curb/shelter/queue spacing, caps128candidate/16stops and reachable school pair selection preserved.",
+        "Source sort cache keyed by static destinationID computes the same stable candidate order; mutable fit/occupancy checks stay outside cache.",
+        "Preparation captures only input/site/stop/kind data, no actor poses/visits/reservations; commit validates isCurrent before writes and reconciles against current live controller state.",
+        "Default lexical sort for kinds is retained by explicit binary comparator, while original id localeCompare comparators remain unchanged.",
+        "New7cases include independent literal park/route/curb identities, partial held cancellation, stale role/stage guard and latest actor positions."
+      ],
+      "limits": [
+        "WorldCanvas revision/generation/owner integration belongs to renderer and is not certified by this producer-only pass.",
+        "4ms remains soft per bounded generator step; canDrive remains a synchronous bounded route query and its actual worst-case time requires browser evidence.",
+        "Actual200/1000 old053e paired proof prepared by reviewer but not run until combined immutable source and explicit CPU handoff. No performance/5s readiness claim."
+      ]
+    }
+  ],
+  "limits": [
+    "Канонические200/1000 fixtures сохранены целиком; viewport residency не урезает физический мир. Нет seed/regen/schema writes в paired proof.",
+    "JSON переносит компактные результаты и source/output SHA. Огромные CPU/trace/bundle metafile logs и закрытые URI не включены.",
+    "Снимок source hashes относится к выполненному proof. Он не объявлен окончательным release source/build freeze.",
+    "Новые everydayPlanningMs включают await/yield wall time принятой latest попытки; их нельзя напрямую сравнивать с прежним sync CPU compile.",
+    "Исторические native 9/9 на651a и18/18 на831102 сохранены отдельно. Полная native21/21 на353 и6affectedcases на934 подтверждают соответствующие границы. Fullstrict36 на934 завершён RED4; исходныеv2RED24 и все промежуточные causalRED не переписывались."
+  ],
+  "preDepthNative": {
+    "status": "PASS",
+    "cases": 9,
+    "scenarios": 3,
+    "profiles": [
+      "chromium",
+      "firefox",
+      "iphone-webkit"
+    ],
+    "sourceHash": "651a6e07ecc61b63cce7876df9d65b1fe3df0ef61e16692f6f036366112cf3dc",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "d77c103526a49e89ba9547e9e77313ecd126e9afb4ee970b11e0d3a59d9b6685",
+    "manifest": {
+      "path": ".builder/world-perf-20261016/candidate-cooperative-combined-v2/source-manifest.json",
+      "sha256": "e732a410ac5b0eab8247e299418e8ea2cb8cb422b82cb87a2d1dbc36f029ca8e"
+    },
+    "evidence": [
+      {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/combined-native-v2.log",
+        "sha256": "60a8b441395a5e4f4d3eee1592500fb189c15dcc21814f2945c66c4dde40ad98"
+      },
+      {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/combined-semantic-v2-valid-hash.log",
+        "sha256": "1801b06aa953e4c678da5d62096b9e5d1af98f621bde961035a173fa84f4908d"
+      },
+      {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/combined-native-v2-cross-engine.log",
+        "sha256": "b7db89575b69bd389bb8047bb9c21a6220eab57a92acefd3692bc2cabb700b69"
+      }
+    ],
+    "scenariosChecked": [
+      "Original dense-city5s readiness/canonical tasks/pan0reads.",
+      "Leaving held cooperative preparation and retained return under unchanged20s owner deadline.",
+      "A newer valid defect aggregate with actual updated chunkPayloadContentHash wins during held life preparation without path rebuild."
+    ],
+    "harnessCorrection": {
+      "previous": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/combined-semantic-v2.log",
+        "sha256": "23713be3f1bcf072791ebf397fcf70b4876d08d9b199235a7d0db420b306ecf7"
+      },
+      "note": "Первый controlled event оставлял устаревший contentHash; harnessRED сохранён. Valid-hashGREEN использует реальный checksum/aggregate. Runtime не менялся."
+    },
+    "limit": "Эти9case относятся только к651a до нового depth-adapter/overlap. Они не заменяют новую qualification и не суммируются повторно с другими наборами."
+  },
+  "originalFourProfileProbe": [
+    {
+      "path": ".builder/world-perf-20261016/cooperative-v2-probe-200-desktop-firefox/report.json",
+      "sha256": "1c45656027bda05172676576393ff2d1933edbd173e47c9c2a53c8ea4be29967",
+      "tasks": 200,
+      "profile": "desktop-firefox",
+      "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot651a6e07ecc61b63cce7876df9d65b1fe3df0ef61e16692f6f036366112cf3dc",
+      "samples": 1,
+      "coldCityMs": 1433.0225410000003,
+      "frameP95Ms": 9.840000000000146,
+      "inputP95Ms": 20,
+      "steadyLongTasksAvailable": false,
+      "steadyLongTaskCount": null,
+      "budgets": {
+        "coldCityMs": 1500,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errors": [],
+      "limit": "Один causal sample, не final36. Pre-depth painter cache bug ещё не исправлен, скорость исправленного depth этим не доказывается."
+    },
+    {
+      "path": ".builder/world-perf-20261016/cooperative-v2-probe-200-pixel-chromium/report.json",
+      "sha256": "fc41797fb2ffa0719e1ce494d7b3752ed41e0122041c502cfa16e7c02dc4cfd9",
+      "tasks": 200,
+      "profile": "pixel-chromium",
+      "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot651a6e07ecc61b63cce7876df9d65b1fe3df0ef61e16692f6f036366112cf3dc",
+      "samples": 1,
+      "coldCityMs": 6195.070916999999,
+      "frameP95Ms": 19.799999999999272,
+      "inputP95Ms": 104,
+      "steadyLongTasksAvailable": true,
+      "steadyLongTaskCount": 0,
+      "budgets": {
+        "coldCityMs": 6000,
+        "warmCityMs": 750,
+        "inputP95Ms": 200,
+        "frameP95Ms": 34,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [
+        "0:coldCityMs exceeded 6000"
+      ],
+      "errors": [],
+      "limit": "Один causal sample, не final36. Pre-depth painter cache bug ещё не исправлен, скорость исправленного depth этим не доказывается."
+    },
+    {
+      "path": ".builder/world-perf-20261016/cooperative-v2-probe-1000-desktop-firefox/report.json",
+      "sha256": "3d78abbefc68daca1c5f8ee0dec5ed6d5ba519c694950bb06a1e4d6e0dacea9e",
+      "tasks": 1000,
+      "profile": "desktop-firefox",
+      "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot651a6e07ecc61b63cce7876df9d65b1fe3df0ef61e16692f6f036366112cf3dc",
+      "samples": 1,
+      "coldCityMs": 3282.2614590000003,
+      "frameP95Ms": 33.35999999999876,
+      "inputP95Ms": 83,
+      "steadyLongTasksAvailable": false,
+      "steadyLongTaskCount": null,
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [
+        "0:coldCityMs exceeded 3000",
+        "0:RAF p95 exceeded 20"
+      ],
+      "errors": [],
+      "limit": "Один causal sample, не final36. Pre-depth painter cache bug ещё не исправлен, скорость исправленного depth этим не доказывается."
+    },
+    {
+      "path": ".builder/world-perf-20261016/cooperative-v2-probe-1000-pixel-chromium/report.json",
+      "sha256": "59a79ddc15b3258280d26a750a54b08bb677a9187dce167b3b3d9311f9a748dd",
+      "tasks": 1000,
+      "profile": "pixel-chromium",
+      "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot651a6e07ecc61b63cce7876df9d65b1fe3df0ef61e16692f6f036366112cf3dc",
+      "samples": 1,
+      "coldCityMs": 9279.305,
+      "frameP95Ms": 24.900000000001455,
+      "inputP95Ms": 92.39999997615814,
+      "steadyLongTasksAvailable": true,
+      "steadyLongTaskCount": 0,
+      "budgets": {
+        "coldCityMs": 12000,
+        "warmCityMs": 750,
+        "inputP95Ms": 200,
+        "frameP95Ms": 34,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errors": [],
+      "limit": "Один causal sample, не final36. Pre-depth painter cache bug ещё не исправлен, скорость исправленного depth этим не доказывается."
+    }
+  ],
+  "depthOrderReview": {
+    "path": ".builder/world-reliability-evolution-20261016/root/ux-review-world-depth-sorter.json",
+    "sha256": "da00997ebccc9bb2f112de188551613e489e5edd5eab55518f16e5e69c9de3c4",
+    "status": "no-open-actionable-findings-in-helper-and-adapter",
+    "sourceSha256": {
+      "src/client/world-depth-sorter.ts": "e89038e837c154e30a0c733ee5026c6815bc3429d4b9b75155b8c6062d9aa63c",
+      "tests/world-depth-sorter.test.ts": "41bca88c1afc880d8a7d33a856f407b48293c183c284c8327456f1fd16fa6664"
+    },
+    "adapterSnippetSha256": "2f250a868063562a056f458dde230ac376b6e3644e96e28ef1d4abc8213b661a",
+    "testsReported": {
+      "passed": 5,
+      "files": 2
+    },
+    "qualification": "INCLUDED_IN_HISTORICAL_NATIVE18_831102_AND_SUBSEQUENT_NATIVE21_353BF444_CURRENT_STRICT36_RED4"
+  },
+  "latestNative": {
+    "status": "PASS",
+    "profiles": [
+      "chromium",
+      "firefox",
+      "iphone-webkit"
+    ],
+    "exactRetryDelaysMs": [
+      500
+    ],
+    "noErrorObserver": "Positive held-canonical case observes whether any load error ever occurred, not merely final DOM state.",
+    "cases": 21,
+    "scenarios": 7,
+    "snapshot": ".builder/world-perf-20261016/candidate-initial-ground-v2",
+    "sourceHash": "353bf444856b0c7b3f4fa658a1c263502a458bd77ec845baba6cf49aade179de",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "b764428e2c0a7dfc66da1768b122a15f6b4cbcabcfade41390ba1cc809dd8a12",
+    "manifest": {
+      "path": ".builder/world-perf-20261016/candidate-initial-ground-v2/source-manifest.json",
+      "sha256": "1f1bc170c06c4043359ca57d7df5a227b73a519ea02827d7c3201a5046592e92"
+    },
+    "evidence": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-native.log",
+      "sha256": "b764e788a0ebf5543399bab7e4e3f96a419b5ee6d99dba6715ea1458ae499fe3"
+    },
+    "sourceFiles": {
+      "src/client/components/WorldCanvas.tsx": "d3dd953db8a45191d4d9d039fbfcb615c630e207b4a55189eb8bb34f8bd0e168",
+      "src/client/city-ground-readiness.ts": "3690a7aa0c10257c591057a80394a4cf63c0f358eb8dbb8d42ce79c9f16aa2aa",
+      "src/client/camera-terrain-padding.ts": "47e4a2a52a7152cfb1a7f3b4d3cdca4166b44629880abeaf17d887acb4bc2eb3",
+      "src/client/world-depth-sorter.ts": "e89038e837c154e30a0c733ee5026c6815bc3429d4b9b75155b8c6062d9aa63c"
+    },
+    "testSource": {
+      "path": "tests/e2e/city-render-reliability.spec.ts",
+      "sha256": "bd2dae55bc4bd0710c89957b795efd33beb9ca533e2ae0e30190fa4cc7c84c47"
+    },
+    "scenariosChecked": [
+      "Original native phone5s readiness/full1000canonical/pan0HTTP.",
+      "Leaving held cooperative preparation, no late publication, actual retained return under original20s owner deadline.",
+      "Valid newer defect aggregate during held life preparation wins without canonical path rebuild.",
+      "Resident ground bakes start while a real far canonical worker decode is held; atomic still waits for full canonical state.",
+      "Canonical failure cannot start/retain late resident GPU work; real native retry recovers.",
+      "A native retry shares the same held resident data owner across iterations without false stale or duplicate bakes.",
+      "FIRSTatomic: точное native viewport/canonical rectangle oracle; видимая земля и exterior готовы, canonical1000 и все wanted entity sources полны; invisible ground halo завершается после первого кадра; canvas/качество сохраняются и pan не делает HTTP."
+    ],
+    "supersedes": "Текущие 21 cases заменяют исторические 18 на 831102 и девять на 651a по native boundary. Это пересекающиеся серии, а не 48 независимых cases.",
+    "limits": [
+      "Эта21-case native серия относится к353bf444. Последующий934 проверен6affectedcases; его полный strict36 завершён с RED4, не PASS.",
+      "Физические телефоны не проверялись; touch viewport/браузерная эмуляция.",
+      "Body-attachments FIRSTatomic не сохранены отдельными JSON при CLI reporter; приведены проверенные утверждения, новые численные snapshot-значения не выдумываются."
+    ]
+  },
+  "overlapOwnership": {
+    "status": "TWO_P1_RED_TO_GREEN",
+    "independentReview": {
+      "path": ".builder/world-reliability-evolution-20261016/root/ux-review-overlap-ownership.json",
+      "sha256": "e624e2cac2d728ea82498ee68e79bf91b16b234675c625429ea12d6bb501c7f0"
+    },
+    "reviewStatus": "no-open-actionable-findings-in-overlap-ownership",
+    "redRuntime": {
+      "snapshot": ".builder/world-perf-20261016/candidate-cooperative-overlap-v1",
+      "sourceHash": "bc0e52f8a30a5ab695159d9d01e993c90a29b2378468287d24b569ee105585d9",
+      "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+      "clientHash": "d208a3f91eb6c03476424522eaf76d6d9b068ad9057015d1b4af3a0894a10663",
+      "manifest": {
+        "path": ".builder/world-perf-20261016/candidate-cooperative-overlap-v1/source-manifest.json",
+        "sha256": "859abc9df4657719b3960e5497cf071885e6b8d82d925ced94eb07e52b395c4d"
+      }
+    },
+    "redEvidence": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/overlap-failure-red.log",
+      "sha256": "cc28ecb4545c7b954e83202b439748b66f99ad673d5c7eb6b953b7608aeb9c20"
+    },
+    "findings": [
+      {
+        "priority": 1,
+        "boundary": "Canonical reject before held resident finishes",
+        "observedRed": "groundBakeSamples22→24 after failed iteration",
+        "resolution": "iterationActive flips before discard; queued/after-await resident guards and late prepared-view destruction prevent orphan allocation/publication.",
+        "green": "All3engines passed scenario5 in latest18."
+      },
+      {
+        "priority": 1,
+        "boundary": "Shared pending owner across resident/canonical consumers and500ms retry",
+        "observedRed": "44 new ground bakes exceeded24 resident budget",
+        "resolution": "Creator-owned validation/cache/finally, consumers only await; iteration memo acquires1fetchslot/dataKey and guards GPU ownership independently.",
+        "green": "All3engines passed scenario6 in latest18; exact retry delays[500]."
+      }
+    ],
+    "positiveOverlapTdd": {
+      "red": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/initial-overlap-bake-red.log",
+        "sha256": "62a18c4b30a63d0550efe7423a75dd25dfa714475a1a7220e6abc9e949b0d85c"
+      },
+      "green": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/initial-overlap-bake-green.log",
+        "sha256": "1d9806af029943ae9c2f083bc059fc88725c130fb421db3ec2816e60ed1e56bc"
+      },
+      "note": "Meaningful groundBakeSamples RED0 on651a→GREEN on overlapv1. Earlier wrong groundRebuild-counter setup attempts are excluded from acceptance."
+    },
+    "fullCanonicalBeforeAtomic": true,
+    "noQualityOrBudgetChange": true,
+    "focusedChecksReported": {
+      "files": 3,
+      "tests": 11,
+      "status": "PASS"
+    },
+    "scopedTypeScript": "PASS",
+    "scopedESLint": "PASS"
+  },
+  "next": "Парные6v2 FF200 завершены PASS после predeclared policy,44focusedchecks и двух независимых review.11 исходных v1PASS используются только как conservativebounds, historicalfullv4 остаётсяRED3. Дополнительных прогонов нет; root продолжает общие31criteria/CI/SCM/managedrelease.",
+  "preInitialGroundNative": {
+    "status": "PASS",
+    "cases": 18,
+    "scenarios": 6,
+    "profiles": [
+      "chromium",
+      "firefox",
+      "iphone-webkit"
+    ],
+    "snapshot": ".builder/world-perf-20261016/candidate-cooperative-overlap-owned-v2",
+    "sourceHash": "831102cf5370b9461b66122498958ac6d50b3f1d43da112c9ae1afc54fafebf3",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "ddf0e5c6d0906352efd8b2ca60088322c93a8febd83c33e1ef4b35fb22b08520",
+    "manifest": {
+      "path": ".builder/world-perf-20261016/candidate-cooperative-overlap-owned-v2/source-manifest.json",
+      "sha256": "ad5f72dd07615bce4f508f31db67e4eb5cd1a386a4b76b12c71a46da9a9d3e7d"
+    },
+    "evidence": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/overlap-owned-native.log",
+      "sha256": "121f3f8d55cf1b85098cadc639f006c23af83b0aff6f3842e096a3d9d38b785e"
+    },
+    "ledger": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/overlap-owned-evidence.json",
+      "sha256": "2263f0cc03da3fe9b77a975b8464f60157c0bc15c88cded0e1ef46bc090f0a66"
+    },
+    "sourceFiles": {
+      "src/client/components/WorldCanvas.tsx": "9f678798e5c81a0b988d46d829ff8662c81d5024d993ba8bbe7f20a236aec655",
+      "tests/e2e/city-render-reliability.spec.ts": "e45ba08d372d8a75fc83bc09237812ef344f465d9fec119c8e790c41342fb6de",
+      "src/client/world-depth-sorter.ts": "e89038e837c154e30a0c733ee5026c6815bc3429d4b9b75155b8c6062d9aa63c"
+    },
+    "scenariosChecked": [
+      "Original native phone5s readiness/full1000canonical/pan0HTTP.",
+      "Leaving held cooperative preparation, no late publication, actual retained return under original20s owner deadline.",
+      "Valid newer defect aggregate during held life preparation wins without canonical path rebuild.",
+      "Resident ground bakes start while a real far canonical worker decode is held; atomic still waits for full canonical state.",
+      "Canonical failure cannot start/retain late resident GPU work; real native retry recovers.",
+      "A native retry shares the same held resident data owner across iterations without false stale or duplicate bakes."
+    ],
+    "exactRetryDelaysMs": [
+      500
+    ],
+    "noErrorObserver": "Positive held-canonical case observes whether any load error ever occurred, not merely final DOM state.",
+    "supersedes": "Исторические 18 cases на 831102 сохранены; текущие 21 cases повторяют эти шесть сценариев и добавляют FIRSTatomic. Наборы не суммируются.",
+    "limits": [
+      "Исторический checkpoint831102: native18PASS, его original4probesRED2. Full36 затем выполнен на934 и завершилсяRED4; результаты не подменяются.",
+      "Эмуляция браузеров и touch viewport; физических телефонов нет."
+    ]
+  },
+  "preInitialGroundOriginalFourProfileProbe": {
+    "status": "RED",
+    "manifest": {
+      "sourceHash": "831102cf5370b9461b66122498958ac6d50b3f1d43da112c9ae1afc54fafebf3",
+      "clientHash": "ddf0e5c6d0906352efd8b2ca60088322c93a8febd83c33e1ef4b35fb22b08520",
+      "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937"
+    },
+    "evidence": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/overlap-owned-probe-summary.json",
+      "sha256": "d28afe05c7daed3b95d3476307e26068f3e577b783aceba077b1fe80dabc5780"
+    },
+    "rows": [
+      {
+        "size": 200,
+        "profile": "desktop-firefox",
+        "completed": true,
+        "budgetViolations": [],
+        "cold": 1404.56975,
+        "warm": 24.309292000001733,
+        "rafP95": 9.800000000001091,
+        "inputP95": 21,
+        "steadyLongTasks": [],
+        "errors": []
+      },
+      {
+        "size": 200,
+        "profile": "pixel-chromium",
+        "completed": true,
+        "budgetViolations": [
+          "0:coldCityMs exceeded 6000"
+        ],
+        "cold": 6206.816041,
+        "warm": 99.31229200000234,
+        "rafP95": 16.5,
+        "inputP95": 72.89999997615814,
+        "steadyLongTasks": [],
+        "errors": []
+      },
+      {
+        "size": 1000,
+        "profile": "desktop-firefox",
+        "completed": true,
+        "budgetViolations": [],
+        "cold": 2725.787292,
+        "warm": 28.918666999998095,
+        "rafP95": 9.780000000000655,
+        "inputP95": 39,
+        "steadyLongTasks": [],
+        "errors": []
+      },
+      {
+        "size": 1000,
+        "profile": "pixel-chromium",
+        "completed": true,
+        "budgetViolations": [
+          "0:steady long tasks"
+        ],
+        "cold": 9219.084291,
+        "warm": 102.6807919999992,
+        "rafP95": 25.30000000000291,
+        "inputP95": 97.5,
+        "steadyLongTasks": [
+          {
+            "startTime": 27267.600000023842,
+            "duration": 51
+          }
+        ],
+        "errors": []
+      }
+    ],
+    "samples": 4,
+    "full36": false,
+    "note": "Два нарушения исходных порогов сохранены:200Pixelcold6206.816>6000ms;1000PixelsteadyLT51ms. Это контроль831102 до initial-ground cut, не результаты353bf444."
+  },
+  "initialGroundReadiness": {
+    "status": "NATIVE_RED_TO_GREEN_SUBSEQUENT_STRICT36_RED4",
+    "scope": [
+      "Только первый непоказанный CITY кадр: critical-visible ground/exterior до atomic, invisible ground halo после него в прежней bounded queue.",
+      "Все canonical task/chunk data, wanted entity sources/PNG/roofs и полная физическая сеть сохранены. Wanted residency/halo1 и HTTP контракты не сокращены.",
+      "После показа города полная ground-barrier политика сохранена; точный continuous readiness range/exterior padding дополнительно закрывает fractional last-pixel strips."
+    ],
+    "red": {
+      "runtimeSourceHash": "831102cf5370b9461b66122498958ac6d50b3f1d43da112c9ae1afc54fafebf3",
+      "evidence": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-split-red.log",
+        "sha256": "21237a1cb429787053de43041259b0cbcde162987723186574a88bd84345b61a"
+      },
+      "observed": "Первый кадр ждал все12resident ground: existing assertion12<12false. Ошибка воспроизведена раньше проверок новых counters."
+    },
+    "green": {
+      "sourceHash": "353bf444856b0c7b3f4fa658a1c263502a458bd77ec845baba6cf49aade179de",
+      "cases": 3,
+      "profiles": [
+        "chromium",
+        "firefox",
+        "iphone-webkit"
+      ],
+      "evidence": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-native.log",
+        "sha256": "b764e788a0ebf5543399bab7e4e3f96a419b5ee6d99dba6715ea1458ae499fe3"
+      },
+      "verifiedAssertions": [
+        "MutationObserver фиксирует FIRSTatomic до locator/loading waits.",
+        "groundRebuilds>0 и <fullwantedbudget; criticalCount совпадает с независимым continuous native viewport×canonical chunk rectangle oracle.",
+        "critical ground/visible exterior terrain+roads+trees готовы; canonical1000/chunk count и fullwanted entity source count сохранены.",
+        "Invisible halo pending>0 в FIRSTatomic; затем queue0/loadingfalse/allwantedground, samecanvas/native900pxpan/noHTTP и NORMAL/style сохраняются."
+      ],
+      "mockedWorkDataTimersWorkers": false,
+      "screenshots": [
+        {
+          "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-native/results/city-render-reliability-th-1db1b-before-invisible-halo-bakes-chromium/initial-critical-city-after-pan.png",
+          "sha256": "653c08dc1bd8473512fd5c6240a6d67051804b17e23fcbc8183eb96d221e9382"
+        },
+        {
+          "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-native/results/city-render-reliability-th-1db1b-before-invisible-halo-bakes-world-review-firefox/initial-critical-city-after-pan.png",
+          "sha256": "31e0f4acd1c3d96d533aa86ce4922669514f23690a6b25f683efc41277829300"
+        },
+        {
+          "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-native/results/city-render-reliability-th-1db1b-before-invisible-halo-bakes-world-review-iphone/initial-critical-city-after-pan.png",
+          "sha256": "1e22dd5e02e84cc8172ec944ad18e2c4f1c78cf23d5693d2db2f309bc2d28ee1"
+        }
+      ],
+      "visualReview": "Все3 существующих PNG просмотрены: видимый ландшафт/дороги/ЖД/здания/дворы без пустых тайлов и швов, стиль и геометрический ракурс согласованы. Новых съёмок не делали."
+    },
+    "sourceReview": {
+      "path": ".builder/world-reliability-evolution-20261016/root/ux-review-initial-ground.json",
+      "sha256": "374974591f9c8c87043fb0e4b83623e0e417fed0de118c6bbab2a2bd3f567daf"
+    },
+    "scopedTypeScript": {
+      "status": "PASS reported by renderer",
+      "log": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-final-type.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "scopedESLint": {
+      "status": "PASS reported by renderer;8files",
+      "log": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-final-lint.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "pureProducerChecksReported": {
+      "status": "PASS",
+      "checks": 47,
+      "files": 4,
+      "note": "Точечный набор готовности/exact fractional/padding, не суммируется повторно с прежними suites."
+    },
+    "noBudgetQualityOrDriverChange": true,
+    "nextOriginalStrict36": "Исторический353 full36 не выполнялся; последующий934 strict36 завершён с RED4, см. currentCandidate.strictResult.",
+    "originalFourProfileProbe": {
+      "status": "RED",
+      "evidence": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/initial-ground-probe-summary.json",
+        "sha256": "b4c999690c4e68aa0b3daa5cf4f26c039bcce4dacd4a428a8a0ec684bb90bbea"
+      },
+      "manifest": {
+        "sourceHash": "353bf444856b0c7b3f4fa658a1c263502a458bd77ec845baba6cf49aade179de",
+        "clientHash": "b764428e2c0a7dfc66da1768b122a15f6b4cbcabcfade41390ba1cc809dd8a12",
+        "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937"
+      },
+      "rows": [
+        {
+          "size": 200,
+          "profile": "desktop-firefox",
+          "completed": true,
+          "budgetViolations": [],
+          "cold": 1376.2947500000002,
+          "warm": 20.664374999996653,
+          "rafP95": 9.180000000000291,
+          "inputP95": 20,
+          "steadyLongTasks": [],
+          "errors": []
+        },
+        {
+          "size": 200,
+          "profile": "pixel-chromium",
+          "completed": true,
+          "budgetViolations": [
+            "0:coldCityMs exceeded 6000"
+          ],
+          "cold": 6213.8855,
+          "warm": 107.7096249999995,
+          "rafP95": 25.100000000002183,
+          "inputP95": 88.39999997615814,
+          "steadyLongTasks": [],
+          "errors": []
+        },
+        {
+          "size": 1000,
+          "profile": "desktop-firefox",
+          "completed": true,
+          "budgetViolations": [],
+          "cold": 2525.0364170000003,
+          "warm": 27.36866700000246,
+          "rafP95": 9.260000000000218,
+          "inputP95": 47,
+          "steadyLongTasks": [],
+          "errors": []
+        },
+        {
+          "size": 1000,
+          "profile": "pixel-chromium",
+          "completed": true,
+          "budgetViolations": [],
+          "cold": 9160.810625,
+          "warm": 104.01666700000351,
+          "rafP95": 25.299999999999272,
+          "inputP95": 102.70000004768372,
+          "steadyLongTasks": [],
+          "errors": []
+        }
+      ],
+      "full36": false,
+      "note": "Native21 прошёл, но200Pixelcold6213.886>6000ms осталсяRED. Остальные три одиночных causal samples прошли; это не final36."
+    },
+    "additionalKnownRedWebkit1000Probe": {
+      "evidence": {
+        "path": ".builder/world-perf-20261016/initial-ground-webkit-probe-1000-desktop-webkit/report.json",
+        "sha256": "72429bbbe72186ee081f4dc4bf9d8adfc8ca348f8fbea8f480f93e47527eb55c"
+      },
+      "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-353bf444856b0c7b3f4fa658a1c263502a458bd77ec845baba6cf49aade179de",
+      "completed": true,
+      "expectedSamples": 1,
+      "budgetViolations": [],
+      "results": [
+        {
+          "sample": 0,
+          "coldCityMs": 2152.3005410000005,
+          "warmCityMs": 15.731291999996756,
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errors": [],
+      "limit": "Один исходный1000desktopWebKit causal sample2152.3ms на353, не final36 и не qualification934."
+    }
+  },
+  "currentCandidate": {
+    "snapshot": ".builder/world-perf-20261016/candidate-road-preparation-v1",
+    "sourceHash": "03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75",
+    "htmlHash": "a2af5ab50c5315acfeb007f5210529a0304c15e31a860437817145ba147ca74f",
+    "manifest": {
+      "path": ".builder/world-perf-20261016/candidate-road-preparation-v1/source-manifest.json",
+      "sha256": "bd8af195f7e6df5e93534e5275ba958f8acb62092edd5afc0c09553bdd9375a0"
+    },
+    "nativeCases": 6,
+    "nativeProfiles": [
+      "chromium",
+      "world-review-firefox",
+      "world-review-iphone"
+    ],
+    "nativeStatus": "PASS_6_OF_6_AFFECTED_READINESS_FIRSTATOMIC",
+    "nativeEvidence": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/road-preparation-native.log",
+      "sha256": "a23c8ecf462ffa8520c1068c081e9db37b66122c0c7457cebf80355ce03ef141"
+    },
+    "originalTargetedProbes": [
+      {
+        "size": 200,
+        "profile": "pixel-chromium",
+        "exit": 0,
+        "completed": true,
+        "failure": null,
+        "budgetViolations": [],
+        "cold": 5721.131209000001,
+        "warm": 83.62099999999919,
+        "rafP95": 10.299999999999272,
+        "inputP95": 54.199999928474426,
+        "steadyLongTasks": [],
+        "errors": [],
+        "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+        "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+        "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75"
+      },
+      {
+        "size": 200,
+        "profile": "desktop-firefox",
+        "exit": 0,
+        "completed": true,
+        "failure": null,
+        "budgetViolations": [],
+        "cold": 1377.1740000000002,
+        "warm": 39.422458999997616,
+        "rafP95": 9.900000000000546,
+        "inputP95": 18,
+        "steadyLongTasks": [],
+        "errors": [],
+        "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+        "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+        "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75"
+      },
+      {
+        "size": 1000,
+        "profile": "desktop-firefox",
+        "exit": 0,
+        "completed": true,
+        "failure": null,
+        "budgetViolations": [],
+        "cold": 2558.757917,
+        "warm": 19.81816600000093,
+        "rafP95": 17.26000000000022,
+        "inputP95": 57,
+        "steadyLongTasks": [],
+        "errors": [],
+        "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+        "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+        "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75"
+      }
+    ],
+    "strict36": "STRICT_RED",
+    "newRestore": {
+      "path": "docs/evidence/city-scale-2026-10-16/final-v4-database-restore.json",
+      "sha256": "f6a4f2ced0ab1efe371616f00403118d28c73eba72c1fa5f89a497030e9b699a"
+    },
+    "newPreflight": {
+      "path": ".builder/world-perf-20261016/final-v4-preflight.json",
+      "sha256": "d2a4ab6cc7537b805117c2501c4c1aae4e7364d9819dfdae24837406d7200f8b"
+    },
+    "limit": "Предыдущие36@934RED4 и CBD Pixel steady54/55мсRED сохранены. Три одиночных probes/native6 не заменяют полную новую36.",
+    "label": "LAST_FULL_STRICT_MEASURED_CHECKPOINT_NOT_OVERALL_RELEASE_ACCEPTANCE",
+    "strictResult": {
+      "status": "STRICT_RED",
+      "samples": 36,
+      "profiles": 12,
+      "strictPassingProfiles": 11,
+      "metricViolations": 3,
+      "functionalErrors": 0,
+      "allCanonicalGeometryPreserved": true,
+      "allRequestAndCanvasGuardsPassed": true,
+      "summary": {
+        "path": "docs/evidence/city-scale-2026-10-16/final-v4-summary.json",
+        "sha256": "769a547befe6bcfc17313dbf9da00dd201420874978298040be6c9156c4a883f"
+      },
+      "postflight": {
+        "path": ".builder/world-perf-20261016/final-v4-postflight.json",
+        "sha256": "d7c46fafafe36f56d2ab47c04aaea5b6be6656b3f37f91b3f95c8a0e46bba327"
+      },
+      "comparison": {
+        "path": ".builder/world-perf-20261016/baseline-vs-final-v4.json",
+        "sha256": "fc8eeee26f2a99ae5b1eff88b476fc5dece797cacb71d481c354719f48ab5ecb"
+      },
+      "driverExitCode": 1,
+      "budgetsDriverQualityUnchanged": true,
+      "remainingFailures": [
+        "200/desktop-firefox: 0:coldCityMs exceeded 1500",
+        "200/desktop-firefox: 1:coldCityMs exceeded 1500",
+        "200/desktop-firefox: 2:coldCityMs exceeded 1500"
+      ]
+    },
+    "effectivePerformanceQualification": {
+      "status": "PAIRED_V2_FF200_PASS_WITH_EXPLICIT_LEGACY_11_PROFILE_REUSE",
+      "evidence": {
+        "path": "docs/evidence/city-scale-2026-10-16/cold-measurement-v2-summary.json",
+        "sha256": "199eb370e4213a348b2d3f0e11492ff381ba72cdaddc996c8e53deea5695382b"
+      },
+      "coldBudgetMs": 1500,
+      "executedRuns": 6,
+      "explicitV2Profile": "200/desktop-firefox",
+      "legacyProfilesConservativePass": 11,
+      "historicalFullV4": "STRICT_RED3_11_OF12_PASS_UNCHANGED",
+      "noNew36V2Matrix": true,
+      "runtime03fcUnchanged": true
+    }
+  },
+  "nextBoundedChange": {
+    "status": "PRODUCER_RED_GREEN_PASS_THREE_CAUSAL_PROBES_STILL_RED_NOT_QUALIFIED",
+    "owner": "renderer",
+    "files": [
+      "src/client/city-everyday-view.ts",
+      "tests/city-everyday-view.test.ts"
+    ],
+    "sourceSha256": "b568e4ff33295f17f0b32d83ecd1a2689676dd2088ea1a17e69bbf86fcbe01e8",
+    "testSha256": "c86300bc8300399eb753c1963725269b30a3375260fa3377b47285bb2a5a84bb",
+    "change": "Пропуск cues.clear() только при пустом Graphics.context.instructions; активный рисунок и active→idle cleanup сохранены. Actor/FPS/visibility/sound/activeanimation политика не сокращается.",
+    "independentReview": {
+      "path": ".builder/world-reliability-evolution-20261016/root/ux-review-idle-graphics.json",
+      "sha256": "a4ba39b23a50e73a7c58f87ab968996739433cfc730955b709185fc1e4ccd202",
+      "status": "NO_OPEN_ACTIONABLE_P1_P2"
+    },
+    "reportedProducerRegression": {
+      "status": "PASS",
+      "tests": 31,
+      "files": 4,
+      "newTests": 3,
+      "meaningfulRed": "Actual Pixi120emptyupdates emitted120events instead0; guard GREEN preserves active→idleexactonce/raincadence."
+    },
+    "limit": "Новый runtime ещё не квалифицирован. Исторический strict36@934RED4 не переносится на этот source. Новый benchmark/restore только после явной координации root/renderer.",
+    "snapshot": ".builder/world-perf-20261016/candidate-idle-graphics-v1",
+    "manifest": {
+      "path": ".builder/world-perf-20261016/candidate-idle-graphics-v1/source-manifest.json",
+      "sha256": "fc76ab9f606f0c96e74a733ab52171362447d1f90c536453eaacdc6d2eda22a8"
+    },
+    "sourceHash": "cbd8ac13d0d812de2fcf5d44c64826c56a19b1b4b7bdf6f37583014786767d89",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "de5e926f4281ef140f4f01ae94f0153710a0e3e06209a1ed04002066f7a1ec96",
+    "handoff": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/idle-graphics-handoff.json",
+      "sha256": "8d2f5d9304bab4ca1ce494bac03b98f3cf29d614effe4c254a88429caf6be37a"
+    },
+    "originalThreeProbes": {
+      "status": "RED",
+      "evidence": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/idle-graphics-probe-summary.json",
+        "sha256": "3ac8b8caddae4d739188e6faa6ecbe97f538e457967d7046b210bb2194e2c660"
+      },
+      "rows": [
+        {
+          "size": 200,
+          "profile": "pixel-chromium",
+          "exit": 1,
+          "completed": true,
+          "failure": null,
+          "budgetViolations": [
+            "0:steady long tasks"
+          ],
+          "cold": 5788.222250000001,
+          "warm": 95.05616599999848,
+          "rafP95": 16.799999999999272,
+          "inputP95": 96.39999997615814,
+          "steadyLongTasks": [
+            {
+              "startTime": 20763.399999976158,
+              "duration": 54
+            },
+            {
+              "startTime": 20818.399999976158,
+              "duration": 55
+            }
+          ],
+          "errors": [],
+          "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-cbd8ac13d0d812de2fcf5d44c64826c56a19b1b4b7bdf6f37583014786767d89",
+          "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+          "clientHash": "de5e926f4281ef140f4f01ae94f0153710a0e3e06209a1ed04002066f7a1ec96"
+        },
+        {
+          "size": 200,
+          "profile": "desktop-firefox",
+          "exit": 0,
+          "completed": true,
+          "failure": null,
+          "budgetViolations": [],
+          "cold": 1385.5743750000001,
+          "warm": 21.12566599999991,
+          "rafP95": 9.05999999999949,
+          "inputP95": 17,
+          "steadyLongTasks": [],
+          "errors": [],
+          "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-cbd8ac13d0d812de2fcf5d44c64826c56a19b1b4b7bdf6f37583014786767d89",
+          "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+          "clientHash": "de5e926f4281ef140f4f01ae94f0153710a0e3e06209a1ed04002066f7a1ec96"
+        },
+        {
+          "size": 1000,
+          "profile": "desktop-firefox",
+          "exit": 0,
+          "completed": true,
+          "failure": null,
+          "budgetViolations": [],
+          "cold": 2467.700459,
+          "warm": 20.674208000000363,
+          "rafP95": 9.119999999998981,
+          "inputP95": 21,
+          "steadyLongTasks": [],
+          "errors": [],
+          "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-cbd8ac13d0d812de2fcf5d44c64826c56a19b1b4b7bdf6f37583014786767d89",
+          "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+          "clientHash": "de5e926f4281ef140f4f01ae94f0153710a0e3e06209a1ed04002066f7a1ec96"
+        }
+      ],
+      "qualification": false,
+      "countNote": "Один Pixel profile нарушил steady gate двумя longtasks54/55мс; два Firefox probes прошли. Это три одиночных samples, не новая36серия."
+    },
+    "diagnosticRoad": {
+      "path": "cbd-road-pixel200",
+      "runManifestHash": "04ed8ff0f8cfc1b74bee29c43674875c16709b11a815a7a2a6142e09f2f4f093",
+      "realPreRunAlignment": true,
+      "mainTaskMs": 61.115,
+      "mainTaskAt": 16002.733,
+      "roadPublishedAt": 16062.899999976158,
+      "originalSteadyStart": 16176.600000023842,
+      "withinOriginalSteady": false,
+      "updateRoadEventsSampledMs": 44.3,
+      "roadEventSitesSampledMs": 30.9,
+      "roadEventSitesSelfSampledMs": 28.2,
+      "pixiRenderSampledMs": 14.9,
+      "actualKind": "MEDICAL",
+      "actualPhase": "ARRIVE",
+      "roadPlanningMeasuredMs": 42.5,
+      "proposedNextBoundary": "canonical static road-site descriptors; live closures/actors/reachability unchanged",
+      "qualification": false,
+      "scope": "Реальный MEDICAL/ARRIVE onset task61.115ms произошёл114ms до original steady. Это causal attribution, не прохождение исходного performance gate."
+    },
+    "nextScope": {
+      "status": "SOURCE_PARITY_NATIVE_PASS_STRICT36_STRICT_RED",
+      "boundary": "Статические дорожные descriptors подготовлены совместно с canonical network; динамические ограничения применяются в каждом публичном roadEventSites read.",
+      "evidence": "roadEventStaticPreparation",
+      "qualification": "Отдельный final-v4 не перезаписывает исторический final-v3RED4. Все исходные пороги/driver/waits/quality сохранены."
+    }
+  },
+  "roadEventStaticPreparation": {
+    "status": "SEMANTIC_PARITY_NATIVE_PASS_FULL36_STRICT_RED",
+    "description": "Статические дорожные descriptors подготовлены совместно с canonical network; динамические ограничения применяются в каждом публичном roadEventSites read.",
+    "sourceHashes": {
+      "src/client/city-mobility.ts": "e160a399f3dedf8f4c6ba854cfc3e1fbc408650d770133bc39d67d5f642723b0",
+      "src/client/city-road-event-geometry.ts": "e84883bb7b6d87b9997f1110c1d51726cff06068bb03955633b9165c8408df65",
+      "tests/city-road-event-preparation.test.ts": "a933342153abf36e292a723d34835d74752a3a6e6633d9677776920ab52d947a"
+    },
+    "producerRegression": {
+      "uniqueFinalTests": 39,
+      "files": 4,
+      "newTests": 6,
+      "meaningfulRed": "Повторное чтение далёких static coordinates после construction бросало Static coordinates rescanned after preparation; новый prepared index устраняет этот scan.",
+      "scopedTypecheck": "PASS после корректного --types node,vite/client; первая отдельная конфигурация без vite/client сохранена в raw как ошибка harness.",
+      "scopedLint": "PASS",
+      "countNote": "39 — итоговый набор, включающий6 новых checks; ранние6GREEN и пересекающиеся31 idle-view checks не прибавляются повторно."
+    },
+    "expandedProof": {
+      "evidence": {
+        "path": ".builder/world-reliability-evolution-20261016/backend/road-event-preparation/paired-road-oldCBD-old053e-proof.json",
+        "sha256": "26931e2c86e322ae7120f0f1b12988f8a620e653b19edb14c44e59070e2fb9c4"
+      },
+      "sourceManifest": {
+        "path": ".builder/world-reliability-evolution-20261016/backend/road-event-preparation/paired-road-source-manifest-before.json",
+        "sha256": "783edc98719e0b591fb019443d7b3679e3b20823e4aa27ab9096c567e284828f"
+      },
+      "actualRuns": 1,
+      "sourceInputs": 129,
+      "allInputsBeforeAfterEqual": true,
+      "baselines": [
+        "Exact frozen053e source",
+        "CBD pre-fix original city-mobility SHA923839f43c1eb71d485e436521991dbdcaba572d1e219cf7a219b01807fa0dd4 / bundle5c7dfcd0a9a599142e5ad895796a018600b30ad63164226266e211f7440a1b4b"
+      ],
+      "databaseReadOnly": true,
+      "migrated": false,
+      "seeded": false,
+      "regenerated": false,
+      "inputMutation": false,
+      "scope": "Полные упорядоченные WALK/network/signatures/spawn/motion/life/everyday/stops/animal outputs совпали с exact053e;8 ordered road states на каждом наборе совпали с exact053e и pre-static-road CBD.",
+      "rows": [
+        {
+          "tasks": 200,
+          "fixtureGeometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "sceneHash": "bed2508ab7ec021201ad867fa6bdb87e9edd198df2df65cb94c507142c15bbde",
+          "walkInputHash": "205da0191fad2321130fff8a5a8bf7bd7fd9b8f70bd12b6c53a7674e6ec15219",
+          "walkOutputHash": "55d17d2a074f028890024b245c321f1c6d36f092ad213ac17d36d1a9bee68dc6",
+          "topologyInputHash": "40d2d22b8674a0b4d819c397845313e29cd056b03aab4e2f896ba2c0e8f933a4",
+          "topologyHash": "67e5d1f276fbde51315d12605fa16cbae008bd465693a8b7d43a89e4fe8dfe09",
+          "spawnHash": "db5d95674f5eefc3c0affa27de990f762a5d866841e3eb4e44acf963118ab15e",
+          "motionHash": "f8a186b6dcda8b1e23daeec3a6f6a2ebdd610cd493a41a86d2477f15580d57a2",
+          "roads": 7338,
+          "canonicalWalkingCells": 11288,
+          "navigableWalkers": 8141,
+          "zones": 1214,
+          "actors": 56,
+          "lifeSites": 160,
+          "lifeSitesHash": "a7a3e0adaea4ab8260a7e70ed1438285a2dbc0526f13bf8f194b61ba8b8b151a",
+          "everydaySites": 155,
+          "everydaySitesHash": "8fb67de65bd5f6a02a907027931162d44041ed566b2c49695dd44e5c154a108e",
+          "transitStops": 16,
+          "transitStopsHash": "b7540a9349ab0dac5be35debef1024440fa45db375aa109bda3f2ecb616a981b",
+          "animalGround": 18841,
+          "animalRouteCases": 8,
+          "animalRoutesHash": "eebf48efc460ea0ce6bbfee5c38c8df735ed6471c8d46de2de623d5de4d5c41c",
+          "lifeInputHash": "becbe2ee8f83a62e7732fb30133ca54b3763039374736ead44ba0c5e1ecb1bb4",
+          "everydayInputHash": "ac2e910d50ec9af1a6c63a049f534179b7da8a2d1c9e46f26c3ce6a5613b12a9",
+          "animalInputHash": "f892cb62baaa227a570bb379731273255ff7928e245f16dbd74b0920b6205cb7",
+          "roadCases": [
+            {
+              "label": "initial",
+              "sites": 72,
+              "towSites": 29,
+              "hash": "7e5dd7d1d7b302c71a9cb936ee37844da603295f1058d3d17bdcb8d9334d027f"
+            },
+            {
+              "label": "after-public-output-alias-mutations",
+              "sites": 72,
+              "towSites": 29,
+              "hash": "7e5dd7d1d7b302c71a9cb936ee37844da603295f1058d3d17bdcb8d9334d027f"
+            },
+            {
+              "label": "after-500ms-real-actor-motion",
+              "sites": 80,
+              "towSites": 30,
+              "hash": "23401a11ad44969beaca71d71f7f8c6dbce3cb1bb4dd8f36f6c49b6efc2776df"
+            },
+            {
+              "label": "with-current-lane-closure",
+              "sites": 75,
+              "towSites": 25,
+              "hash": "157f8f7ce67cfe9ac7e3979551d51ab8d53cb28f595b6976508a704a9ca33543"
+            },
+            {
+              "label": "after-reopening-lane",
+              "sites": 80,
+              "towSites": 30,
+              "hash": "23401a11ad44969beaca71d71f7f8c6dbce3cb1bb4dd8f36f6c49b6efc2776df"
+            },
+            {
+              "label": "medical-response-attempt-1",
+              "sites": 61,
+              "towSites": 21,
+              "hash": "651abcfda36bdd24a468f5e49e0577ca409191c720c007da6420a38628729144"
+            },
+            {
+              "label": "after-live-response-100ms",
+              "sites": 61,
+              "towSites": 21,
+              "hash": "651abcfda36bdd24a468f5e49e0577ca409191c720c007da6420a38628729144"
+            },
+            {
+              "label": "after-live-response-release",
+              "sites": 80,
+              "towSites": 30,
+              "hash": "23401a11ad44969beaca71d71f7f8c6dbce3cb1bb4dd8f36f6c49b6efc2776df"
+            }
+          ],
+          "responseAttempts": 1,
+          "responseAssigned": true,
+          "cbdEquivalent": true,
+          "yieldCount": 201,
+          "seed": 73,
+          "inputMutation": false,
+          "databaseReadOnly": true,
+          "exactOld053eEquivalent": true
+        },
+        {
+          "tasks": 1000,
+          "fixtureGeometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "sceneHash": "85d0422dd7e477f3dd1b7fc720642d93933e9fefe1848996e4f1ed064692b513",
+          "walkInputHash": "e79dfd6bff521caad5eaf24155f4c07508468c8764a00868599a0e91b43ae82f",
+          "walkOutputHash": "8a74d690b149ce6635504f6d4c25728342d9dc516de6bb2b491d2916cb55c5f6",
+          "topologyInputHash": "c739846b8ff6ea6064c6cf034e7fd205f2aa8f81000cf1f36af2304e4d4e49d7",
+          "topologyHash": "337f4d2928d6491bd0980a81714568369cd84a0ced5a6e59a92e135a29431bfd",
+          "spawnHash": "db31bdd3dc7816115e932fdbe941babe1145486ee92a7c3c2c8938a929cdaa03",
+          "motionHash": "948a9dc522ca6eb59b77a0bbc99913e2f82e83aa75146d15447c4626c67fd464",
+          "roads": 33558,
+          "canonicalWalkingCells": 53580,
+          "navigableWalkers": 37857,
+          "zones": 5742,
+          "actors": 56,
+          "lifeSites": 800,
+          "lifeSitesHash": "51a3027e3ec0a8810414d4bda502dbb479cba852b15be7f33314bb6336f9c6e3",
+          "everydaySites": 694,
+          "everydaySitesHash": "17e3580e34bc86ee5006858003545cbf06bdbdd133c0dfe193ed0e2da26a1975",
+          "transitStops": 16,
+          "transitStopsHash": "bc1390dd9ad926b8d4dcc36cf81498034f080ab65f32578cad4733c7a642ac58",
+          "animalGround": 59825,
+          "animalRouteCases": 8,
+          "animalRoutesHash": "67f8bb220d5cb5ebe9d20fc5f2d9b1b00db1c0603279ab835a1e30ae502eb464",
+          "lifeInputHash": "b7c2c3b46b4fd2f83df893bc853c8032f46cabd21f8d306a76b28c44a110fd73",
+          "everydayInputHash": "be1aaee6151737a0b85d83f2d7493dd553e929201fd8669956fd798350e4dbdb",
+          "animalInputHash": "ac41d3a3e5e8f644fb369c4f50bc3dafd5b9ba437854941fc30da0539c31ded5",
+          "roadCases": [
+            {
+              "label": "initial",
+              "sites": 135,
+              "towSites": 61,
+              "hash": "800d984e338211d550a96135e6dc672df977f8149da90860e8597d76b45991bf"
+            },
+            {
+              "label": "after-public-output-alias-mutations",
+              "sites": 135,
+              "towSites": 61,
+              "hash": "800d984e338211d550a96135e6dc672df977f8149da90860e8597d76b45991bf"
+            },
+            {
+              "label": "after-500ms-real-actor-motion",
+              "sites": 142,
+              "towSites": 64,
+              "hash": "f2c8b39ccc5c942dd6c7e44b54af965ccee38ac4a06b9b21c1da919ff2c6c1cd"
+            },
+            {
+              "label": "with-current-lane-closure",
+              "sites": 138,
+              "towSites": 60,
+              "hash": "dcf4b007174914bd73c227d64d111d7a2d86b3761c5913b427708b520eb45625"
+            },
+            {
+              "label": "after-reopening-lane",
+              "sites": 142,
+              "towSites": 64,
+              "hash": "f2c8b39ccc5c942dd6c7e44b54af965ccee38ac4a06b9b21c1da919ff2c6c1cd"
+            },
+            {
+              "label": "medical-response-attempt-1",
+              "sites": 157,
+              "towSites": 64,
+              "hash": "dd46bcd2b66115f0979377101a646d2f57d3df04b8c54c52efd7555573625cea"
+            },
+            {
+              "label": "after-live-response-100ms",
+              "sites": 157,
+              "towSites": 64,
+              "hash": "dd46bcd2b66115f0979377101a646d2f57d3df04b8c54c52efd7555573625cea"
+            },
+            {
+              "label": "after-live-response-release",
+              "sites": 142,
+              "towSites": 64,
+              "hash": "f2c8b39ccc5c942dd6c7e44b54af965ccee38ac4a06b9b21c1da919ff2c6c1cd"
+            }
+          ],
+          "responseAttempts": 1,
+          "responseAssigned": true,
+          "cbdEquivalent": true,
+          "yieldCount": 541,
+          "seed": 73,
+          "inputMutation": false,
+          "databaseReadOnly": true,
+          "exactOld053eEquivalent": true
+        }
+      ],
+      "limits": "Это одно доказательство семантики на реальных frozen сценах; не browser timing, не memory budget и не квалификация36."
+    },
+    "behavior": {
+      "prepared": "Zone radius2 exclusion, canonical straight three-cell descriptors, row-major radius5 curb keys and reverse curb→candidate indices built cooperatively with16cheap-work checkpoints and flushed final partial batch.",
+      "owner": "Opaque PreparedTopology; adopted synchronously beside actual network after single-adoption validation. No cache by mutable input Map identity; no actor state/read-only facade exposed.",
+      "live": "Same first6 free car searches/max28/heading/routes, actor7x7 occupancy, current closures, current safeDestination(behind)+reachable tow availability. Reverse-index selection replaces only logically redundant reachable×121 responseCoverage Set.",
+      "order": "Outer candidates remain canonical carEdges insertion order; response keys remain old y=-5..5/x=-5..5 order.",
+      "publicOwnership": "Fresh cells[]/responseCells[]/towCell point per roadEventSites call; existing Cell refs as before.",
+      "resources": "At most121 curb associations per static candidate; keys reuse canonical string refs; reverse associations numeric. Temporary zone/curb maps drop after build. Existing4ms soft budget/8192 operation cap/abort20s owner unchanged.",
+      "notClaimed": "No browser timing, readiness/full36 or memory-byte budget passed by pure functional proof."
+    },
+    "independentReviews": [
+      {
+        "path": ".builder/world-reliability-evolution-20261016/root/ux-review-road-event-preparation.json",
+        "sha256": "31f1ecec7fdbd384f8f8ac0a8728c2bc12226a50382b69ea3d217c45e99bcc7f"
+      },
+      {
+        "path": ".builder/world-reliability-evolution-20261016/root/review-road-event-preparation.json",
+        "sha256": "6bad7389773910d8ff977b52186fc504daac43a2fad72733f6acbc0e93459bdb"
+      }
+    ],
+    "functionalHandoff": {
+      "path": ".builder/world-reliability-evolution-20261016/backend/road-event-preparation/handoff.json",
+      "sha256": "7508552a98797064dccd866235768244718e26afc7d31ac935cf28933d35c371"
+    },
+    "runtimeHandoff": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/road-preparation-handoff.json",
+      "sha256": "9d8317bb2082e4806947b13c1616bfbeca6e60a470232100154f399303a558de"
+    },
+    "candidate": {
+      "snapshot": ".builder/world-perf-20261016/candidate-road-preparation-v1",
+      "sourceHash": "03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+      "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+      "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75",
+      "htmlHash": "a2af5ab50c5315acfeb007f5210529a0304c15e31a860437817145ba147ca74f",
+      "manifest": {
+        "path": ".builder/world-perf-20261016/candidate-road-preparation-v1/source-manifest.json",
+        "sha256": "bd8af195f7e6df5e93534e5275ba958f8acb62092edd5afc0c09553bdd9375a0"
+      },
+      "nativeCases": 6,
+      "nativeProfiles": [
+        "chromium",
+        "world-review-firefox",
+        "world-review-iphone"
+      ],
+      "nativeStatus": "PASS_6_OF_6_AFFECTED_READINESS_FIRSTATOMIC",
+      "nativeEvidence": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/road-preparation-native.log",
+        "sha256": "a23c8ecf462ffa8520c1068c081e9db37b66122c0c7457cebf80355ce03ef141"
+      },
+      "originalTargetedProbes": [
+        {
+          "size": 200,
+          "profile": "pixel-chromium",
+          "exit": 0,
+          "completed": true,
+          "failure": null,
+          "budgetViolations": [],
+          "cold": 5721.131209000001,
+          "warm": 83.62099999999919,
+          "rafP95": 10.299999999999272,
+          "inputP95": 54.199999928474426,
+          "steadyLongTasks": [],
+          "errors": [],
+          "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+          "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+          "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75"
+        },
+        {
+          "size": 200,
+          "profile": "desktop-firefox",
+          "exit": 0,
+          "completed": true,
+          "failure": null,
+          "budgetViolations": [],
+          "cold": 1377.1740000000002,
+          "warm": 39.422458999997616,
+          "rafP95": 9.900000000000546,
+          "inputP95": 18,
+          "steadyLongTasks": [],
+          "errors": [],
+          "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+          "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+          "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75"
+        },
+        {
+          "size": 1000,
+          "profile": "desktop-firefox",
+          "exit": 0,
+          "completed": true,
+          "failure": null,
+          "budgetViolations": [],
+          "cold": 2558.757917,
+          "warm": 19.81816600000093,
+          "rafP95": 17.26000000000022,
+          "inputP95": 57,
+          "steadyLongTasks": [],
+          "errors": [],
+          "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+          "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+          "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75"
+        }
+      ],
+      "strict36": "STRICT_RED",
+      "newRestore": {
+        "path": "docs/evidence/city-scale-2026-10-16/final-v4-database-restore.json",
+        "sha256": "f6a4f2ced0ab1efe371616f00403118d28c73eba72c1fa5f89a497030e9b699a"
+      },
+      "newPreflight": {
+        "path": ".builder/world-perf-20261016/final-v4-preflight.json",
+        "sha256": "d2a4ab6cc7537b805117c2501c4c1aae4e7364d9819dfdae24837406d7200f8b"
+      },
+      "limit": "Предыдущие36@934RED4 и CBD Pixel steady54/55мсRED сохранены. Три одиночных probes/native6 не заменяют полную новую36.",
+      "label": "LAST_FULL_STRICT_MEASURED_CHECKPOINT_NOT_OVERALL_RELEASE_ACCEPTANCE",
+      "strictResult": {
+        "status": "STRICT_RED",
+        "samples": 36,
+        "profiles": 12,
+        "strictPassingProfiles": 11,
+        "metricViolations": 3,
+        "functionalErrors": 0,
+        "allCanonicalGeometryPreserved": true,
+        "allRequestAndCanvasGuardsPassed": true,
+        "summary": {
+          "path": "docs/evidence/city-scale-2026-10-16/final-v4-summary.json",
+          "sha256": "769a547befe6bcfc17313dbf9da00dd201420874978298040be6c9156c4a883f"
+        },
+        "postflight": {
+          "path": ".builder/world-perf-20261016/final-v4-postflight.json",
+          "sha256": "d7c46fafafe36f56d2ab47c04aaea5b6be6656b3f37f91b3f95c8a0e46bba327"
+        },
+        "comparison": {
+          "path": ".builder/world-perf-20261016/baseline-vs-final-v4.json",
+          "sha256": "fc8eeee26f2a99ae5b1eff88b476fc5dece797cacb71d481c354719f48ab5ecb"
+        },
+        "driverExitCode": 1,
+        "budgetsDriverQualityUnchanged": true,
+        "remainingFailures": [
+          "200/desktop-firefox: 0:coldCityMs exceeded 1500",
+          "200/desktop-firefox: 1:coldCityMs exceeded 1500",
+          "200/desktop-firefox: 2:coldCityMs exceeded 1500"
+        ]
+      }
+    },
+    "diagnosticLimit": "Новый road-window planning5.8мс не запустил MEDICAL scene (legitimateSKIP), поэтому не заявляется как повторение прежнего MEDICAL onset61.115мс."
+  },
+  "previousFullV3": {
+    "snapshot": ".builder/world-perf-20261016/candidate-terrain-priority-v1",
+    "sourceHash": "934cac5a02de5690d2c3920d93fc5676d9f33341ba11aaf572f85df126d404b8",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "fc153c5346c2a8ed662f529123741b9631b49c0b77ad251ca3ffb53ea0abe13a",
+    "manifest": {
+      "path": ".builder/world-perf-20261016/candidate-terrain-priority-v1/source-manifest.json",
+      "sha256": "3c90893b93b57d2db70d8b4d7e327d157fbdc54c0975d7ec33fd934cc6af8c16"
+    },
+    "changedFromLatestFullNative353bf444": [
+      "src/client/components/WorldCanvas.tsx"
+    ],
+    "sourceBoundary": "Bootstrap terrain получает первые asset request slots; полный opening entity sprite prefetch затем перекрывает canonical decode/ground work. Объём geometry/canonical/entity PNG, quality и бюджеты не менялись.",
+    "sourceReview": "Read-only WC4063-4082: disposed fence после terrain await; финальный guarded entity publisher остаётся полным; открытыхP1/P2 в этой перестановке не найдено.",
+    "qualification": {
+      "affectedNative": "PASS_6_OF_6_FIRSTATOMIC_AND_DENSE5S_IN_3_ENGINES",
+      "causal200Pixel": {
+        "evidence": {
+          "path": ".builder/world-perf-20261016/terrain-priority-causal-200-pixel-chromium/report.json",
+          "sha256": "db48c631d95fed80fead8636fbc8d804ad5ebd962f9f18e866f32cb4a8574036"
+        },
+        "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-934cac5a02de5690d2c3920d93fc5676d9f33341ba11aaf572f85df126d404b8",
+        "completed": true,
+        "expectedSamples": 1,
+        "budgetViolations": [],
+        "results": [
+          {
+            "sample": 0,
+            "coldCityMs": 5757.124834,
+            "warmCityMs": 86.45987500000047,
+            "canonicalTasks": 200,
+            "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2"
+          }
+        ],
+        "budgets": {
+          "coldCityMs": 6000,
+          "warmCityMs": 750,
+          "inputP95Ms": 200,
+          "frameP95Ms": 34,
+          "steadyLongTasks": 0,
+          "retainedHeapBytes": 8388608,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "legacyRequests": 0,
+          "errors": 0
+        },
+        "errors": []
+      },
+      "causal1000PixelAndWebkit": "PASS_ONE_ORIGINAL_SAMPLE_EACH",
+      "originalStrict36": "COMPLETE_RED_4_METRIC_VIOLATIONS_9_OF_12_PROFILES_PASS",
+      "affectedNativeEvidence": {
+        "path": ".builder/client-render-evolution-20261016/causal-profile/terrain-priority-native.log",
+        "sha256": "828a778dee21905750827b9feebcb824db4c8c529d2d48e56083b7ba06c1e4ff"
+      },
+      "previousFullNative": "21/21 at353bf444 reused only for unchanged boundaries",
+      "requiredOriginalCausalReports": [
+        {
+          "path": ".builder/world-perf-20261016/terrain-priority-causal-200-pixel-chromium/report.json",
+          "sha256": "db48c631d95fed80fead8636fbc8d804ad5ebd962f9f18e866f32cb4a8574036",
+          "size": 200,
+          "profile": "pixel-chromium",
+          "cold": 5757.124834,
+          "warm": 86.45987500000047,
+          "rafP95": 9.200000000000728,
+          "inputP95": 90.5,
+          "steadyLongTasks": [],
+          "budgetViolations": [],
+          "errors": [],
+          "completed": true
+        },
+        {
+          "path": ".builder/world-perf-20261016/terrain-priority-required-1000-pixel-chromium/report.json",
+          "sha256": "0ff16f8c5598332891124c7b96dff75dcfb54157e2765939dfd9b4d6103faa49",
+          "size": 1000,
+          "profile": "pixel-chromium",
+          "cold": 8375.356458,
+          "warm": 112.30099999999948,
+          "rafP95": 25.400000000001455,
+          "inputP95": 88.89999997615814,
+          "steadyLongTasks": [],
+          "budgetViolations": [],
+          "errors": [],
+          "completed": true
+        },
+        {
+          "path": ".builder/world-perf-20261016/terrain-priority-required-1000-desktop-webkit/report.json",
+          "sha256": "3b615b959d1b1c276d9d7ae661bc09e44d56e7f9e90c4245b8b6e2e81a3be77b",
+          "size": 1000,
+          "profile": "desktop-webkit",
+          "cold": 1644.9153749999998,
+          "warm": 15.655707999998413,
+          "rafP95": 18,
+          "inputP95": 52,
+          "steadyLongTasks": [],
+          "budgetViolations": [],
+          "errors": [],
+          "completed": true
+        }
+      ]
+    },
+    "launcher": {
+      "path": ".builder/world-perf-20261016/run-final-scale-v3-934cac5a.sh",
+      "state": "EXECUTED_AFTER_EXPLICIT_GREEN_CPU_GPU_HANDOFF"
+    },
+    "previousLauncherBindings": "831102 and353bf444 stale; never execute for current matrix",
+    "independentSourceReview": {
+      "path": ".builder/world-reliability-evolution-20261016/root/review-terrain-priority.json",
+      "sha256": "e2ac2d572f8d1bcecf25bf8960df12a9771476623317355a41ac3e77293909c2",
+      "status": "NO_OPEN_ACTIONABLE_FINDINGS reported by root"
+    },
+    "handoff": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/terrain-priority-handoff.json",
+      "sha256": "3234ec344d760e50c1ad7a706a17dcc9d60bf8229b90ac78921bb5fbaa5f067d"
+    },
+    "freshRestore": {
+      "path": "docs/evidence/city-scale-2026-10-16/final-v3-database-restore.json",
+      "sha256": "12d42d4df3f5de7cf5c2d88c22dcfdfef793c25db15594199274bd442e19c0bb"
+    },
+    "strictPreflight": {
+      "path": ".builder/world-perf-20261016/final-v3-preflight.json",
+      "sha256": "7907007044f3584fb9d829c0ac1c8cccc3e19a5c7982629d915a793018eacf73"
+    },
+    "strictResult": {
+      "status": "STRICT_RED",
+      "samples": 36,
+      "profiles": 12,
+      "strictPassingProfiles": 9,
+      "metricViolations": 4,
+      "functionalErrors": 0,
+      "allCanonicalGeometryPreserved": true,
+      "allRequestAndCanvasGuardsPassed": true,
+      "summary": {
+        "path": "docs/evidence/city-scale-2026-10-16/final-v3-summary.json",
+        "sha256": "c5107f483bc3e53527ff3269b8b4a056b3d2a03d92430be362b6c6f6f9533f9f"
+      },
+      "postflight": {
+        "path": ".builder/world-perf-20261016/final-v3-postflight.json",
+        "sha256": "d9ad5a3ef15e3f6d82b50474230bc4fbce611bbdc9d31ba86b295010dabc6edd"
+      },
+      "comparison": {
+        "path": ".builder/world-perf-20261016/baseline-vs-final-v3.json",
+        "sha256": "1b358616df8bcfee50a65bb55cfe5eb329218c7fbe534a2f8c5ed2233b113d6f"
+      },
+      "driverExitCode": 1,
+      "comparisonExitCode": 1,
+      "budgetsDriverQualityUnchanged": true,
+      "remainingFailures": [
+        "200/desktop-firefox sample0 cold1587.2ms and sample1 cold1582.4ms exceed1500ms",
+        "200/pixel-chromium sample2 steady longtask52ms violates zero-longtask gate",
+        "1000/desktop-firefox sample0 RAFp95=25.74ms exceeds20ms; samples1/2=9.20/9.06ms"
+      ],
+      "resourceHandoff": "Явный CPU/GPU handoff renderer после завершения, own5311 отсутствует; новых restore/benchmark самостоятельно не запускать."
+    },
+    "label": "LAST_FULL_STRICT_MEASURED_CHECKPOINT_NOT_FINAL"
+  },
+  "coldMeasurementV2": {
+    "status": "PAIRED_V2_FF200_PASS_WITH_EXPLICIT_LEGACY_11_PROFILE_REUSE",
+    "evidence": {
+      "path": "docs/evidence/city-scale-2026-10-16/cold-measurement-v2-summary.json",
+      "sha256": "199eb370e4213a348b2d3f0e11492ff381ba72cdaddc996c8e53deea5695382b"
+    },
+    "coldBudgetMs": 1500,
+    "executedRuns": 6,
+    "explicitV2Profile": "200/desktop-firefox",
+    "legacyProfilesConservativePass": 11,
+    "historicalFullV4": "STRICT_RED3_11_OF12_PASS_UNCHANGED",
+    "noNew36V2Matrix": true,
+    "runtime03fcUnchanged": true
+  }
+}

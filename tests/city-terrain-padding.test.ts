@@ -6,6 +6,37 @@ import { terrainAt } from "../src/shared/world-terrain";
 import { cameraTerrainPadding } from "../src/client/camera-terrain-padding";
 
 describe("CITY exterior material source", () => {
+  it.each([
+    {
+      name: "positive", position: { x: -512.6, y: -512.6 },
+      bounds: { minX: 64, minY: 64, maxX: 127, maxY: 127 },
+      expected: [[2, 1], [1, 2], [2, 2]],
+    },
+    {
+      name: "negative", position: { x: 1023.4, y: 1023.4 },
+      bounds: { minX: -128, minY: -128, maxX: -65, maxY: -65 },
+      expected: [[-1, -2], [-2, -1], [-1, -1]],
+    },
+  ])("covers exterior last-pixel slivers at fractional $name page edges", ({ position, bounds, expected }) => {
+    expect(cameraTerrainPadding(position, 1, { width: 512, height: 512 }, bounds, 8, 64)).toEqual(expected);
+  });
+  it.each([
+    { position: { x: -512, y: -512 }, bounds: { minX: 64, minY: 64, maxX: 127, maxY: 127 } },
+    { position: { x: 1024, y: 1024 }, bounds: { minX: -128, minY: -128, maxX: -65, maxY: -65 } },
+  ])("does not add exterior pages merely touching exact viewport edges: %j", ({ position, bounds }) => {
+    expect(cameraTerrainPadding(position, 1, { width: 512, height: 512 }, bounds, 8, 64)).toEqual([]);
+  });
+  it.each([.8, 1.55, 4])("matches independent screen rectangles at fractional camera scale %s", scale => {
+    const position = { x: 512 - 1024.6 * scale, y: 512 - 1024.6 * scale };
+    const screen = { width: 512, height: 512 };
+    const expected: Array<[number, number]> = [];
+    for (let y = -4; y <= 4; y += 1) for (let x = -4; x <= 4; x += 1) {
+      const left = position.x + x * 512 * scale, right = left + 512 * scale;
+      const top = position.y + y * 512 * scale, bottom = top + 512 * scale;
+      if (right > 0 && bottom > 0 && left < screen.width && top < screen.height && (x !== 1 || y !== 1)) expected.push([x, y]);
+    }
+    expect(cameraTerrainPadding(position, scale, screen, { minX: 64, minY: 64, maxX: 127, maxY: 127 }, 8, 64)).toEqual(expected);
+  });
   it("captures only visible native cells and mask neighbours, then reuses every sample in the queued full chunk", () => {
     const source = vi.fn((x: number, y: number) => terrainAt(1, x, y));
     const cache = new CityTerrainPadding(1, 8, [], source);

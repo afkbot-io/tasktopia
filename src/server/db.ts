@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import postgres, { type Sql, type TransactionSql } from "postgres";
+import { QueryMetrics, type QueryMetricsSnapshot } from "./runtime-metrics";
 
 export type Row = Record<string, unknown>;
 export type RunResult = { changes: number; rows: Row[] };
@@ -18,6 +19,7 @@ export type Db = {
   exec(query: string): Promise<void>;
   close(): Promise<void>;
   transaction<T>(callback: () => Promise<T> | T): Promise<T>;
+  runtimeMetrics?: () => QueryMetricsSnapshot;
 };
 
 type DbOptions = {
@@ -59,6 +61,7 @@ function jsonParameter(value: unknown): unknown {
 }
 
 class PostgresDb implements Db {
+  private readonly queryMetrics = new QueryMetrics();
   constructor(private readonly pool: Sql, private readonly onClose?: () => Promise<void>) {}
 
   private executor(): QueryExecutor {
@@ -68,7 +71,7 @@ class PostgresDb implements Db {
   prepare(query: string): Statement {
     const sqlText = positionalQuery(query);
     const execute = async (parameters: unknown[]) => {
-      return this.executor().unsafe(sqlText, parameters.map(jsonParameter) as never[]);
+      return this.queryMetrics.measure(async () => this.executor().unsafe(sqlText, parameters.map(jsonParameter) as never[]));
     };
     return {
       all: async <T extends Row>(...parameters: unknown[]) => [...await execute(parameters)] as unknown as T[],
@@ -81,8 +84,10 @@ class PostgresDb implements Db {
   }
 
   async exec(query: string): Promise<void> {
-    await this.executor().unsafe(query, [], { prepare: false });
+    await this.queryMetrics.measure(async () => this.executor().unsafe(query, [], { prepare: false }));
   }
+
+  runtimeMetrics(): QueryMetricsSnapshot { return this.queryMetrics.snapshot(); }
 
   async transaction<T>(callback: () => Promise<T> | T): Promise<T> {
     // Domain services compose transactional operations (for example account +

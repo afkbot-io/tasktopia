@@ -1,9 +1,17 @@
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test } from "@playwright/test";
+import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
+
+test.use({ trace: { mode: 'retain-on-failure', snapshots: false, screenshots: false, sources: true } });
+test.beforeEach(async ({ page }) => { await installCityPreparationDiagnostics(page); });
+test.afterEach(async ({ page }, info) => { await attachCityPreparationFailure(page, info); });
+
+const fixtureEmail=process.env.E2E_CITY_EMAIL??"demo@tasktopia.local";
+const fixturePassword=process.env.E2E_CITY_PASSWORD??"tasktopia-demo";
 
 test("resident images finishing on the planet do not rebuild the hidden city", async ({ page }) => {
   expect((await page.request.post("/api/auth/login", { data: {
-    email: "demo@tasktopia.local", password: "tasktopia-demo",
+    email: fixtureEmail, password: fixturePassword,
   } })).ok()).toBe(true);
   let release!: () => void;
   const gate = new Promise<void>(resolve => { release = resolve; });
@@ -31,7 +39,7 @@ test("resident images finishing on the planet do not rebuild the hidden city", a
 
 test("city starts building images while terrain is pending, but waits before publishing", async ({ page }) => {
   expect((await page.request.post("/api/auth/login", { data: {
-    email: "demo@tasktopia.local", password: "tasktopia-demo",
+    email: fixtureEmail, password: fixturePassword,
   } })).ok()).toBe(true);
   let release!: () => void;
   const terrainGate = new Promise<void>(resolve => { release = resolve; });
@@ -60,7 +68,7 @@ test("city starts building images while terrain is pending, but waits before pub
 
 test("city reuses the authored prop atlas instead of fetching individual park and construction props", async ({ page }, info) => {
   expect((await page.request.post("/api/auth/login", { data: {
-    email: "demo@tasktopia.local", password: "tasktopia-demo",
+    email: fixtureEmail, password: fixturePassword,
   } })).ok()).toBe(true);
   const standalone: string[] = [];
   page.on("request", request => {
@@ -75,7 +83,7 @@ test("city reuses the authored prop atlas instead of fetching individual park an
 
 test("a delayed first connection preserves the initial scene through first-frame activation", async ({ page }) => {
   expect((await page.request.post("/api/auth/login", { data: {
-    email: "demo@tasktopia.local", password: "tasktopia-demo",
+    email: fixtureEmail, password: fixturePassword,
   } })).ok()).toBe(true);
   let release!: () => void;
   const connected = new Promise<void>(resolve => { release = resolve; });
@@ -99,13 +107,14 @@ test("a delayed first connection preserves the initial scene through first-frame
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
     expect(Number(await host.getAttribute("data-transport-only-refreshes") ?? 0)).toBe(0);
     expect(scenes).toBe(1);
-    expect(await host.getAttribute("data-ground-rebuilds")).toBe(await host.getAttribute("data-city-scene-chunks"));
+    expect(await host.getAttribute("data-ground-rebuilds")).toBe(await host.getAttribute("data-resident-chunks"));
+    expect(await host.getAttribute("data-canonical-decoded-chunks")).toBe(await host.getAttribute("data-city-scene-chunks"));
   } finally { rendererStarted(); release(); }
 });
 
 test("walking routes wait for resident sprites without holding the first city frame", async ({ page }) => {
   expect((await page.request.post("/api/auth/login", { data: {
-    email: "demo@tasktopia.local", password: "tasktopia-demo",
+    email: fixtureEmail, password: fixturePassword,
   } })).ok()).toBe(true);
   let release!: () => void;
   const residents = new Promise<void>(resolve => { release = resolve; });

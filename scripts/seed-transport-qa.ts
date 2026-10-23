@@ -10,8 +10,11 @@ import type {PersonalPlanetGeography} from '../src/shared/planet-geography';
 /** Isolated local QA data only. Never target an application database. */
 const url=process.env.TEST_DATABASE_URL;assert.ok(url,'TEST_DATABASE_URL is required');
 const targetDatabase=new URL(url);assert.ok(['127.0.0.1','localhost'].includes(targetDatabase.hostname));
-assert.equal(targetDatabase.port,'55433');assert.equal(targetDatabase.pathname,'/tasktopia_test');
-await mkdir('.builder/transport-rework-2026-10-09',{recursive:true});
+const ownedEvolution=process.env.TRANSPORT_QA_ISOLATED_20261016==='true';
+assert.equal(targetDatabase.port,ownedEvolution?'55436':'55433');
+assert.equal(targetDatabase.pathname,ownedEvolution?'/world_transport_20261016':'/tasktopia_test');
+const output=ownedEvolution?'.builder/world-reliability-evolution-20261016/transport':'.builder/transport-rework-2026-10-09';
+await mkdir(output,{recursive:true});
 const schema='transport_qa_'+randomUUID().replaceAll('-','');const admin=postgres(url,{max:1,onnotice:()=>{}});await admin.unsafe(`CREATE SCHEMA "${schema}"`);await admin.end();
 const db=await createDb(url,{schema}),service=new AppService(db);
 try{
@@ -74,6 +77,6 @@ try{
   if(!site.terminals.some(terminal=>terminal.id===task.id))site.terminals.push({id:task.id,role});
  }
  const atlas=await service.getPlanetAtlas(user.id);for(const site of sites){const scene=await service.getCitySceneForUser(user.id,site.countryId,site.city.id);console.log(JSON.stringify({city:site.city.name,airfields:scene.airports?.map(s=>({stage:s.stage,ready:!!s.plan})),air:scene.airportConnections.length,rail:scene.railConnections?.length,sea:scene.seaConnections?.length}));}
- const target=new URL(url);target.searchParams.set('options',`-csearch_path=${schema}`);await writeFile('.builder/transport-rework-2026-10-09/functional-db-url',target.toString(),{mode:0o600});
- await writeFile('.builder/transport-rework-2026-10-09/functional-fixture.json',JSON.stringify({schema,userId:user.id,sites,railRoutes:atlas.railRoutes?.length,seaRoutes:atlas.seaRoutes?.length},null,2));
+ const target=new URL(url);target.searchParams.set('options',`-csearch_path=${schema}`);await writeFile(`${output}/functional-db-url`,target.toString(),{mode:0o600});
+ await writeFile(`${output}/functional-fixture.json`,JSON.stringify({schema,userId:user.id,sites,railRoutes:atlas.railRoutes?.length,seaRoutes:atlas.seaRoutes?.length},null,2));
 }finally{await db.close();}

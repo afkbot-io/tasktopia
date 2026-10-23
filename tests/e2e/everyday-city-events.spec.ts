@@ -4,7 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { everydayFixture } from './everyday-city-fixture';
-import { ASSET_REVISION, BUILDING_CATALOG } from '../../src/shared/catalog';
+import { BUILDING_CATALOG } from '../../src/shared/catalog';
 import { rainPose } from '../../src/client/city-everyday-life';
 import { openMapCity } from './map-navigation';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
@@ -34,28 +34,67 @@ test('real city exposes six education families, safe event pads and connected tr
   } finally { await f.cleanup(); }
 });
 
-test('fresh MCP completions open every institution after the construction reveal and never replay on reload', async ({ page }, info) => {
-  test.setTimeout(160000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  try {
-    await f.focus(f.pendingSchool);
-    const shop = f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'SHOP')!;
-    const fire = f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'FIRE')!;
-    for (const [task, kind] of [[f.pendingSchool, 'OPEN_SCHOOL'], [f.pendingKindergarten, 'OPEN_KINDERGARTEN'], [shop, 'OPEN_SHOP'], [fire, 'OPEN_FIRE'], [f.pendingHome, 'OPEN_BUILDING']] as const) {
+for (const kind of ['OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP', 'OPEN_FIRE', 'OPEN_BUILDING'] as const) {
+  test(`fresh MCP completion reveals ${kind} once after construction and never replays on reload`, async ({ page }, info) => {
+    test.setTimeout(90000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+    try {
+      await f.focus(f.pendingSchool);
+      await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
+      const targets = {
+        OPEN_SCHOOL: f.pendingSchool, OPEN_KINDERGARTEN: f.pendingKindergarten, OPEN_BUILDING: f.pendingHome,
+        OPEN_SHOP: f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'SHOP')!,
+        OPEN_FIRE: f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'FIRE')!,
+      };
+      const task = targets[kind]; expect(task.stage).toBe(4);
       await f.service.activateDistrict(f.user.countryId, task.districtId, crypto.randomUUID());
       await f.panFocus(task);
       const key = crypto.randomUUID(); await f.call('task.set_status', { taskId: task.id, status: 'COMPLETED' }, key);
       await expect(f.host).toHaveAttribute('data-cinematic-phases', /CONSTRUCT:WORK/);
       await expect(f.host).toHaveAttribute('data-everyday-event', kind, { timeout: 15000 });
       await expect(f.host).toHaveAttribute('data-city-cinematics', '0');
+      expect((await f.service.getTask(f.user.countryId, task.id)).stage).toBe(5);
       const episode = await f.host.getAttribute('data-everyday-episode-id');
       await f.call('task.set_status', { taskId: task.id, status: 'COMPLETED' }, key);
       await expect(f.host).toHaveAttribute('data-everyday-episode-id', episode!);
       await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}.png`) });
-      await page.emulateMedia({ reducedMotion: 'reduce' }); await expect(f.host).toHaveAttribute('data-everyday-event', '');
-      await expect(f.host).toHaveAttribute('data-transit-passengers', '0');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect(f.host).toHaveAttribute('data-everyday-event', '');
+      await expect(f.host).toHaveAttribute('data-everyday-visitors', '0');
+      await expect(f.host).toHaveAttribute('data-transit-role', '');
+      await expect(f.host).toHaveAttribute('data-transit-phase', '');
+      await expect(f.host).toHaveAttribute('data-transit-vehicle', '');
+      await expect(f.host).toHaveAttribute('data-animation-active', 'false');
+      // Safe passenger evacuation uses physics steps. Reduced motion pauses
+      // those steps; the real-mobility regression covers recovery after resume.
       await page.emulateMedia({ reducedMotion: 'no-preference' });
-    }
-    const home = await f.service.getTask(f.user.countryId, f.pendingHome.id); await f.panFocus(home);
+      await page.reload(); await openMapCity(page); await expect(f.host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
+      expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
+      expect(errors).toEqual([]);
+    } finally { await f.cleanup(); }
+  });
+}
+
+test('delayed MCP transfer resumes a helicopter carry without replaying an opening on reload', async ({ page }, info) => {
+  test.setTimeout(90000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  try {
+    await f.focus(f.pendingSchool);
+    await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
+    // This isolated transfer still starts with a genuinely completed home.
+    await f.service.activateDistrict(f.user.countryId, f.pendingHome.districtId, crypto.randomUUID());
+    await f.panFocus(f.pendingHome);
+    await f.call('task.set_status', { taskId: f.pendingHome.id, status: 'COMPLETED' });
+    await expect(f.host).toHaveAttribute('data-cinematic-phases', /CONSTRUCT:WORK/);
+    await expect(f.host).toHaveAttribute('data-everyday-event', 'OPEN_BUILDING', { timeout: 15000 });
+    await expect(f.host).toHaveAttribute('data-city-cinematics', '0');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(f.host).toHaveAttribute('data-everyday-event', '');
+    await expect(f.host).toHaveAttribute('data-everyday-visitors', '0');
+    await expect(f.host).toHaveAttribute('data-transit-role', '');
+    await expect(f.host).toHaveAttribute('data-transit-phase', '');
+    await expect(f.host).toHaveAttribute('data-transit-vehicle', '');
+    await expect(f.host).toHaveAttribute('data-animation-active', 'false');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const home = await f.service.getTask(f.user.countryId, f.pendingHome.id); expect(home.stage).toBe(5); await f.panFocus(home);
     // Hold the real post-transfer scene beyond the original carry window.
     // The renderer must resume a flight instead of jumping from lift to land.
     const scenePattern = /\/api\/countries\/[^/]+\/cities\/[^/]+\/scene(?:\?|$)/;
@@ -81,37 +120,182 @@ test('fresh MCP completions open every institution after the construction reveal
   } finally { await f.cleanup(); }
 });
 
-clockSceneTest('tow loading and water repair wait for actual service arrivals, drive and reopen safely', async ({ page }, info) => {
-  test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
-  const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [];
+clockSceneTest('paused native pan shows two distant institutions without task navigation and spends exactly 400ms each', async ({ page }, info) => {
+  test.setTimeout(90000); await page.setViewportSize({ width: 720, height: 640 }); await installSceneClock(page);
+  const f = await everydayFixture(page);
   try {
-    await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
-    for (let attempt = 0; attempt < 9 && seen.size < 2; attempt++) {
-      const next = Number(await f.host.getAttribute('data-road-event-next-start')); await seek(page, f.host, next + 300);
-      const kind = (await f.host.getAttribute('data-road-event'))!;
-      const startedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
-      if (!['BREAKDOWN', 'WATER'].includes(kind)) { await page.clock.fastForward(35000); await page.clock.runFor(100); continue; }
-      expect(await f.host.getAttribute('data-road-service-arrived')).toBe('false');
-      expect(await f.host.getAttribute('data-road-cargo-loaded')).toBe('false');
-      expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(3);
-      let arrived = false, loaded = false;
-      for (let i = 0; i < 31; i++) {
-        await page.clock.runFor(1000); const state = await safe(f.host);
-        arrived ||= state.roadServiceArrived === 'true';
-        loaded ||= state.roadCargoLoaded === 'true';
-        if (i === 12 || kind === 'BREAKDOWN' && loaded && i === 18) await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}-${i}.png`) });
-      }
-      expect(arrived, `${kind} service never arrived`).toBe(true); if (kind === 'BREAKDOWN') expect(loaded).toBe(true);
-      // ServerWorldClock slews backwards corrections at at most10%; use its
-      // observed epoch for expiry after exercising the real fixed-step route.
-      await seek(page, f.host, startedAt + 31_000);
-      await expect(f.host).toHaveAttribute('data-road-closed-cells', '0'); await expect(f.host).toHaveAttribute('data-road-event', '');
-      seen.add(kind); evidence.push({ kind, arrived, loaded, trips: await f.host.getAttribute('data-road-response-trips') });
+    await f.focus(f.pendingSchool);
+    await expect(page).toHaveURL(url => url.pathname === '/' && url.searchParams.get('cityId') === f.city.id);
+    await expect(page.locator('.task-modal')).toHaveCount(0);
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    const institutions = f.tasks.filter(task => BUILDING_CATALOG.find(asset => asset.key === task.visualAssetKey)?.educationKind);
+    const center = (task: typeof institutions[number]) => ({ x: task.footprint.reduce((sum, cell) => sum + cell.x + .5, 0) / task.footprint.length,
+      y: task.footprint.reduce((sum, cell) => sum + cell.y + .5, 0) / task.footprint.length });
+    const pair = institutions.flatMap(first => institutions.filter(second => first.id !== second.id).map(second => ({ first, second,
+      distance: Math.hypot(center(first).x - center(second).x, center(first).y - center(second).y) }))).sort((a, b) => b.distance - a.distance)[0]!;
+    expect(pair.distance).toBeGreaterThan(20);
+    await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+    const evidence = [];
+    for (const task of [pair.first, pair.second]) {
+      const before = await page.evaluate(() => ({ now: Date.now(), url: location.href, historyLength: history.length }));
+      await f.panFocus(task, true);
+      const after = await page.evaluate(() => ({ now: Date.now(), url: location.href, historyLength: history.length, task: history.state?.task }));
+      expect(after.now - before.now).toBe(400);
+      expect(after.url).toBe(before.url); expect(after.historyLength).toBe(before.historyLength); expect(after.task).toBeUndefined();
+      await expect(page.locator('.task-modal')).toHaveCount(0);
+      await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+      const visible = await f.host.evaluate((el, footprint) => {
+        const host = el as HTMLElement, canvas = host.querySelector('canvas')!, scale = Number(host.dataset.renderScale) * 8;
+        const x = Number(host.dataset.cameraWorldX), y = Number(host.dataset.cameraWorldY);
+        return footprint.every(cell => (cell.x - x) * scale + canvas.clientWidth / 2 >= 0
+          && (cell.x + 1 - x) * scale + canvas.clientWidth / 2 <= canvas.clientWidth
+          && (cell.y - y) * scale + canvas.clientHeight / 2 >= 0
+          && (cell.y + 1 - y) * scale + canvas.clientHeight / 2 <= canvas.clientHeight);
+      }, task.footprint);
+      expect(visible, `Institution #${task.taskNumber} must actually be in the viewport`).toBe(true);
+      evidence.push({ taskId: task.id, before, after, visible });
     }
-    expect(seen).toEqual(new Set(['BREAKDOWN', 'WATER']));
-    await writeFile(info.outputPath('road-service-arrivals.json'), JSON.stringify(evidence, null, 2));
+    await writeFile(info.outputPath('paused-native-pan.json'), JSON.stringify({ distance: pair.distance, evidence }, null, 2));
   } finally { await f.cleanup(); }
 });
+
+clockSceneTest('paused scene preparation advances a released renderer frame before the planned event', async ({ page }, info) => {
+  test.setTimeout(90000); await page.setViewportSize({ width: 720, height: 640 }); await installSceneClock(page);
+  const f = await everydayFixture(page);
+  type PanFrameGate = { read: () => { now: number; installedAt: number; releasedAt: number | null; pendingAtRelease: boolean;
+    held: number; delivered: number; registered: number }; restore: () => void };
+  try {
+    const institutions = f.tasks.filter(task => BUILDING_CATALOG.find(asset => asset.key === task.visualAssetKey)?.educationKind);
+    const center = (task: typeof institutions[number]) => ({ x: task.footprint.reduce((sum, cell) => sum + cell.x + .5, 0) / task.footprint.length,
+      y: task.footprint.reduce((sum, cell) => sum + cell.y + .5, 0) / task.footprint.length });
+    const pair = institutions.flatMap(first => institutions.filter(second => first.id !== second.id).map(second => ({ first, second,
+      distance: Math.hypot(center(first).x - center(second).x, center(first).y - center(second).y) }))).sort((a, b) => b.distance - a.distance)[0]!;
+    expect(pair.distance).toBeGreaterThan(20); await f.focus(pair.first);
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    const before = await f.host.evaluate((el, footprint) => {
+      const host = el as HTMLElement, canvas = host.querySelector('canvas')!, scale = Number(host.dataset.renderScale) * 8;
+      const x = Number(host.dataset.cameraWorldX), y = Number(host.dataset.cameraWorldY);
+      return { url: location.href, historyLength: history.length, canonicalTasks: host.dataset.canonicalTaskCount,
+        visible: footprint.every(cell => (cell.x - x) * scale + canvas.clientWidth / 2 >= 24
+          && (cell.x + 1 - x) * scale + canvas.clientWidth / 2 <= canvas.clientWidth - 24
+          && (cell.y - y) * scale + canvas.clientHeight / 2 >= 24
+          && (cell.y + 1 - y) * scale + canvas.clientHeight / 2 <= canvas.clientHeight - 24) };
+    }, pair.second.footprint);
+    expect(before.visible, 'The regression must require an actual camera pan').toBe(false);
+    await expect.poll(() => f.host.evaluate(el => {
+      const d = (el as HTMLElement).dataset, now = Number(d.roadEventServerNow), start = Number(d.everydayNextStart);
+      return d.ambientAssets === 'ready' && Number.isFinite(now) && Number.isFinite(start) && start > now + 2400;
+    }), { timeout: 15_000, message: 'The real everyday director must publish a future event before the controlled clock pause' }).toBe(true);
+    await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+    const serverNow = Number(await f.host.getAttribute('data-road-event-server-now'));
+    const eventStart = Number(await f.host.getAttribute('data-everyday-next-start'));
+    expect(Number.isFinite(serverNow) && Number.isFinite(eventStart)).toBe(true);
+    expect(eventStart, 'The selected real event must still be in the future').toBeGreaterThan(serverNow + 400);
+    await page.evaluate(() => {
+      const target = window as Window & { __qaPanFrameGate?: PanFrameGate };
+      const request = window.requestAnimationFrame, cancel = window.cancelAnimationFrame;
+      const held = new Map<number, FrameRequestCallback>(), releasedFrames = new Map<number, number>();
+      const data = { installedAt: Date.now(), releasedAt: null as number | null, pendingAtRelease: false, held: 0, delivered: 0, registered: 0 };
+      let stopped = false;
+      const pending = () => document.querySelector<HTMLElement>('.world-canvas')?.dataset.cameraPresentationPending === 'true';
+      const gatedRequest: typeof request = callback => {
+        const renderer = /WorldCanvas(?:[-.]|\/)/.test(new Error().stack ?? '');
+        if (renderer) data.registered++;
+        const id = request.call(window, time => {
+          if (!stopped && renderer && pending()) { held.set(id, callback); data.held++; return; }
+          callback.call(window, time);
+        });
+        return id;
+      };
+      const gatedCancel: typeof cancel = id => {
+        held.delete(id); cancel.call(window, releasedFrames.get(id) ?? id); releasedFrames.delete(id);
+      };
+      const release = () => {
+        stopped = true;
+        for (const [id, callback] of held) releasedFrames.set(id, request.call(window, time => {
+          releasedFrames.delete(id); data.delivered++; callback.call(window, time);
+        }));
+        held.clear();
+      };
+      window.requestAnimationFrame = gatedRequest; window.cancelAnimationFrame = gatedCancel;
+      // The fixed400ms horizon cannot run this timer or its following RAF.
+      // Delivery still uses the real renderer callback and paused browser clock.
+      const releaseTimer = setTimeout(() => { data.releasedAt = Date.now(); data.pendingAtRelease = pending(); release(); }, 401);
+      target.__qaPanFrameGate = { read: () => ({ ...data, now: Date.now() }), restore: () => {
+        clearTimeout(releaseTimer); release();
+        if (window.requestAnimationFrame === gatedRequest) window.requestAnimationFrame = request;
+        if (window.cancelAnimationFrame === gatedCancel) window.cancelAnimationFrame = cancel;
+      } };
+    });
+    const preparation = await f.panFocus(pair.second, true, { settlePausedBefore: eventStart });
+    const gate = await page.evaluate(() => {
+      const gate = (window as Window & { __qaPanFrameGate?: PanFrameGate }).__qaPanFrameGate;
+      if (!gate) throw new Error('The real renderer frame gate was not installed');
+      return gate.read();
+    });
+    expect(gate.registered).toBeGreaterThan(0); expect(gate.held).toBeGreaterThan(0);
+    expect(gate.releasedAt! - gate.installedAt).toBe(401); expect(gate.pendingAtRelease).toBe(true); expect(gate.delivered).toBeGreaterThan(0);
+    expect(preparation?.extraFrames).toBeGreaterThan(0); expect(preparation?.wallElapsedMs).toBeLessThan(15_000);
+    expect(page.url()).toBe(before.url);
+    expect(await page.evaluate(() => history.length)).toBe(before.historyLength);
+    await expect(f.host).toHaveAttribute('data-canonical-task-count', before.canonicalTasks!);
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    await expect(page.locator('.task-modal')).toHaveCount(0);
+    await writeFile(info.outputPath('released-paused-camera.json'), JSON.stringify({ targetTask: pair.second.id, before, gate, preparation }, null, 2));
+    await page.screenshot({ path: info.outputPath('released-paused-camera.png') });
+  } finally {
+    if (!page.isClosed()) {
+      const gate = await page.evaluate(() => {
+        const gate = (window as Window & { __qaPanFrameGate?: PanFrameGate }).__qaPanFrameGate;
+        const state = gate?.read(); gate?.restore(); return state;
+      });
+      if (gate) await info.attach('paused-renderer-frame-gate', { body: JSON.stringify(gate), contentType: 'application/json' });
+    }
+    await f.cleanup();
+  }
+});
+
+for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
+  clockSceneTest(`${targetKind} service waits for actual arrival, drives and reopens safely`, async ({ page }, info) => {
+    test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
+    const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [], frames: Record<string, unknown>[] = [];
+    try {
+      await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+      for (let attempt = 0; attempt < 9 && seen.size < 1; attempt++) {
+        const next = Number(await f.host.getAttribute('data-road-event-next-start')); await seek(page, f.host, next + 300);
+        const kind = (await f.host.getAttribute('data-road-event'))!;
+        const startedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
+        if (kind !== targetKind) { await page.clock.fastForward(35000); await page.clock.runFor(100); continue; }
+        expect(await f.host.getAttribute('data-road-service-arrived')).toBe('false');
+        expect(await f.host.getAttribute('data-road-cargo-loaded')).toBe('false');
+        expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(3);
+        let arrived = false, loaded = false;
+        for (let i = 0; i < 31; i++) {
+          await page.clock.runFor(1000); const state = await safe(f.host);
+          if (frames.length < 31) frames.push({ step: i + 1, startedAt, serverNow: state.roadEventServerNow,
+            kind: state.roadEvent, phase: state.roadEventPhase, arrived: state.roadServiceArrived, loaded: state.roadCargoLoaded,
+            closedCells: state.roadClosedCells, responders: state.roadResponders, trips: state.roadResponseTrips,
+            fixedSteps: state.mobilityFixedSteps, safety: [state.mobilityVehicleUnsafeTotal, state.mobilityPedestrianUnsafeTotal,
+              state.mobilityVehiclePedestrianUnsafeTotal, state.wrongWayCars, state.walkerOffPath] });
+          arrived ||= state.roadServiceArrived === 'true';
+          loaded ||= state.roadCargoLoaded === 'true';
+          if (i === 12 || kind === 'BREAKDOWN' && loaded && i === 18) await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}-${i}.png`) });
+        }
+        expect(arrived, `${kind} service never arrived`).toBe(true); if (kind === 'BREAKDOWN') expect(loaded).toBe(true);
+        // ServerWorldClock slews backwards corrections at at most10%; use its
+        // observed epoch for expiry after exercising the real fixed-step route.
+        await seek(page, f.host, startedAt + 31_000);
+        await expect(f.host).toHaveAttribute('data-road-closed-cells', '0'); await expect(f.host).toHaveAttribute('data-road-event', '');
+        seen.add(kind); evidence.push({ kind, arrived, loaded, trips: await f.host.getAttribute('data-road-response-trips') });
+      }
+      expect(seen).toEqual(new Set([targetKind]));
+      await writeFile(info.outputPath('road-service-arrivals.json'), JSON.stringify(evidence, null, 2));
+    } finally {
+      try { await info.attach(`${targetKind.toLowerCase()}-service-frames`, { body: JSON.stringify({ targetKind, frames, evidence }), contentType: 'application/json' }); }
+      finally { await f.cleanup(); }
+    }
+  });
+}
 
 test('touch-sized everyday city keeps preferences, sound opt-in, motion cancellation and read-only task controls usable', async ({ page, hasTouch }, info) => {
   test.setTimeout(90000); await page.setViewportSize({ width: 390, height: 844 }); const f = await everydayFixture(page);
@@ -154,23 +338,34 @@ async function setSceneLife(page: Page, on: boolean) {
   await prefs.getByLabel('Жизнь города').setChecked(on); await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.clock.runFor(100);
 }
 
-type EverydayObservedNode=HTMLElement&{__qaEveryday?:{arrivals:number;animals:number;fetched:boolean;scattered:boolean;observer:MutationObserver}};
+type EverydaySample={kind:string;phase:string;areaReady:boolean;arrivals:number;animals:number;fetched:boolean;scattered:boolean;serverNow:number};
+type EverydayObservedNode=HTMLElement&{__qaEveryday?:{arrivals:number;animals:number;fetched:boolean;scattered:boolean;samples:EverydaySample[];observer:MutationObserver}};
 async function observeEveryday(host:Locator,taskId:string){
   await host.evaluate((el,taskId)=>{
     const node=el as EverydayObservedNode;node.__qaEveryday?.observer.disconnect();
+    let signature='';
     const read=()=>{const d=node.dataset,record=node.__qaEveryday!;if(d.everydayTask!==taskId||!d.everydayEvent)return;
       record.arrivals=Math.max(record.arrivals,Number(d.everydayArrived??0));record.animals=Math.max(record.animals,Number(d.everydayAnimals??0));
-      record.fetched||=d.dogCarrying==='true';record.scattered||=d.birdsScattered==='true';};
+      record.fetched||=d.dogCarrying==='true';record.scattered||=d.birdsScattered==='true';
+      const sample={kind:d.everydayEvent,phase:d.everydayPhase??'',areaReady:d.everydayAreaReady==='true',
+        arrivals:Number(d.everydayArrived??0),animals:Number(d.everydayAnimals??0),fetched:d.dogCarrying==='true',scattered:d.birdsScattered==='true'};
+      const next=JSON.stringify(sample);
+      if(next!==signature){signature=next;record.samples.push({...sample,serverNow:Number(d.roadEventServerNow)});if(record.samples.length>64)record.samples.shift();}
+    };
     const observer=new MutationObserver(read);
-    node.__qaEveryday={arrivals:0,animals:0,fetched:false,scattered:false,observer};
-    observer.observe(node,{attributes:true,attributeFilter:['data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered']});
+    node.__qaEveryday={arrivals:0,animals:0,fetched:false,scattered:false,samples:[],observer};
+    observer.observe(node,{attributes:true,attributeFilter:['data-everyday-event','data-everyday-phase','data-everyday-area-ready','data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered']});
     read();
   },taskId);
-  return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered};});
+  return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered,samples:r.samples};});
 }
 
 clockSceneTest('six everyday scenes use actual residents and approaches', async ({ page }, info) => {
-  test.setTimeout(720000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
+  // Six real40s approaches already require240s of fixed-step simulation.
+  // CI39935303498 WebKit completed four of them in541s wall time before
+  // timing out during SPORT. Keep every frame/physics step and arrival
+  // assertion; this is the aggregate software-renderer QA deadline only.
+  test.setTimeout(1200000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
   const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   const seen = new Set<string>(), samples: Record<string, unknown>[] = [], unavailable: Record<string, unknown>[] = [];
   try {
@@ -202,7 +397,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         await setSceneLife(page,false);await drainCarriers();continue;
       }
       const id = preparation.everydayPlannedTask, task = f.tasks.find(t => t.id === id);
-      expect(task, `No planned task ${id}`).toBeTruthy(); await f.panFocus(task!, true);
+      expect(task, `No planned task ${id}`).toBeTruthy(); await f.panFocus(task!, true, { settlePausedBefore: start });
       const observed=await observeEveryday(f.host,id!);
       await seek(page, f.host, start + 350); await page.clock.runFor(1000);
       const kind = await f.host.getAttribute('data-everyday-event');
@@ -232,7 +427,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       }
       const actualFrames=await observed();arrivals=Math.max(arrivals,actualFrames.arrivals);animals=Math.max(animals,actualFrames.animals);
       fetched||=actualFrames.fetched;scattered||=actualFrames.scattered;
-      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
+      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, observed:actualFrames, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
       if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })), null, 2));
       expect(arrivals, `${kind} residents never arrived`).toBeGreaterThan(0);
       if (kind === 'DOG' || kind === 'BIRDS') expect(animals).toBeGreaterThan(0);
@@ -265,7 +460,7 @@ test('everyday live lifecycle clears hidden, map exit, reconnect and deleted ins
   test.setTimeout(120000); const f = await everydayFixture(page);
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   try {
-    await f.focus(f.pendingSchool); await f.service.activateDistrict(f.user.countryId, f.pendingSchool.districtId, crypto.randomUUID());
+    await f.focus(f.pendingSchool); await f.panFocus(f.pendingSchool); await f.service.activateDistrict(f.user.countryId, f.pendingSchool.districtId, crypto.randomUUID());
     await f.call('task.set_status', { taskId: f.pendingSchool.id, status: 'COMPLETED' });
     await expect(f.host).toHaveAttribute('data-everyday-event', 'OPEN_SCHOOL', { timeout: 15000 });
     await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
@@ -389,19 +584,27 @@ clockSceneTest('school bus delivers children through the real school entrance in
 
 test('authored sprite atlas uses the current revision and stays stable across zoom and compact resize', async ({ page }, info) => {
   test.setTimeout(120000); await page.setViewportSize({ width: 1440, height: 1100 });
+  // The production E2E server consumes the verified build. A separate CI job
+  // can encode the same pixels differently from the checkout's source PNGs.
+  const runtimeManifest = JSON.parse(readFileSync('dist/public/game-assets/v5/manifest.json', 'utf8')) as { assetRevision: string; propAtlas: { path: string } };
+  const assetRevision = runtimeManifest.assetRevision;
+  expect(assetRevision).toMatch(/^[a-f0-9]{16}$/);
+  expect(runtimeManifest.propAtlas.path).toBe('atlas/props-v1.png');
   const errors: string[] = [], standalone: string[] = [], atlasHashes: string[] = [], scales: number[] = [];
   const atlasReads: Promise<void>[] = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('request', r => { if (/\/props\/[^/]+\.png/.test(r.url())) standalone.push(r.url()); });
   page.on('response', response => {
-    if (response.url().includes(`/revisions/${ASSET_REVISION}/atlas/props-v1.png`) && response.ok())
+    if (response.url().includes(`/revisions/${assetRevision}/atlas/props-v1.png`) && response.ok())
       atlasReads.push(response.body().then(body => { atlasHashes.push(createHash('sha256').update(body).digest('hex')); })
         .catch(error => { errors.push(String(error)); }));
   });
-  const expectedAtlas = createHash('sha256').update(readFileSync('public/game-assets/v5/atlas/props-v1.png')).digest('hex');
+  const expectedAtlas = createHash('sha256').update(readFileSync(`dist/public/game-assets/v5/${runtimeManifest.propAtlas.path}`)).digest('hex');
   const f = await everydayFixture(page);
   try {
     await f.focus(f.tasks[0]!);
+    const bootstrap = await page.request.get('/api/bootstrap'); expect(bootstrap.ok()).toBe(true);
+    expect(await bootstrap.json()).toMatchObject({ worldManifest: { assetRevision } });
     await expect.poll(() => atlasHashes).toContain(expectedAtlas);
     const canvas = page.locator('.world-canvas canvas');
     const zoom = async (delta: number, target: number, name: string) => {
@@ -430,6 +633,132 @@ test('authored sprite atlas uses the current revision and stays stable across zo
     await safe(f.host); await Promise.all(atlasReads);
     await expect(f.host).toHaveAttribute('data-resident-center-errors', '0');
     expect(standalone).toEqual([]); expect(errors).toEqual([]);
-    await writeFile(info.outputPath('sprite-projection-runtime.json'), JSON.stringify({ assetRevision: ASSET_REVISION, expectedAtlas, atlasHashes, scales, errors, standalone }, null, 2));
+    await writeFile(info.outputPath('sprite-projection-runtime.json'), JSON.stringify({ assetRevision, expectedAtlas, atlasHashes, scales, errors, standalone }, null, 2));
   } finally { await f.cleanup(); }
+});
+
+// A real public preference change must not cancel an accepted fresh opening.
+test('an accepted school construction still opens after a public quality downgrade',async({page},info)=>{
+  test.setTimeout(120_000);
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  const snapshots:Array<Record<string,unknown>>=[];
+  const f=await everydayFixture(page);
+  const capture=async(phase:string)=>{
+    const data=await f.host.evaluate((el,finish)=>{
+      if(finish)(el as HTMLElement & {__qaQualityWorkAction?:{observer:MutationObserver}}).__qaQualityWorkAction?.observer.disconnect();
+      const d=(el as HTMLElement).dataset;
+      return {worldQuality:d.worldQuality,frameLimit:d.frameLimit,citySceneCommit:d.citySceneCommit,
+        cameraPresentationPending:d.cameraPresentationPending,cityCinematics:d.cityCinematics,
+        cinematicPhases:d.cinematicPhases,cinematicWorkers:d.cinematicWorkers,cinematicState:d.cinematicState?.slice(0,6000),
+        everydayEvent:d.everydayEvent,everydayTask:d.everydayTask,everydayEpisodeId:d.everydayEpisodeId,
+        everydaySkip:d.everydaySkip,everydayAreaReady:d.everydayAreaReady,loadError:d.loadError,
+        mobilityReady:d.mobilityReady,ambientAssets:d.ambientAssets};
+    },phase==='finally');
+    if(snapshots.length<6)snapshots.push({phase,...data});
+    return data;
+  };
+  try{
+    // Public task-link navigation already places this same school in view.
+    // No pan, camera override, clock control or forced animation is needed.
+    await f.focus(f.pendingSchool);
+    await expect(f.host).toHaveAttribute('data-ambient-assets','ready');
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending','false');
+    await f.service.activateDistrict(f.user.countryId,f.pendingSchool.districtId,crypto.randomUUID());
+    const preferences=page.locator('.map-toolbar-actions > nav > .world-preferences');
+    await expect(preferences).toBeVisible();
+    await preferences.locator(':scope > summary').click();
+    const quality=preferences.getByLabel('Детализация');
+    await expect(quality).toBeVisible();
+    await quality.selectOption('NORMAL');
+    await expect(f.host).toHaveAttribute('data-world-quality','NORMAL');
+    await expect(preferences.getByLabel('Жизнь города')).toBeChecked();
+    await expect(preferences.getByLabel('Уменьшить движение')).not.toBeChecked();
+    // Arm before MCP; one browser callback witnesses real WORK and changes the public select.
+    const hostNode=await f.host.elementHandle();if(!hostNode)throw new Error('Missing original public world host');
+    try{await quality.evaluate((selectNode: Element, { hostNode, taskId }: { hostNode: Element; taskId: string }) => {
+      if (!(selectNode instanceof HTMLSelectElement) || !(hostNode instanceof HTMLElement)) throw new Error('Expected real quality select and world host');
+      const select = selectNode, host = hostNode as HTMLElement & { __qaQualityWorkAction?: { observer: MutationObserver; witness: Record<string, unknown> } };
+      if (host.__qaQualityWorkAction) throw new Error('One work action owner is required');
+      if (!select.isConnected || select.disabled || select.multiple || !select.getClientRects().length) throw new Error('Quality select must remain visible and enabled');
+      const economy = [...select.options].find(option => option.value === 'ECONOMY');
+      if (!economy || economy.disabled || select.value !== 'NORMAL' || host.dataset.worldQuality !== 'NORMAL') throw new Error('Expected initial public NORMAL and enabled ECONOMY option');
+      const witness = { performed: false, performedPhase: null as string | null, changePhase: null as string | null,
+        changeValue: null as string | null, changeEvents: 0, before: null as Record<string, string | undefined> | null, error: null as string | null };
+      const snapshot = () => {
+        const d = host.dataset;
+        return { worldQuality: d.worldQuality, frameLimit: d.frameLimit, citySceneCommit: d.citySceneCommit,
+          cameraPresentationPending: d.cameraPresentationPending, cityCinematics: d.cityCinematics,
+          cinematicPhases: d.cinematicPhases, cinematicWorkers: d.cinematicWorkers, cinematicState: d.cinematicState?.slice(0, 6000),
+          everydayEvent: d.everydayEvent, everydayTask: d.everydayTask, everydayEpisodeId: d.everydayEpisodeId,
+          everydaySkip: d.everydaySkip, everydayAreaReady: d.everydayAreaReady, loadError: d.loadError,
+          mobilityReady: d.mobilityReady, ambientAssets: d.ambientAssets };
+      };
+      const phase = () => {
+        const state = (JSON.parse(host.dataset.cinematicState ?? '[]') as Array<{ taskId: string; kind: string; phase: string }>).
+          find(value => value.taskId === taskId && value.kind === 'CONSTRUCT');
+        return state ? `${taskId}:CONSTRUCT:${state.phase}` : null;
+      };
+      let acted = false;
+      const observer = new MutationObserver(() => {
+        if (acted) return;
+        try {
+          if (!host.isConnected || !select.isConnected || economy.parentElement !== select) throw new Error('The original public control was replaced');
+          const currentPhase = phase();
+          if (currentPhase !== `${taskId}:CONSTRUCT:WORK` || !(Number(host.dataset.cityCinematics) > 0) || !(Number(host.dataset.cinematicWorkers) > 0)) return;
+          if (select.value !== 'NORMAL' || host.dataset.worldQuality !== 'NORMAL') throw new Error('WORK must still begin in public NORMAL');
+          acted = true; observer.disconnect();
+          witness.before = snapshot(); witness.performedPhase = currentPhase;
+          const onChange = () => { witness.changeEvents++; witness.changePhase = phase(); witness.changeValue = select.value; };
+          select.addEventListener('change', onChange, { capture: true, once: true });
+          try {
+            // Same public select operation/events as Playwright selectOptions, in this callback.
+            select.value = ''; economy.selected = true;
+            select.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            witness.performed = true;
+          } finally { select.removeEventListener('change', onChange, true); }
+        } catch (error) { acted = true; observer.disconnect(); witness.error = String(error).slice(0, 400); }
+      });
+      host.__qaQualityWorkAction = { observer, witness };
+      observer.observe(host, { attributes: true, attributeFilter: ['data-cinematic-state', 'data-cinematic-workers', 'data-city-cinematics'] });
+    }, {hostNode,taskId:f.pendingSchool.id});}finally{await hostNode.dispose();}
+    type WorkWitness={performed:boolean;performedPhase:string|null;changePhase:string|null;changeValue:string|null;changeEvents:number;before:Record<string,string|undefined>|null;error:string|null};
+    const readAction=()=>f.host.evaluate(el=>(el as HTMLElement & {__qaQualityWorkAction?:{witness:WorkWitness}}).__qaQualityWorkAction?.witness);
+    const key=crypto.randomUUID();
+    await f.call('task.set_status',{taskId:f.pendingSchool.id,status:'COMPLETED'},key);
+    const marker=`${f.pendingSchool.id}:CONSTRUCT:WORK`;
+    await expect.poll(readAction).toMatchObject({performed:true,performedPhase:marker,changePhase:marker,changeValue:'ECONOMY',changeEvents:1,error:null});
+    const beforeQuality=(await readAction())!.before!;
+    if(snapshots.length<6)snapshots.push({phase:'accepted-normal-work',...beforeQuality});
+    expect(beforeQuality.worldQuality).toBe('NORMAL');
+    expect(beforeQuality.cinematicPhases).toContain(marker);
+    expect(Number(beforeQuality.cityCinematics)).toBeGreaterThan(0);
+    expect(Number(beforeQuality.cinematicWorkers)).toBeGreaterThan(0);
+    await expect(f.host).toHaveAttribute('data-world-quality','ECONOMY');
+    await capture('after-public-economy');
+    expect((await f.service.getTask(f.user.countryId,f.pendingSchool.id)).stage).toBe(5);
+    await expect(f.host).toHaveAttribute('data-everyday-event','OPEN_SCHOOL',{timeout:15_000});
+    await expect(f.host).toHaveAttribute('data-everyday-task',f.pendingSchool.id);
+    await expect(f.host).toHaveAttribute('data-city-cinematics','0');
+    const episode=await f.host.getAttribute('data-everyday-episode-id');expect(episode).toBeTruthy();
+    await capture('school-opened');
+    await f.call('task.set_status',{taskId:f.pendingSchool.id,status:'COMPLETED'},key);
+    await expect(f.host).toHaveAttribute('data-everyday-episode-id',episode!);
+    await page.screenshot({path:info.outputPath('school-opening-after-quality-downgrade.png')});
+    await page.reload();await openMapCity(page);
+    await expect(f.host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30_000});
+    await expect(f.host).toHaveAttribute('data-mobility-ready','true',{timeout:30_000});
+    await expect(f.host).toHaveAttribute('data-ambient-assets','ready');
+    await expect(f.host).toHaveAttribute('data-world-quality','ECONOMY');
+    expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
+    expect((await f.service.getTask(f.user.countryId,f.pendingSchool.id)).stage).toBe(5);
+    expect(errors).toEqual([]);
+  }finally{
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    try{await Promise.race([capture('finally'),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Final public read exceeded1000ms')),1000);})]);}
+    catch(error){if(snapshots.length<6)snapshots.push({phase:'finally',unavailable:String(error).slice(0,400)});}
+    finally{if(timer)clearTimeout(timer);}
+    await info.attach('quality-opening-public-states',{body:JSON.stringify({snapshots,errors,maximumSnapshots:6,taskId:f.pendingSchool.id}),contentType:'application/json'}).catch(()=>{});
+    await f.cleanup();
+  }
 });

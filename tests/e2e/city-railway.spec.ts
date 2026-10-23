@@ -26,7 +26,7 @@ for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage}
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-megacity-validation");
   await page.getByRole("button", {name:"Открыть страну",exact:true}).click();
   const city = page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit", "atomic", {timeout:45_000});
@@ -68,7 +68,7 @@ test("completed city station has a moving locomotive and five coupled wagons", a
   page.on("pageerror",e=>errors.push(e.message));
   await page.goto("/");
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-megacity-validation");
   await page.getByRole("button",{name:"Открыть страну",exact:true}).click();
   const city=page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit","atomic",{timeout:45_000});

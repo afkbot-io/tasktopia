@@ -1,0 +1,583 @@
+{
+  "date": "2026-10-16",
+  "status": "PAIRED_V2_FF200_PASS_WITH_EXPLICIT_LEGACY_11_PROFILE_REUSE",
+  "description": "Методика исправлена после подтверждённой задержки locator observation; код игры03fc не менялся. Исторический fullv4 по-прежнему STRICT_RED3.",
+  "predeclaredPolicy": {
+    "path": ".builder/world-reliability-evolution-20261016/root/cold-measurement-v2-qualification-policy.json",
+    "sha256": "2d348996a2e7515c314a57422d866550ac7c10c8d0098e420bf832a8d09e2cea"
+  },
+  "causalDiagnostic": {
+    "evidence": {
+      "path": ".builder/client-render-evolution-20261016/causal-profile/ff200-03fc-dom-three/three-sample-causal-summary.json",
+      "sha256": "3dcb15bbbb15ab3091d97c63df6d5d89b46dbc84265c14e80c49a8038c35a932"
+    },
+    "qualification": false,
+    "sameSampleNodeFailedButActualDOMReadyWithinBudget": 2,
+    "runtimeEdits": false
+  },
+  "measurementContract": {
+    "version": 2,
+    "coldMetric": "browser-first-atomic-transition-ready-upper-bound",
+    "start": "node-city-start-bracketed-by-existing-browser-clock-rpc",
+    "end": "first-observed-atomic-and-zero-map-level-transitions-after-trusted-city-enter",
+    "legacyColdMetric": "node-city-ready-await-return",
+    "ownership": "no-world-canvas-at-start-or-before-trusted-city-enter"
+  },
+  "formula": {
+    "lowerBoundMs": "Bready-BclockStart",
+    "upperBoundMs": "Bready-BclockStart+(N1-N0)",
+    "budgetUses": "upperBoundMs",
+    "legacyColdCityMs": "Original Node elapsed after existing ready awaits",
+    "start": "Existing NodeN0 before existing browser clockRPC; its sample occurs inside[N0,N1], focus/key delivery included.",
+    "end": "First MutationObserver observation atomic && transitionCount0, after expected trusted city Enter; Enter only arms.",
+    "ownership": "No prior canvas at begin or before trusted input; absent/foreign/invalid clocks fail closed.",
+    "noExtraColdAwait": true,
+    "noFixedSubtraction": true,
+    "coldBudgetMs": 1500
+  },
+  "publicVerification": {
+    "uniqueChecks": 44,
+    "files": 2,
+    "newChecks": 41,
+    "types": "PASS",
+    "lint": "PASS",
+    "meaningfulRed": [
+      "Legacy1561 vs browser1263–1267 bounds",
+      "Missing/foreign/tampered observations and mixed versions",
+      "Observer absent firstready",
+      "Preexisting canvas begin and input ownership"
+    ],
+    "sourceHashes": {
+      "scripts/city-scale-cold-metric.ts": "4474b2e80aa459b821adb7239834de33411aad3dfe9238e6d0b51ce52d921727",
+      "scripts/measure-city-scale.ts": "6f5636839da131fbae9f227a4918cf6d2f2eccf5834c3edcc9234133efecdf0f",
+      "scripts/compare-city-scale.ts": "a2b5b9f9b94097cc8ac867eff61c7bb0df6f9717abd310ef88abce90f422446b",
+      "tests/city-scale-cold-metric.test.ts": "dae8c21b18992629011fc2700d20a1b10b81f2179dee74e01c59115f7b5bfd76"
+    },
+    "independentRootReview": {
+      "path": ".builder/world-reliability-evolution-20261016/root/review-cold-measurement-v2.json",
+      "sha256": "42a71ed2ccfa7e29efa3b2282c86759f3be2d5541fb4df9aec75479beb9a3c1b"
+    },
+    "independentRendererReview": "Source-only review of final4474b2e8/6f563683/a2b5b9f9/dae8c21b, no openP1/P2; owner message retained in session."
+  },
+  "qualification": {
+    "predeclaredRuns": 6,
+    "executedRuns": 6,
+    "samplesPerRevision": 3,
+    "profile": "desktop-firefox",
+    "tasks": 200,
+    "baselineEnforceBudgets": false,
+    "candidateEnforceBudgets": true,
+    "driverExitCode": 0,
+    "comparisonExitCode": 0,
+    "rows": [
+      {
+        "variant": "baseline-cold-v2",
+        "report": {
+          "path": ".builder/world-perf-20261016/cold-metric-v2-paired/baseline-cold-v2-200-desktop-firefox/report.json",
+          "sha256": "c94cc17e1df7b4535230eea9c77098f938b38040be753534fd046bb9ec21723d"
+        },
+        "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+        "serverHash": "566a345e787caf57b4a0dbcd735d2118be74a7ef1c484ec68f4334e9949c02df",
+        "clientHash": "2e87e0a52ee6d159e2a0759a4a97846e374699e964c0b839cc4656176bd52c08",
+        "htmlHash": "7dd32945154aa007edfa7e81fd815f12dfc39da04d0cfb86bd8ba49fee1d8d79",
+        "measurementContract": {
+          "version": 2,
+          "coldMetric": "browser-first-atomic-transition-ready-upper-bound",
+          "start": "node-city-start-bracketed-by-existing-browser-clock-rpc",
+          "end": "first-observed-atomic-and-zero-map-level-transitions-after-trusted-city-enter",
+          "legacyColdMetric": "node-city-ready-await-return",
+          "ownership": "no-world-canvas-at-start-or-before-trusted-city-enter"
+        },
+        "browser": "153.0",
+        "parameters": {
+          "engine": "firefox",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "dpr": 1,
+          "touch": false,
+          "cpu": 1,
+          "network": false
+        },
+        "budgets": {
+          "coldCityMs": 1500,
+          "warmCityMs": 500,
+          "inputP95Ms": 100,
+          "frameP95Ms": 20,
+          "steadyLongTasks": 0,
+          "retainedHeapBytes": 8388608,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "legacyRequests": 0,
+          "errors": 0
+        },
+        "budgetViolations": [],
+        "functionalErrors": [],
+        "samples": [
+          {
+            "sample": 0,
+            "coldCityMs": 1406.0566250000002,
+            "legacyColdCityMs": 1436.3025000000002,
+            "coldMetric": {
+              "contractVersion": 2,
+              "lowerBoundMs": 1403,
+              "upperBoundMs": 1406.0566250000002,
+              "clockUncertaintyMs": 3.0566250000001673,
+              "legacyColdCityMs": 1436.3025000000002
+            },
+            "coldMetricInput": {
+              "nodeStartedMs": 2172.2355,
+              "nodeClockSampleDoneMs": 2175.292125,
+              "nodeEndedMs": 3608.538,
+              "start": {
+                "contractVersion": 2,
+                "token": "091b2c4d-52c2-4a2a-a284-a934e9828ed2",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164826635,
+                "clockStart": 1002
+              },
+              "end": {
+                "contractVersion": 2,
+                "token": "091b2c4d-52c2-4a2a-a284-a934e9828ed2",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "inputCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164826635,
+                "now": 2440,
+                "trustedEnter": true,
+                "inputAt": 1016,
+                "readyAt": 2405
+              }
+            },
+            "warmCityMs": 23.447958000000654,
+            "frames": {
+              "count": 959,
+              "p50": 8.339999999998327,
+              "p95": 9.180000000000291,
+              "max": 16.660000000001673
+            },
+            "input": {
+              "count": 21,
+              "p50": 14,
+              "p95": 19,
+              "max": 20
+            },
+            "canonicalTasks": 200,
+            "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+            "coldSceneRequests": 1,
+            "panReads": [],
+            "warmSceneReads": [],
+            "legacyRequests": []
+          },
+          {
+            "sample": 1,
+            "coldCityMs": 1210.658790999998,
+            "legacyColdCityMs": 1614.9862079999984,
+            "coldMetric": {
+              "contractVersion": 2,
+              "lowerBoundMs": 1206,
+              "upperBoundMs": 1210.658790999998,
+              "clockUncertaintyMs": 4.658790999998018,
+              "legacyColdCityMs": 1614.9862079999984
+            },
+            "coldMetricInput": {
+              "nodeStartedMs": 22176.693917,
+              "nodeClockSampleDoneMs": 22181.352708,
+              "nodeEndedMs": 23791.680125,
+              "start": {
+                "contractVersion": 2,
+                "token": "9f23bedf-d5b0-4f33-a89e-9bc096652970",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164846763,
+                "clockStart": 881
+              },
+              "end": {
+                "contractVersion": 2,
+                "token": "9f23bedf-d5b0-4f33-a89e-9bc096652970",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "inputCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164846763,
+                "now": 2505,
+                "trustedEnter": true,
+                "inputAt": 892,
+                "readyAt": 2087
+              }
+            },
+            "warmCityMs": 25.82258400000137,
+            "frames": {
+              "count": 960,
+              "p50": 8.320000000001528,
+              "p95": 9,
+              "max": 9.340000000000146
+            },
+            "input": {
+              "count": 21,
+              "p50": 16,
+              "p95": 20,
+              "max": 25
+            },
+            "canonicalTasks": 200,
+            "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+            "coldSceneRequests": 1,
+            "panReads": [],
+            "warmSceneReads": [],
+            "legacyRequests": []
+          },
+          {
+            "sample": 2,
+            "coldCityMs": 1217.9021249999932,
+            "legacyColdCityMs": 1624.0205419999984,
+            "coldMetric": {
+              "contractVersion": 2,
+              "lowerBoundMs": 1214,
+              "upperBoundMs": 1217.9021249999932,
+              "clockUncertaintyMs": 3.902124999993248,
+              "legacyColdCityMs": 1624.0205419999984
+            },
+            "coldMetricInput": {
+              "nodeStartedMs": 42119.58325,
+              "nodeClockSampleDoneMs": 42123.485375,
+              "nodeEndedMs": 43743.603792,
+              "start": {
+                "contractVersion": 2,
+                "token": "72c0e03c-f286-41a0-9188-0f18be9c61c9",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164866721,
+                "clockStart": 866
+              },
+              "end": {
+                "contractVersion": 2,
+                "token": "72c0e03c-f286-41a0-9188-0f18be9c61c9",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "inputCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164866721,
+                "now": 2508,
+                "trustedEnter": true,
+                "inputAt": 877,
+                "readyAt": 2080
+              }
+            },
+            "warmCityMs": 19.585666999999376,
+            "frames": {
+              "count": 960,
+              "p50": 8.339999999998327,
+              "p95": 9.100000000000364,
+              "max": 9.319999999999709
+            },
+            "input": {
+              "count": 21,
+              "p50": 21,
+              "p95": 22,
+              "max": 22
+            },
+            "canonicalTasks": 200,
+            "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+            "coldSceneRequests": 1,
+            "panReads": [],
+            "warmSceneReads": [],
+            "legacyRequests": []
+          }
+        ]
+      },
+      {
+        "variant": "candidate-cold-v2",
+        "report": {
+          "path": ".builder/world-perf-20261016/cold-metric-v2-paired/candidate-cold-v2-200-desktop-firefox/report.json",
+          "sha256": "cc44f163e05c7c4d46885f40c4ab731e28783e0dab7fae9699771b76e7c2fe38"
+        },
+        "sourceRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+        "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+        "clientHash": "afd9646c4eb46d2c77a2fb0b5cd2f1f12227c0f1b9057e1a5fc9d493ecd07c75",
+        "htmlHash": "a2af5ab50c5315acfeb007f5210529a0304c15e31a860437817145ba147ca74f",
+        "measurementContract": {
+          "version": 2,
+          "coldMetric": "browser-first-atomic-transition-ready-upper-bound",
+          "start": "node-city-start-bracketed-by-existing-browser-clock-rpc",
+          "end": "first-observed-atomic-and-zero-map-level-transitions-after-trusted-city-enter",
+          "legacyColdMetric": "node-city-ready-await-return",
+          "ownership": "no-world-canvas-at-start-or-before-trusted-city-enter"
+        },
+        "browser": "153.0",
+        "parameters": {
+          "engine": "firefox",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "dpr": 1,
+          "touch": false,
+          "cpu": 1,
+          "network": false
+        },
+        "budgets": {
+          "coldCityMs": 1500,
+          "warmCityMs": 500,
+          "inputP95Ms": 100,
+          "frameP95Ms": 20,
+          "steadyLongTasks": 0,
+          "retainedHeapBytes": 8388608,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "legacyRequests": 0,
+          "errors": 0
+        },
+        "budgetViolations": [],
+        "functionalErrors": [],
+        "samples": [
+          {
+            "sample": 0,
+            "coldCityMs": 1376.85925,
+            "legacyColdCityMs": 1450.5767910000002,
+            "coldMetric": {
+              "contractVersion": 2,
+              "lowerBoundMs": 1373,
+              "upperBoundMs": 1376.85925,
+              "clockUncertaintyMs": 3.8592499999999745,
+              "legacyColdCityMs": 1450.5767910000002
+            },
+            "coldMetricInput": {
+              "nodeStartedMs": 1388.411625,
+              "nodeClockSampleDoneMs": 1392.270875,
+              "nodeEndedMs": 2838.988416,
+              "start": {
+                "contractVersion": 2,
+                "token": "9ac29550-ea97-4b74-91b7-c03947bd6db4",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164888574,
+                "clockStart": 377
+              },
+              "end": {
+                "contractVersion": 2,
+                "token": "9ac29550-ea97-4b74-91b7-c03947bd6db4",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "inputCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164888574,
+                "now": 1829,
+                "trustedEnter": true,
+                "inputAt": 396,
+                "readyAt": 1750
+              }
+            },
+            "warmCityMs": 23.832249999999476,
+            "frames": {
+              "count": 959,
+              "p50": 8.319999999999709,
+              "p95": 9.06000000000131,
+              "max": 16.639999999999418
+            },
+            "input": {
+              "count": 21,
+              "p50": 13,
+              "p95": 20,
+              "max": 21
+            },
+            "canonicalTasks": 200,
+            "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+            "coldSceneRequests": 1,
+            "panReads": [],
+            "warmSceneReads": [],
+            "legacyRequests": []
+          },
+          {
+            "sample": 1,
+            "coldCityMs": 1271.700832999999,
+            "legacyColdCityMs": 1401.7391659999994,
+            "coldMetric": {
+              "contractVersion": 2,
+              "lowerBoundMs": 1267,
+              "upperBoundMs": 1271.700832999999,
+              "clockUncertaintyMs": 4.7008329999989655,
+              "legacyColdCityMs": 1401.7391659999994
+            },
+            "coldMetricInput": {
+              "nodeStartedMs": 21040.272125,
+              "nodeClockSampleDoneMs": 21044.972958,
+              "nodeEndedMs": 22442.011291,
+              "start": {
+                "contractVersion": 2,
+                "token": "9f99be1b-3d0a-4715-a1ca-8b362fa664d8",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164908437,
+                "clockStart": 168
+              },
+              "end": {
+                "contractVersion": 2,
+                "token": "9f99be1b-3d0a-4715-a1ca-8b362fa664d8",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "inputCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164908437,
+                "now": 1569,
+                "trustedEnter": true,
+                "inputAt": 179,
+                "readyAt": 1435
+              }
+            },
+            "warmCityMs": 26.4898749999993,
+            "frames": {
+              "count": 960,
+              "p50": 8.339999999999236,
+              "p95": 9.0600000000004,
+              "max": 9.300000000001091
+            },
+            "input": {
+              "count": 21,
+              "p50": 13,
+              "p95": 19,
+              "max": 20
+            },
+            "canonicalTasks": 200,
+            "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+            "coldSceneRequests": 1,
+            "panReads": [],
+            "warmSceneReads": [],
+            "legacyRequests": []
+          },
+          {
+            "sample": 2,
+            "coldCityMs": 1306.8499169999996,
+            "legacyColdCityMs": 1403.7388749999955,
+            "coldMetric": {
+              "contractVersion": 2,
+              "lowerBoundMs": 1304,
+              "upperBoundMs": 1306.8499169999996,
+              "clockUncertaintyMs": 2.84991699999955,
+              "legacyColdCityMs": 1403.7388749999955
+            },
+            "coldMetricInput": {
+              "nodeStartedMs": 40391.382958,
+              "nodeClockSampleDoneMs": 40394.232875,
+              "nodeEndedMs": 41795.121833,
+              "start": {
+                "contractVersion": 2,
+                "token": "a8abccd8-e978-43ab-87dd-9b24a9481da8",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164927794,
+                "clockStart": 161
+              },
+              "end": {
+                "contractVersion": 2,
+                "token": "a8abccd8-e978-43ab-87dd-9b24a9481da8",
+                "expectedCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "inputCityId": "f54fa3d4-a678-4525-a875-c567f9149bfd",
+                "timeOrigin": 1792164927794,
+                "now": 1565,
+                "trustedEnter": true,
+                "inputAt": 170,
+                "readyAt": 1465
+              }
+            },
+            "warmCityMs": 21.670208000003186,
+            "frames": {
+              "count": 960,
+              "p50": 8.320000000001528,
+              "p95": 9.140000000001237,
+              "max": 9.320000000001528
+            },
+            "input": {
+              "count": 21,
+              "p50": 13,
+              "p95": 19,
+              "max": 21
+            },
+            "canonicalTasks": 200,
+            "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+            "coldSceneRequests": 1,
+            "panReads": [],
+            "warmSceneReads": [],
+            "legacyRequests": []
+          }
+        ]
+      }
+    ],
+    "comparison": {
+      "measurementContractVersion": 2,
+      "targets": {
+        "sizes": [
+          200
+        ],
+        "profiles": [
+          "desktop-firefox"
+        ]
+      },
+      "rows": [
+        {
+          "tasks": 200,
+          "profile": "desktop-firefox",
+          "measurementContractVersion": 2,
+          "legacyColdMedianBeforeMs": 1614.9862079999984,
+          "legacyColdMedianAfterMs": 1403.7388749999955,
+          "clockUncertaintyMedianBeforeMs": 3.902124999993248,
+          "clockUncertaintyMedianAfterMs": 3.8592499999999745,
+          "browser": "153.0",
+          "baselineSource": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+          "candidateSource": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8+snapshot-03fc2d724900db506bd0b41d88448f1e3d3beb9936a90effe255040683cd32df",
+          "coldMedianBeforeMs": 1217.9021249999932,
+          "coldMedianAfterMs": 1306.8499169999996,
+          "coldDeltaPercent": 7.303361261481234,
+          "warmMedianBeforeMs": 23.447958000000654,
+          "warmMedianAfterMs": 23.832249999999476,
+          "inputP95MedianBeforeMs": 20,
+          "inputP95MedianAfterMs": 19,
+          "rafP95MedianBeforeMs": 9.100000000000364,
+          "rafP95MedianAfterMs": 9.06000000000131,
+          "retainedHeapGrowthMedianBeforeBytes": null,
+          "retainedHeapGrowthMedianAfterBytes": null,
+          "warmDisplayViewsBefore": 18571,
+          "warmDisplayViewsAfter": 18572,
+          "trackedRgbaEstimateBeforeBytes": 67252744,
+          "trackedRgbaEstimateAfterBytes": 67252232,
+          "trackedRgbaDeltaPercent": -0.0007613072263601417,
+          "canonicalTasksPreserved": true,
+          "sceneRequestBudgetPreserved": true,
+          "candidateBudgetViolations": []
+        }
+      ],
+      "failures": [],
+      "limits": "Paired browser emulation and local fixture data. RGBA estimate is not measured VRAM; unavailable heap/long-task APIs remain absent. Native device claims are excluded.",
+      "generatedAt": "2026-10-16T15:36:19.025Z"
+    },
+    "comparisonEvidence": {
+      "path": ".builder/world-perf-20261016/cold-metric-v2-paired/baseline-cold-v2-vs-candidate-cold-v2.json",
+      "sha256": "87e3b626b39cc3b84d37f522c9f5fd73909b26fbdbab28a318c11173424e6d28"
+    },
+    "preflight": {
+      "path": ".builder/world-perf-20261016/cold-metric-v2-paired/preflight.json",
+      "sha256": "cc5cd05411d4923b62437472b1c6511100957c6026eea58b35e86d4032e57d54"
+    },
+    "postflight": {
+      "path": ".builder/world-perf-20261016/cold-metric-v2-paired/postflight.json",
+      "sha256": "3b3b13e93e1f5c1f792a8f404985124d6f63e8030915be61aa7126ffaab2bf77"
+    },
+    "runtimeBeforeAfterExact": true,
+    "dataRegenerated": false,
+    "dataSeeded": false,
+    "extraRestores": 0,
+    "workload": "Same original ready→queue0→mobility→3000ms→8000ms, input/pan/churn20/NORMAL/life; only cold metric is version2."
+  },
+  "historicalFullV4": {
+    "evidence": {
+      "path": "docs/evidence/city-scale-2026-10-16/final-v4-summary.json",
+      "sha256": "769a547befe6bcfc17313dbf9da00dd201420874978298040be6c9156c4a883f"
+    },
+    "status": "STRICT_RED",
+    "samples": 36,
+    "profiles": 12,
+    "strictPassingProfiles": 11,
+    "budgetViolations": 3,
+    "notOverwritten": true
+  },
+  "effectiveCoverage": {
+    "legacyV1ProfilesReused": 11,
+    "explicitPairedV2Profiles": 1,
+    "rationale": "11 unchanged initial scenes passed original Node upper-bound budgets and all canonical/geometry/requests/canvas guards. Reused as conservative PASS bounds only.",
+    "notClaimed": "Not a new36sample v2 matrix; no invented v2 values for11profiles; all historicalRED and old Node numeric medians remain unchanged."
+  },
+  "limits": [
+    "DOM microtask observation, not compositor paint.",
+    "Browser clock quantization about1ms is separate from measured RPC uncertainty; no padding or budget relaxation.",
+    "Only3samples per runtime: median/range, not loadingp95; ranges overlap, no inferred runtime speedup from methodology correction.",
+    "Browser emulation only; missing Firefox heap/longtask API staysN/A; RGBA is not measuredVRAM.",
+    "Different v1/v2 definitions cannot be numerically mixed. Mixed/unknown contracts and incomplete/tampered observations are rejected."
+  ],
+  "next": "No additional performance runs. Return root for complete31criteria/CI/SCM/managedrelease; overall goal not declared complete."
+}

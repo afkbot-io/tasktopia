@@ -22,6 +22,7 @@ const schema = z.object({
   SESSION_COOKIE_SECURE: z.enum(["true", "false"]).optional(),
   TRUST_PROXY: z.enum(["true", "false"]).default("false"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+  OBSERVABILITY_TOKEN: z.preprocess(value => value === "" ? undefined : value, z.string().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/).optional()),
   UPLOAD_DIR: z.string().default("data/uploads"),
   MAX_ATTACHMENT_BYTES: z.coerce.number().int().min(1024).max(50 * 1024 * 1024).default(10 * 1024 * 1024),
   CITY_SCENE_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1000).default(30),

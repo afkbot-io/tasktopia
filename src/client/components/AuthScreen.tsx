@@ -4,6 +4,7 @@ import { api } from "../api";
 import { Button, Field } from "./ui";
 import { AuthPanel } from './AuthPanel';
 import { AuthLayout } from './AuthLayout';
+import { focusAuthFieldError, readAuthFieldErrors, type AuthFieldErrors } from '../auth-form-validation';
 
 export function AuthScreen({ onAuthenticated, initialError = "" }: {
   onAuthenticated: () => Promise<void>;
@@ -16,9 +17,16 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   const [pending, setPending] = useState(false);
   const [countryLoadFailed, setCountryLoadFailed] = useState(false);
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [configState,setConfigState]=useState<'loading'|'ready'|'error'>('loading');
+  const [configAttempt,setConfigAttempt]=useState(0);
+  const [fieldErrors,setFieldErrors]=useState<AuthFieldErrors>({});
   const [registerStep, setRegisterStep] = useState<0 | 1>(0);
   const accountDraft = useRef<Record<string, FormDataEntryValue>>({});
   const formRef = useRef<HTMLFormElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const visibleError = error || initialError;
+
+  useEffect(()=>{if(visibleError)errorRef.current?.focus();},[visibleError]);
 
   useEffect(() => {
     if (mode === 'register') formRef.current?.querySelector<HTMLInputElement>(registerStep === 1 ? '[name="countryName"]' : '[name="name"]')?.focus();
@@ -26,15 +34,18 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
 
   useEffect(() => {
     let active = true;
-    void api<{ registrationEnabled: boolean }>("/api/auth/config")
+    const controller=new AbortController();
+    const deadline=window.setTimeout(()=>controller.abort(),8000);
+    void api<{ registrationEnabled: boolean }>("/api/auth/config",{signal:controller.signal})
       .then((result) => {
-        if (active) setRegistrationEnabled(result.registrationEnabled);
+        if(typeof result.registrationEnabled!=='boolean')throw new Error('Invalid auth config');
+        if (active) {setRegistrationEnabled(result.registrationEnabled);setConfigState('ready');}
       })
       .catch(() => {
-        if (active) setRegistrationEnabled(false);
-      });
-    return () => { active = false; };
-  }, []);
+        if (active) setConfigState('error');
+      }).finally(()=>window.clearTimeout(deadline));
+    return () => { active = false; window.clearTimeout(deadline);controller.abort(); };
+  }, [configAttempt]);
 
   useEffect(() => {
     if (!registrationEnabled && mode === "register") setMode("login");
@@ -43,10 +54,10 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
+    const form=event.currentTarget,errors=readAuthFieldErrors(form);
+    setFieldErrors(errors);
+    if(Object.keys(errors).length){setError('');window.requestAnimationFrame(()=>focusAuthFieldError(form,errors));return;}
     const data = new FormData(event.currentTarget);
-    if (mode === 'register' && registerStep === 0 && data.get('password') !== data.get('passwordConfirmation')) {
-      setError('Пароли не совпадают'); return;
-    }
     if (mode === 'register' && registerStep === 0) {
       accountDraft.current = Object.fromEntries(data);
       setError(''); setRegisterStep(1); return;
@@ -93,16 +104,19 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
     }
   }
 
-  const visibleError = error || initialError;
   const canRetryCountry = countryLoadFailed || Boolean(initialError);
 
   if (recovering) return <RecoveryScreen onBack={() => setRecovering(false)} />;
   const changeMode = (next: 'login' | 'register') => {
     if (next === mode) return;
-    formRef.current?.reset(); accountDraft.current = {}; setRegisterStep(0); setMode(next); setError(''); setCountryLoadFailed(false);
+    formRef.current?.reset(); accountDraft.current = {}; setRegisterStep(0); setMode(next); setError(''); setFieldErrors({});setCountryLoadFailed(false);
   };
   return <AuthLayout>
       <AuthPanel title={mode === 'login' ? 'Войти в Tasktopia' : 'Создать аккаунт'}>
+        {(configState==='error'||configState==='loading'&&configAttempt>0)&&<div className="auth-config-status" role="status">
+          <p>{configState==='error'?'Не удалось проверить доступность регистрации. Войти в аккаунт можно.':'Проверяем доступность регистрации…'}</p>
+          <Button variant="quiet" disabled={configState==='loading'} onClick={()=>{setConfigState('loading');setConfigAttempt(current=>current+1);}}>Повторить проверку регистрации</Button>
+        </div>}
         {registrationEnabled && <nav className="auth-mode-switch" aria-label="Доступ в Tasktopia">
           <Button aria-pressed={mode === 'login'} disabled={pending} onClick={() => changeMode('login')}>Вход</Button>
           <Button aria-pressed={mode === 'register'} disabled={pending} onClick={() => changeMode('register')}>Регистрация</Button>
@@ -111,21 +125,24 @@ export function AuthScreen({ onAuthenticated, initialError = "" }: {
           <li aria-current={registerStep === 0 ? 'step' : undefined}><span>1</span> Аккаунт</li>
           <li aria-current={registerStep === 1 ? 'step' : undefined}><span>2</span> Первый город</li>
         </ol>}
-        <form ref={formRef} onSubmit={submit} className="auth-entry-form">
+        <form ref={formRef} noValidate onSubmit={submit} className="auth-entry-form" onInput={event=>{
+          const input=event.target;if(!(input instanceof HTMLInputElement))return;
+          setFieldErrors(current=>{if(!current[input.name])return current;const next={...current};delete next[input.name];return next;});setError('');
+        }}>
           <fieldset hidden={mode === 'register' && registerStep === 1} disabled={pending || mode === 'register' && registerStep === 1}>
-            {mode === 'register' && <Field label="Имя" name="name" minLength={2} maxLength={60} required autoComplete="name" />}
-            <Field label="Email" name="email" type="email" required autoComplete="email" />
-            <Field label="Пароль" name="password" type="password" minLength={8} maxLength={128} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-            {mode === 'register' && <Field label="Повторите пароль" name="passwordConfirmation" type="password" minLength={8} maxLength={128} required autoComplete="new-password" />}
+            {mode === 'register' && <Field label="Имя" name="name" error={fieldErrors.name} minLength={2} maxLength={60} required autoComplete="name" />}
+            <Field label="Email" name="email" error={fieldErrors.email} type="email" maxLength={254} required autoComplete="email" />
+            <Field label="Пароль" name="password" error={fieldErrors.password} type="password" minLength={8} maxLength={128} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+            {mode === 'register' && <Field label="Повторите пароль" name="passwordConfirmation" error={fieldErrors.passwordConfirmation} type="password" minLength={8} maxLength={128} required autoComplete="new-password" />}
           </fieldset>
           {mode === 'register' && <fieldset hidden={registerStep === 0} disabled={pending || registerStep === 0}>
             <p className="auth-form-description">Дайте имя своей стране и первому городу. Названия появятся на карте.</p>
-            <Field label="Название вашей первой страны" name="countryName" minLength={2} maxLength={100} required placeholder="Например, Атутаелия" />
-            <Field label="Название первого города" name="cityName" minLength={2} maxLength={100} required placeholder="Например, Столица" />
+            <Field label="Название вашей первой страны" name="countryName" error={fieldErrors.countryName} minLength={2} maxLength={100} required placeholder="Например, Атутаелия" />
+            <Field label="Название первого города" name="cityName" error={fieldErrors.cityName} minLength={2} maxLength={100} required placeholder="Например, Столица" />
           </fieldset>}
-          {visibleError && <div className="form-error" role="alert">{visibleError}</div>}
+          {visibleError && <div ref={errorRef} className="form-error" role="alert" tabIndex={-1}>{visibleError}</div>}
           <Button variant="primary" type="submit" className="auth-submit" disabled={pending}>{pending ? 'Подождите…' : mode === 'login' ? 'Открыть страну' : registerStep === 0 ? 'Продолжить' : 'Создать аккаунт'}</Button>
-          {mode === 'register' && registerStep === 1 && <Button variant="quiet" disabled={pending} onClick={() => {setRegisterStep(0);setError('');}}>Назад к аккаунту</Button>}
+          {mode === 'register' && registerStep === 1 && <Button variant="quiet" disabled={pending} onClick={() => {setRegisterStep(0);setError('');setFieldErrors({});}}>Назад к аккаунту</Button>}
         </form>
         {mode === "login" && <Button variant="quiet" disabled={pending} onClick={() => setRecovering(true)}>Забыли пароль?</Button>}
         {canRetryCountry && <Button className="mt-2 w-full" disabled={pending} onClick={() => void retryCountryLoad()}>Повторить загрузку</Button>}

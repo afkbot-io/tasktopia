@@ -1,6 +1,8 @@
+import { readCityAlbum } from "./city-album-read";
 import { issueRecoveryCodes, recoverAccount } from "./account-recovery";
 import { createCountryInvitation, acceptCountryInvitation } from "./country-invitations";
 import { readCityReport } from "./city-report-read";
+import { CITY_NEWS_KINDS } from "../shared/city-news";
 import { readCityNews, readNewsCards } from "./city-news-read";
 import { readWorldDigest } from "./world-digest-read";
 import { registerTaskShareRoutes } from "./task-share-routes";
@@ -36,6 +38,8 @@ import { config } from "./config";
 import { APP_VERSION } from "./version";
 import { GenerationPendingError, getWorldGenerationJob } from "./world-generation-jobs";
 import { z } from "zod";
+import { TASK_COLLECTIONS } from "./task-collection-read";
+import { taskListPageSchema } from "./task-read-schemas";
 import { hasPushSubscription, removePushSubscription, savePushSubscription } from "./push-subscriptions";
 
 const registerSchema = z.object({
@@ -301,6 +305,13 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     return { subscribed: false };
   });
 
+  app.get("/api/countries/:countryId/cities/:cityId/album", async (request, reply) => {
+    const user = await requireUser(db, request, reply); if (!user) return reply;
+    const params = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid() }).strict(), request.params);
+    const query = parse(z.object({ cursor: z.string().min(1).max(2048).optional(), limit: z.coerce.number().int().min(1).max(50).optional() }).strict(), request.query);
+    return reply.header("Cache-Control", "private, no-store").send(await readCityAlbum(db, user.id, params.countryId, params.cityId, query));
+  });
+
   app.get("/api/city-development", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;
@@ -317,13 +328,13 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
   });
   app.get("/api/city-news", async (request,reply) => {
     const user=await requireUser(db,request,reply);if(!user)return reply;
-    const q=parse(z.object({countryId:z.string().uuid(),history:z.enum(["true","false"]).optional(),before:z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional()}).strict(),request.query);
+    const q=parse(z.object({countryId:z.string().uuid(),history:z.enum(["true","false"]).optional(),before:z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),cursor:z.string().min(1).max(2048).optional(),limit:z.coerce.number().int().min(1).max(50).optional(),kind:z.enum(CITY_NEWS_KINDS).optional()}).strict(),request.query);
     reply.header("Cache-Control","private, no-store");
-    return await readCityNews(db,user.id,q.countryId,q.history==="true",q.before??null) ?? reply.code(403).send({message:"Нет доступа к стране"});
+    return await readCityNews(db,user.id,q.countryId,q.history==="true",q.before??null,q) ?? reply.code(403).send({message:"Нет доступа к стране"});
   });
   app.post("/api/city-news/read",async(request,reply)=>{
     const user=await requireUser(db,request,reply);if(!user)return reply;
-    const q=parse(z.object({countryId:z.string().uuid(),eventIds:z.array(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)).max(20)}).strict(),request.body);
+    const q=parse(z.object({countryId:z.string().uuid(),eventIds:z.array(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)).max(50)}).strict(),request.body);
     if(!await countryRole(db,user.id,q.countryId))return reply.code(403).send({message:"Нет доступа к стране"});
     await readNewsCards(db,user.id,q.countryId,q.eventIds);return {ok:true};
   });
@@ -735,6 +746,14 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     return service.deleteArchiveRecord(user.countryId, { recordId, ...parse(archiveRecordDeleteSchema, request.body) });
   });
 
+  app.get("/api/tasks/list-page", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const query = parse(taskListPageSchema, request.query);
+    if (!await countryRole(db, user.id, query.countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+    return reply.header("Cache-Control", "private, no-store").send(await service.listTaskPage(query.countryId, query));
+  });
+
   app.get("/api/tasks/search", async (request, reply) => {
             const user = await requireUser(db, request, reply);
             if (!user) return reply;
@@ -756,6 +775,35 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     const countryId = query.countryId ?? user.countryId;
     if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
     return reply.header("Cache-Control", "private, no-store").send(await service.resolveTask(user.id, { number: query.number, countryId }));
+  });
+
+  const taskReadCountryQuery = z.object({ countryId: z.string().uuid() }).strict();
+  app.get("/api/tasks/:taskId/card", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const { countryId } = parse(taskReadCountryQuery, request.query);
+    if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+    const taskId = parse(z.string().uuid(), (request.params as { taskId: string }).taskId);
+    return reply.header("Cache-Control", "private, no-store").send(await service.getTaskCard(countryId, taskId));
+  });
+
+  app.get("/api/tasks/:taskId/collections/:collection", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const query = parse(taskReadCountryQuery.extend({ limit: z.coerce.number().int().min(1).max(100).default(50),
+      cursor: z.string().min(1).max(8192).optional(), order: z.enum(["asc", "desc"]).optional() }), request.query);
+    if (!await countryRole(db, user.id, query.countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+    const params = parse(z.object({ taskId: z.string().uuid(), collection: z.enum(TASK_COLLECTIONS) }), request.params);
+    return reply.header("Cache-Control", "private, no-store").send(await service.getTaskCollection(query.countryId, params.taskId, params.collection, query));
+  });
+
+  app.get("/api/tasks/:taskId/documents/:documentId", async (request, reply) => {
+    const user = await requireUser(db, request, reply);
+    if (!user) return reply;
+    const { countryId } = parse(taskReadCountryQuery, request.query);
+    if (!await countryRole(db, user.id, countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
+    const params = parse(z.object({ taskId: z.string().uuid(), documentId: z.string().uuid() }), request.params);
+    return reply.header("Cache-Control", "private, no-store").send(await service.getTaskDocument(countryId, params.taskId, params.documentId));
   });
 
   app.get("/api/tasks/:taskId", async (request, reply) => {

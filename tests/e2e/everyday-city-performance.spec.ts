@@ -11,6 +11,7 @@ test('everyday real-clock paired CPU and retained heap stay bounded after lifecy
   await page.setViewportSize({ width: 1440, height: 1100 }); const f = await everydayFixture(page);
   try {
     await f.focus(f.pendingSchool);
+    await expect(f.host).toHaveAttribute('data-everyday-planning-mode', 'cooperative-wall');
     await page.locator('.world-menu > summary').click();
     const prefs = page.locator('.world-preferences:visible'); await prefs.locator('> summary').click();
     await prefs.getByLabel('Детализация').selectOption('NORMAL');
@@ -20,7 +21,8 @@ test('everyday real-clock paired CPU and retained heap stay bounded after lifecy
       await page.waitForTimeout(2500);
       samples.push(await f.host.evaluate((el, label) => { const d = (el as HTMLElement).dataset;
         return { label, cpuP95: Number(d.livingWorldFrameCpuP95Ms), cpuMax: Number(d.livingWorldFrameCpuMaxMs),
-          frameSamples: Number(d.livingWorldFrameSamples), planningMs: Math.max(Number(d.roadPlanningMs ?? 0), Number(d.everydayPlanningMs ?? 0)),
+          frameSamples: Number(d.livingWorldFrameSamples), roadPlanningMs: Number(d.roadPlanningMs ?? 0),
+          everydayPreparationWallMs: Number(d.everydayPlanningMs), everydayPlanningMode: d.everydayPlanningMode,
           cars: Number(d.cars), walkers: Number(d.walkers), stops: Number(d.transitStops), visitors: Number(d.everydayVisitors) };
       }, label));
     };
@@ -46,11 +48,19 @@ test('everyday real-clock paired CPU and retained heap stay bounded after lifecy
     const renderer = await page.locator('.world-canvas canvas').evaluate(el => { const gl = (el as HTMLCanvasElement).getContext('webgl2');
       const ext = gl?.getExtension('WEBGL_debug_renderer_info'); return ext ? gl!.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'unavailable'; });
     const report = { workload: 'Изолированный город: шесть школ/садиков, два парка, пять объектов стадии4; общая mobility, реальное время без page.clock. Парные3×2.5s окна off/on, одно открытие через MCP/WS, восемь отмен reduced-motion.',
-      budgets: { livingCpuP95Ms: 8, rareRoadPlannerMs: 50, retainedHeapBytes: 8 * 1024 * 1024 }, renderer,
+      budgets: { livingCpuP95Ms: 8, rareRoadPlannerMs: 50, everydayPreparationDeadlineMs: 20000, retainedHeapBytes: 8 * 1024 * 1024 }, renderer,
       samples, before, after, heapGrowth: after.usedSize - before.usedSize };
     await writeFile(info.outputPath('everyday-performance.json'), JSON.stringify(report, null, 2));
     expect(Math.max(...samples.map(s => Number(s.cpuP95)))).toBeLessThanOrEqual(8);
-    expect(Math.max(...samples.map(s => Number(s.planningMs)))).toBeLessThanOrEqual(50);
+    // Road planning is synchronous; the accepted everyday preparation includes
+    // await/yield time and has the existing movement owner's 20-second deadline.
+    expect(Math.max(...samples.map(s => Number(s.roadPlanningMs)))).toBeLessThanOrEqual(50);
+    for (const sample of samples) {
+      expect(sample.everydayPlanningMode).toBe('cooperative-wall');
+      expect(Number.isFinite(sample.everydayPreparationWallMs)).toBe(true);
+      expect(Number(sample.everydayPreparationWallMs)).toBeGreaterThanOrEqual(0);
+      expect(Number(sample.everydayPreparationWallMs)).toBeLessThanOrEqual(20000);
+    }
     expect(samples.every(s => Number(s.frameSamples) === 120)).toBe(true);
     expect(after.usedSize - before.usedSize).toBeLessThan(8 * 1024 * 1024); await cdp.detach();
   } finally { await f.cleanup(); }

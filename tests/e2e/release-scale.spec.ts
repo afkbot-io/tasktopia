@@ -22,7 +22,7 @@ test("1000-task city: cold frame, bounded residency and 30 warm atlas round trip
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("release-scale-e@tasktopia.local");
-  await page.getByLabel("Пароль").fill("local-scale-fixture-only");
+  await page.getByLabel("Пароль", { exact: true }).fill("local-scale-fixture-only");
   // Time the actual DOM click through the first complete CITY frame, not
   // Playwright's locator polling. Login/bootstrap/network are included.
   await page.evaluate(() => {

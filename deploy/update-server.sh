@@ -321,6 +321,15 @@ find "$static_release_dir" -type f -exec chmod 0644 {} +
 rm -f -- "$static_next_link"
 ln -s "$static_release_dir" "$static_next_link"
 mv -Tf -- "$static_next_link" "$STATIC_DIR/current"
+# Local health does not cover the public nginx/CDN paths emitted by the new
+# HTML. Reject a release whose entry or lazy bundles still return old bytes or
+# gateway errors; the active EXIT trap restores the previous images/static tree.
+public_app_origin="$(docker compose config --format json \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["app"]["environment"]["APP_ORIGIN"])')"
+python3 "$APP_DIR/deploy/public-release-smoke.py" \
+  --origin "$public_app_origin" \
+  --public-root "$static_release_dir" \
+  --asset-revision "$current_asset_revision"
 deployment_committed="true"
 rm -f -- "$prepublish_journal" "$prepublish_journal.dirs"
 trap - EXIT

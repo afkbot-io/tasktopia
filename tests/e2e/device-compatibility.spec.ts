@@ -9,7 +9,7 @@ test("вход, карта, панели и карточка удобны на �
   await page.goto("/");
   await page.evaluate(() => document.fonts.ready);
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
   await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
   await openMapCity(page);

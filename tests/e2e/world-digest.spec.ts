@@ -33,32 +33,28 @@ test("server news keeps unseen cards, shares read state and retains history on m
     await page.goto("/");
     const bell = page.locator(".world-digest");
     await bell.getByLabel("Уведомления", { exact: true }).click();
-    await expect(bell.locator("li")).toHaveCount(20);
+    const expected = await (await page.request.get(`/api/city-news?countryId=${b.country.id}&limit=50`)).json();
+    await expect(bell.locator("li")).toHaveCount(expected.items.length);
     await expect(bell.locator("li").first()).toBeVisible();
-    await expect
-      .poll(async () => {
-        const d = await (
-          await page.request.get(`/api/city-news?countryId=${b.country.id}`)
-        ).json();
-        return d.unreadCount;
-      })
-      .toBeLessThan(initial);
-    const d = await (
-      await page.request.get(`/api/city-news?countryId=${b.country.id}`)
-    ).json();
-    expect(d.unreadCount).toBeGreaterThan(0);
+    // Opening and seeing cards never changes their read state.
+    await page.waitForTimeout(600);
+    expect((await (await page.request.get(`/api/city-news?countryId=${b.country.id}`)).json()).unreadCount).toBe(initial);
+    await bell.getByRole("button", { name: "Отметить страницу прочитанной", exact: true }).click();
+    await expect.poll(async () => (await (await page.request.get(`/api/city-news?countryId=${b.country.id}`)).json()).unreadCount).toBeLessThan(initial);
     await bell.getByRole("button", { name: "История", exact: true }).click();
-    await expect(bell.locator("li")).toHaveCount(20);
-    await bell.getByRole("button", { name: "История", exact: true }).click();
-    await expect(bell.locator("li")).toHaveCount(20);
-    await bell.getByRole("button", { name: "Более ранние" }).click();
-    await expect(bell.locator("li").first()).toBeVisible();
+    const history = await (await page.request.get(`/api/city-news?countryId=${b.country.id}&history=true&limit=50`)).json();
+    await expect(bell.locator("li")).toHaveCount(history.items.length);
+    if (history.nextCursor) {
+      await bell.getByRole("button", { name: "Далее", exact: true }).click();
+      await expect(bell.getByRole('navigation', { name: 'Страницы уведомлений' }).getByRole('status')).toHaveText('Страница 2');
+      await expect(bell.locator("li").first()).toBeVisible();
+    }
     const panel = bell.getByRole("region", { name: "Уведомления" });
     expect(await panel.evaluate((n) => n.scrollWidth <= n.clientWidth)).toBe(
       true,
     );
     await page.screenshot({ path: info.outputPath("news-mobile.png") });
-    await bell.locator("li button").first().click();
+    await bell.locator("li .news-task").first().click();
     await expect(page.locator("#task-title")).toBeVisible();
   } finally {
     for (const id of ids)
@@ -80,7 +76,7 @@ test("news failures retry and do not expose cached content", async ({
   const panel = page.getByRole("region", { name: "Уведомления" });
   await expect(panel.getByRole("alert")).toBeVisible();
   await page.route("**/api/city-news?*", (r) =>
-    r.fulfill({ json: { items: [], unreadCount: 0, nextBefore: null } }),
+    r.fulfill({ json: { items: [], unreadCount: 0, nextCursor: null } }),
   );
   await panel.getByRole("button", { name: "Повторить" }).click();
   await expect(panel.getByText("Новых событий пока нет.")).toBeVisible();

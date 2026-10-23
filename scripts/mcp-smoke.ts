@@ -33,7 +33,7 @@ const expectedTools = [
   "archive.get", "archive.record_list", "archive.record_create", "archive.record_update", "archive.record_delete",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
   "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
-  "task.list", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
+  "task.list", "task.list_page", "task.collection_list", "task.document_get", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",
   "task.activity", "task.dependency_add", "task.dependency_remove",
   "task.document_list", "task.document_upsert", "task.document_delete", "task.checklist_replace", "task.checklist_item_update",
   "task.link_add", "task.link_remove", "task.attachment_add", "task.attachment_list",

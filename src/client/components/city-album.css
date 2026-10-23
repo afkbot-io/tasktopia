@@ -1,0 +1,19 @@
+.city-album { position:relative; width:min(620px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); overflow:auto; padding:24px; background:var(--ui-surface); color:var(--ui-text); border:1px solid var(--ui-border); border-radius:var(--ui-radius-card); box-shadow:var(--ui-shadow); }
+.city-album > header { display:flex; align-items:flex-start; justify-content:space-between; padding-right:40px; border-bottom:1px solid var(--ui-border); padding-bottom:16px; }
+.city-album h2 { margin:0; font-size:24px; }
+.city-album header p { margin:4px 0 0; color:var(--ui-muted); }
+.city-album-milestones { list-style:none; margin:0; padding:0; }
+.city-album-milestones > li { border-bottom:1px solid var(--ui-border); padding:20px 0; overflow-wrap:anywhere; }
+.city-album-milestones time { font-size:12px; color:var(--ui-muted); }
+.city-album h3 { margin:6px 0 10px; font-size:18px; }
+.city-album button { min-height:44px; padding:8px 12px; border:1px solid var(--ui-border-control); background:var(--ui-raised); color:var(--ui-text); }
+.city-album .city-album-task { width:100%; text-align:left; }
+.city-album table { width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; }
+.city-album caption { text-align:left; font-size:12px; color:var(--ui-muted); margin-bottom:6px; }
+.city-album th,.city-album td { padding:6px; border-bottom:1px solid var(--ui-border); text-align:left; }
+.city-album td { font-variant-numeric:tabular-nums; width:64px; }
+.city-album tbody th { font-weight:500; }
+.city-album footer { position:sticky; bottom:-24px; background:var(--ui-surface); padding:16px 0 0; }
+.city-album nav { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.city-album-error { color:var(--ui-danger); }
+@media(max-width:480px) { .city-album { padding:16px; } .city-album footer { bottom:-16px; } }

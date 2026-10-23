@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22T21:17:04.431Z",
+  "qualification": false,
+  "classification": "ORIGINAL_FUNCTIONAL_FAILURE_UNRESOLVED_NOT_REPRODUCED",
+  "sourceHash": "0c2f020e4b8e12a49fff96385a508cc962836cfcefc8996db457147f92b138a4",
+  "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+  "clientHash": "288de017901d49b30e9615126fb455af35f424ab4c7485b56a1e73ebc23dbd8f",
+  "htmlHash": "043afe49d89401c9f8b30b28346720be86a1b7649cf137bed012270e35e2ee55",
+  "sourceArtifacts": [
+    {
+      "path": ".builder/world-perf-20261022/causal-ff1000-v4/summary.json",
+      "sha256": "f6ba2b5d104f94c589044a0e1cb040241e468bec852be9e43503c95ce12342c8"
+    },
+    {
+      "path": ".builder/world-perf-20261022/causal-ff1000-v4/factual-milestones.json",
+      "sha256": "56ef65bb98d322826aec6d90eabeb7716e9a9697fe234caf0d5c02f3b00c47d1"
+    }
+  ],
+  "originalQualification": {
+    "evidence": "docs/evidence/city-scale-2026-10-22/task-focus-v4-summary.json",
+    "status": "INCOMPLETE_OR_FUNCTIONAL_FAILURE",
+    "completedSamples": 15,
+    "expectedSamples": 24,
+    "coldBudgetFailures": 3,
+    "functionalFailure": "Firefox1000 mobilityReady:null timeout90000ms",
+    "unstartedProfiles": [
+      "pixel-chromium1000",
+      "iphone-webkit1000"
+    ],
+    "unchanged": true,
+    "failureResolved": false,
+    "failureReproducedByDiagnostic": false
+  },
+  "diagnostic": {
+    "profile": "desktop-firefox",
+    "tasks": 1000,
+    "samples": 1,
+    "functionalPass": true,
+    "additionalRuns": 1,
+    "coldMs": 3911.511625000001,
+    "coldBudgetMs": 3000,
+    "coldBudgetStatus": "RED",
+    "latencyLimitation": "Запуск выполнялся с дополнительной инструментацией и при наблюдавшейся нагрузке хоста; это не чистая квалификация и не замена исходного RED.",
+    "canonicalTasks": 1000,
+    "sceneChunks": 72,
+    "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+    "requests": {
+      "cold": 1,
+      "pan": 0,
+      "warm": 0,
+      "legacy": 0
+    },
+    "reportedPageRequestHttpErrors": 0
+  },
+  "milestones": {
+    "canonicalAtMs": 6406,
+    "ambientReadyAtMs": 6634,
+    "movementStartAtMs": 6767,
+    "movementCommittedAtMs": 10792,
+    "ambientToMovementMs": 133,
+    "movementStartToObservedCommitMs": 4025,
+    "movementPrepareMs": 4044.0,
+    "movementCommitMs": 29.0,
+    "timingLimit": "Временные интервалы наблюдателя и отдельные dataset-duration не складываются как один точный timeline.",
+    "atObservedCommit": {
+      "mobilityReady": true,
+      "loading": false,
+      "canonicalTasks": 1000,
+      "decodedChunks": 72,
+      "sceneCommit": "atomic",
+      "ambientAssets": "ready",
+      "groundBakeQueue": 0,
+      "haloGroundPending": 0
+    }
+  },
+  "observedQueue": {
+    "count": 796,
+    "undelivered": 0,
+    "maxDeliveredDelayMs": 272,
+    "truncated": false
+  },
+  "console": {
+    "errors": 0,
+    "warnings": 6,
+    "warningCategories": [
+      {
+        "kind": "service-worker-blocked-by-harness",
+        "count": 1
+      },
+      {
+        "kind": "webgl-context-lost",
+        "count": 1,
+        "observedBeforeAmbientReady": true
+      },
+      {
+        "kind": "deprecated-non-dom-texture-upload",
+        "count": 2
+      },
+      {
+        "kind": "lazy-texture-initialization",
+        "count": 1
+      },
+      {
+        "kind": "deprecated-debug-renderer-info",
+        "count": 1
+      }
+    ],
+    "causalConclusion": "Наличие предупреждения context-lost до ambient не доказывает причину исходного зависания."
+  },
+  "initialWorkers": {
+    "created": 4,
+    "post": 72,
+    "message": 72
+  },
+  "initialAbortCount": 1,
+  "cleanup": {
+    "ownedServerClosed": true,
+    "contextAndBrowserClosed": true,
+    "runtimeFenceVerified": true,
+    "ownFixtureOtherConnections": 0
+  },
+  "evidenceHashes": {
+    "reportSha256": "981f2bfb4c498efef1e0c999aab5aa0ab5285473a089598e6e0a4f304d6f8523",
+    "observerSha256": "9086cee0796c8e9d75c4cea8f7babdd4d339a79a76fc827c844632fbc28426ee",
+    "hostBeforeSha256": "6c1bb72d3f24324b420d1f91b23884f84b21b9483b4f712e88621871cd6b1933",
+    "hostAfterSha256": "3775ff6bfba1ffcfa1125cfcefca6540f4ee2466bbcc4355f721e6ef64d0c6e5",
+    "postflightSha256": "eb6a4846fab1f7503c1a0658be885152f5bfd6887c7533f75651fd0c56edc667",
+    "instrumentationSha256": "f0cdabee17479db11eaedaffce455093476ef077b1d725067fc3a08fde9cb4d3"
+  },
+  "limits": [
+    "Единственный диагностический функциональный PASS не разрешает исходный 90-секундный отказ и не дополняет qualification до16/24.",
+    "Исходная серия15/24 и её три cold-превышения неизменны; причинного вывода нет.",
+    "В сводку не включены fixture IDs, URI, credentials, raw URLs или абсолютные пути хоста."
+  ],
+  "nextSlice": {
+    "candidate": "v5",
+    "scope": "TDD для отдельного подтверждённого дефекта стирания ошибки",
+    "notClaimedAsOriginalTimeoutFix": true,
+    "resourceProbe": "HOLD_UNTIL_EXPLICIT_ROOT_GO",
+    "performanceAcceptance": "NOT_PASSED"
+  }
+}

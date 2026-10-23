@@ -7,11 +7,24 @@ function chunk(): ChunkDto {
     tasks: [{ id: "task", stage: 3 } as ChunkTaskDto], decorations: [], districts: [], worldFeatures: [] };
 }
 describe("immutable city entity collection", () => {
+  it("can omit unused resident terrain without changing the full canonical physical snapshot", () => {
+    const source = chunk();
+    source.terrain = [{ x: 1, y: 2 } as ChunkDto['terrain'][number]];
+    const resident = createCityEntityCollector({ includeTerrain: false })([source], [], true);
+    const canonical = createCityEntityCollector()([source], [], true);
+    expect(resident.terrain.size).toBe(0);
+    expect(canonical.terrain.get('1,2')).toBe(source.terrain[0]);
+    expect([...resident.tasks]).toEqual([...canonical.tasks]);
+    expect([...resident.roads]).toEqual([...canonical.roads]);
+    expect([...resident.surfaces]).toEqual([...canonical.surfaces]);
+    expect(source.terrain).toHaveLength(1);
+  });
   it("reuses unchanged geometry but reflects patches, completed snapshots and evictions", () => {
     const collect = createCityEntityCollector(), first = chunk();
     const initial = collect([first], [], true);
     expect(initial.tasks.get("task")!.stage).toBe(3);
     expect(collect([first], [], true)).toBe(initial);
+    expect(collect([{...first,worldVersion:20}],[],true),"Publication fences do not replace physical entity collections").toBe(initial);
     const patched = { ...first, tasks: [{ ...first.tasks[0]!, stage: 4 as const }] };
     const next = collect([patched], [], true);
     expect(next).not.toBe(initial);

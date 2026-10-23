@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-16T14:59:44.909Z",
+  "originalDumpsRestored": true,
+  "regenerated": false,
+  "seeded": false,
+  "forcedSessions": false,
+  "postgresPort": 55437,
+  "before": [
+    {
+      "tasks": 200,
+      "owner": "tasktopia",
+      "openSessions": 0,
+      "dumpSha256": "b8d276f6727dde5c8e45186ae4bc44a9f1dd54179d175859ee95e81e045adb7b"
+    },
+    {
+      "tasks": 1000,
+      "owner": "tasktopia",
+      "openSessions": 0,
+      "dumpSha256": "48bc2b5a9b42304bffeaa831837d6736d37c1f943b15fc22f22d9bff9c5b18d9"
+    }
+  ],
+  "verificationReadOnly": true,
+  "migrations": "0043/0044 применяются штатным final runtime startup после этой проверки; никаких ручных SQL схемы.",
+  "rows": [
+    {
+      "tasks": 200,
+      "chunks": 20,
+      "auditViolations": 0,
+      "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+      "statusCounts": {
+        "COMPLETED": 160,
+        "IN_PROGRESS": 30,
+        "PLANNING": 10
+      },
+      "dumpSha256": "b8d276f6727dde5c8e45186ae4bc44a9f1dd54179d175859ee95e81e045adb7b"
+    },
+    {
+      "tasks": 1000,
+      "chunks": 72,
+      "auditViolations": 0,
+      "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+      "statusCounts": {
+        "COMPLETED": 800,
+        "IN_PROGRESS": 150,
+        "PLANNING": 50
+      },
+      "dumpSha256": "48bc2b5a9b42304bffeaa831837d6736d37c1f943b15fc22f22d9bff9c5b18d9"
+    }
+  ]
+}

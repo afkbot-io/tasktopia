@@ -1,4 +1,5 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { performance as wallClock } from 'node:perf_hooks';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { AppService } from '../../src/server/app-service';
 import { createDb } from '../../src/server/db';
@@ -60,12 +61,117 @@ export async function everydayFixture(page: Page) {
   const open = async () => { await page.goto('/'); await openMapCity(page); await ready(); };
   const focus = async (task: TaskDto) => { await page.goto(taskLink(user.countryId, task)); await expect(page.locator('#task-title')).toContainText(task.title);
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click(); await ready(); };
-  const panFocus = async (task: TaskDto, pausedClock = false) => {
-    await page.getByLabel('Поиск здания по номеру или названию').fill(String(task.taskNumber));
+  const panFocus = async (task: TaskDto, pausedClock = false, options?: { settlePausedBefore: number }) => {
+    // Bounded public camera diagnostics; no renderer or clock mutation.
+    const cameraDiagnostic: Array<Record<string, unknown>> = [];
+    let diagnosticTruncated = false;
+    const captureCameraDiagnostic = async (phase: string, drag?: number) => {
+      if (cameraDiagnostic.length >= 28) { diagnosticTruncated = true; return; }
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const sample = await Promise.race([
+          host.evaluate((el, fields) => {
+            const node = el as HTMLElement, canvas = node.querySelector('canvas');
+            return { at: performance.now(), dateNow: Date.now(), values: Object.fromEntries(fields.map(key =>
+              [key, node.dataset[key] === undefined ? null : node.dataset[key]!.slice(0, 256)])),
+              canvas: canvas ? { width: canvas.clientWidth, height: canvas.clientHeight } : null };
+          }, ["citySceneCommit", "cityFirstFrameRendered", "cityCriticalGroundReady", "cityCriticalGroundCount", "cityHaloGroundPending", "mobilityReady", "ambientAssets", "loading", "loadError", "chunkRange", "mapLod", "skippedReconciles", "cameraPresentationPending", "cameraPresentationCommits", "cameraWorldX", "cameraWorldY", "renderScale", "groundCache", "groundBakeQueue", "interactiveGroundBakeFrames", "cameraPaddingChunks", "cameraPaddingTargetUnbaked", "cameraPaddingVisibleUnbaked", "cameraPaddingVisibleUntextured", "cameraPaddingTerrainPending", "cameraPaddingTreePending", "cameraPaddingRoadPending", "cameraPaddingNativeDeferred", "cameraPaddingBakes", "movementPreparing", "movementPreparationCommits", "movementRebuilds", "movementPrepareMs", "movementCommitMs", "mobilityNetworkBuilds", "canonicalSnapshotPending", "canonicalTaskCount", "taskBuildingViews", "entityReadyPublishes", "entityReplacements", "citySceneRevision"]),
+          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Diagnostic public read exceeded1000ms')), 1000); }),
+        ]);
+        cameraDiagnostic.push({ phase, drag: drag ?? null, ...sample });
+      } catch (error) {
+        cameraDiagnostic.push({ phase, drag: drag ?? null, unavailable: String(error).slice(0, 400) });
+      } finally { if (timer) clearTimeout(timer); }
+    };
+    await captureCameraDiagnostic('before-pan');
+    try {
+    // Search opens a card; closing it intentionally restores the preceding
+    // map pose. These scene tests need a real pan without changing history.
+    await expect(page).toHaveURL(url => url.pathname === '/' && url.searchParams.get('countryId') === user.countryId && url.searchParams.get('cityId') === task.cityId);
+    await expect(page.locator('.task-modal')).toHaveCount(0);
+    const bounds = task.siteBounds ?? {
+      minX: Math.min(...task.footprint.map(cell => cell.x)), maxX: Math.max(...task.footprint.map(cell => cell.x)),
+      minY: Math.min(...task.footprint.map(cell => cell.y)), maxY: Math.max(...task.footprint.map(cell => cell.y)),
+    };
+    const canvas = host.locator('canvas'), box = await canvas.boundingBox(); expect(box).not.toBeNull();
+    const camera = await host.evaluate(el => {
+      const host = el as HTMLElement, canvas = host.querySelector('canvas')!;
+      return { x: Number(host.dataset.cameraWorldX), y: Number(host.dataset.cameraWorldY), scale: Number(host.dataset.renderScale), width: canvas.clientWidth, height: canvas.clientHeight };
+    });
+    const dx = (camera.x - (bounds.minX + bounds.maxX + 1) / 2) * 8 * camera.scale;
+    const dy = (camera.y - (bounds.minY + bounds.maxY + 1) / 2) * 8 * camera.scale;
+    const tilePixels = 8 * camera.scale;
+    const alreadyVisible = (bounds.minX - camera.x) * tilePixels + camera.width / 2 >= 24
+      && (bounds.maxX + 1 - camera.x) * tilePixels + camera.width / 2 <= camera.width - 24
+      && (bounds.minY - camera.y) * tilePixels + camera.height / 2 >= 24
+      && (bounds.maxY + 1 - camera.y) * tilePixels + camera.height / 2 <= camera.height - 24;
+    const drags = alreadyVisible ? 0 : Math.ceil(Math.max(Math.abs(dx) / (box!.width * .3), Math.abs(dy) / (box!.height * .3)));
+    expect(drags, 'Native scene pan must fit a bounded sequence of viewport gestures').toBeLessThanOrEqual(12);
+    const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+    // Accumulate the intended delta. With paused RAF the renderer deliberately
+    // retains its old presented pose until terrain for the pending pose is ready.
+    for (let index = 0; index < drags; index++) {
+      await captureCameraDiagnostic('before-drag', index);
+      await page.mouse.move(start.x, start.y); await page.mouse.down();
+      await page.mouse.move(start.x + dx / drags, start.y + dy / drags, { steps: 12 }); await page.mouse.up();
+      await captureCameraDiagnostic('after-drag', index);
+    }
+    // Preserve the original controlled preparation horizon, including when
+    // the target was already visible. Never await a paused RAF before this.
     if (pausedClock) await page.clock.runFor(400);
-    await page.locator('.task-search-results button').first().click();
-    await expect(page.locator('#task-title')).toContainText(task.title);
-    await page.getByRole('button', { name: 'Закрыть', exact: true }).click(); await ready();
+    if (options) {
+      expect(pausedClock, 'Readiness frame progress requires the paused scene clock').toBe(true);
+      expect(Number.isFinite(options.settlePausedBefore)).toBe(true);
+      const started = wallClock.now(), deadline = started + 15_000;
+      let extraFrames = 0, last: Record<string, unknown> | undefined, readyAt: number | undefined;
+      try {
+        await expect.poll(async () => {
+          const state = await host.evaluate((el, rect) => {
+            const host = el as HTMLElement, canvas = host.querySelector('canvas')!, d = host.dataset;
+            const tilePixels = 8 * Number(d.renderScale), x = Number(d.cameraWorldX), y = Number(d.cameraWorldY);
+            return { commit: d.citySceneCommit, mobility: d.mobilityReady, loading: d.loading,
+              pending: d.cameraPresentationPending, loadError: d.loadError, serverNow: Number(d.roadEventServerNow),
+              plannedTask: d.everydayPlannedTask, visible: (rect.minX - x) * tilePixels + canvas.clientWidth / 2 >= 24
+                && (rect.maxX + 1 - x) * tilePixels + canvas.clientWidth / 2 <= canvas.clientWidth - 24
+                && (rect.minY - y) * tilePixels + canvas.clientHeight / 2 >= 24
+                && (rect.maxY + 1 - y) * tilePixels + canvas.clientHeight / 2 <= canvas.clientHeight - 24 };
+          }, bounds);
+          last = state;
+          // Browser clocks are paused. The original15s wall deadline must
+          // include native work; it is never reset by another frame or field.
+          if (wallClock.now() >= deadline) return false;
+          expect(state.loadError, 'A real map failure must remain a failure').not.toBe('true');
+          expect(state.serverNow, 'Camera preparation must finish before the selected event starts').toBeLessThan(options.settlePausedBefore);
+          if (state.commit === 'atomic' && state.mobility === 'true' && state.loading === 'false'
+            && state.pending === 'false' && state.visible) { readyAt = wallClock.now(); return true; }
+          await page.clock.runFor(16); extraFrames++;
+          return false;
+        }, { timeout: 15_000, intervals: [100], message: 'The real paused camera must settle within its original wall deadline and event window' }).toBe(true);
+      } finally {
+        await test.info().attach('paused-camera-readiness', { body: JSON.stringify({ taskId: task.id,
+          fixedPreparationMs: 400, extraFrames, extraSimulationMs: extraFrames * 16,
+          wallElapsedMs: (readyAt ?? wallClock.now()) - started, beforeEventStart: options.settlePausedBefore, last }), contentType: 'application/json' });
+      }
+      return { fixedPreparationMs: 400, extraFrames, extraSimulationMs: extraFrames * 16, wallElapsedMs: readyAt! - started, last };
+    }
+    await ready(); await expect(host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    await expect.poll(() => host.evaluate((el, rect) => {
+      const host = el as HTMLElement, canvas = host.querySelector('canvas')!, tilePixels = 8 * Number(host.dataset.renderScale);
+      const x = Number(host.dataset.cameraWorldX), y = Number(host.dataset.cameraWorldY);
+      return (rect.minX - x) * tilePixels + canvas.clientWidth / 2 >= 24
+        && (rect.maxX + 1 - x) * tilePixels + canvas.clientWidth / 2 <= canvas.clientWidth - 24
+        && (rect.minY - y) * tilePixels + canvas.clientHeight / 2 >= 24
+        && (rect.maxY + 1 - y) * tilePixels + canvas.clientHeight / 2 <= canvas.clientHeight - 24;
+    }, bounds), { message: `Task #${task.taskNumber} must actually be visible after its native scene pan` }).toBe(true);
+    } finally {
+      await captureCameraDiagnostic('finally');
+      // Attachment failure must not replace the original readiness failure.
+      await test.info().attach('camera-presentation-diagnostic', { body: JSON.stringify({ taskId: task.id,
+        taskNumber: task.taskNumber, pausedClock, target: task.siteBounds ?? task.footprint,
+        samples: cameraDiagnostic, truncated: diagnosticTruncated, maximumSamples: 28,
+        publicReadTimeoutMs: 1000, limitation: 'Extra read RPCs affect timing; this is diagnostic, not performance qualification.' }),
+        contentType: 'application/json' }).catch(() => {});
+    }
   };
   const cleanup = async () => { await page.close(); await client.close(); await db.prepare('DELETE FROM countries WHERE id=?').run(user.countryId); await db.prepare('DELETE FROM users WHERE id=?').run(user.id); await db.close(); };
   return { db, service, user, city, tasks, pendingSchool, pendingKindergarten, pendingHome, call, host, open, focus, panFocus, cleanup };

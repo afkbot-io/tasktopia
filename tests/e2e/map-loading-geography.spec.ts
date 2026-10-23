@@ -8,7 +8,7 @@ test("100-task city opens repeatedly and planet zoom preserves a panned anchor",
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/");
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-megacity-validation");
   const started = Date.now();
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
   await openMapCity(page);
@@ -69,7 +69,7 @@ test("a silent worker cannot leave city loading forever", async ({ page }) => {
   }));
   await page.goto("/");
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-megacity-validation");
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
   await openMapCity(page);
   const ready = page.locator('.world-canvas[data-city-scene-commit="atomic"]');
