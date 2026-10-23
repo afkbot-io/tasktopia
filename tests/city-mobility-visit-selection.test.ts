@@ -19,6 +19,14 @@ const resident = (city: CityMobility, id: string) => city.agents.find(actor => a
 const physicalPose = (actor: CityMobilityAgent) => ({ current: actor.current, next: actor.next,
   progress: actor.progress, position: actor.position, direction: actor.direction, steps: actor.steps });
 
+it.each([undefined, Infinity])('сохраняет обычный порядок соседей для визита без срока прибытия (%s)', budget => {
+  const city = fixture(), before = city.agents, near = before[0]!;
+  precondition(key(near.current) === '0,0' && key(before[1]!.current) === '0,8',
+    'фиксированное естественное появление двух соседей изменилось');
+  expect(city.dispatchVisit('ordinary-visit', [{ x: 4, y: 0 }], 1, 5000, false, undefined, budget)).toEqual([near.id]);
+  expect(city.agents.map(physicalPose)).toEqual(before.map(physicalPose));
+});
+
 it('выбирает раньше прибывающего жителя по настоящему обходу, когда Manhattan ближе к более долгому пути', () => {
   const city = fixture(), initial = city.agents, target = { x: 4, y: 0 };
   precondition(initial.length === 2, 'должны естественно появиться ровно два жителя');

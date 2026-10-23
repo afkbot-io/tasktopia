@@ -944,19 +944,30 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       const selected: string[] = [], quota = Math.max(0, Math.min(6, Math.floor(count)));
       const candidates = actors.filter(actor => actor.kind === 'WALKER' && (!actor.visit || actorIds?.includes(actor.id) && actor.visit.id === id)
         && (!actorIds || actorIds.includes(actor.id)) && !actor.carrier && actor.activity !== 'INSIDE');
+      const bounded = Number.isFinite(travelBudgetMs);
+      // Ordinary visits retain their existing neighbourhood order. A shortest
+      // free-flow ETA is useful for a deadline, but ignores platform queues.
+      const ordinary = bounded ? [] : candidates.sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x - a.next.x) + Math.abs(c.y - a.next.y)))
+        - Math.min(...targets.map(c => Math.abs(c.x - b.next.x) + Math.abs(c.y - b.next.y))))
+        .map(actor => ({ actor, lowerMs: 0 }));
+      let candidateCursor = 0;
       for (let slot = 0; slot < quota; slot++) {
         const target = validTargets[slot % validTargets.length]!;
         // Manhattan is a lower bound, not the route around a block. Stop
         // searching once no remaining resident can beat the best actual ETA.
-        const ranked = candidates.filter(actor => !selected.includes(actor.id)).map(actor => {
+        const ranked = bounded ? candidates.filter(actor => !selected.includes(actor.id)).map(actor => {
           const moving = actor.route.length >= 2 && actor.progress > EPSILON;
           const start = moving ? actor.next : actor.current;
           return { actor, lowerMs: (Math.abs(start.x - target.x) + Math.abs(start.y - target.y)
             + (moving ? 1 - actor.progress : 0)) / actor.speed };
-        }).sort((a, b) => a.lowerMs - b.lowerMs);
+        }).sort((a, b) => a.lowerMs - b.lowerMs) : ordinary;
         let best: { actor: Agent; route: Cell[]; preserveSegment: boolean; travelMs: number } | undefined;
-        for (const { actor, lowerMs } of ranked) {
-          if (lowerMs > travelBudgetMs || best && lowerMs >= best.travelMs) break;
+        for (let index = bounded ? 0 : candidateCursor; index < ranked.length; index++) {
+          const { actor, lowerMs } = ranked[index]!;
+          // Consume ordinary candidates once, including an unreachable one;
+          // reconsidering them at the next slot changes the shared queue.
+          if (!bounded) candidateCursor = index + 1;
+          if (bounded && (lowerMs > travelBudgetMs || best && lowerMs >= best.travelMs)) break;
           // A freshly alighted person has not committed the random outgoing
           // step yet. Choose the requested destination from the actual curb.
           // Mid-edge walkers still finish their immutable physical segment.
@@ -993,6 +1004,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
           const travelMs = (route.length - 1 - (moving ? actor.progress : 0)) / actor.speed;
           if (travelMs > travelBudgetMs || best && travelMs >= best.travelMs) continue;
           best = { actor, route, preserveSegment, travelMs };
+          if (!bounded) break;
         }
         if (!best) break;
         const { actor, route, preserveSegment } = best;
