@@ -607,9 +607,19 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
               plan(exit);
               actor.pendingExit = exit;
             }
-            if (walkClosures.has(key(exit.current)) || actors.some(other => other.id !== actor.id && overlap(exit, other, safetyGap(exit, other)))) {
+            // A hidden resident must not appear inside another body's
+            // admitted passage or on its promised exit. That body could then
+            // wait on this resident while the resident waits on its permit.
+            const exitZone = network.zoneByCell.get(key(exit.current));
+            let reserved = false;
+            for (const [zoneId, reservation] of reservations) {
+              if (reservation.owner !== actor.id && (zoneId === exitZone?.id || same(reservation.exit, exit.current))) {
+                reserved = true; break;
+              }
+            }
+            if (reserved || walkClosures.has(key(exit.current)) || actors.some(other => other.id !== actor.id && overlap(exit, other, safetyGap(exit, other)))) {
               actor.restMs = STEP_MS;
-              actor.yieldReason = "OCCUPIED_EXIT";
+              actor.yieldReason = reserved ? "RESERVATION" : "OCCUPIED_EXIT";
             } else Object.assign(actor, exit, { pendingExit: undefined });
           } else actor.activity = "NONE";
         }
