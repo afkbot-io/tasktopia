@@ -12,20 +12,25 @@ test.beforeEach(async ({ page }) => { await installCityPreparationDiagnostics(pa
 test.afterEach(async ({ page }, info) => { await attachCityPreparationFailure(page, info); });
 
 // Follow the visible desktop/mobile navigation instead of addressing hidden tools.
-async function openWorldPreferences(page:Page,hasTouch:boolean){
+async function openWorldPreferences(page:Page,hasTouch:boolean,keyboardDesktop=false){
+  const activate=async(trigger:ReturnType<Page["locator"]>)=>{
+    if(hasTouch)await trigger.tap();
+    else if(keyboardDesktop){await trigger.focus();await trigger.press("Enter");}
+    else await trigger.click();
+  };
   let preferences=page.locator(".map-toolbar-actions > nav > .world-preferences");
   if(!await preferences.isVisible()){
     const menu=page.locator(".world-menu");
     if(await menu.getAttribute("open")===null){
       const trigger=menu.locator(":scope > summary");
-      if(hasTouch)await trigger.tap();else await trigger.click();
+      await activate(trigger);
     }
     preferences=menu.locator(".mobile-menu-tools .world-preferences");
   }
   await expect(preferences).toBeVisible();
   if(await preferences.getAttribute("open")===null){
     const trigger=preferences.locator(":scope > summary");
-    if(hasTouch)await trigger.tap();else await trigger.click();
+    await activate(trigger);
   }
   await expect(preferences.getByLabel("Детализация")).toBeVisible();
   return preferences;
@@ -221,7 +226,10 @@ test("a quality change keeps the pending physical preparation and adopts the lat
    await expect(host).toHaveAttribute("data-world-quality","NORMAL");
    await expect(host).not.toHaveAttribute("data-ambient-assets","ready");
    const canonical=await host.getAttribute("data-canonical-task-count");
-   const preferences=await openWorldPreferences(page,hasTouch);
+   // This test holds PNG requests while the physical owner is arranged.
+   // Keyboard activation avoids WebKit pointer stability waiting on virtual
+   // animation frames until the unchanged image deadline has already expired.
+   const preferences=await openWorldPreferences(page,hasTouch,true);
    await expect(preferences.getByLabel("Детализация")).toHaveValue("NORMAL");
    // The gate, rather than elapsed renderer time, keeps this exact owner
    // pending while the user changes quality. Its real deadline is not extended.
