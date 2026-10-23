@@ -54,7 +54,10 @@ test('реальные MCP комментарии и документы ожив
  test.setTimeout(120000); await page.setViewportSize({width:1440,height:1000}); const f=await fixture(page,true);
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const reads:string[]=[];page.on('request',r=>{const p=new URL(r.url()).pathname;if(r.method()==='GET'&&(/\/scene$|\/world\/viewport|\/chunks\//.test(p)))reads.push(p);});
+ type ActivityPose={taskId:string;eventId:number;kind:string;phase:string;arrived:number;visitors:number;static:boolean};
+ type Admission={pose:ActivityPose;observedAtMs:number;started:number;merged:number;delivered:number};
  type ActivityNode=HTMLElement&{__qaActivity?:{observer:MutationObserver;records:Array<{activity:string;first:Record<string,string|number|null>;last:Record<string,string|number|null>}>}};
+ let admissionEvidence:Record<string,unknown>={branch:'UNOBSERVED'};
  try {
   await f.focus(f.task);
   await page.locator('.world-menu > summary').click();const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
@@ -65,7 +68,8 @@ test('реальные MCP комментарии и документы ожив
     const state={performanceNowMs:performance.now(),dateNowMs:Date.now(),fixedSteps:d.mobilityFixedSteps??null,
      serverNow:d.roadEventServerNow??null,walkState:d.residentWalkState??null,maxWait:d.pedestrianMaxWaitMs??null,
      networkBuilds:d.mobilityNetworkBuilds??null,quality:d.worldQuality??null,animationActive:d.animationActive??null,
-     preparing:d.movementPreparing??null,sceneCommit:d.citySceneCommit??null,delivered:d.taskActivityDelivered??null};
+     preparing:d.movementPreparing??null,sceneCommit:d.citySceneCommit??null,delivered:d.taskActivityDelivered??null,
+     started:d.taskActivityStarted??null,merged:d.taskActivityMerged??null};
     const previous=records.at(-1);
     if(previous?.activity===activity)previous.last=state;
     else{records.push({activity,first:state,last:state});if(records.length>32)records.shift();}
@@ -74,23 +78,58 @@ test('реальные MCP комментарии и документы ожив
    observer.observe(node,{attributes:true,attributeFilter:['data-task-activity','data-mobility-fixed-steps']});read();
   });
   const baseline=reads.length;
-  const poses=async()=>JSON.parse(await f.host.getAttribute('data-task-activity')??'[]') as Array<{taskId:string;kind:string;phase:string;arrived:number;visitors:number}>;
+  const poses=async()=>JSON.parse(await f.host.getAttribute('data-task-activity')??'[]') as ActivityPose[];
+  // Read the FIRST published COMMENT, not a late zero-visitor frame after cancellation.
+  const firstAdmission=()=>f.host.evaluate((el,taskId)=>{
+   for(const record of (el as ActivityNode).__qaActivity?.records??[]){
+    const pose=(JSON.parse(record.activity) as ActivityPose[]).find(p=>p.taskId===taskId&&p.kind==='COMMENT');
+    if(pose)return {pose,observedAtMs:Number(record.first.dateNowMs),started:Number(record.first.started),
+     merged:Number(record.first.merged),delivered:Number(record.first.delivered)} satisfies Admission;
+   }
+   return null;
+  },f.task.id);
   const key=crypto.randomUUID(),comment={taskId:f.task.id,body:'Обсудим следующий шаг'};
   await f.call('task.add_comment',comment,key);
-  await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT'})]));
-  await page.screenshot({path:info.outputPath('comment-envelope.png')});
+  await expect.poll(firstAdmission).toMatchObject({pose:{taskId:f.task.id,kind:'COMMENT',static:false}});
+  const admission=(await firstAdmission())!,starts=admission.started;
+  expect(Number.isInteger(admission.pose.visitors)).toBe(true);expect(admission.pose.visitors).toBeGreaterThanOrEqual(0);
+  expect(admission.pose.eventId).toBeGreaterThan(0);expect(starts).toBeGreaterThan(0);
+  const delivery=admission.pose.visitors>0;
+  admissionEvidence={branch:delivery?'DELIVERY':'SIGNAL',admission};
+  if(delivery)expect(['DELIVER','DISCUSS']).toContain(admission.pose.phase);
+  else expect(admission.pose).toMatchObject({phase:'SIGNAL',visitors:0,arrived:0,static:false});
   await f.call('task.add_comment',comment,key);
-  await expect.poll(poses,{timeout:35000}).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT',phase:'DISCUSS',arrived:expect.any(Number)})]));
-  expect((await poses())[0]!.arrived).toBeGreaterThan(0);
-  await page.screenshot({path:info.outputPath('comment-discussion.png')});
-  const starts=Number(await f.host.getAttribute('data-task-activity-started'));
+  const duplicate=(await poses()).find(p=>p.taskId===f.task.id)!;
+  expect(duplicate).toMatchObject({eventId:admission.pose.eventId,kind:'COMMENT',static:false});
+  expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
+  expect(Number(await f.host.getAttribute('data-task-activity-merged'))).toBe(admission.merged);
+  if(!delivery)expect(duplicate).toMatchObject({phase:'SIGNAL',visitors:0,arrived:0});
+  admissionEvidence.duplicate=duplicate;
+  if(delivery){
+   await page.screenshot({path:info.outputPath('comment-envelope.png')});
+   await expect.poll(poses,{timeout:35000}).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT',phase:'DISCUSS',arrived:expect.any(Number)})]));
+   expect((await poses()).find(p=>p.taskId===f.task.id)!.arrived).toBeGreaterThan(0);
+   await page.screenshot({path:info.outputPath('comment-discussion.png')});
+  }
   await Promise.all(Array.from({length:5},(_,i)=>f.call('task.add_comment',{taskId:f.task.id,body:`Продолжение обсуждения ${i+1}`})));
   await expect.poll(async()=>Number(await f.host.getAttribute('data-task-activity-merged'))).toBeGreaterThanOrEqual(1);
   expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6);
   expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
   await f.call('task.update_fields',{taskId:f.task.id,description:'Уточнённое описание для проверки живого обновления'});
   await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'UPDATE'})]));
+  expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
+  if(!delivery)expect((await poses()).find(p=>p.taskId===f.task.id)).toMatchObject({kind:'UPDATE',phase:'SIGNAL',visitors:0,arrived:0,static:false});
   await page.screenshot({path:info.outputPath('updated-document.png')});
+  if(!delivery){
+   // Burst and field update run before screenshots so they share the original short signal.
+   await expect(f.host).toHaveAttribute('data-task-activity','[]',{timeout:6000});
+   expect(Number(await f.host.getAttribute('data-task-activity-delivered'))).toBe(admission.delivered);
+   await f.call('task.add_comment',comment,key);
+   await expect(f.host).toHaveAttribute('data-task-activity','[]');
+   expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
+   expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6);
+   admissionEvidence.expiredWithoutReplay=true;
+  }
   expect(reads.slice(baseline)).toEqual([]);
   await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});
   await f.call('task.add_comment',{taskId:f.task.id,body:'Комментарий во время стройки'});
@@ -107,6 +146,7 @@ test('реальные MCP комментарии и документы ожив
   try{
    const frames=await Promise.race([f.host.evaluate(el=>{const record=(el as ActivityNode).__qaActivity;record?.observer.disconnect();return record?.records??null;}).catch(error=>({unavailable:String(error).slice(0,300)})),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:'public activity capture exceeded1000ms'}),1000);})]);
    await info.attach('comment-public-activity-history',{body:JSON.stringify(frames),contentType:'application/json'});
+   await info.attach('comment-admission-contract',{body:JSON.stringify(admissionEvidence),contentType:'application/json'});
   }finally{if(timer)clearTimeout(timer);await f.cleanup();}
  }
 });

@@ -51,9 +51,41 @@ ETA полного обхода и сохранение позы провере�
 V18 source `5ef3ef7e4b37e14d73d85d5fc98340c7759dc43ed3baa7196dad9295b63a6c6a`,
 QA580 `723aeb13aa211cf4a56241eb480e42aadfbdc202a690c933d56db29fb4a93073`.
 Одна стандартная build/full TSC/freeze прошла; backend/server и game assets
-побайтно прежние. Native4, повторная200/1000 full24, новый exact CI и
-выпуск на этой точке ещё ожидаются. V17 native/perf результаты ниже
-остаются историческими и не подменяют проверки V18.
+побайтно прежние. Native4 завершён с 3 PASS / 1 FAIL: quality8611мс,
+шесть событий402296мс и park/demolition13672мс прошли. Во всех шести
+событиях были реальные прибытия; собака принесла предмет. WebKit comments
+37056мс завершился отказом старого oracle: первый SIGNAL/visitors0/arrived0
+исчез через6с, а тест безусловно ждал DISCUSS. Этот исход сохранён;
+он не устанавливает причину прежнего CI COMMENT/DELIVER2 без прибытия.
+
+QA-only9ebb выбирает ветку по первому опубликованному admission.
+Visitors>0 по-прежнему требуют DISCUSS за35с и arrived>0; visitors0 —
+SIGNAL/staticfalse/arrived0, expiry и отсутствие replay. Сохранены duplicate,
+burst5/comments6/merge/UPDATE, noSceneReads, stage smoke, safety и CPU.
+Runtime прежний; frozen QA580723a сохранён, current QA580
+`a44c89bfc0b0f03a8a545daa013685764bb6959af26b7bd02be27ca22fe206eb`
+отличается только этим тестом. Его ESLint прошёл. Адресный native WebKit
+прошёл за10722мс: первая ветка DELIVERY с2 посетителями, DISCUSS/arrived1
+через2101мс публичного времени, серия и UPDATE объединились, стройка
+показала WORK/дымок. Summary65d94db8; новый обязательный seed gate не вводится.
+Это выполнение ветки DELIVERY; полный сценарий нулевой ветки отдельно
+не заявляется пройденным. Собственный runtime/публикация822 неизменны;
+процессы закрыты, порт5343 свободен, business40/schema44 сохранены.
+
+V18 full24 завершён с **24/24 STRICT_PASS** без исключений и повторов:
+4 профиля ×200/1000 задач ×3 замера, исходные нагрузки и бюджеты сохранены.
+Максимальный cold DOM-ready для1000 задач: Chromium2114мс, Firefox2446мс,
+Android CPU4/CDP network9530мс, iPhone WebKit1643мс. Максимальный warm157мс,
+input p95 106мс, RAF p95 19мс; Chromium retained heap≤1118324байт.
+HTTP:24 cold,0 pan/warm/legacy; ошибок приложения/консоли0, предупреждений54.
+Steady LongTasks0 в12 поддерживающих замерах; остальные12 и heap FF/WebKit
+недоступны и сохранены null, а не измеренным нулём. Геометрия/dumps200/1000
+сохранены, порт5311 свободен и собственные DB connections0.
+[Переносимый отчёт](https://tasktopia.online/api/attachments/99979326-b5c5-4a3e-9881-719c0546a33d),
+SHA256 `fe462f716a23e6f9ac056cb4835e6580e57b7afdfaeb3808ca45bda4b7d592f9`.
+Три замера дают range/median, не loading p95; DOM-ready не compositor paint,
+RAF не INP, JS heap не GPU memory. Физические телефоны/CDN не измерялись.
+Новый exact-head CI и выпуск ещё ожидаются. V17 ниже остаётся историей.
 
 ## Историческая точка V17: локальная квалификация PASS, три отказа CI и исправление тестового транспорта
 
