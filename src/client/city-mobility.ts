@@ -943,46 +943,59 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       if (!validTargets.length) return [];
       const selected: string[] = [], quota = Math.max(0, Math.min(6, Math.floor(count)));
       const candidates = actors.filter(actor => actor.kind === 'WALKER' && (!actor.visit || actorIds?.includes(actor.id) && actor.visit.id === id)
-        && (!actorIds || actorIds.includes(actor.id)) && !actor.carrier && actor.activity !== 'INSIDE')
-        .sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x - a.next.x) + Math.abs(c.y - a.next.y)))
-          - Math.min(...targets.map(c => Math.abs(c.x - b.next.x) + Math.abs(c.y - b.next.y))));
-      for (const actor of candidates) {
-        if (selected.length >= quota) break;
-        // A freshly alighted person has not committed the random outgoing
-        // step yet. Choose the requested destination from the actual curb.
-        // Mid-edge walkers still finish their immutable physical segment.
-        const moving = actor.route.length >= 2 && actor.progress > EPSILON;
-        let start = moving ? actor.next : actor.current, previous = moving ? actor.current : actor.previous;
-        let prefix = moving ? [actor.current] : [], preserveSegment = moving;
-        const target = validTargets[selected.length % validTargets.length]!;
-        if (!network.walkers.has(key(target)) || network.roads.has(key(target)) || walkClosures.has(key(target)) || !(safeDestination(target) || indoors && network.buildingEntrances.has(key(target)))) continue;
-        if (actor.zoneId) {
-          const reservation = reservations.get(actor.zoneId), zone = network.zones.find(candidate => candidate.id === actor.zoneId);
-          if (!reservation || reservation.owner !== actor.id || !zone || actor.route.length < 2) continue;
-          let exitIndex = mobilityPassageExitIndex(actor.route, zone);
-          if (exitIndex < 0) {
-            // The body can still own the zone during its outgoing edge.
-            if (same(actor.current, reservation.exit) && !zone.cells.has(key(actor.current)) && !zone.cells.has(key(actor.next))) exitIndex = 1;
-            // An admitted indoor doorway releases on entry, not on an outside
-            // cell. Only the same doorway can retain that special passage.
-            else if (indoors && same(target, reservation.exit) && network.buildingEntrances.has(key(target))
-              && same(actor.route.at(-1)!, target)) exitIndex = actor.route.length - 1;
-            else continue;
-          } else if (!same(actor.route[exitIndex]!, reservation.exit)) continue;
-          const passage = actor.route.slice(0, exitIndex + 1);
-          if (passage.some((cell, index) => index > 0 && (!network.walkers.has(key(cell)) || walkClosures.has(key(cell))))) continue;
-          // Finish the passage for which this body already owns a safe exit.
-          // Retargeting within it must not redirect the owner into its waiter.
-          prefix = passage.slice(0, -1); start = passage.at(-1)!; previous = passage.at(-2);
-          preserveSegment = true;
+        && (!actorIds || actorIds.includes(actor.id)) && !actor.carrier && actor.activity !== 'INSIDE');
+      for (let slot = 0; slot < quota; slot++) {
+        const target = validTargets[slot % validTargets.length]!;
+        // Manhattan is a lower bound, not the route around a block. Stop
+        // searching once no remaining resident can beat the best actual ETA.
+        const ranked = candidates.filter(actor => !selected.includes(actor.id)).map(actor => {
+          const moving = actor.route.length >= 2 && actor.progress > EPSILON;
+          const start = moving ? actor.next : actor.current;
+          return { actor, lowerMs: (Math.abs(start.x - target.x) + Math.abs(start.y - target.y)
+            + (moving ? 1 - actor.progress : 0)) / actor.speed };
+        }).sort((a, b) => a.lowerMs - b.lowerMs);
+        let best: { actor: Agent; route: Cell[]; preserveSegment: boolean; travelMs: number } | undefined;
+        for (const { actor, lowerMs } of ranked) {
+          if (lowerMs > travelBudgetMs || best && lowerMs >= best.travelMs) break;
+          // A freshly alighted person has not committed the random outgoing
+          // step yet. Choose the requested destination from the actual curb.
+          // Mid-edge walkers still finish their immutable physical segment.
+          const moving = actor.route.length >= 2 && actor.progress > EPSILON;
+          let start = moving ? actor.next : actor.current, previous = moving ? actor.current : actor.previous;
+          let prefix = moving ? [actor.current] : [], preserveSegment = moving;
+          if (!network.walkers.has(key(target)) || network.roads.has(key(target)) || walkClosures.has(key(target)) || !(safeDestination(target) || indoors && network.buildingEntrances.has(key(target)))) continue;
+          if (actor.zoneId) {
+            const reservation = reservations.get(actor.zoneId), zone = network.zones.find(candidate => candidate.id === actor.zoneId);
+            if (!reservation || reservation.owner !== actor.id || !zone || actor.route.length < 2) continue;
+            let exitIndex = mobilityPassageExitIndex(actor.route, zone);
+            if (exitIndex < 0) {
+              // The body can still own the zone during its outgoing edge.
+              if (same(actor.current, reservation.exit) && !zone.cells.has(key(actor.current)) && !zone.cells.has(key(actor.next))) exitIndex = 1;
+              // An admitted indoor doorway releases on entry, not on an outside
+              // cell. Only the same doorway can retain that special passage.
+              else if (indoors && same(target, reservation.exit) && network.buildingEntrances.has(key(target))
+                && same(actor.route.at(-1)!, target)) exitIndex = actor.route.length - 1;
+              else continue;
+            } else if (!same(actor.route[exitIndex]!, reservation.exit)) continue;
+            const passage = actor.route.slice(0, exitIndex + 1);
+            if (passage.some((cell, index) => index > 0 && (!network.walkers.has(key(cell)) || walkClosures.has(key(cell))))) continue;
+            // Finish the passage for which this body already owns a safe exit.
+            // Retargeting within it must not redirect the owner into its waiter.
+            prefix = passage.slice(0, -1); start = passage.at(-1)!; previous = passage.at(-2);
+            preserveSegment = true;
+          }
+          if (prefix.length >= 48) continue;
+          const suffix = walkerRoutes(start, previous, target, 48 - prefix.length).routeTo(target);
+          const route = [...prefix, ...suffix];
+          if (!suffix.length || route.length > 48) continue;
+          // Admit the actual route, including the unfinished physical edge.
+          // A caller's short presentation must not claim an impossible arrival.
+          const travelMs = (route.length - 1 - (moving ? actor.progress : 0)) / actor.speed;
+          if (travelMs > travelBudgetMs || best && travelMs >= best.travelMs) continue;
+          best = { actor, route, preserveSegment, travelMs };
         }
-        if (prefix.length >= 48) continue;
-        const suffix = walkerRoutes(start, previous, target, 48 - prefix.length).routeTo(target);
-        const route = [...prefix, ...suffix];
-        if (!suffix.length || route.length > 48) continue;
-        // Admit the actual route, including the unfinished physical edge.
-        // A caller's short presentation must not claim an impossible arrival.
-        if ((route.length - 1 - (moving ? actor.progress : 0)) / actor.speed > travelBudgetMs) continue;
+        if (!best) break;
+        const { actor, route, preserveSegment } = best;
         actor.route = route;
         actor.restMs = 0; actor.activity = 'NONE'; actor.pendingExit = undefined;
         if (!preserveSegment) {

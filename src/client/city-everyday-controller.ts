@@ -90,8 +90,9 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     let ids: string[];
     if (episode.kind.includes('SCHOOL') || episode.kind.includes('KINDERGARTEN')) {
       const children = city.agents.filter(a => a.age === 'CHILD').map(a => a.id), adults = city.agents.filter(a => a.age === 'ADULT').map(a => a.id);
-      ids = [...city.dispatchVisit(episode.id, targets, economy ? 2 : 3, 9500, true, children),
-        ...city.dispatchVisit(episode.id, targets, episode.kind.includes('KINDERGARTEN') && !economy ? 2 : 1, 9500, true, adults)];
+      const arrivalBudget = episode.end - 10_000 - lastNow - 8000;
+      ids = [...city.dispatchVisit(episode.id, targets, economy ? 2 : 3, 9500, true, children, arrivalBudget),
+        ...city.dispatchVisit(episode.id, targets, episode.kind.includes('KINDERGARTEN') && !economy ? 2 : 1, 9500, true, adults, arrivalBudget)];
     } else if (episode.kind === 'SPORT') {
       players = city.dispatchVisit(episode.id, episode.playTargets ?? [], 2, 800, false);
       ids = [...players, ...city.dispatchVisit(episode.id, targets, Math.max(1, count - players.length), 28_000, false)];
