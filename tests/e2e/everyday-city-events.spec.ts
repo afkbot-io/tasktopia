@@ -361,7 +361,11 @@ async function observeEveryday(host:Locator,taskId:string){
 }
 
 clockSceneTest('six everyday scenes use actual residents and approaches', async ({ page }, info) => {
-  test.setTimeout(720000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
+  // Six real40s approaches already require240s of fixed-step simulation.
+  // CI39935303498 WebKit completed four of them in541s wall time before
+  // timing out during SPORT. Keep every frame/physics step and arrival
+  // assertion; this is the aggregate software-renderer QA deadline only.
+  test.setTimeout(1200000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
   const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   const seen = new Set<string>(), samples: Record<string, unknown>[] = [], unavailable: Record<string, unknown>[] = [];
   try {
@@ -640,7 +644,8 @@ test('an accepted school construction still opens after a public quality downgra
   const snapshots:Array<Record<string,unknown>>=[];
   const f=await everydayFixture(page);
   const capture=async(phase:string)=>{
-    const data=await f.host.evaluate(el=>{
+    const data=await f.host.evaluate((el,finish)=>{
+      if(finish)(el as HTMLElement & {__qaQualityWorkAction?:{observer:MutationObserver}}).__qaQualityWorkAction?.observer.disconnect();
       const d=(el as HTMLElement).dataset;
       return {worldQuality:d.worldQuality,frameLimit:d.frameLimit,citySceneCommit:d.citySceneCommit,
         cameraPresentationPending:d.cameraPresentationPending,cityCinematics:d.cityCinematics,
@@ -648,7 +653,7 @@ test('an accepted school construction still opens after a public quality downgra
         everydayEvent:d.everydayEvent,everydayTask:d.everydayTask,everydayEpisodeId:d.everydayEpisodeId,
         everydaySkip:d.everydaySkip,everydayAreaReady:d.everydayAreaReady,loadError:d.loadError,
         mobilityReady:d.mobilityReady,ambientAssets:d.ambientAssets};
-    });
+    },phase==='finally');
     if(snapshots.length<6)snapshots.push({phase,...data});
     return data;
   };
@@ -668,14 +673,67 @@ test('an accepted school construction still opens after a public quality downgra
     await expect(f.host).toHaveAttribute('data-world-quality','NORMAL');
     await expect(preferences.getByLabel('Жизнь города')).toBeChecked();
     await expect(preferences.getByLabel('Уменьшить движение')).not.toBeChecked();
+    // Arm before MCP; one browser callback witnesses real WORK and changes the public select.
+    const hostNode=await f.host.elementHandle();if(!hostNode)throw new Error('Missing original public world host');
+    try{await quality.evaluate((selectNode: Element, { hostNode, taskId }: { hostNode: Element; taskId: string }) => {
+      if (!(selectNode instanceof HTMLSelectElement) || !(hostNode instanceof HTMLElement)) throw new Error('Expected real quality select and world host');
+      const select = selectNode, host = hostNode as HTMLElement & { __qaQualityWorkAction?: { observer: MutationObserver; witness: Record<string, unknown> } };
+      if (host.__qaQualityWorkAction) throw new Error('One work action owner is required');
+      if (!select.isConnected || select.disabled || select.multiple || !select.getClientRects().length) throw new Error('Quality select must remain visible and enabled');
+      const economy = [...select.options].find(option => option.value === 'ECONOMY');
+      if (!economy || economy.disabled || select.value !== 'NORMAL' || host.dataset.worldQuality !== 'NORMAL') throw new Error('Expected initial public NORMAL and enabled ECONOMY option');
+      const witness = { performed: false, performedPhase: null as string | null, changePhase: null as string | null,
+        changeValue: null as string | null, changeEvents: 0, before: null as Record<string, string | undefined> | null, error: null as string | null };
+      const snapshot = () => {
+        const d = host.dataset;
+        return { worldQuality: d.worldQuality, frameLimit: d.frameLimit, citySceneCommit: d.citySceneCommit,
+          cameraPresentationPending: d.cameraPresentationPending, cityCinematics: d.cityCinematics,
+          cinematicPhases: d.cinematicPhases, cinematicWorkers: d.cinematicWorkers, cinematicState: d.cinematicState?.slice(0, 6000),
+          everydayEvent: d.everydayEvent, everydayTask: d.everydayTask, everydayEpisodeId: d.everydayEpisodeId,
+          everydaySkip: d.everydaySkip, everydayAreaReady: d.everydayAreaReady, loadError: d.loadError,
+          mobilityReady: d.mobilityReady, ambientAssets: d.ambientAssets };
+      };
+      const phase = () => {
+        const state = (JSON.parse(host.dataset.cinematicState ?? '[]') as Array<{ taskId: string; kind: string; phase: string }>).
+          find(value => value.taskId === taskId && value.kind === 'CONSTRUCT');
+        return state ? `${taskId}:CONSTRUCT:${state.phase}` : null;
+      };
+      let acted = false;
+      const observer = new MutationObserver(() => {
+        if (acted) return;
+        try {
+          if (!host.isConnected || !select.isConnected || economy.parentElement !== select) throw new Error('The original public control was replaced');
+          const currentPhase = phase();
+          if (currentPhase !== `${taskId}:CONSTRUCT:WORK` || !(Number(host.dataset.cityCinematics) > 0) || !(Number(host.dataset.cinematicWorkers) > 0)) return;
+          if (select.value !== 'NORMAL' || host.dataset.worldQuality !== 'NORMAL') throw new Error('WORK must still begin in public NORMAL');
+          acted = true; observer.disconnect();
+          witness.before = snapshot(); witness.performedPhase = currentPhase;
+          const onChange = () => { witness.changeEvents++; witness.changePhase = phase(); witness.changeValue = select.value; };
+          select.addEventListener('change', onChange, { capture: true, once: true });
+          try {
+            // Same public select operation/events as Playwright selectOptions, in this callback.
+            select.value = ''; economy.selected = true;
+            select.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            witness.performed = true;
+          } finally { select.removeEventListener('change', onChange, true); }
+        } catch (error) { acted = true; observer.disconnect(); witness.error = String(error).slice(0, 400); }
+      });
+      host.__qaQualityWorkAction = { observer, witness };
+      observer.observe(host, { attributes: true, attributeFilter: ['data-cinematic-state', 'data-cinematic-workers', 'data-city-cinematics'] });
+    }, {hostNode,taskId:f.pendingSchool.id});}finally{await hostNode.dispose();}
+    type WorkWitness={performed:boolean;performedPhase:string|null;changePhase:string|null;changeValue:string|null;changeEvents:number;before:Record<string,string|undefined>|null;error:string|null};
+    const readAction=()=>f.host.evaluate(el=>(el as HTMLElement & {__qaQualityWorkAction?:{witness:WorkWitness}}).__qaQualityWorkAction?.witness);
     const key=crypto.randomUUID();
     await f.call('task.set_status',{taskId:f.pendingSchool.id,status:'COMPLETED'},key);
-    await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${f.pendingSchool.id}:CONSTRUCT:WORK`));
-    const beforeQuality=await capture('accepted-normal-work');
-    expect(beforeQuality.cinematicPhases).toContain(`${f.pendingSchool.id}:CONSTRUCT:WORK`);
+    const marker=`${f.pendingSchool.id}:CONSTRUCT:WORK`;
+    await expect.poll(readAction).toMatchObject({performed:true,performedPhase:marker,changePhase:marker,changeValue:'ECONOMY',changeEvents:1,error:null});
+    const beforeQuality=(await readAction())!.before!;
+    if(snapshots.length<6)snapshots.push({phase:'accepted-normal-work',...beforeQuality});
+    expect(beforeQuality.worldQuality).toBe('NORMAL');
+    expect(beforeQuality.cinematicPhases).toContain(marker);
     expect(Number(beforeQuality.cityCinematics)).toBeGreaterThan(0);
-    // The preferences panel is already open, so no navigation action races the shot.
-    await quality.selectOption('ECONOMY');
+    expect(Number(beforeQuality.cinematicWorkers)).toBeGreaterThan(0);
     await expect(f.host).toHaveAttribute('data-world-quality','ECONOMY');
     await capture('after-public-economy');
     expect((await f.service.getTask(f.user.countryId,f.pendingSchool.id)).stage).toBe(5);

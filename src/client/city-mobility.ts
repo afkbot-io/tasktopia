@@ -147,7 +147,7 @@ export type CityMobility = {
   roadEventSites(): RoadEventSite[];
   dispatchResponse(role: CityResponseRole, targets: readonly Cell[], stayMs?: number, agentId?: string): boolean;
   clearResponses(roles?: readonly CityResponseRole[], agentId?: string): void;
-  dispatchVisit(id: string, targets: readonly Cell[], count: number, stayMs: number, indoors: boolean, actorIds?: readonly string[]): string[];
+  dispatchVisit(id: string, targets: readonly Cell[], count: number, stayMs: number, indoors: boolean, actorIds?: readonly string[], travelBudgetMs?: number): string[];
   clearVisits(id?: string): void;
   boardVisit(id: string, vehicleId: string): number;
   alightVisit(vehicleId: string, targets: readonly Cell[]): number;
@@ -908,8 +908,8 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       }
       publish();
     },
-    dispatchVisit(id, targets, count, stayMs, indoors, actorIds) {
-      if (!id || !targets.length || !Number.isFinite(count) || !Number.isFinite(stayMs)) return [];
+    dispatchVisit(id, targets, count, stayMs, indoors, actorIds, travelBudgetMs = Infinity) {
+      if (!id || !targets.length || !Number.isFinite(count) || !Number.isFinite(stayMs) || !(travelBudgetMs > 0)) return [];
       const validTargets = targets.filter(target => network.walkers.has(key(target)) && !network.roads.has(key(target))
         && !walkClosures.has(key(target)) && (safeDestination(target) || indoors && network.buildingEntrances.has(key(target))));
       if (!validTargets.length) return [];
@@ -923,14 +923,41 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         // A freshly alighted person has not committed the random outgoing
         // step yet. Choose the requested destination from the actual curb.
         // Mid-edge walkers still finish their immutable physical segment.
-        const moving = actor.route.length >= 2 && actor.progress > EPSILON, start = moving ? actor.next : actor.current;
+        const moving = actor.route.length >= 2 && actor.progress > EPSILON;
+        let start = moving ? actor.next : actor.current, previous = moving ? actor.current : actor.previous;
+        let prefix = moving ? [actor.current] : [], preserveSegment = moving;
         const target = validTargets[selected.length % validTargets.length]!;
         if (!network.walkers.has(key(target)) || network.roads.has(key(target)) || walkClosures.has(key(target)) || !(safeDestination(target) || indoors && network.buildingEntrances.has(key(target)))) continue;
-        const suffix = walkerRoutes(start, moving ? actor.current : actor.previous, target, 48).routeTo(target);
-        if (!suffix.length || suffix.length > 48) continue;
-        actor.route = moving ? [actor.current, ...suffix] : suffix;
+        if (actor.zoneId) {
+          const reservation = reservations.get(actor.zoneId), zone = network.zones.find(candidate => candidate.id === actor.zoneId);
+          if (!reservation || reservation.owner !== actor.id || !zone || actor.route.length < 2) continue;
+          let exitIndex = mobilityPassageExitIndex(actor.route, zone);
+          if (exitIndex < 0) {
+            // The body can still own the zone during its outgoing edge.
+            if (same(actor.current, reservation.exit) && !zone.cells.has(key(actor.current)) && !zone.cells.has(key(actor.next))) exitIndex = 1;
+            // An admitted indoor doorway releases on entry, not on an outside
+            // cell. Only the same doorway can retain that special passage.
+            else if (indoors && same(target, reservation.exit) && network.buildingEntrances.has(key(target))
+              && same(actor.route.at(-1)!, target)) exitIndex = actor.route.length - 1;
+            else continue;
+          } else if (!same(actor.route[exitIndex]!, reservation.exit)) continue;
+          const passage = actor.route.slice(0, exitIndex + 1);
+          if (passage.some((cell, index) => index > 0 && (!network.walkers.has(key(cell)) || walkClosures.has(key(cell))))) continue;
+          // Finish the passage for which this body already owns a safe exit.
+          // Retargeting within it must not redirect the owner into its waiter.
+          prefix = passage.slice(0, -1); start = passage.at(-1)!; previous = passage.at(-2);
+          preserveSegment = true;
+        }
+        if (prefix.length >= 48) continue;
+        const suffix = walkerRoutes(start, previous, target, 48 - prefix.length).routeTo(target);
+        const route = [...prefix, ...suffix];
+        if (!suffix.length || route.length > 48) continue;
+        // Admit the actual route, including the unfinished physical edge.
+        // A caller's short presentation must not claim an impossible arrival.
+        if ((route.length - 1 - (moving ? actor.progress : 0)) / actor.speed > travelBudgetMs) continue;
+        actor.route = route;
         actor.restMs = 0; actor.activity = 'NONE'; actor.pendingExit = undefined;
-        if (!moving) {
+        if (!preserveSegment) {
           actor.next = actor.route[1]??actor.current; actor.direction = heading(actor.current, actor.next, actor.direction); actor.progress = 0;
           // Keep the physical pose; turning is admitted through the ordinary
           // swept-body resolution on the next fixed step.
@@ -939,7 +966,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         }
         actor.visit = { id, arrived: false }; actor.visitTarget = target; actor.visitRetryAt = undefined; actor.visitStayMs = Math.max(500, Math.min(30_000, stayMs));
         actor.visitIndoors = indoors; actor.visitUntil = undefined; actor.visitDeadline = clock + 60_000;
-        if(!moving&&suffix.length===1){actor.visit.arrived=true;actor.visitUntil=clock+actor.visitStayMs;actor.activity=indoors?'INSIDE':'REST';actor.restMs=actor.visitStayMs;}
+        if(route.length===1){actor.visit.arrived=true;actor.visitUntil=clock+actor.visitStayMs;actor.activity=indoors?'INSIDE':'REST';actor.restMs=actor.visitStayMs;}
         selected.push(actor.id);
       }
       publish(); return selected;

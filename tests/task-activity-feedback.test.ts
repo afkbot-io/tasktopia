@@ -62,6 +62,28 @@ it('доставка комментария успевает до прежнег
   expect(controller.metrics.delivered).toBe(1);
 });
 
+it('слишком далёкий житель не начинает доставку, которая физически не успеет за 32с', () => {
+  const cells = Array.from({ length: 128 }, (_, x) => ({ x, y: 0 }));
+  const city = createCityMobility({ roads: new Map(), walkGraph: new Map(cells.map(cell => [`${cell.x},${cell.y}`, cell])),
+    crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['0,0', '127,0']),
+    seed: 19, carLimit: 0, walkerLimit: 2 });
+  const adults = city.agents.filter(agent => agent.age === 'ADULT');
+  expect(city.agents).toHaveLength(2); expect(adults).toHaveLength(1);
+  const adult = adults[0]!, target = { x: adult.current.x + (adult.current.x <= 81 ? 46 : -46), y: 0 };
+  expect(adult.progress).toBe(0);
+  expect(city.visitTargets.has(`${target.x},${target.y}`)).toBe(true);
+  expect(Math.abs(target.x - adult.current.x) / adult.speed).toBeGreaterThan(32_000);
+  const residents = city.agents, task = { id: 'unreachable-in-time', stage: 5, accessPath: [target] };
+  const tasks = new Map([[task.id, task]]), controller = createTaskActivityController(() => city);
+  const options = { enabled: true, reducedMotion: false, economy: false };
+  expect(controller.begin({ id: 1, worldVersion: 3, type: 'task.comment_added', taskId: task.id,
+    createdAt: new Date(now).toISOString() }, task, now, options)).toBe(true);
+  expect(controller.update(now, tasks, options)[0]).toMatchObject({ phase: 'SIGNAL', visitors: [], arrived: 0, expiresAt: now + 6000 });
+  expect(city.agents).toEqual(residents);
+  expect(controller.update(now + 6000, tasks, options)).toEqual([]);
+  expect(controller.metrics.delivered).toBe(0);
+});
+
 it('один очень долгий кадр выполняет не более пяти обычных физических шагов', () => {
   const { city } = fixture(), residents = city.agents.map(agent => agent.id), before = city.metrics.fixedSteps;
   advanceCityMobilityFrame(city, 10_000);

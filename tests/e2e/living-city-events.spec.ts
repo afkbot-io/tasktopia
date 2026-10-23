@@ -54,9 +54,25 @@ test('реальные MCP комментарии и документы ожив
  test.setTimeout(120000); await page.setViewportSize({width:1440,height:1000}); const f=await fixture(page,true);
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const reads:string[]=[];page.on('request',r=>{const p=new URL(r.url()).pathname;if(r.method()==='GET'&&(/\/scene$|\/world\/viewport|\/chunks\//.test(p)))reads.push(p);});
+ type ActivityNode=HTMLElement&{__qaActivity?:{observer:MutationObserver;records:Array<{activity:string;first:Record<string,string|number|null>;last:Record<string,string|number|null>}>}};
  try {
   await f.focus(f.task);
   await page.locator('.world-menu > summary').click();const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+  await f.host.evaluate(el=>{
+   const node=el as ActivityNode,records:NonNullable<ActivityNode['__qaActivity']>['records']=[];
+   const read=()=>{
+    const d=node.dataset,activity=d.taskActivity??'[]';
+    const state={performanceNowMs:performance.now(),dateNowMs:Date.now(),fixedSteps:d.mobilityFixedSteps??null,
+     serverNow:d.roadEventServerNow??null,walkState:d.residentWalkState??null,maxWait:d.pedestrianMaxWaitMs??null,
+     networkBuilds:d.mobilityNetworkBuilds??null,quality:d.worldQuality??null,animationActive:d.animationActive??null,
+     preparing:d.movementPreparing??null,sceneCommit:d.citySceneCommit??null,delivered:d.taskActivityDelivered??null};
+    const previous=records.at(-1);
+    if(previous?.activity===activity)previous.last=state;
+    else{records.push({activity,first:state,last:state});if(records.length>32)records.shift();}
+   };
+   const observer=new MutationObserver(read);node.__qaActivity={observer,records};
+   observer.observe(node,{attributes:true,attributeFilter:['data-task-activity','data-mobility-fixed-steps']});read();
+  });
   const baseline=reads.length;
   const poses=async()=>JSON.parse(await f.host.getAttribute('data-task-activity')??'[]') as Array<{taskId:string;kind:string;phase:string;arrived:number;visitors:number}>;
   const key=crypto.randomUUID(),comment={taskId:f.task.id,body:'Обсудим следующий шаг'};
@@ -86,7 +102,13 @@ test('реальные MCP комментарии и документы ожив
   const cpu=await f.host.evaluate(el=>({p95:Number((el as HTMLElement).dataset.livingWorldFrameCpuP95Ms),max:Number((el as HTMLElement).dataset.livingWorldFrameCpuMaxMs)}));
   expect(cpu.p95).toBeLessThanOrEqual(8);await info.attach('feedback-frame-cpu',{body:JSON.stringify(cpu),contentType:'application/json'});
   expect(errors).toEqual([]);
- } finally {await f.cleanup();}
+ } finally {
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{
+   const frames=await Promise.race([f.host.evaluate(el=>{const record=(el as ActivityNode).__qaActivity;record?.observer.disconnect();return record?.records??null;}).catch(error=>({unavailable:String(error).slice(0,300)})),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:'public activity capture exceeded1000ms'}),1000);})]);
+   await info.attach('comment-public-activity-history',{body:JSON.stringify(frames),contentType:'application/json'});
+  }finally{if(timer)clearTimeout(timer);await f.cleanup();}
+ }
 });
 
 test('touch-sized комментарий в reduced motion статичен, исчезает и не проигрывается после выключения жизни города', async ({page},info)=>{
@@ -333,11 +355,15 @@ test('park ground changes and demolition overriding unfinished work settle to au
   expect(JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0]).toMatchObject({fromStage:2,toStage:changed.stage,oldVisible:true,targetVisible:false});
   await page.screenshot({path:info.outputPath('park-old-ground-work.png')});await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
   await f.service.activateDistrict(f.user.countryId,f.task.districtId,crypto.randomUUID());
-  await f.focus(f.task);await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${f.task.id}:CONSTRUCT:CREW`));
-  await f.call('task.delete',{taskId:f.task.id,confirmTitle:f.task.title});
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${f.task.id}:DEMOLISH:WORK`));
-  expect(JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0]).toMatchObject({kind:'DEMOLISH',fromStage:1,oldVisible:true});
+  await f.focus(f.task);const demolition=await observeCinematics(f.host);
+  try{
+   await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});
+   await expect.poll(async()=> (await demolition.frames()).some(frame=>frame.states.some(state=>state.taskId===f.task.id&&state.kind==='CONSTRUCT'&&state.phase==='CREW'))).toBe(true);
+   await f.call('task.delete',{taskId:f.task.id,confirmTitle:f.task.title});
+   await expect.poll(async()=> (await demolition.frames()).some(frame=>frame.states.some(state=>state.taskId===f.task.id&&state.kind==='DEMOLISH'&&state.phase==='WORK'&&state.fromStage===1&&state.oldVisible))).toBe(true);
+  }finally{
+   await info.attach('demolition-overrides-published-phases',{body:JSON.stringify(await demolition.frames()),contentType:'application/json'});
+  }
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});await expect(f.host).toHaveAttribute('data-cinematic-workers','0');
   expect((await f.service.listTasks(f.user.countryId)).some(task=>task.id===f.task.id)).toBe(false);
   await page.screenshot({path:info.outputPath('demolition-overrides-construction.png')});expect(errors).toEqual([]);
