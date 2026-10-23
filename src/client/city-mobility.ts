@@ -425,6 +425,18 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
   }
   const plan = (agent: Agent): void => completePreparation(planSteps(agent));
 
+  const continueOutsideZone = (agent: Agent): void => {
+    const destination = agent.route.at(-1);
+    const zone = destination && network.zoneByCell.get(key(destination));
+    if (agent.kind !== 'WALKER' || agent.visit || agent.route.length < 2 || !destination || !zone || agent.zoneId === zone.id
+      || network.buildingEntrances.has(key(destination)) || agent.route.some((cell, index) => index > 0 && walkClosures.has(key(cell)))) return;
+    // A removed doorway is now an ordinary path. Extend the retained physical
+    // approach through its bend to a safe outdoor exit; never hide or respawn.
+    const search = walkerRoutes(destination, agent.route.at(-2), undefined, 48);
+    const exit = search.cells.find(cell => !same(cell, destination) && safeDestination(cell) && !network.roads.has(key(cell)));
+    if (exit) agent.route = [...agent.route, ...search.routeTo(exit).slice(1)];
+  };
+
   const alight = (vehicleId: string, targets: readonly Cell[]): number => {
     const external=externalCarriers.get(vehicleId);
     const vehicle = actors.find(actor => actor.id === vehicleId && actor.kind === 'CAR');
@@ -576,6 +588,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       }
       if (actor.visit && clock >= (actor.visitUntil ?? actor.visitDeadline ?? Infinity)) {
         actor.visit = undefined; actor.visitUntil = undefined; actor.visitDeadline = undefined; actor.visitTarget = undefined; actor.visitRetryAt = undefined;
+        continueOutsideZone(actor);
       }
       if (actor.responseUntil !== undefined && clock >= actor.responseUntil) {
         if (actors.some(a => a.carrier === actor.id)) recoverPassengers(actor);
@@ -631,8 +644,12 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       if (!zone) { actor.requestedAt = undefined; continue; }
       actor.requestedAt ??= clock;
       let exitIndex = mobilityPassageExitIndex(actor.route, zone);
-      if (exitIndex < 0 && actor.kind === 'WALKER' && actor.visitIndoors && actor.visitTarget
-        && network.buildingEntrances.has(key(actor.visitTarget)) && same(actor.route.at(-1)!, actor.visitTarget)) exitIndex = actor.route.length - 1;
+      const destination = actor.route.at(-1);
+      // Cancellation/expiry removes the visit token, not the physical doorway.
+      // A retained approach can finish entering an existing building without
+      // reviving that visit or waiting forever for an outside exit.
+      if (exitIndex < 0 && actor.kind === 'WALKER' && destination && network.buildingEntrances.has(key(destination))
+        && (!actor.visit || actor.visitIndoors && actor.visitTarget && same(destination, actor.visitTarget))) exitIndex = actor.route.length - 1;
       const exit = actor.route[exitIndex];
       if (!exit) { actor.yieldReason = "OCCUPIED_EXIT"; continue; }
       requests.push({ actor, zone, exit, exitIndex });
@@ -717,8 +734,8 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
           && same(next.current, actor.visitTarget) && !walkClosures.has(key(next.current))) {
           next.visit = { ...actor.visit, arrived: true }; next.visitUntil = clock + (actor.visitStayMs ?? 3000);
           next.activity = actor.visitIndoors ? 'INSIDE' : 'REST'; next.restMs = actor.visitStayMs ?? 3000;
-        } else if (actor.kind === "WALKER" && !actor.visit && !network.roads.has(key(next.current)) && !next.zoneId
-          && (network.activityCells.has(key(next.current)) || network.buildingEntrances.has(key(next.current)))) {
+        } else if (actor.kind === "WALKER" && !actor.visit && !network.roads.has(key(next.current))
+          && (network.buildingEntrances.has(key(next.current)) || !next.zoneId && network.activityCells.has(key(next.current)))) {
           next.activity = network.buildingEntrances.has(key(next.current)) ? "INSIDE" : "REST";
           next.restMs = 650 + Math.abs(next.rng % 700);
         }
@@ -799,6 +816,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       // Preserve the current physical edge; repair only its future suffix.
       actor.route = [actor.current, actor.next];
     }
+    continueOutsideZone(actor);
   }
   reservations.clear(); spawn(); recordMetrics(); publish();
   }
@@ -987,6 +1005,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         // one edge can remove the reserved exit and strand the whole queue.
         // With the visit cleared, its endpoint resumes ordinary walking.
         if (actor.activity !== 'INSIDE') actor.activity = 'NONE';
+        continueOutsideZone(actor);
       }
       publish();
     },
