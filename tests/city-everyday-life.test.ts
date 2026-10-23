@@ -27,7 +27,7 @@ it('зрители на любой стороне пешеходной поло�
   const ground = new Map(footprint.map(c => [`${c.x},${c.y}`, c]));
   const publicSites = compileEverydaySites({ ...input, tasks: [park], ground }).filter(s => s.kind !== 'SPORT');
   expect(publicSites.length).toBe(3);
-  for (const site of publicSites) for (const target of site.targets!) for (const [dx, dy] of [[.25, 0], [-.25, 0], [0, .25], [0, -.25]]) {
+  for (const site of publicSites) for (const target of site.targets!) for (const [dx, dy] of [[.25, 0], [-.25, 0], [0, .25], [0, -.25], [.25, .25], [.25, -.25], [-.25, .25], [-.25, -.25]]) {
     expect(site.area.some(c => Math.abs(target.x + dx! - c.x) < .8 && Math.abs(target.y + dy! - c.y) < .8)).toBe(false);
   }
 });
@@ -80,14 +80,16 @@ it('не ищет повторный подход к площадкам парк
   class ObservedGround extends Map<string, { x: number; y: number }> {
     override has(key: string) { groundProbes++; return super.has(key); }
   }
-  const footprint = Array.from({ length: 10 }, (_, y) => Array.from({ length: 10 }, (_, x) => ({ x, y: y + 1 }))).flat();
+  // The first pad is already clear of diagonal walking insets. This budget
+  // measures stopping after a valid public pad, not accepting an unsafe one.
+  const footprint = Array.from({ length: 10 }, (_, y) => Array.from({ length: 10 }, (_, x) => ({ x, y: y + 2 }))).flat();
   let id = 'park-0';
   for (let i = 0; cityLifeHash(id) % 81 !== 0; i++) id = `park-${i + 1}`;
   const park = { ...task, id, visualKind: 'PARK', visualAssetKey: 'urban-formal', serviceRole: undefined, footprint } as ChunkTaskDto;
   const targets = new ObservedTargets(walk);
   const sites = compileEverydaySites({ ...input, tasks: [park], safeTargets: targets, ground: new ObservedGround(footprint.map(c => [`${c.x},${c.y}`, c])) });
   expect(sites.map(s => s.kind).sort()).toEqual(['BIRDS', 'DOG', 'MARKET']);
-  expect(sites.every(s => s.area[0]?.x === 0 && s.area[0]?.y === 1)).toBe(true);
+  expect(sites.every(s => s.area[0]?.x === 0 && s.area[0]?.y === 2)).toBe(true);
   expect(probes).toBeLessThanOrEqual(49);
   expect(groundProbes).toBeLessThanOrEqual(footprint.length * 2);
 });
@@ -174,4 +176,18 @@ it('дождь имеет начало, основную фазу, высыха�
   expect(openingKind({ ...task, visualAssetKey: 'compact-color-kindergarten-v1' })).toBe('OPEN_KINDERGARTEN');
   expect(openingKind({ ...task, serviceRole: 'SHOP' })).toBe('OPEN_SHOP');
   expect(openingKind({ ...task, serviceRole: 'FIRE' })).toBe('OPEN_FIRE');
+});
+
+it('конечная точка зрителя оставляет площадку свободной и при двухосевом смещении на повороте', () => {
+  // One connected authored pad: diagonal targets exist, so an accidental
+  // choice of a different clear pad cannot hide the clearance counterexample.
+  const footprint=[{x:5,y:1},{x:6,y:1},{x:5,y:2},{x:6,y:2}];
+  const park={...task,id:'corner-pad',visualKind:'PARK',visualAssetKey:'urban-formal',serviceRole:undefined,footprint,accessPath:[{x:5,y:0}]} as ChunkTaskDto;
+  const ground=new Map(footprint.map(c=>[`${c.x},${c.y}`,c]));
+  const sites=compileEverydaySites({...input,tasks:[park],ground}).filter(s=>s.kind==='BIRDS'||s.kind==='DOG');
+  // A real90-degree walking segment may retain both lateral inset axes.
+  const offsets=[[-.25,-.25],[-.25,0],[-.25,.25],[0,-.25],[0,0],[0,.25],[.25,-.25],[.25,0],[.25,.25]];
+  const overlaps=sites.flatMap(site=>(site.targets??[]).flatMap(target=>offsets.filter(([dx,dy])=>
+    site.area.some(c=>Math.abs(target.x+dx!-c.x)<.8&&Math.abs(target.y+dy!-c.y)<.8)).map(([dx,dy])=>({kind:site.kind,target,dx,dy}))));
+  expect(overlaps,'A visitor destination must not hold its own animal pad occupied').toEqual([]);
 });

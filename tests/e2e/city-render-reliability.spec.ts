@@ -1,10 +1,11 @@
-import { expect,test,type Page } from "@playwright/test";
+import { expect,test,type Page,type Locator,type TestInfo } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { BootstrapDto,RealtimeEvent } from "../../src/shared/contracts";
 import { chunkPayloadContentHash } from "../../src/server/world/chunk-payload-hash";
 import { openMapCity } from "./map-navigation";
 import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
 import { installCooperativeYieldGate, type CooperativeYieldGateWindow } from './cooperative-yield-gate';
+import { pauseInstalledClock } from './city-clock-control';
 
 // Сохраняем вызовы, сеть, исходники и итоговый PNG. Повторные автоматические
 // снимки canvas не являются частью проверяемой работы города.
@@ -57,6 +58,33 @@ async function enterCity(page:Page) {
   return host;
 }
 
+// Visible CITY readiness is independent of the offscreen prewarm queue.
+async function expectVisibleCityGround(host:Locator,info:TestInfo,phase:string){
+ let last:Record<string,string|undefined>|undefined;
+ try{
+   await expect.poll(async()=>{
+     last=await host.evaluate(node=>{
+       const d=(node as HTMLElement).dataset;
+       return {citySceneCommit:d.citySceneCommit,cityFirstFrameRendered:d.cityFirstFrameRendered,
+         cityCriticalGroundReady:d.cityCriticalGroundReady,cameraPresentationPending:d.cameraPresentationPending,
+         cameraPaddingVisibleUntextured:d.cameraPaddingVisibleUntextured,cameraPaddingTargetUnbaked:d.cameraPaddingTargetUnbaked,
+         loading:d.loading,loadError:d.loadError,groundBakeQueue:d.groundBakeQueue,cityHaloGroundPending:d.cityHaloGroundPending,
+         cameraPaddingTerrainPending:d.cameraPaddingTerrainPending,cameraPaddingRoadPending:d.cameraPaddingRoadPending,
+         cameraPaddingTreePending:d.cameraPaddingTreePending,groundCache:d.groundCache,ambientAssets:d.ambientAssets,
+         movementPreparing:d.movementPreparing,mobilityReady:d.mobilityReady,renderScale:d.renderScale,
+         cameraWorldX:d.cameraWorldX,cameraWorldY:d.cameraWorldY};
+     });
+     return {commit:last.citySceneCommit,frame:last.cityFirstFrameRendered,critical:last.cityCriticalGroundReady,
+       presentation:last.cameraPresentationPending,visibleUntextured:last.cameraPaddingVisibleUntextured,
+       targetUnbaked:last.cameraPaddingTargetUnbaked,loading:last.loading,failed:last.loadError==="true"};
+   },{timeout:15_000,message:"The actual visible city ground and camera must be ready before controlling movement"}).toEqual({
+     commit:"atomic",frame:"true",critical:"true",presentation:"false",visibleUntextured:"0",targetUnbaked:"0",loading:"false",failed:false,
+   });
+ }finally{
+   await info.attach(`visible-ground-${phase}`,{body:JSON.stringify({phase,coverage:last?"observed-last-public-snapshot":"unavailable",snapshot:last}),contentType:"application/json"});
+ }
+}
+
 test("a hung authoritative refresh expires without destroying the city and a real retry recovers",async({page})=>{
   test.setTimeout(90_000);
   let reads=0,hold=false,release!:()=>void;
@@ -96,7 +124,7 @@ test("a movement timeout keeps its native retry after a same-range camera pan",a
  await page.route("**/micro-ambient/**",async route=>{await ambientGate;await route.continue().catch(()=>undefined);});
  try{
    const host=await enterCity(page),canvas=host.getByLabel("Интерактивная карта города"),identity=await canvas.elementHandle();
-   await expect(host).toHaveAttribute("data-ground-bake-queue","0");
+   await expectVisibleCityGround(host,info,"initial-before-movement-gate");
    await expect(host).not.toHaveAttribute("data-ambient-assets","ready");
    // Find two real camera positions in one already prepared chunk range.
    // Returning between these positions cannot legitimately rebuild movement.
@@ -111,10 +139,10 @@ test("a movement timeout keeps its native retry after a same-range camera pan",a
      if(await host.getAttribute("data-chunk-range")===range&&Number(await host.getAttribute("data-skipped-reconciles")??0)>skipped)sameRange=range;
    }
    expect(sameRange,"A native pan must have two positions inside the same prepared range").not.toBeNull();
-   await expect(host).toHaveAttribute("data-ground-bake-queue","0");
+   await expectVisibleCityGround(host,info,"same-range-before-movement-gate");
    // Pause while sprites are gated, then arm only the next movement channel.
    // Existing React channels and all later preparations keep native delivery.
-   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+   await pauseInstalledClock(page);
    await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.arm());
    releaseAmbient();await expect(host).toHaveAttribute("data-ambient-assets","ready");
    await page.clock.runFor(16);
@@ -197,7 +225,7 @@ test("a quality change keeps the pending physical preparation and adopts the lat
  await page.route("**/micro-ambient/**",async route=>{await ambientGate;await route.continue().catch(()=>undefined);});
  try{
    const host=await enterCity(page),identity=await host.locator("canvas").elementHandle();
-   await expect(host).toHaveAttribute("data-ground-bake-queue","0");
+   await expectVisibleCityGround(host,info,"initial-before-quality-gate");
    await expect(host).toHaveAttribute("data-world-quality","NORMAL");
    await expect(host).not.toHaveAttribute("data-ambient-assets","ready");
    const canonical=await host.getAttribute("data-canonical-task-count");
@@ -208,7 +236,7 @@ test("a quality change keeps the pending physical preparation and adopts the lat
    await expect(preferences.getByLabel("Детализация")).toHaveValue("NORMAL");
    // The gate, rather than elapsed renderer time, keeps this exact owner
    // pending while the user changes quality. Its real deadline is not extended.
-   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+   await pauseInstalledClock(page);
    await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.arm());
    releaseAmbient();await expect(host).toHaveAttribute("data-ambient-assets","ready");
    await page.clock.runFor(16);

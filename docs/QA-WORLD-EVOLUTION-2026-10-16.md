@@ -5,7 +5,21 @@
 База — `053e061d84dbcafdeaf1841010f9bd2286c9c5f8`, цель выпуска —
 `game3/dev-server/dev/all` через Builder и официальный updater.
 
-## 23 октября 2026 — v14: native12 и full24 STRICT PASS, CI/выпуск ожидаются
+## 23 октября 2026 — v15: compiler clearance, native2 и новая full24 PASS; exact CI/выпуск ожидаются
+
+V15 source `9f8d417815a6e8adc786694e13e3c737eb49f82e367fc411ecda6f6b342091ee`, QA578 `9eef2d18bc767f1ca9ac56b7258157b5df612f5b6581b360cd7b2cbd0a973bee`. Из 1263 runtime inputs против V14 изменена одна строка city-everyday-life.ts: подходы зрителей исключают все восемь соседей animal pad, включая диагонали. Поворот walker с inset0,25/0,25 больше не допускается внутрь clearance0,8/0,8. Server/assets byte-equal V14; client/HTML новые. QA:5 изменённых файлов+2clock helper/spec. Причина исторического CI BIRDS остаётся UNKNOWN.
+
+Публичный compiler TDD: RED10PASS/2FAIL из 12→первый GREEN11/12(старый perf pad0,1 теперь небезопасен)→final12/12PASS. Исправлена только fixture y+2/expected0,2; kinds3/lookup≤49/ground≤2N прежние. Affected73/8filesPASS и scoped ESLint PASS; пересекающиеся наборы не складываются в 85 уникальных тестов. Одна стандартная build/full TSC/freeze PASS(`bc434bbd…`); readonly200/1000(`18562d3a…`) сохранил geometry/status/descriptor/dumps без seed/restore/regeneration.
+
+Новые исходные native WebKitDPR2 — **2/2PASS/342,922861 с**,0retry/SKIP/flaky(`988333c6…`): все шесть бытовых сцен с реальными arrivals, BIRDS animals3/scattered и DOG animals1/fetched, unavailableSlots0; сохранённые safety counters0. Construction1→2→3→4→5/WORK, TRANSFER:CARRY, DEMOLISH:COVER/ruins/audio прошли. Animal/phase/occupied-slot assertions и исходные deadlines не ослаблены. Root BIRDS PNG NO_OPEN только в просмотренном состоянии. Собственная новая V15 publication822 `f8a84f80…`/920canonical,5343FREE/server+CLIclosed/DB0/business31fa40 unchanged; старая V14 attestation не переносилась.
+
+Новая V15 full24 — **24/24STRICT PASS**,8reports=24raw/errors0/violations0/retry0/exclusion0; root19775exit0. Исходные 4 профиля×200/1000×3/NORMAL/CPU/network/DPR/churn20/steady8s/strictbudgets сохранены. Cold1000max(ms):Chrome1962,219/Firefox1845,403/Pixel(CPU×4)8265,484/iPhone1147,981. Global max warm95,923ms/input p95 43,4ms/RAF p95 19ms/Chromium heap growth1281556B. Это три samples, не loadingp95. Console0errors/54warnings/trunc0; HTTP24cold/0pan/warm/legacy. LongTasks12Chromium steady0;12FF/WK unavailable=null, heap толькоChromium/RGBA неVRAM. Host gate5PASS; during load не отбрасывает samples.5311FREE/ownedDBother0/source920+822 fences unchanged.
+
+Прежние clock/ground native15 и шесть reveal/transfer Chrome из native16 остаются отдельными reuse на неизменных границах; это не новые V15 прогоны и не byte-equal claim всего everyday spec. Full24 V14 `74efab04…` сохранена без изменений и не переименована в V15. QA-calibration history сохранена: visible critical readiness вместо полного background drain; safe passenger recovery после resume; public fixed-date/pause/system-time; phase JSON вfinally/snapshotsfalse. Ранее смешанный async planning limit50→20000ms — QA wall-контракт по owner deadline, не CPU-оптимизация; road50ms/CPU8ms/heap8MiB/workload прежние.
+
+[Новая performance summary](evidence/city-scale-2026-10-23/task-focus-reliability-v15-summary.json), SHA `03501becf6cb3a7f5fcd824a03f2f1f3720af8e2381c0e94d9beafd6b04728e3`; [общая qualification summary](evidence/city-scale-2026-10-23/task-focus-final-qualification-summary.json), SHA `7138c43f1fe1e9d648e2dd3033cd400ecb8ec669cc2b9b2f9d3320dcd726e65a`. Все 33 критерия/U08/U09 и исторические RED/UNKNOWN сохранены. CI717/39896216677 завершён FAILURE6SUCCESS/4FAILURE/0CANCELLED; локальные PASS его не заменяют. Будущие HEAD/tree/exact CI, merge/Builder/public smoke/300 с **PENDING**, E01/E02/Q02/Q03 открыты. Только браузерная эмуляция; физических телефонов нет. Новых release gates не назначено.
+
+## Историческая точка 23 октября 2026 — v14 native12/full24 PASS до исправлений QA
 
 Source `51f67980cec9fe77c7f9cb617909c3a12a1b92f0065cfb6b6b292938ac33e247`: только4static render-group flags против v13, остальные1262runtime/576QA совпадают. Server/география/assets прежние. Одна сборка/full TSC/freeze (`bc0ebc39…`) и readonly200/1000 (`9de56c39…`) PASS; geometry/status/descriptor/dumps сохранены без seed/restore/regeneration.
 

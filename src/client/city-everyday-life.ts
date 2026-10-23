@@ -106,7 +106,7 @@ export function* compileEverydaySitesSteps(input: EverydayInput): Generator<void
           const id = `${x},${y}`, c = destinations.get(id);
           // An adjacent spectator's .25-cell walking inset can overlap the
           // pad clearance and suppress the stall/animal after arrival.
-          if (c && !blocked.has(id) && !area.some(a => Math.abs(a.x - c.x) + Math.abs(a.y - c.y) <= 1)
+          if (c && !blocked.has(id) && !area.some(a => Math.max(Math.abs(a.x - c.x), Math.abs(a.y - c.y)) <= 1)
             && Math.abs(c.x - center.x) + Math.abs(c.y - center.y) <= 3) nearby.push(c);
           yield;
         }

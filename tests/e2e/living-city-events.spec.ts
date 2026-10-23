@@ -11,9 +11,9 @@ import { openMapCity } from './map-navigation';
 import { taskLink } from '../../src/client/task-navigation';
 import type { TaskDto } from '../../src/shared/contracts';
 
-// Continuous trace thumbnails contend with native rendering on software GPUs.
-// Explicit phase captures, failure PNGs and DOM/call/source traces remain.
-test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: true, sources: true } });
+// Automatic trace snapshots add work during short native cinematic phases.
+// Explicit phase JSON/captures, failure PNGs and call/source traces remain.
+test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
 const nativeCpuRate=Number(process.env.E2E_CINEMATIC_CPU_RATE??1);
 if(![1,4].includes(nativeCpuRate))throw new Error('Invalid native cinematic CPU profile');
@@ -146,8 +146,11 @@ test('MCP/WebSocket keeps the old building through all stages, delivers a helico
   await f.focus(current);
   const demolition=await observeCinematics(f.host);
   await f.call('task.delete',{taskId:current.id,confirmTitle:current.title});
-  await expect.poll(async()=> (await demolition.frames()).some(frame=>frame.states.some(state=>state.taskId===current.id&&state.kind==='DEMOLISH'&&state.phase==='COVER')),{timeout:15000}).toBe(true);
-  await info.attach('demolition-published-phases',{body:JSON.stringify(await demolition.frames()),contentType:'application/json'});
+  try {
+   await expect.poll(async()=> (await demolition.frames()).some(frame=>frame.states.some(state=>state.taskId===current.id&&state.kind==='DEMOLISH'&&state.phase==='COVER')),{timeout:15000}).toBe(true);
+  } finally {
+   await info.attach('demolition-published-phases',{body:JSON.stringify(await demolition.frames()),contentType:'application/json'});
+  }
   await page.screenshot({path:info.outputPath('demolish-after-observed-cover.png')});
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
   expect((await f.service.listWorldFeatures(f.user.countryId)).some(feature=>feature.siteMarker?.kind==='RUINED'&&feature.siteMarker.snapshot.taskNumber===current.taskNumber)).toBe(true);

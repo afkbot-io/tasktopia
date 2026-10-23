@@ -159,11 +159,24 @@ it('отмена движущегося рейса довозит пассажи
   expect(boarded).toBeGreaterThan(0);
   expect(stops.some(s => s.id !== stop.id && city.dispatchResponse('BUS', [s.lane], 30000, bus.id))).toBe(true);
   city.advance(200); const pose = city.agents.find(a => a.id === bus.id)!.position;
+  expect(city.agents.find(a => a.id === bus.id)!.activity).toBe('NONE');
+  const beforePause = city.agents.map(a => ({ id: a.id, carrier: a.carrier, position: { ...a.position } }));
+  const passengerIds = city.agents.filter(a => a.carrier === bus.id).map(a => a.id).sort();
+  const actorIds = city.agents.map(a => a.id).sort(), fixedSteps = city.metrics.fixedSteps;
+  expect(passengerIds).toHaveLength(boarded);
   city.clearVisits('cancelled'); city.clearResponses(['BUS']);
   expect(city.agents.find(a => a.id === bus.id)!.position).toEqual(pose);
+  // Cancellation cannot teleport a moving passenger to a remote curb. A
+  // reduced-motion pause has no fixed steps, so this is a valid nonzero count.
+  expect(city.metrics.fixedSteps).toBe(fixedSteps);
+  expect(city.agents.map(a => ({ id: a.id, carrier: a.carrier, position: { ...a.position } }))).toEqual(beforePause);
+  expect(city.agents.filter(a => a.carrier === bus.id).map(a => a.id).sort()).toEqual(passengerIds);
+  expect(city.agents.find(a => a.id === bus.id)?.response).toBe('BUS');
   city.updateNetwork(input);
+  // Resume the real fixed-step simulation; preserve the existing recovery cap.
   for (let i = 0; i < 1200 && city.agents.some(a => a.carrier); i++) city.advance(50);
   expect(city.agents.some(a => a.carrier)).toBe(false);
+  expect(city.agents.map(a => a.id).sort()).toEqual(actorIds);
   expect(city.agents.filter(a => a.kind === 'WALKER')).toHaveLength(10);
   expect(city.metrics.vehicleUnsafeTotal + city.metrics.pedestrianUnsafeTotal + city.metrics.vehiclePedestrianUnsafeTotal).toBe(0);
   city.updateNetwork({ ...input, carLimit: 0 }); city.advance(1000);

@@ -34,29 +34,67 @@ test('real city exposes six education families, safe event pads and connected tr
   } finally { await f.cleanup(); }
 });
 
-test('fresh MCP completions open every institution after the construction reveal and never replay on reload', async ({ page }, info) => {
-  test.setTimeout(160000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  try {
-    await f.focus(f.pendingSchool);
-    await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
-    const shop = f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'SHOP')!;
-    const fire = f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'FIRE')!;
-    for (const [task, kind] of [[f.pendingSchool, 'OPEN_SCHOOL'], [f.pendingKindergarten, 'OPEN_KINDERGARTEN'], [shop, 'OPEN_SHOP'], [fire, 'OPEN_FIRE'], [f.pendingHome, 'OPEN_BUILDING']] as const) {
+for (const kind of ['OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP', 'OPEN_FIRE', 'OPEN_BUILDING'] as const) {
+  test(`fresh MCP completion reveals ${kind} once after construction and never replays on reload`, async ({ page }, info) => {
+    test.setTimeout(90000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+    try {
+      await f.focus(f.pendingSchool);
+      await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
+      const targets = {
+        OPEN_SCHOOL: f.pendingSchool, OPEN_KINDERGARTEN: f.pendingKindergarten, OPEN_BUILDING: f.pendingHome,
+        OPEN_SHOP: f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'SHOP')!,
+        OPEN_FIRE: f.tasks.find(t => t.stage === 4 && BUILDING_CATALOG.find(b => b.key === t.visualAssetKey)?.serviceRole === 'FIRE')!,
+      };
+      const task = targets[kind]; expect(task.stage).toBe(4);
       await f.service.activateDistrict(f.user.countryId, task.districtId, crypto.randomUUID());
       await f.panFocus(task);
       const key = crypto.randomUUID(); await f.call('task.set_status', { taskId: task.id, status: 'COMPLETED' }, key);
       await expect(f.host).toHaveAttribute('data-cinematic-phases', /CONSTRUCT:WORK/);
       await expect(f.host).toHaveAttribute('data-everyday-event', kind, { timeout: 15000 });
       await expect(f.host).toHaveAttribute('data-city-cinematics', '0');
+      expect((await f.service.getTask(f.user.countryId, task.id)).stage).toBe(5);
       const episode = await f.host.getAttribute('data-everyday-episode-id');
       await f.call('task.set_status', { taskId: task.id, status: 'COMPLETED' }, key);
       await expect(f.host).toHaveAttribute('data-everyday-episode-id', episode!);
       await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}.png`) });
-      await page.emulateMedia({ reducedMotion: 'reduce' }); await expect(f.host).toHaveAttribute('data-everyday-event', '');
-      await expect(f.host).toHaveAttribute('data-transit-passengers', '0');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect(f.host).toHaveAttribute('data-everyday-event', '');
+      await expect(f.host).toHaveAttribute('data-everyday-visitors', '0');
+      await expect(f.host).toHaveAttribute('data-transit-role', '');
+      await expect(f.host).toHaveAttribute('data-transit-phase', '');
+      await expect(f.host).toHaveAttribute('data-transit-vehicle', '');
+      await expect(f.host).toHaveAttribute('data-animation-active', 'false');
+      // Safe passenger evacuation uses physics steps. Reduced motion pauses
+      // those steps; the real-mobility regression covers recovery after resume.
       await page.emulateMedia({ reducedMotion: 'no-preference' });
-    }
-    const home = await f.service.getTask(f.user.countryId, f.pendingHome.id); await f.panFocus(home);
+      await page.reload(); await openMapCity(page); await expect(f.host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
+      expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
+      expect(errors).toEqual([]);
+    } finally { await f.cleanup(); }
+  });
+}
+
+test('delayed MCP transfer resumes a helicopter carry without replaying an opening on reload', async ({ page }, info) => {
+  test.setTimeout(90000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  try {
+    await f.focus(f.pendingSchool);
+    await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
+    // This isolated transfer still starts with a genuinely completed home.
+    await f.service.activateDistrict(f.user.countryId, f.pendingHome.districtId, crypto.randomUUID());
+    await f.panFocus(f.pendingHome);
+    await f.call('task.set_status', { taskId: f.pendingHome.id, status: 'COMPLETED' });
+    await expect(f.host).toHaveAttribute('data-cinematic-phases', /CONSTRUCT:WORK/);
+    await expect(f.host).toHaveAttribute('data-everyday-event', 'OPEN_BUILDING', { timeout: 15000 });
+    await expect(f.host).toHaveAttribute('data-city-cinematics', '0');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(f.host).toHaveAttribute('data-everyday-event', '');
+    await expect(f.host).toHaveAttribute('data-everyday-visitors', '0');
+    await expect(f.host).toHaveAttribute('data-transit-role', '');
+    await expect(f.host).toHaveAttribute('data-transit-phase', '');
+    await expect(f.host).toHaveAttribute('data-transit-vehicle', '');
+    await expect(f.host).toHaveAttribute('data-animation-active', 'false');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const home = await f.service.getTask(f.user.countryId, f.pendingHome.id); expect(home.stage).toBe(5); await f.panFocus(home);
     // Hold the real post-transfer scene beyond the original carry window.
     // The renderer must resume a flight instead of jumping from lift to land.
     const scenePattern = /\/api\/countries\/[^/]+\/cities\/[^/]+\/scene(?:\?|$)/;
@@ -290,19 +328,26 @@ async function setSceneLife(page: Page, on: boolean) {
   await prefs.getByLabel('Жизнь города').setChecked(on); await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.clock.runFor(100);
 }
 
-type EverydayObservedNode=HTMLElement&{__qaEveryday?:{arrivals:number;animals:number;fetched:boolean;scattered:boolean;observer:MutationObserver}};
+type EverydaySample={kind:string;phase:string;areaReady:boolean;arrivals:number;animals:number;fetched:boolean;scattered:boolean;serverNow:number};
+type EverydayObservedNode=HTMLElement&{__qaEveryday?:{arrivals:number;animals:number;fetched:boolean;scattered:boolean;samples:EverydaySample[];observer:MutationObserver}};
 async function observeEveryday(host:Locator,taskId:string){
   await host.evaluate((el,taskId)=>{
     const node=el as EverydayObservedNode;node.__qaEveryday?.observer.disconnect();
+    let signature='';
     const read=()=>{const d=node.dataset,record=node.__qaEveryday!;if(d.everydayTask!==taskId||!d.everydayEvent)return;
       record.arrivals=Math.max(record.arrivals,Number(d.everydayArrived??0));record.animals=Math.max(record.animals,Number(d.everydayAnimals??0));
-      record.fetched||=d.dogCarrying==='true';record.scattered||=d.birdsScattered==='true';};
+      record.fetched||=d.dogCarrying==='true';record.scattered||=d.birdsScattered==='true';
+      const sample={kind:d.everydayEvent,phase:d.everydayPhase??'',areaReady:d.everydayAreaReady==='true',
+        arrivals:Number(d.everydayArrived??0),animals:Number(d.everydayAnimals??0),fetched:d.dogCarrying==='true',scattered:d.birdsScattered==='true'};
+      const next=JSON.stringify(sample);
+      if(next!==signature){signature=next;record.samples.push({...sample,serverNow:Number(d.roadEventServerNow)});if(record.samples.length>64)record.samples.shift();}
+    };
     const observer=new MutationObserver(read);
-    node.__qaEveryday={arrivals:0,animals:0,fetched:false,scattered:false,observer};
-    observer.observe(node,{attributes:true,attributeFilter:['data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered']});
+    node.__qaEveryday={arrivals:0,animals:0,fetched:false,scattered:false,samples:[],observer};
+    observer.observe(node,{attributes:true,attributeFilter:['data-everyday-event','data-everyday-phase','data-everyday-area-ready','data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered']});
     read();
   },taskId);
-  return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered};});
+  return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered,samples:r.samples};});
 }
 
 clockSceneTest('six everyday scenes use actual residents and approaches', async ({ page }, info) => {
@@ -368,7 +413,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       }
       const actualFrames=await observed();arrivals=Math.max(arrivals,actualFrames.arrivals);animals=Math.max(animals,actualFrames.animals);
       fetched||=actualFrames.fetched;scattered||=actualFrames.scattered;
-      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
+      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, observed:actualFrames, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
       if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })), null, 2));
       expect(arrivals, `${kind} residents never arrived`).toBeGreaterThan(0);
       if (kind === 'DOG' || kind === 'BIRDS') expect(animals).toBeGreaterThan(0);
