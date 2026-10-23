@@ -62,6 +62,29 @@ export async function everydayFixture(page: Page) {
   const focus = async (task: TaskDto) => { await page.goto(taskLink(user.countryId, task)); await expect(page.locator('#task-title')).toContainText(task.title);
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click(); await ready(); };
   const panFocus = async (task: TaskDto, pausedClock = false, options?: { settlePausedBefore: number }) => {
+    // Bounded public camera diagnostics; no renderer or clock mutation.
+    const cameraDiagnostic: Array<Record<string, unknown>> = [];
+    let diagnosticTruncated = false;
+    const captureCameraDiagnostic = async (phase: string, drag?: number) => {
+      if (cameraDiagnostic.length >= 28) { diagnosticTruncated = true; return; }
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const sample = await Promise.race([
+          host.evaluate((el, fields) => {
+            const node = el as HTMLElement, canvas = node.querySelector('canvas');
+            return { at: performance.now(), dateNow: Date.now(), values: Object.fromEntries(fields.map(key =>
+              [key, node.dataset[key] === undefined ? null : node.dataset[key]!.slice(0, 256)])),
+              canvas: canvas ? { width: canvas.clientWidth, height: canvas.clientHeight } : null };
+          }, ["citySceneCommit", "cityFirstFrameRendered", "cityCriticalGroundReady", "cityCriticalGroundCount", "cityHaloGroundPending", "mobilityReady", "ambientAssets", "loading", "loadError", "chunkRange", "mapLod", "skippedReconciles", "cameraPresentationPending", "cameraPresentationCommits", "cameraWorldX", "cameraWorldY", "renderScale", "groundCache", "groundBakeQueue", "interactiveGroundBakeFrames", "cameraPaddingChunks", "cameraPaddingTargetUnbaked", "cameraPaddingVisibleUnbaked", "cameraPaddingVisibleUntextured", "cameraPaddingTerrainPending", "cameraPaddingTreePending", "cameraPaddingRoadPending", "cameraPaddingNativeDeferred", "cameraPaddingBakes", "movementPreparing", "movementPreparationCommits", "movementRebuilds", "movementPrepareMs", "movementCommitMs", "mobilityNetworkBuilds", "canonicalSnapshotPending", "canonicalTaskCount", "taskBuildingViews", "entityReadyPublishes", "entityReplacements", "citySceneRevision"]),
+          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Diagnostic public read exceeded1000ms')), 1000); }),
+        ]);
+        cameraDiagnostic.push({ phase, drag: drag ?? null, ...sample });
+      } catch (error) {
+        cameraDiagnostic.push({ phase, drag: drag ?? null, unavailable: String(error).slice(0, 400) });
+      } finally { if (timer) clearTimeout(timer); }
+    };
+    await captureCameraDiagnostic('before-pan');
+    try {
     // Search opens a card; closing it intentionally restores the preceding
     // map pose. These scene tests need a real pan without changing history.
     await expect(page).toHaveURL(url => url.pathname === '/' && url.searchParams.get('countryId') === user.countryId && url.searchParams.get('cityId') === task.cityId);
@@ -88,8 +111,10 @@ export async function everydayFixture(page: Page) {
     // Accumulate the intended delta. With paused RAF the renderer deliberately
     // retains its old presented pose until terrain for the pending pose is ready.
     for (let index = 0; index < drags; index++) {
+      await captureCameraDiagnostic('before-drag', index);
       await page.mouse.move(start.x, start.y); await page.mouse.down();
       await page.mouse.move(start.x + dx / drags, start.y + dy / drags, { steps: 12 }); await page.mouse.up();
+      await captureCameraDiagnostic('after-drag', index);
     }
     // Preserve the original controlled preparation horizon, including when
     // the target was already visible. Never await a paused RAF before this.
@@ -138,6 +163,15 @@ export async function everydayFixture(page: Page) {
         && (rect.minY - y) * tilePixels + canvas.clientHeight / 2 >= 24
         && (rect.maxY + 1 - y) * tilePixels + canvas.clientHeight / 2 <= canvas.clientHeight - 24;
     }, bounds), { message: `Task #${task.taskNumber} must actually be visible after its native scene pan` }).toBe(true);
+    } finally {
+      await captureCameraDiagnostic('finally');
+      // Attachment failure must not replace the original readiness failure.
+      await test.info().attach('camera-presentation-diagnostic', { body: JSON.stringify({ taskId: task.id,
+        taskNumber: task.taskNumber, pausedClock, target: task.siteBounds ?? task.footprint,
+        samples: cameraDiagnostic, truncated: diagnosticTruncated, maximumSamples: 28,
+        publicReadTimeoutMs: 1000, limitation: 'Extra read RPCs affect timing; this is diagnostic, not performance qualification.' }),
+        contentType: 'application/json' }).catch(() => {});
+    }
   };
   const cleanup = async () => { await page.close(); await client.close(); await db.prepare('DELETE FROM countries WHERE id=?').run(user.countryId); await db.prepare('DELETE FROM users WHERE id=?').run(user.id); await db.close(); };
   return { db, service, user, city, tasks, pendingSchool, pendingKindergarten, pendingHome, call, host, open, focus, panFocus, cleanup };

@@ -2336,8 +2336,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         host.dataset.worldPixelRatio=String(resolution);
         if (!readWorldPreferences().sound) silenceCityAudio();
         if (next !== economy) {
-          if (next) clearCinematics();
           economy = next;
+          // Keep the current reveal owner; only trim its crew on downgrade.
+          updateCinematics();
           // A downgrade also bounds bursts already on screen, not only new events.
           if (economy) {
             for (const celebration of celebrations.splice(1)) for (const particle of celebration.particles) particle.view.destroy();
@@ -4784,6 +4785,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const rangeLabel = `${cityScene ? `city:${cityScene.sceneRevision}:` : ""}${range.minChunkX},${range.minChunkY}:${range.maxChunkX},${range.maxChunkY}`;
         if (!options.forceKeys?.size && host!.dataset.loadError !== "true" && nextLod === desiredLod && rangeLabel === desiredRange) {
           host!.dataset.skippedReconciles = String(Number(host!.dataset.skippedReconciles ?? 0) + 1);
+          // Reuse resident work, but still publish a staged camera after its padding finishes.
+          if (cityCamera.pending) void drainVisibleLoads();
           return;
         }
         const resident = new Set([...chunks.keys()].filter((cacheKey) => (

@@ -255,37 +255,47 @@ clockSceneTest('paused scene preparation advances a released renderer frame befo
   }
 });
 
-clockSceneTest('tow loading and water repair wait for actual service arrivals, drive and reopen safely', async ({ page }, info) => {
-  test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
-  const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [];
-  try {
-    await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
-    for (let attempt = 0; attempt < 9 && seen.size < 2; attempt++) {
-      const next = Number(await f.host.getAttribute('data-road-event-next-start')); await seek(page, f.host, next + 300);
-      const kind = (await f.host.getAttribute('data-road-event'))!;
-      const startedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
-      if (!['BREAKDOWN', 'WATER'].includes(kind)) { await page.clock.fastForward(35000); await page.clock.runFor(100); continue; }
-      expect(await f.host.getAttribute('data-road-service-arrived')).toBe('false');
-      expect(await f.host.getAttribute('data-road-cargo-loaded')).toBe('false');
-      expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(3);
-      let arrived = false, loaded = false;
-      for (let i = 0; i < 31; i++) {
-        await page.clock.runFor(1000); const state = await safe(f.host);
-        arrived ||= state.roadServiceArrived === 'true';
-        loaded ||= state.roadCargoLoaded === 'true';
-        if (i === 12 || kind === 'BREAKDOWN' && loaded && i === 18) await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}-${i}.png`) });
+for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
+  clockSceneTest(`${targetKind} service waits for actual arrival, drives and reopens safely`, async ({ page }, info) => {
+    test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
+    const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [], frames: Record<string, unknown>[] = [];
+    try {
+      await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+      for (let attempt = 0; attempt < 9 && seen.size < 1; attempt++) {
+        const next = Number(await f.host.getAttribute('data-road-event-next-start')); await seek(page, f.host, next + 300);
+        const kind = (await f.host.getAttribute('data-road-event'))!;
+        const startedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
+        if (kind !== targetKind) { await page.clock.fastForward(35000); await page.clock.runFor(100); continue; }
+        expect(await f.host.getAttribute('data-road-service-arrived')).toBe('false');
+        expect(await f.host.getAttribute('data-road-cargo-loaded')).toBe('false');
+        expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(3);
+        let arrived = false, loaded = false;
+        for (let i = 0; i < 31; i++) {
+          await page.clock.runFor(1000); const state = await safe(f.host);
+          if (frames.length < 31) frames.push({ step: i + 1, startedAt, serverNow: state.roadEventServerNow,
+            kind: state.roadEvent, phase: state.roadEventPhase, arrived: state.roadServiceArrived, loaded: state.roadCargoLoaded,
+            closedCells: state.roadClosedCells, responders: state.roadResponders, trips: state.roadResponseTrips,
+            fixedSteps: state.mobilityFixedSteps, safety: [state.mobilityVehicleUnsafeTotal, state.mobilityPedestrianUnsafeTotal,
+              state.mobilityVehiclePedestrianUnsafeTotal, state.wrongWayCars, state.walkerOffPath] });
+          arrived ||= state.roadServiceArrived === 'true';
+          loaded ||= state.roadCargoLoaded === 'true';
+          if (i === 12 || kind === 'BREAKDOWN' && loaded && i === 18) await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}-${i}.png`) });
+        }
+        expect(arrived, `${kind} service never arrived`).toBe(true); if (kind === 'BREAKDOWN') expect(loaded).toBe(true);
+        // ServerWorldClock slews backwards corrections at at most10%; use its
+        // observed epoch for expiry after exercising the real fixed-step route.
+        await seek(page, f.host, startedAt + 31_000);
+        await expect(f.host).toHaveAttribute('data-road-closed-cells', '0'); await expect(f.host).toHaveAttribute('data-road-event', '');
+        seen.add(kind); evidence.push({ kind, arrived, loaded, trips: await f.host.getAttribute('data-road-response-trips') });
       }
-      expect(arrived, `${kind} service never arrived`).toBe(true); if (kind === 'BREAKDOWN') expect(loaded).toBe(true);
-      // ServerWorldClock slews backwards corrections at at most10%; use its
-      // observed epoch for expiry after exercising the real fixed-step route.
-      await seek(page, f.host, startedAt + 31_000);
-      await expect(f.host).toHaveAttribute('data-road-closed-cells', '0'); await expect(f.host).toHaveAttribute('data-road-event', '');
-      seen.add(kind); evidence.push({ kind, arrived, loaded, trips: await f.host.getAttribute('data-road-response-trips') });
+      expect(seen).toEqual(new Set([targetKind]));
+      await writeFile(info.outputPath('road-service-arrivals.json'), JSON.stringify(evidence, null, 2));
+    } finally {
+      try { await info.attach(`${targetKind.toLowerCase()}-service-frames`, { body: JSON.stringify({ targetKind, frames, evidence }), contentType: 'application/json' }); }
+      finally { await f.cleanup(); }
     }
-    expect(seen).toEqual(new Set(['BREAKDOWN', 'WATER']));
-    await writeFile(info.outputPath('road-service-arrivals.json'), JSON.stringify(evidence, null, 2));
-  } finally { await f.cleanup(); }
-});
+  });
+}
 
 test('touch-sized everyday city keeps preferences, sound opt-in, motion cancellation and read-only task controls usable', async ({ page, hasTouch }, info) => {
   test.setTimeout(90000); await page.setViewportSize({ width: 390, height: 844 }); const f = await everydayFixture(page);
@@ -446,7 +456,7 @@ test('everyday live lifecycle clears hidden, map exit, reconnect and deleted ins
   test.setTimeout(120000); const f = await everydayFixture(page);
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   try {
-    await f.focus(f.pendingSchool); await f.service.activateDistrict(f.user.countryId, f.pendingSchool.districtId, crypto.randomUUID());
+    await f.focus(f.pendingSchool); await f.panFocus(f.pendingSchool); await f.service.activateDistrict(f.user.countryId, f.pendingSchool.districtId, crypto.randomUUID());
     await f.call('task.set_status', { taskId: f.pendingSchool.id, status: 'COMPLETED' });
     await expect(f.host).toHaveAttribute('data-everyday-event', 'OPEN_SCHOOL', { timeout: 15000 });
     await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
@@ -621,4 +631,76 @@ test('authored sprite atlas uses the current revision and stays stable across zo
     expect(standalone).toEqual([]); expect(errors).toEqual([]);
     await writeFile(info.outputPath('sprite-projection-runtime.json'), JSON.stringify({ assetRevision, expectedAtlas, atlasHashes, scales, errors, standalone }, null, 2));
   } finally { await f.cleanup(); }
+});
+
+// A real public preference change must not cancel an accepted fresh opening.
+test('an accepted school construction still opens after a public quality downgrade',async({page},info)=>{
+  test.setTimeout(120_000);
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  const snapshots:Array<Record<string,unknown>>=[];
+  const f=await everydayFixture(page);
+  const capture=async(phase:string)=>{
+    const data=await f.host.evaluate(el=>{
+      const d=(el as HTMLElement).dataset;
+      return {worldQuality:d.worldQuality,frameLimit:d.frameLimit,citySceneCommit:d.citySceneCommit,
+        cameraPresentationPending:d.cameraPresentationPending,cityCinematics:d.cityCinematics,
+        cinematicPhases:d.cinematicPhases,cinematicWorkers:d.cinematicWorkers,cinematicState:d.cinematicState?.slice(0,6000),
+        everydayEvent:d.everydayEvent,everydayTask:d.everydayTask,everydayEpisodeId:d.everydayEpisodeId,
+        everydaySkip:d.everydaySkip,everydayAreaReady:d.everydayAreaReady,loadError:d.loadError,
+        mobilityReady:d.mobilityReady,ambientAssets:d.ambientAssets};
+    });
+    if(snapshots.length<6)snapshots.push({phase,...data});
+    return data;
+  };
+  try{
+    // Public task-link navigation already places this same school in view.
+    // No pan, camera override, clock control or forced animation is needed.
+    await f.focus(f.pendingSchool);
+    await expect(f.host).toHaveAttribute('data-ambient-assets','ready');
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending','false');
+    await f.service.activateDistrict(f.user.countryId,f.pendingSchool.districtId,crypto.randomUUID());
+    const preferences=page.locator('.map-toolbar-actions > nav > .world-preferences');
+    await expect(preferences).toBeVisible();
+    await preferences.locator(':scope > summary').click();
+    const quality=preferences.getByLabel('Детализация');
+    await expect(quality).toBeVisible();
+    await quality.selectOption('NORMAL');
+    await expect(f.host).toHaveAttribute('data-world-quality','NORMAL');
+    await expect(preferences.getByLabel('Жизнь города')).toBeChecked();
+    await expect(preferences.getByLabel('Уменьшить движение')).not.toBeChecked();
+    const key=crypto.randomUUID();
+    await f.call('task.set_status',{taskId:f.pendingSchool.id,status:'COMPLETED'},key);
+    await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${f.pendingSchool.id}:CONSTRUCT:WORK`));
+    const beforeQuality=await capture('accepted-normal-work');
+    expect(beforeQuality.cinematicPhases).toContain(`${f.pendingSchool.id}:CONSTRUCT:WORK`);
+    expect(Number(beforeQuality.cityCinematics)).toBeGreaterThan(0);
+    // The preferences panel is already open, so no navigation action races the shot.
+    await quality.selectOption('ECONOMY');
+    await expect(f.host).toHaveAttribute('data-world-quality','ECONOMY');
+    await capture('after-public-economy');
+    expect((await f.service.getTask(f.user.countryId,f.pendingSchool.id)).stage).toBe(5);
+    await expect(f.host).toHaveAttribute('data-everyday-event','OPEN_SCHOOL',{timeout:15_000});
+    await expect(f.host).toHaveAttribute('data-everyday-task',f.pendingSchool.id);
+    await expect(f.host).toHaveAttribute('data-city-cinematics','0');
+    const episode=await f.host.getAttribute('data-everyday-episode-id');expect(episode).toBeTruthy();
+    await capture('school-opened');
+    await f.call('task.set_status',{taskId:f.pendingSchool.id,status:'COMPLETED'},key);
+    await expect(f.host).toHaveAttribute('data-everyday-episode-id',episode!);
+    await page.screenshot({path:info.outputPath('school-opening-after-quality-downgrade.png')});
+    await page.reload();await openMapCity(page);
+    await expect(f.host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30_000});
+    await expect(f.host).toHaveAttribute('data-mobility-ready','true',{timeout:30_000});
+    await expect(f.host).toHaveAttribute('data-ambient-assets','ready');
+    await expect(f.host).toHaveAttribute('data-world-quality','ECONOMY');
+    expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
+    expect((await f.service.getTask(f.user.countryId,f.pendingSchool.id)).stage).toBe(5);
+    expect(errors).toEqual([]);
+  }finally{
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    try{await Promise.race([capture('finally'),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Final public read exceeded1000ms')),1000);})]);}
+    catch(error){if(snapshots.length<6)snapshots.push({phase:'finally',unavailable:String(error).slice(0,400)});}
+    finally{if(timer)clearTimeout(timer);}
+    await info.attach('quality-opening-public-states',{body:JSON.stringify({snapshots,errors,maximumSnapshots:6,taskId:f.pendingSchool.id}),contentType:'application/json'}).catch(()=>{});
+    await f.cleanup();
+  }
 });

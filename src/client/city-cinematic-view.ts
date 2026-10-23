@@ -87,6 +87,13 @@ export function createCityCinematicView(options: Options) {
       gate(shot, false);
     },
     update(now: number) {
+      let trimmed = false;
+      if (options.economy()) for (const shot of shots.values()) {
+        if (shot.workers.length <= 3) continue;
+        for (const worker of shot.workers.splice(3)) { worker.view.removeFromParent(); worker.view.destroy(); }
+        trimmed = true;
+      }
+      if (trimmed) reservePaths();
       const frames = timeline.sample(now);
       for (const frame of frames) {
         const shot = shots.get(frame.taskId); if (!shot) continue;

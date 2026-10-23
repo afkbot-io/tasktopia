@@ -107,9 +107,17 @@ it('keeps park pads and real reachable school curbs when preparing asynchronousl
   expect(f.controller.sites.map(site => site.kind)).toEqual(['BIRDS', 'DOG', 'MARKET']);
   expect(f.controller.kinds).toBe('BIRDS,DOG,MARKET');
   for (const site of f.controller.sites) {
-    expect(site.area).toEqual([{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 0, y: 2 }, { x: 1, y: 2 }]);
+    // Keep the original first-row footprint: its diagonal audience approach
+    // is unsafe, so cooperative preparation must choose the next clear pad.
+    expect(site.area).toEqual([{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 0, y: 3 }, { x: 1, y: 3 }]);
     expect(site.area.some(cell => path.has(cellKey(cell)))).toBe(false);
     expect(site.route.every(cell => path.has(cellKey(cell)))).toBe(true);
+    const targets = site.targets ?? [];
+    expect(targets.length).toBeGreaterThan(0);
+    expect(site.route.at(-1)).toEqual(targets[0]);
+    for (const target of targets) for (const dx of [-.25, 0, .25]) for (const dy of [-.25, 0, .25]) {
+      expect(site.area.some(cell => Math.abs(target.x + dx - cell.x) < .8 && Math.abs(target.y + dy - cell.y) < .8)).toBe(false);
+    }
   }
 });
 

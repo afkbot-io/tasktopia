@@ -1,0 +1,517 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-23",
+  "status": "V16_LOCAL_QUALIFICATION_PASS_EXACT_CI_MERGE_RELEASE_PENDING",
+  "candidate": "candidate-task-focus-reliability-v16",
+  "proposedTrackedPath": "docs/evidence/city-scale-2026-10-23/task-focus-final-qualification-v16-summary.json",
+  "acceptance": {
+    "totalCriteria": 33,
+    "localQualificationComplete": true,
+    "finalHead": null,
+    "finalTree": null,
+    "exactHeadCi": "PENDING",
+    "merge": "PENDING",
+    "managedRelease": "PENDING",
+    "acceptedBeforeFinalCiRelease": 29,
+    "open": [
+      "E01",
+      "E02",
+      "Q02",
+      "Q03"
+    ]
+  },
+  "binding": {
+    "sourceHash": "04f4ed0c9befff008bdf4ae5b5b56dbc86cf94dc8f1933dfc7a0cdfc36988cc7",
+    "qualificationHash": "258a2366a20e74bca07acefb6b8a805fbc57ac6286d56dde98391bae696e4931",
+    "runtimeInputs": 1263,
+    "qaInputs": 578,
+    "manifestHash": "d9decfaef0887079bbc204f70cde2f4d3dd0257135b4904de675b014329facb3",
+    "bindingHash": "ff74d038dad9492d749ed3db1178fd0db5c7591365ac2744f3f4b80662d8466a",
+    "serverHash": "dbc7be70b6f1fe9db5ff929d72bb799efc496866c6c6cf1de20a283493a4eb22",
+    "clientHash": "48be214c33e4ea8c659393898d4da2ea2eb6602ef49003c120559fc7b25897be",
+    "htmlHash": "90e1cceacd4031a5800e35f6c69be4a69dbca9394f1bd91e0566b43a87f17310",
+    "distHash": "f1284fd18d36e488544acbe216a2305d7014d1535eb38d21c1073d9dff96956f",
+    "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+    "assetRevision": "f5ba91abe09a928b",
+    "publicationHash": "a2e88a4455d1e1ecd575d03286f9cae6d6616b97cc40604733145bbe5ebbf668",
+    "physicalDistHash": "e22a371deb3f40fcfffd823bb13fe8e97ea54e73b27905322e0aed3412d98617",
+    "runtimeDeltaSinceV15": [
+      "src/client/city-cinematic-view.ts",
+      "src/client/components/WorldCanvas.tsx"
+    ],
+    "qaDeltaSinceV15": [
+      "tests/city-cinematic-view.test.ts",
+      "tests/city-life-preparation.test.ts",
+      "tests/e2e/everyday-city-events.spec.ts",
+      "tests/e2e/everyday-city-fixture.ts"
+    ],
+    "hostObserverHash": "d90a080fcd42f8bae3e025fc039fa50a68c91e07d0db875ca7df9befbbb01309"
+  },
+  "production": {
+    "camera": "Same-range resident reuse drains pending camera presentation instead of abandoning its publication.",
+    "quality": "Retain accepted cinematic timeline/target-readiness on quality downgrade; destroy excess workers and release paths, at most3 per active shot.",
+    "preserved": [
+      "Original version/history/hard deadlines",
+      "No premature opening on clear/unready target",
+      "Original hidden/map exit/resync/reduced-motion cancellation",
+      "No new actors, teleport, physical-step changes, schema or assets"
+    ],
+    "historicalCiAttribution": "Exact historical lifecycle acceptance/visibility and slow clock RPC root causes remain UNKNOWN."
+  },
+  "tdd": {
+    "cameraPublicRedCases": 2,
+    "qualityPublicRedCases": 1,
+    "qualityUnitRed": {
+      "passed": 4,
+      "failed": 1
+    },
+    "affectedCamera": {
+      "passed": 80,
+      "files": 8
+    },
+    "affectedQuality": {
+      "passed": 48,
+      "files": 7
+    },
+    "scopedLintPassed": true,
+    "affectedSetsDisjoint": true,
+    "aggregateTestSuitesAreNotFileCounts": true
+  },
+  "qaContractChanges": {
+    "asyncPadOracle": "Unchanged first-row input, corrected y2 result plus targets/route/9-inset assertions; no production change here.",
+    "lifecycleVisibility": "First panFocus before completion; no NORMAL lock or opening expectation change.",
+    "towSplit": "Two independent target cases, each180s/9attempt/31x1000ms, same arrival/cargo/closure/safety checks; combined wall budget is not claimed unchanged.",
+    "boundedDiagnostics": "Up to31 already-read target frames in finally without extra browser RPC; existing public camera diagnostics retained.",
+    "earlierAsyncPlanningBudget": "Historical QA50→20000ms cooperative-wall owner deadline retained separately from road50ms/CPU8ms/heap8MiB."
+  },
+  "buildAndFixtures": {
+    "oneStandardBuild": true,
+    "fullTscPassed": true,
+    "buildExitCode": 0,
+    "serverAndAssetsByteEqualV15": true,
+    "readOnlyExistingTasks": [
+      200,
+      1000
+    ],
+    "noSeedRestoreRegeneration": true,
+    "geometryStatusDescriptorDumpPreserved": true
+  },
+  "nativeV16": {
+    "status": "ACTUAL_8_OF_8_PASS",
+    "expectedCases": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "retries": 0,
+    "durationMs": 128268.977,
+    "summaryHash": "eb68b1e3dd094175b759941b9a188712ea667be3cff5bf7196f5941a64ba3f69",
+    "postflightHash": "780e73c25de2d47b6a1c8365ab24d87a5a60073f84e361e898d7d5311d69e490",
+    "journalExactTuples": true,
+    "profiles": {
+      "chromium": 4,
+      "webkit-visual": 4
+    },
+    "camera": {
+      "sameRangePendingOwnerCasesPassed": 2,
+      "finalPending": false,
+      "visibleAndTargetUnbaked": 0,
+      "offscreenQueueMayRemain": true,
+      "beforeMutationNetworkAndMovementCounters": 1,
+      "legitimateTransferChangesNetworkCounters": true
+    },
+    "quality": {
+      "workers": [
+        5,
+        3,
+        0
+      ],
+      "shots": [
+        1,
+        1,
+        0
+      ],
+      "acceptedTaskOpensOnce": true,
+      "noReplayAfterReload": true
+    },
+    "roadServices": {
+      "targets": [
+        "BREAKDOWN",
+        "WATER"
+      ],
+      "framesEach": 31,
+      "fiveSafetyCountersAllZero": true,
+      "actualServiceArrivals": true,
+      "responseTripsEach": 1,
+      "breakdownCargoLoaded": true
+    },
+    "physicalOwners": {
+      "timeoutKeepsNativeRetryAfterSameRangePan": true,
+      "qualityKeepsOnePendingOwnerAndLatestCaps": true
+    },
+    "visualReview": {
+      "status": "ROOT_NO_OPEN_IN_TWO_CAPTURED_FRAMES",
+      "receiptHash": "5b49731ec2e0b92c7604cb43807211f586778148df42a562547c217106bd07ef",
+      "allFramesOrPhysicalPhonesClaim": false,
+      "scope": "Only2native captured frames, not every animation frame."
+    },
+    "cleanup": {
+      "ownedServerAndCliClosed": true,
+      "port5343Free": true,
+      "ownDatabaseOtherConnections": 0,
+      "businessUnchanged": true,
+      "baselineTasks": 40,
+      "newSeedRestore": false,
+      "canonicalFiles": 920,
+      "freshOwnPublicationCopies": 822
+    },
+    "consoleErrorBoundary": {
+      "expectedInjectedMovementTimeoutConsoleErrors": 1,
+      "pageErrorsInOriginalAssertions": 0,
+      "globalNativeConsoleZeroClaim": false
+    }
+  },
+  "performanceV16": {
+    "status": "STRICT_PASS",
+    "strictPassed": 24,
+    "strictFailed": 0,
+    "groups": 8,
+    "rawSamples": 24,
+    "allRawEqualReportResults": true,
+    "functionalFailures": 0,
+    "errors": 0,
+    "budgetViolations": 0,
+    "excludedSamples": 0,
+    "retries": 0,
+    "controlsBudgetsDprWorkloadUnchanged": true,
+    "profiles": [
+      "desktop-chromium",
+      "desktop-firefox",
+      "pixel-chromium",
+      "iphone-webkit"
+    ],
+    "taskSizes": [
+      200,
+      1000
+    ],
+    "samplesEach": 3,
+    "churnReturns": 20,
+    "steadyMs": 8000,
+    "quality": "NORMAL",
+    "summaryPath": "docs/evidence/city-scale-2026-10-23/task-focus-reliability-v16-summary.json",
+    "summaryHash": "7c9f34836d0f50b041ad0279f759e9d7aeb625f2c11176fb1f11c5c251cc0252",
+    "controls": {
+      "profiles": [
+        "desktop-chromium",
+        "desktop-firefox",
+        "pixel-chromium",
+        "iphone-webkit"
+      ],
+      "sizes": [
+        200,
+        1000
+      ],
+      "samples": 3,
+      "churn": 20,
+      "steadyMs": 8000,
+      "quality": "NORMAL",
+      "strictBudgets": true,
+      "coldContractVersion": 2,
+      "controlHashes": {
+        "scripts/measure-city-scale.ts": "576069f6837f87bba4c885ff784b55ab805761b00ad63d3a16979810e32fe516",
+        "scripts/city-scale-cold-metric.ts": "4474b2e80aa459b821adb7239834de33411aad3dfe9238e6d0b51ce52d921727",
+        "scripts/city-scale-benchmark-contract.ts": "678f2716ceff2a566f3ecc8172308ea1995d90aad5aab096aa7c184390f55ab3"
+      },
+      "continuationDriverHash": "7fb30e69ca1515b411fc79f671f013eb4e40f7145df9aa36b684064b926a9cc6",
+      "policyHash": "9350b3453e82932c8668b0f603c134a10d7be84635a4578f318dab8efbbd552b",
+      "runnerHash": "80e19e4bd2ff110d2c5698080ccf470d39f47762eda094a314cd31f835805d8c",
+      "metricBudgetsActionsDprFixturesUnchanged": true
+    },
+    "coldMaxMsDisplay": {
+      "desktop-chromium": {
+        "200": 1061.364,
+        "1000": 1955.707
+      },
+      "desktop-firefox": {
+        "200": 1271.882,
+        "1000": 1856.733
+      },
+      "pixel-chromium": {
+        "200": 5421.036,
+        "1000": 8307.072
+      },
+      "iphone-webkit": {
+        "200": 818.352,
+        "1000": 1148.148
+      }
+    },
+    "maxima": {
+      "warmMs": 99.146125,
+      "inputP95Ms": 45.1,
+      "rafP95Ms": 19,
+      "chromiumPostGcHeapGrowthBytes": 1393032
+    },
+    "metricsDisplayRoundingMs": 3,
+    "http": {
+      "coldSceneRequests": 24,
+      "panSceneRequests": 0,
+      "warmSceneRequests": 0,
+      "legacyRequests": 0
+    },
+    "console": {
+      "capturedSamples": 24,
+      "errorCount": 0,
+      "warningCount": 54,
+      "truncatedSamples": 0,
+      "warningClassifications": [
+        {
+          "classification": "Service Worker registration blocked by Playwright",
+          "count": 24
+        },
+        {
+          "classification": "WebGL context was lost.",
+          "count": 6
+        },
+        {
+          "classification": "WebGL warning: texImage: Alpha-premult and y-flip are deprecated for non-DOM-Element uploads.",
+          "count": 12
+        },
+        {
+          "classification": "WebGL warning: drawElementsInstanced: Tex image TEXTURE_2D level 0 is incurring lazy initialization.",
+          "count": 6
+        },
+        {
+          "classification": "WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.",
+          "count": 6
+        }
+      ],
+      "errorClassifications": [],
+      "separateFromOriginalReportErrors": true
+    },
+    "longTasks": {
+      "availableSamples": 12,
+      "unavailableSamples": 12,
+      "measuredSteadyCount": 0,
+      "unavailableIsNotMeasuredZero": true
+    },
+    "heap": {
+      "availableSamples": 12,
+      "unavailableSamples": 12,
+      "unavailableIsNotMeasuredZero": true
+    },
+    "host": {
+      "before": {
+        "passed": true,
+        "intervalCount": 5,
+        "waitMs": 10013.932792,
+        "idlePercent": {
+          "count": 5,
+          "min": 89.99721370855391,
+          "median": 93.00055772448411,
+          "max": 93.43532684283727
+        }
+      },
+      "during": {
+        "intervalCount": 294,
+        "truncated": false,
+        "idlePercent": {
+          "count": 294,
+          "min": 73.53760445682451,
+          "median": 88.24512534818942,
+          "max": 92.86709389802174
+        },
+        "weightedIdlePercent": 87.66467361810072
+      },
+      "after": {
+        "startUtc": "2026-10-23T06:19:23.638Z",
+        "endUtc": "2026-10-23T06:19:25.640Z",
+        "wallMs": 2001.891874999972,
+        "cpuCount": 18,
+        "available": true,
+        "totalTicksMs": 35890,
+        "idleTicksMs": 33260,
+        "idlePercent": 92.67205349679577
+      },
+      "duringLoadChangesAcceptance": false,
+      "limitation": "Only the before-series prerequisite gates launch. During/after load never removes, rejects or retries a sample and does not prove causes of historical failures."
+    },
+    "postflight": {
+      "exitCode": 0,
+      "groupExitCodes": [
+        {
+          "size": 200,
+          "profile": "desktop-chromium",
+          "exitCode": 0
+        },
+        {
+          "size": 200,
+          "profile": "desktop-firefox",
+          "exitCode": 0
+        },
+        {
+          "size": 200,
+          "profile": "pixel-chromium",
+          "exitCode": 0
+        },
+        {
+          "size": 200,
+          "profile": "iphone-webkit",
+          "exitCode": 0
+        },
+        {
+          "size": 1000,
+          "profile": "desktop-chromium",
+          "exitCode": 0
+        },
+        {
+          "size": 1000,
+          "profile": "desktop-firefox",
+          "exitCode": 0
+        },
+        {
+          "size": 1000,
+          "profile": "pixel-chromium",
+          "exitCode": 0
+        },
+        {
+          "size": 1000,
+          "profile": "iphone-webkit",
+          "exitCode": 0
+        }
+      ],
+      "port5311Free": true,
+      "ownedDatabases": [
+        {
+          "tasks": 200,
+          "otherConnections": 0,
+          "readOnly": true
+        },
+        {
+          "tasks": 1000,
+          "otherConnections": 0,
+          "readOnly": true
+        }
+      ],
+      "sourceAndOutputFencesUnchanged": true,
+      "canonicalFiles": 920,
+      "startupPublishedCopies": 822,
+      "limitation": "Existing root runner postflight readback; no new process/port/DB probes by aggregator"
+    },
+    "mobileVisualReview": {
+      "receiptHash": "76ff1631956e92d59ef0ef3c8eb3e1c818bc0a435cf79317ccf496851118b676",
+      "status": "ROOT_NO_OPEN_IN_TWO_PORTRAIT_1000_TASK_CAPTURES",
+      "resized": true,
+      "physicalPhones": false,
+      "allStatesClaim": false
+    }
+  },
+  "reusedUnaffectedEvidence": {
+    "notNewV16Runs": true,
+    "priorQualification": {
+      "path": "docs/evidence/city-scale-2026-10-23/task-focus-final-qualification-summary.json",
+      "sha256": "7138c43f1fe1e9d648e2dd3033cd400ecb8ec669cc2b9b2f9d3320dcd726e65a"
+    },
+    "priorPerformance": {
+      "path": "docs/evidence/city-scale-2026-10-23/task-focus-reliability-v15-summary.json",
+      "sha256": "03501becf6cb3a7f5fcd824a03f2f1f3720af8e2381c0e94d9beafd6b04728e3"
+    },
+    "scope": "Unchanged filters/glyphs, clock/ground contracts, backend181/27,MCP33/5,SDK2.3.0/Vite8.2.4,input10000/auth/scopes/parallel-ID smoke,recovery94+44 inputs/2isolated proofs; renderer/lifecycle changes require new native8/full24."
+  },
+  "limits": {
+    "historicalCi56": {
+      "status": "COMPLETED_FAILURE",
+      "runId": 39904078283,
+      "jobsCompleted": 10,
+      "success": 6,
+      "failure": 4,
+      "cancelled": 0,
+      "unit": {
+        "passed": 2027,
+        "failed": 1
+      },
+      "browser": {
+        "passed": 414,
+        "failed": 4,
+        "skipped": 163,
+        "didNotRun": 106,
+        "planned": 687
+      },
+      "notReplacedByLocalNativePass": true
+    },
+    "oldCi717": "6SUCCESS/4FAILURE/0CANCELLED",
+    "oldV12V13RedsNative137Preserved": true,
+    "physicalPhonesTested": false,
+    "browserEmulationOnly": true,
+    "unavailableLongTasksHeapAreNullNotZero": true,
+    "noHistoricalSpeedupOrCauseClaim": true,
+    "freshBackupAndExistingRestoreProofApplicabilityAtManagedRelease": true,
+    "noNewProbeDuringDocumentation": true,
+    "newFull24NotRetaggedFromV15": true,
+    "threeSamplesAreNotLoadingP95": true,
+    "coldDomUpperBoundNotCompositorPaint": true,
+    "rafProxyNotInp": true,
+    "rgbaNotVram": true,
+    "heapOnlyChromium": true,
+    "nativeIntentionalConsoleErrorSeparateFromPerfConsoleErrors": true,
+    "historicalCiAndPerformanceRedsPreserved": true,
+    "newExactHeadCiAndManagedReleaseStillPending": true
+  },
+  "artifacts": {
+    "sourceBinding": {
+      "path": ".builder/ci-pr58-56c1aff6-20261023/v16-current-source-binding.json",
+      "sha256": "42c211671cca12e5a5121b99f2f414097ad00ee14ff5a3d17d671e0e7f9f6e91"
+    },
+    "oneBuild": {
+      "path": ".builder/world-perf-20261022/reliability-v16-build-summary.json",
+      "sha256": "c0914411a5762bad2644dcf3c4e8249964bb6bacbbf9055451fff43959974ce7"
+    },
+    "readOnlyFixtures": {
+      "path": ".builder/world-perf-20261022/task-focus-reliability-v16-fixture-preflight.json",
+      "sha256": "82c49e9b099aacd65dcb1839eb3521b258dfc15ea9fe79995e580cf19e772e47"
+    },
+    "cameraAffectedUnits": {
+      "path": ".builder/ci-pr58-56c1aff6-20261023/camera-fix-affected-unit.json",
+      "sha256": "7f6dc9497521dad0fa281b3aa565bf321739e3191107589bf2c5530914eeb728"
+    },
+    "qualityAffectedUnits": {
+      "path": ".builder/ci-pr58-56c1aff6-20261023/quality-opening-affected-unit-green.json",
+      "sha256": "dc9bf6b501e0b629e68cc116debe876b86bc1e6393024508575ea4fbdbd52560"
+    },
+    "qualityUnitRed": {
+      "path": ".builder/ci-pr58-56c1aff6-20261023/quality-opening-unit-red.json",
+      "sha256": "f060fd907e091cec5602d61110f158c56f7dcfa1961fcf77c78545307987545e"
+    },
+    "qualityPublicRedPost": {
+      "path": ".builder/native-quality-downgrade-red-v15-20261023/offline-red-postflight-receipt.json",
+      "sha256": "b03198c47427c89baa0cf84abc4eed51df48749d5449ade401862d5ca3824d8c"
+    },
+    "native8Summary": {
+      "path": ".builder/native-qa40-lifecycle-v16-20261023/summary.json",
+      "sha256": "eb68b1e3dd094175b759941b9a188712ea667be3cff5bf7196f5941a64ba3f69"
+    },
+    "native8Postflight": {
+      "path": ".builder/native-qa40-lifecycle-v16-20261023/postflight-readback.json",
+      "sha256": "780e73c25de2d47b6a1c8365ab24d87a5a60073f84e361e898d7d5311d69e490"
+    },
+    "rootVisualTwoFrames": {
+      "path": ".builder/native-qa40-lifecycle-v16-20261023/root-visual-receipt.json",
+      "sha256": "5b49731ec2e0b92c7604cb43807211f586778148df42a562547c217106bd07ef"
+    },
+    "historicalCi56Final": {
+      "path": ".builder/ci-pr58-56c1aff6-20261023/final-ci-result.json",
+      "sha256": "c1bde5c050f94070f2e2ede3c5cf05f8d32a8df0da3609c82cc809cb30c9da93"
+    },
+    "newPerformancePortable": {
+      "path": "docs/evidence/city-scale-2026-10-23/task-focus-reliability-v16-summary.json",
+      "sha256": "7c9f34836d0f50b041ad0279f759e9d7aeb625f2c11176fb1f11c5c251cc0252"
+    },
+    "newPerformancePostflight": {
+      "path": ".builder/world-perf-20261022/task-focus-reliability-v16-qualification-postflight.json",
+      "sha256": "7650cbd69a97453511879c0cc5332ca204dd9eb45240ecef63e0737781f795ec"
+    },
+    "mobileVisualTwoFrames": {
+      "path": ".builder/world-perf-20261022/root-v16-mobile-visual-receipt.json",
+      "sha256": "76ff1631956e92d59ef0ef3c8eb3e1c818bc0a435cf79317ccf496851118b676"
+    }
+  }
+}
