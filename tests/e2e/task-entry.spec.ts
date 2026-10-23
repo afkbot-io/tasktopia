@@ -60,7 +60,7 @@ test("закрытая во время поиска карточка не воз
 test("карточка читается на узком и низком экране, все разделы доступны с клавиатуры", async ({page}, info) => {
   await page.request.post("/api/auth/login", {data:{email:"demo@tasktopia.local",password:"tasktopia-demo"}});
   await page.setViewportSize({width:320,height:640});
-  await page.goto("/task/1");
+  await page.goto("/task/1", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#task-title")).toBeVisible();
   const errors:string[]=[];page.on("pageerror", e=>errors.push(e.message));
   for(const name of ["Задача","Материалы","Обсуждение","История"]) {

@@ -1,6 +1,64 @@
 # Города на 200 и 1000 задач: протокол сравнения
 
-Статус: baseline и кандидаты v2/v3/v4 измерены по 12 профилям / 36 свежим
+## 23 октября 2026 — v14: native12 и full24 STRICT PASS, CI/выпуск ожидаются
+
+Source `51f67980cec9fe77c7f9cb617909c3a12a1b92f0065cfb6b6b292938ac33e247`: только4static render-group flags против v13, остальные1262runtime/576QA совпадают. Server/география/assets прежние. Одна сборка/full TSC/freeze (`bc0ebc39…`) и readonly200/1000 (`9de56c39…`) PASS; geometry/status/descriptor/dumps сохранены без seed/restore/regeneration.
+
+Native12 — **12/12PASS/82,414293s**,0retry/SKIP/flaky, JSON↔journal12 exact (`ae209b6f…`). Root4actual PNG NO_OPEN: Pixel320/iPhone empty-mask, WK full-detail DAY, Chrome atlas maximum (`7a50ad79…`); resized WK не даёт exact pixel claim, физических телефонов нет. Собственная attestation822 `2cf06e36…`/920canonical и native cleanup5343FREE/DB0/business31fa unchanged сохранены.
+
+Исходная full24 — **24/24STRICT PASS**,8reports/raw equality/functional24/errors0/violations0/retries0/exclusions0, launcher47586exit0. Четыре профиля×200/1000×3/NORMAL/churn20/steady8000/coldv2/CPU/network/budgets сохранены. Max warm79,781ms/input p95 45,2ms/RAF p95 19ms/Chromium heap growth1617468B. Cold max200/1000(ms): Chrome1077,524/1968,514; Firefox1292,307/1773,052; Pixel5412,436/8256,882; iPhone800,443/1141,136 — это не loading p95.
+
+Console errors0/warnings54/trunc0; HTTP24cold/0pan/0warm/0legacy. LongTasks12Chromium steady0,12FF/WK unavailable=null; heap толькоChromium, RGBA estimate неVRAM. Postflight:5311FREE/owned2001000DBother0/readOnly/source/output fences unchanged/920+822. [Portable actual summary](evidence/city-scale-2026-10-23/task-focus-reliability-v14-summary.json), SHA `74efab046d379561c7e820cb1d82bed367ba4239d540fbde75d65bbf9f71e2ae`; private aggregate `106b6672…`. Исправлена только ссылка runnerV13→actualV14, raw/metrics не менялись.
+
+V13 STRICT_RED23/1RAF33,34>20ms, V12 coldRED3813,698>3000ms и native137/formalnull/causeUNKNOWN сохранены. Диагностика `e162/f13d` RAFRED не воспроизвела; разные119→374→464builds/+3GL calls не дают общего speedup/causal claim. Новый exact-head all10CI, merge и managed release **PENDING**, E01/E02/Q02/Q03 открыты; все33 критерия/U08/U09 сохранены. Backup по runbook + применимость имеющегося restore-proof, без нового restore gate.
+
+## Историческая серия v13 — STRICT_RED
+
+Текущий source `7b08afcbcc186eb839a2823d75985497ed2fea8cbaf82a196eaae7eedcc5e8c3`.
+Против v12 изменён только cooperative scheduler; остальные1262 runtime inputs,
+сервер/shared/package/lock/assets совпадают. Одна стандартная сборка с полной
+типизацией/freeze/verify — PASS; readonly preflight прежних200/1000 задач
+сохранил20/72chunks, geometry/status/descriptor/dump hashes без seed/restore/migrate.
+Receipt `.builder/world-perf-20261022/task-focus-reliability-v13-fixture-preflight.json`
+SHA256 `5a1072986ab97614aaf10343278dea830bdc7d029a70ab74be1060cb1e55ec44`.
+
+Адресный R2 native22 —22/22PASS454,832221s, dense200 —4/4PASS13,748069s;
+они проверяют поведение и исходные fault/clock границы, не заменяют full24.
+Первая native22 остаётся INCOMPLETE137/13started/9notstarted/formalcountsnull,
+причина UNKNOWN; отдельный bounded cleanup удалил только собственную fixture
+и восстановил исходный QA40 hash, без seed/restore/reset.
+
+**Full24 v13 — STRICT_RED:23 budget PASS/1 RAF RED, все24 функционально завершены.**
+Launcher91512exit1, все8 reports выполнены, raw equality/source fences сохранены,
+retries/исключений0. Original host gate PASS; Firefox1000 workloadexit1 из-за sample0 RAFp95
+33,34ms>20ms. Другие два RAF16,78/16,80ms прошли; все три cold
+1962,993/1834,709/1745,415ms<3000ms, errors0. Причина RAF UNKNOWN.
+Console errors0/54warnings/truncation0, HTTP24cold/0pan/warm/legacy.
+LongTasks:12Chromium steady0,12Firefox/WebKit unavailable=null, не измеренный ноль.
+Postflight:5311FREE, обе ownedDB other0, исходные920+822/source fences сохранены.
+Aggregate `.builder/world-perf-20261022/task-focus-reliability-v13-summary.json`,
+SHA256 `afd4944bd17799bc6da7e99cf56741869ea70479264f92c0b1e2bc373e01c50e`.
+Сохраняются четыре исходных профиля×200/1000×3, NORMAL/churn20/steady8000,
+coldv2 и прежние budgets/CPU/network/DPR. Нельзя исключать или повторять RED
+и переносить performance PASS старого v10 на новый client.
+Новый exact-head CI, merge и выпуск не выполнены и заблокированы до
+ограниченного разбора/устранения RAF RED.
+На этом историческом checkpoint диагностика ещё не запускалась; её последующий actual итог указан в разделе v14 выше.
+[Общая приёмка и фактические локальные receipts](QA-WORLD-EVOLUTION-2026-10-16.md).
+
+## Историческая серия v12 — STRICT_RED
+
+Исторический кандидат v12, source
+`0f04382b237f2874545162f4ccbc80ccf9131c53d5b37ae05a9d625bc993ec1f`.
+Его серия 4 профиля × 200/1000 × 3 завершилась STRICT_RED: 23 PASS /
+1 cold RED Firefox1000 (3813,698 мс >3000 мс). Все24 функционально завершены,
+ошибок0. Причина превышения UNKNOWN, исходные controls/бюджеты сохранены,
+замеры не исключались и не повторялись. Старые результаты ниже сохраняют свои ревизии.
+[Текущее состояние приёмки](QA-WORLD-EVOLUTION-2026-10-16.md).
+
+## Исторические серии baseline и v2–v4
+
+Baseline и кандидаты v2/v3/v4 измерены по 12 профилям / 36 свежим
 браузерным контекстам каждый. Историческая полная v4 `03fc2d72` сохраняет
 **11/12 профилей PASS и три превышения исходной Node-метрики**. Все 36 проверок
 геометрии, canonical tasks, HTTP/canvas guards прошли, ошибок приложения нет.

@@ -1,6 +1,65 @@
 # Фильтры построек и значки работ — 22 октября 2026
 
-## 23 октября 2026 — FINAL v10: адресная приёмка PASS
+## 23 октября 2026 — v14: native12 и full24 STRICT PASS, CI/выпуск ожидаются
+
+Source `51f67980cec9fe77c7f9cb617909c3a12a1b92f0065cfb6b6b292938ac33e247`: только4static render-group flags против v13, остальные1262runtime/576QA совпадают. Server/география/assets прежние. Одна сборка/full TSC/freeze (`bc0ebc39…`) и readonly200/1000 (`9de56c39…`) PASS; geometry/status/descriptor/dumps сохранены без seed/restore/regeneration.
+
+Native12 — **12/12PASS/82,414293s**,0retry/SKIP/flaky, JSON↔journal12 exact (`ae209b6f…`). Root4actual PNG NO_OPEN: Pixel320/iPhone empty-mask, WK full-detail DAY, Chrome atlas maximum (`7a50ad79…`); resized WK не даёт exact pixel claim, физических телефонов нет. Собственная attestation822 `2cf06e36…`/920canonical и native cleanup5343FREE/DB0/business31fa unchanged сохранены.
+
+Исходная full24 — **24/24STRICT PASS**,8reports/raw equality/functional24/errors0/violations0/retries0/exclusions0, launcher47586exit0. Четыре профиля×200/1000×3/NORMAL/churn20/steady8000/coldv2/CPU/network/budgets сохранены. Max warm79,781ms/input p95 45,2ms/RAF p95 19ms/Chromium heap growth1617468B. Cold max200/1000(ms): Chrome1077,524/1968,514; Firefox1292,307/1773,052; Pixel5412,436/8256,882; iPhone800,443/1141,136 — это не loading p95.
+
+Console errors0/warnings54/trunc0; HTTP24cold/0pan/0warm/0legacy. LongTasks12Chromium steady0,12FF/WK unavailable=null; heap толькоChromium, RGBA estimate неVRAM. Postflight:5311FREE/owned2001000DBother0/readOnly/source/output fences unchanged/920+822. [Portable actual summary](evidence/city-scale-2026-10-23/task-focus-reliability-v14-summary.json), SHA `74efab046d379561c7e820cb1d82bed367ba4239d540fbde75d65bbf9f71e2ae`; private aggregate `106b6672…`. Исправлена только ссылка runnerV13→actualV14, raw/metrics не менялись.
+
+V13 STRICT_RED23/1RAF33,34>20ms, V12 coldRED3813,698>3000ms и native137/formalnull/causeUNKNOWN сохранены. Диагностика `e162/f13d` RAFRED не воспроизвела; разные119→374→464builds/+3GL calls не дают общего speedup/causal claim. Новый exact-head all10CI, merge и managed release **PENDING**, E01/E02/Q02/Q03 открыты; все33 критерия/U08/U09 сохранены. Backup по runbook + применимость имеющегося restore-proof, без нового restore gate.
+
+## Историческая точка v13: native PASS, full24 STRICT_RED
+
+Source `7b08afcbcc186eb839a2823d75985497ed2fea8cbaf82a196eaae7eedcc5e8c3`,
+qualificationHash `4ede361bab37911dd3129044d3b71b7433f887741fd43e98f7c65d67f33b2307`.
+Одна сборка/full TypeScript/freeze и readonly200/1000 — PASS.
+Против v12 изменён только cooperative scheduler: обычная owned task на каждой
+восьмой границе, без смены slice4ms/checkpoint8192/owner20s.
+Адресные unit68/6PASS; это не объяснение старого Firefox cold RED.
+
+U08/U09 сохраняются: маска alpha0,16 применяется только к готовому фильтру,
+loading/error оставляют обычную карту, empty приглушает всё, reset снимает маску.
+Значки — только у unfinished задач реального ACTIVE-района, по существующим
+type/stage. География/дороги/физическая сеть не перестраиваются из-за фильтра.
+
+Первая native22 — **INCOMPLETE137**:13started/9notstarted, formalcountsnull,
+причина UNKNOWN. Собственная fixture отдельно очищена точным country→user
+cleanup в одной guarded transaction; business31fa восстановлен без seed/restore/reset.
+Отдельная R2 — **22/22PASS за454,832221s**, no retry/SKIP/flaky; journal22 и
+штатный JSON точно совпали. Полный sixscene312,849s/native WebKitDPR2
+с прежним720s deadline, paused-camera regression и narrow keyboard task-entry прошли.
+Прежний default exact400ms case не менялся; opt-in16ms RAF progress ограничен
+исходными15s wall и future event start. Root принял четыре actual PNG:
+error/Retry на320px/iPhone, task-card320 и preview320 — без открытых замечаний
+в просмотренных состояниях. Это не аудит каждого кадра или физического телефона.
+
+Новый dense200 native/fallback — **4/4PASS13,748069s**;
+geometry59e5/business6de649, frozen920+822 и собственные5343/5367/DB cleanup сохранены.
+Receipts: R2 `.builder/native-qa40-scheduler-v13-r2-20261023/summary.json`
+SHA256 `e93388fe62feee40cc5e3ca8e5710d1533396aad6af9b02ef9fdc50d00634109`;
+root visual `228adcc4…`; dense4 `7e0b7680…`.
+[Полные bindings и ограничения](QA-WORLD-EVOLUTION-2026-10-16.md).
+
+**Full24 v13 — STRICT_RED:23 budget PASS/1 RAF RED, все24 функционально завершены.**
+Launcher91512exit1, все8 reports/raw equality/source fences, retries/исключений0.
+Host gate PASS;
+Firefox1000 sample0 RAFp95=33,34ms>20ms, другие два RAF16,78/16,80ms
+и все три cold<3000ms прошли, errors0. Причина RAF UNKNOWN.
+Console errors0/54warnings/truncation0;12Chromium steadyLongTasks0,
+12Firefox/WebKit unavailable=null. HTTP24cold/0pan/warm/legacy,
+postflight5311FREE/ownedDBother0/frozen920+822 сохранены.
+Aggregate `.builder/world-perf-20261022/task-focus-reliability-v13-summary.json`,
+SHA256 `afd4944bd17799bc6da7e99cf56741869ea70479264f92c0b1e2bc373e01c50e`.
+V12 STRICT_RED и первый137
+не переименовываются. Новый exact-head CI, merge и managed release не выполнены
+и заблокированы до ограниченного разбора/устранения RAF RED.
+На этом историческом checkpoint диагностика ещё не запускалась; её последующий actual итог указан в разделе v14 выше.
+
+## Историческая точка 23 октября 2026 — v10: адресная приёмка PASS
 
 Source v10: `2ecdc8bec3737d85a105e366a1037e01f057093a5aafab9ae358c0cfa44badd5`.
 Визуальный дефект v9 подтверждён публичным RED: при PNG503 число построек
@@ -463,3 +522,28 @@ frozen source/assets/control fences сохранены.
 три cold-превышения сохранены; 90s timeout не разрешён и не воспроизведён
 единственной диагностикой. U08/U09 закрыты, 29/33 критериев, задача TESTING 85%;
 общая приёмка ещё не завершена. Актуальный итог CI/выпуска — в задаче №53 и PR58.
+
+
+## 23 октября: финальный кандидат v12 и сохранение просмотра задач
+
+Фильтры и значки U08/U09 сохраняют поведение: несовпадения имеют alpha 0,16,
+совпадения — обычный вид; знак получают только незавершённые задачи реального
+ACTIVE-района. Новый планировщик меняет task boundary подготовки, не критерии
+фильтра, географию, качество или рабочие статусы. Его affected unit набор —
+61 PASS/6 файлов; native v11 — 16 PASS/1 тестовый JSON FAIL, отдельно dense200
+4 PASS на native/fallback. Эти исходные результаты не переименовываются в v12.
+
+V12 исправляет ширину и перенос сообщения об ошибке карты на телефоне.
+Публичный RED: Retry scrollWidth79/clientWidth48 и пересечение с туром.
+GREEN: 8 новых native cases, включая 320×568 и iPhone, исходный pan и настоящий
+Retry. Четыре фактических layout attachment: кнопка44px, подпись помещается,
+alert и кнопка внутри canvas, тур их не закрывает. Новые PNG320/iPhone просмотрены
+основным агентом. Два JSON route.fetch используют identity, сохраняя все
+утверждения и сроки ожидания. Production compression не менялась.
+
+Source v12: `0f04382b237f2874545162f4ccbc80ccf9131c53d5b37ae05a9d625bc993ec1f`;
+[общая квалификация и ограничения](QA-WORLD-EVOLUTION-2026-10-16.md).
+Полная серия v12 завершилась STRICT_RED:23PASS/1coldRED Firefox1000
+3813,698мс>3000мс. Все24 функционально завершены, причина UNKNOWN;
+raw сохранены, retries/изменений бюджета нет. Новый CI и managed release
+на этой точке ещё ожидаются.

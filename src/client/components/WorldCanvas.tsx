@@ -1224,8 +1224,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           .finally(()=>{clearTimeout(deadline);if(inspectionMetadataController===controller)inspectionMetadataController=undefined;});
       }
       const backdropLayer = new Graphics();
-      const terrainLayer = new Container();
-      const surfaceLayer = new Container();
+      // Keep static instructions separate from moving-object depth-order rebuilds.
+      const terrainLayer = new Container({ isRenderGroup: true });
+      const surfaceLayer = new Container({ isRenderGroup: true });
       const roadLayer = new Container();
       const districtLayer = new Container();
       districtLayerRef.current = districtLayer;
@@ -1237,11 +1238,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       blockPlaqueLayer.eventMode = "none";
       buildingTooltipLayer.addChild(blockPlaqueLayer);
       let blockPlaqueSignature = "";
-      const platformLayer = new Container();
+      const platformLayer = new Container({ isRenderGroup: true });
       const plannedSiteMarks = new Graphics();
       plannedSiteMarks.eventMode = "none";
       platformLayer.addChild(plannedSiteMarks);
-      const featurePlatformLayer = new Container();
+      const featurePlatformLayer = new Container({ isRenderGroup: true });
       const worldObjectLayer = new Container();
       const agentOverlayLayer = new Container();
       agentOverlayLayer.eventMode = "none";

@@ -4,6 +4,7 @@ import type { BootstrapDto,RealtimeEvent } from "../../src/shared/contracts";
 import { chunkPayloadContentHash } from "../../src/server/world/chunk-payload-hash";
 import { openMapCity } from "./map-navigation";
 import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
+import { installCooperativeYieldGate, type CooperativeYieldGateWindow } from './cooperative-yield-gate';
 
 // Сохраняем вызовы, сеть, исходники и итоговый PNG. Повторные автоматические
 // снимки canvas не являются частью проверяемой работы города.
@@ -84,29 +85,12 @@ test("a hung authoritative refresh expires without destroying the city and a rea
 
 test("a movement timeout keeps its native retry after a same-range camera pan",async({page},info)=>{
  test.setTimeout(90_000);
- type YieldGateWindow=Window&{qaMovementYield:{arm():void;release():void;state():{captured:boolean;held:number}}};
  const errors:string[]=[],movementErrors:string[]=[],reads:string[]=[];
  page.on("pageerror",error=>errors.push(error.message));
  page.on("console",message=>{if(message.type()==="error"&&message.text().startsWith("City movement preparation failed"))movementErrors.push(message.text());});
  page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
  await page.clock.install();
- await page.addInitScript(()=>{
-   const NativeChannel=window.MessageChannel,queued:Array<()=>void>=[];
-   let armed=false,captured=false,holding=true;
-   class FirstMovementYield extends NativeChannel{
-     constructor(){super();
-       const owned=armed&&!captured&&document.querySelector<HTMLElement>(".world-canvas")?.dataset.movementPreparing==="true";
-       if(!owned)return;
-       captured=true;const send=this.port2.postMessage.bind(this.port2);
-       this.port2.postMessage=((...args:Parameters<MessagePort["postMessage"]>)=>{
-         if(holding)queued.push(()=>send(...args));else send(...args);
-       }) as MessagePort["postMessage"];
-     }
-   }
-   window.MessageChannel=FirstMovementYield;
-   Object.assign(window,{qaMovementYield:{arm:()=>{armed=true;},state:()=>({captured,held:queued.length}),
-     release:()=>{holding=false;for(const send of queued.splice(0))send();if(window.MessageChannel===FirstMovementYield)window.MessageChannel=NativeChannel;}}});
- });
+ await installCooperativeYieldGate(page,{phase:'movement',armInitially:false,firstOnly:true});
  let releaseAmbient!:()=>void;
  const ambientGate=new Promise<void>(resolve=>{releaseAmbient=resolve;});
  await page.route("**/micro-ambient/**",async route=>{await ambientGate;await route.continue().catch(()=>undefined);});
@@ -131,10 +115,12 @@ test("a movement timeout keeps its native retry after a same-range camera pan",a
    // Pause while sprites are gated, then arm only the next movement channel.
    // Existing React channels and all later preparations keep native delivery.
    await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
-   await page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield.arm());
+   await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.arm());
    releaseAmbient();await expect(host).toHaveAttribute("data-ambient-assets","ready");
    await page.clock.runFor(16);
-   await expect.poll(()=>page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield.state())).toEqual({captured:true,held:1});
+   await expect.poll(()=>page.evaluate(()=>{
+     const {captured,held}=(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.state();return {captured,held};
+   })).toEqual({captured:true,held:1});
    await expect(host).toHaveAttribute("data-movement-preparing","true");
    await expect(host).not.toHaveAttribute("data-mobility-ready","true");
    await page.clock.fastForward(20_000);
@@ -150,9 +136,20 @@ test("a movement timeout keeps its native retry after a same-range camera pan",a
    await expect(host).toHaveAttribute("data-loading","false");
    await info.attach("movement-timeout-after-pan",{body:JSON.stringify({before,failureVisible:await failure.isVisible(),after:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:"application/json"});
    await page.screenshot({path:info.outputPath("movement-timeout-after-pan.png")});
+   const layout=await failure.evaluate(alert=>{
+     const rect=(node:Element)=>{const r=node.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
+     const retry=alert.querySelector<HTMLButtonElement>('button')!,wrap=alert.closest('.world-canvas-wrap')!,world=wrap.querySelector('.world-canvas')!,tour=wrap.querySelector('.city-world-tour-trigger')!;
+     return {alert:rect(alert),retry:rect(retry),world:rect(world),tour:rect(tour),retryClientWidth:retry.clientWidth,retryScrollWidth:retry.scrollWidth};
+   });
+   await info.attach("movement-timeout-layout",{body:JSON.stringify(layout),contentType:"application/json"});
+   expect(layout.retryScrollWidth,"The complete retry label must fit inside its button").toBeLessThanOrEqual(layout.retryClientWidth+1);
+   for(const edge of ['left','top'] as const){expect(layout.alert[edge]).toBeGreaterThanOrEqual(layout.world[edge]-1);expect(layout.retry[edge]).toBeGreaterThanOrEqual(layout.alert[edge]-1);}
+   for(const edge of ['right','bottom'] as const){expect(layout.alert[edge]).toBeLessThanOrEqual(layout.world[edge]+1);expect(layout.retry[edge]).toBeLessThanOrEqual(layout.alert[edge]+1);}
+   const overlapsTour=layout.alert.left<layout.tour.right&&layout.alert.right>layout.tour.left&&layout.alert.top<layout.tour.bottom&&layout.alert.bottom>layout.tour.top;
+   expect(overlapsTour,"The city tour trigger must not obscure the error message").toBe(false);
    await expect(failure).toBeVisible();
    await expect(host).not.toHaveAttribute("data-mobility-ready","true");
-   await page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield.release());
+   await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());
    await failure.getByRole("button",{name:"Повторить",exact:true}).click();
    await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
    await expect(host).toHaveAttribute("data-walk-network-builds","1");await expect(failure).toHaveCount(0);
@@ -162,7 +159,7 @@ test("a movement timeout keeps its native retry after a same-range camera pan",a
    await info.attach("movement-timeout-retry",{body:JSON.stringify({before,after:await host.evaluate(node=>({...((node as HTMLElement).dataset)})),movementErrors,reads}),contentType:"application/json"});
  }finally{
    releaseAmbient();await page.clock.resume().catch(()=>undefined);
-   await page.evaluate(()=>(window as unknown as YieldGateWindow).qaMovementYield?.release()).catch(()=>undefined);
+   await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield?.release()).catch(()=>undefined);
  }
 });
 
@@ -170,7 +167,7 @@ test("same render content advances publication fences without decoding, rebaking
   test.setTimeout(90_000);
   let captured:CitySceneDto|undefined,promote=false;
   await page.route("**/api/countries/*/cities/*/scene",async route=>{
-    const response=await route.fetch();
+    const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}});
     const next=await response.json() as CitySceneDto;
     if(!captured)captured=next;
     if(promote){next.sceneRevision+="-publication-only";next.chunks=next.chunks.map(chunk=>({...chunk,publishedVersion:chunk.publishedVersion+1}));}
@@ -189,34 +186,12 @@ test("same render content advances publication fences without decoding, rebaking
 });
 
 test("a quality change keeps the pending physical preparation and adopts the latest population limits",async({page,hasTouch},info)=>{
- type QualityYieldWindow=Window&{qaQualityYield:{arm():void;release():void;state():{captured:boolean;held:number;channels:number;firstClosed:boolean;firstStack:string}}};
  const errors:string[]=[],movementErrors:string[]=[],reads:string[]=[];
  page.on("pageerror",error=>errors.push(error.message));
  page.on("console",message=>{if(message.type()==="error"&&message.text().startsWith("City movement preparation failed"))movementErrors.push(message.text());});
  page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
  await page.clock.install();
- await page.addInitScript(()=>{
-   const NativeChannel=window.MessageChannel,queued:Array<()=>void>=[];
-   let armed=false,captured=false,holding=true,channels=0,firstClosed=false,firstStack="";
-   class PendingPhysicalYield extends NativeChannel{
-     constructor(){super();
-       const stack=new Error().stack??"";
-       // Existing React scheduling stays native. The gate selects the first
-       // cooperative yield only after the public movement phase has started.
-       if(!armed||document.querySelector<HTMLElement>(".world-canvas")?.dataset.movementPreparing!=="true"||!stack.includes("yieldTask"))return;
-       channels++;if(captured)return;
-       captured=true;firstStack=stack.slice(0,4096);
-       const send=this.port2.postMessage.bind(this.port2),close=this.port1.close.bind(this.port1);
-       this.port1.close=()=>{firstClosed=true;close();};
-       this.port2.postMessage=((...args:Parameters<MessagePort["postMessage"]>)=>{
-         if(holding)queued.push(()=>send(...args));else send(...args);
-       }) as MessagePort["postMessage"];
-     }
-   }
-   window.MessageChannel=PendingPhysicalYield;
-   Object.assign(window,{qaQualityYield:{arm:()=>{armed=true;},state:()=>({captured,held:queued.length,channels,firstClosed,firstStack}),
-     release:()=>{holding=false;for(const send of queued.splice(0))send();if(window.MessageChannel===PendingPhysicalYield)window.MessageChannel=NativeChannel;}}});
- });
+ await installCooperativeYieldGate(page,{phase:'movement',armInitially:false,firstOnly:true});
  let releaseAmbient!:()=>void;
  const ambientGate=new Promise<void>(resolve=>{releaseAmbient=resolve;});
  await page.route("**/micro-ambient/**",async route=>{await ambientGate;await route.continue().catch(()=>undefined);});
@@ -234,25 +209,26 @@ test("a quality change keeps the pending physical preparation and adopts the lat
    // The gate, rather than elapsed renderer time, keeps this exact owner
    // pending while the user changes quality. Its real deadline is not extended.
    await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
-   await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield.arm());
+   await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.arm());
    releaseAmbient();await expect(host).toHaveAttribute("data-ambient-assets","ready");
    await page.clock.runFor(16);
    await expect.poll(()=>page.evaluate(()=>{
-     const {captured,held,channels,firstClosed}=(window as unknown as QualityYieldWindow).qaQualityYield.state();
-     return {captured,held,channels,firstClosed};
-   })).toEqual({captured:true,held:1,channels:1,firstClosed:false});
+     const {captured,held,channels}=(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.state();
+     return {captured,held,channels};
+   })).toEqual({captured:true,held:1,channels:1});
    await expect(host).toHaveAttribute("data-movement-preparing","true");
    await expect(host).not.toHaveAttribute("data-mobility-ready","true");
    await preferences.getByLabel("Детализация").selectOption("ECONOMY");
    await expect(host).toHaveAttribute("data-world-quality","ECONOMY");
    await page.clock.runFor(16);
-   const pending=await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield.state());
+   const pending=await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.state());
    await info.attach("quality-change-pending-owner",{body:JSON.stringify({pending,dataset:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:"application/json"});
    expect(pending.firstStack).toContain("yieldTask");
+   expect(pending.transport).toBe(pending.nativeAvailable?'scheduler':'message-channel');
    expect({channels:pending.channels,firstClosed:pending.firstClosed,held:pending.held},"Quality must retain the first pending physical owner before its native yield is released")
-     .toEqual({channels:1,firstClosed:false,held:1});
+     .toEqual({channels:1,firstClosed:pending.transport==='message-channel'?false:null,held:1});
    await expect(host).not.toHaveAttribute("data-mobility-ready","true");
-   await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield.release());
+   await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());
    await page.clock.resume();
    await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:15_000});
    await expect(host).toHaveAttribute("data-movement-preparing","false");
@@ -269,7 +245,7 @@ test("a quality change keeps the pending physical preparation and adopts the lat
    expect(errors).toEqual([]);expect(movementErrors).toEqual([]);
  }finally{
    releaseAmbient();await page.clock.resume().catch(()=>undefined);
-   await page.evaluate(()=>(window as unknown as QualityYieldWindow).qaQualityYield?.release()).catch(()=>undefined);
+   await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield?.release()).catch(()=>undefined);
  }
 });
 
@@ -291,7 +267,7 @@ test("quality limits preserve the physical walk network and everyday compilation
 test("authoritative resync keeps a ready CITY canvas and reuses identical physical networks",async({page})=>{
   let recovering=false,failedHistory=0,bootstrapReads=0;
   await page.route("**/api/bootstrap",async route=>{
-    const response=await route.fetch(),next=await response.json() as BootstrapDto;
+    const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}}),next=await response.json() as BootstrapDto;
     bootstrapReads++;if(recovering)next.eventCursor++;
     await route.fulfill({response,json:next});
   });
@@ -420,24 +396,13 @@ test("leaving during cooperative preparation cancels late publication and a reta
  test.skip(process.env.E2E_CITY_200!=="true","Requires the owned dense-city fixture");test.setTimeout(90_000);
  const errors:string[]=[],reads:string[]=[];page.on("pageerror",error=>errors.push(error.message));
  page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
- await page.addInitScript(()=>{
-   const NativeChannel=window.MessageChannel,queued:Array<()=>void>=[];let held=true;
-   window.MessageChannel=class extends NativeChannel{
-     constructor(){super();const owned=document.querySelector<HTMLElement>(".world-canvas")?.dataset.movementPreparing==="true",send=this.port2.postMessage.bind(this.port2);
-       this.port2.postMessage=((...args:Parameters<MessagePort["postMessage"]>)=>{
-         if(held&&owned)queued.push(()=>send(...args));
-         else send(...args);
-       }) as MessagePort["postMessage"];
-     }
-   };
-   Object.assign(window,{qaMovementHeld:()=>queued.length,qaReleaseMovement:()=>{held=false;for(const send of queued.splice(0))send();}});
- });
+ await installCooperativeYieldGate(page,{phase:'movement',armInitially:true,firstOnly:false});
  const host=await enterCity(page),canvas=await host.locator("canvas").elementHandle();
- await expect.poll(()=>page.evaluate(()=>(window as unknown as {qaMovementHeld():number}).qaMovementHeld()),{timeout:30_000}).toBeGreaterThan(0);
+ await expect.poll(()=>page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.state().held),{timeout:30_000}).toBeGreaterThan(0);
  await expect(host).not.toHaveAttribute("data-mobility-ready","true");
  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Планета",exact:true}).click();
  await expect(page.locator(".planet-atlas")).toBeVisible();await expect(host).toHaveAttribute("data-map-active","false");
- await page.evaluate(()=>(window as unknown as {qaReleaseMovement():void}).qaReleaseMovement());
+ await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());
  await expect(host).toHaveAttribute("data-movement-preparing","false");
  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
  await expect(host).not.toHaveAttribute("data-mobility-ready","true");
@@ -453,18 +418,7 @@ test("a newer defect summary during held life preparation wins without rebuildin
  test.skip(process.env.E2E_CITY_200!=="true","Requires the owned dense-city fixture");test.setTimeout(90_000);
  const errors:string[]=[],reads:string[]=[];page.on("pageerror",error=>errors.push(error.message));
  page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
- await page.addInitScript(()=>{
-   const NativeChannel=window.MessageChannel,queued:Array<()=>void>=[];let held=true;
-   window.MessageChannel=class extends NativeChannel{
-     constructor(){super();const owned=document.querySelector<HTMLElement>(".world-canvas")?.dataset.lifePreparing==="true",send=this.port2.postMessage.bind(this.port2);
-       this.port2.postMessage=((...args:Parameters<MessagePort["postMessage"]>)=>{
-         if(held&&owned)queued.push(()=>send(...args));
-         else send(...args);
-       }) as MessagePort["postMessage"];
-     }
-   };
-   Object.assign(window,{qaLifeHeld:()=>queued.length,qaReleaseLife:()=>{held=false;for(const send of queued.splice(0))send();}});
- });
+ await installCooperativeYieldGate(page,{phase:'life',armInitially:true,firstOnly:false});
  let incident:"BASE"|"ACTIVE"|"RESOLVED"="BASE",changedTaskId="",revision=0;
  await page.route("**/api/countries/*/cities/*/scene",async route=>{
    const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}});
@@ -498,13 +452,13 @@ test("a newer defect summary during held life preparation wins without rebuildin
    payload:{taskId:task.id,cityId:scene.city.id,groundChanged:false}});
  incident="ACTIVE";revision=bootstrap.country.worldVersion+1;
  await page.evaluate(value=>(window as unknown as {qaWorldFrame(event:unknown):void}).qaWorldFrame(value),event(1));
- await expect.poll(()=>page.evaluate(()=>(window as unknown as {qaLifeHeld():number}).qaLifeHeld())).toBeGreaterThan(0);
+ await expect.poll(()=>page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.state().held)).toBeGreaterThan(0);
  await expect(host).toHaveAttribute("data-everyday-compiles",String(compiles));
  incident="RESOLVED";revision=bootstrap.country.worldVersion+2;
  await page.evaluate(value=>(window as unknown as {qaWorldFrame(event:unknown):void}).qaWorldFrame(value),event(2));
  await expect.poll(async()=>Number(await host.getAttribute("data-realtime-batch-count")??0)).toBeGreaterThan(batch+1);
  await expect(host).toHaveAttribute("data-city-scene-revision",/-incident-resolved$/);
- await page.evaluate(()=>(window as unknown as {qaReleaseLife():void}).qaReleaseLife());
+ await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());
  await expect(host).toHaveAttribute("data-life-preparing","false",{timeout:30_000});
  await expect(host).toHaveAttribute("data-everyday-compiles",String(compiles+1));
  await expect(host).toHaveAttribute("data-city-life-sites",sites!);

@@ -23,19 +23,32 @@ function taskScheduler() {
   let channel: MessageChannel | undefined;
   let pending: (() => void) | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let nativeYields = 0;
   return {
-    yieldTask: () => new Promise<void>(resolve => {
-      if (typeof MessageChannel === 'undefined') {
-        timer = setTimeout(() => { timer = undefined; resolve(); }, 0);
-        return;
+    yieldTask: () => {
+      // Prefer the browser's prioritized task continuation without tying
+      // canonical preparation to animation frames or changing its slice.
+      // Post every eighth owned boundary to the ordinary task queue too.
+      // This is local to one builder/phase, not a wall-clock latency bound.
+      const nativeScheduler = globalThis.scheduler;
+      if (typeof nativeScheduler?.yield === 'function' && nativeYields < 7) {
+        nativeYields++;
+        return nativeScheduler.yield();
       }
-      if (!channel) {
-        channel = new MessageChannel();
-        channel.port1.onmessage = () => { const done = pending; pending = undefined; done?.(); };
-      }
-      pending = resolve;
-      channel.port2.postMessage(null);
-    }),
+      nativeYields = 0;
+      return new Promise<void>(resolve => {
+        if (typeof MessageChannel === 'undefined') {
+          timer = setTimeout(() => { timer = undefined; resolve(); }, 0);
+          return;
+        }
+        if (!channel) {
+          channel = new MessageChannel();
+          channel.port1.onmessage = () => { const done = pending; pending = undefined; done?.(); };
+        }
+        pending = resolve;
+        channel.port2.postMessage(null);
+      });
+    },
     close() { channel?.port1.close(); channel?.port2.close(); if (timer !== undefined) clearTimeout(timer); pending = undefined; },
   };
 }

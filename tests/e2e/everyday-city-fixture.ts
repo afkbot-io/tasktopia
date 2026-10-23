@@ -1,4 +1,5 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { performance as wallClock } from 'node:perf_hooks';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { AppService } from '../../src/server/app-service';
 import { createDb } from '../../src/server/db';
@@ -60,7 +61,7 @@ export async function everydayFixture(page: Page) {
   const open = async () => { await page.goto('/'); await openMapCity(page); await ready(); };
   const focus = async (task: TaskDto) => { await page.goto(taskLink(user.countryId, task)); await expect(page.locator('#task-title')).toContainText(task.title);
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click(); await ready(); };
-  const panFocus = async (task: TaskDto, pausedClock = false) => {
+  const panFocus = async (task: TaskDto, pausedClock = false, options?: { settlePausedBefore: number }) => {
     // Search opens a card; closing it intentionally restores the preceding
     // map pose. These scene tests need a real pan without changing history.
     await expect(page).toHaveURL(url => url.pathname === '/' && url.searchParams.get('countryId') === user.countryId && url.searchParams.get('cityId') === task.cityId);
@@ -93,6 +94,41 @@ export async function everydayFixture(page: Page) {
     // Preserve the original controlled preparation horizon, including when
     // the target was already visible. Never await a paused RAF before this.
     if (pausedClock) await page.clock.runFor(400);
+    if (options) {
+      expect(pausedClock, 'Readiness frame progress requires the paused scene clock').toBe(true);
+      expect(Number.isFinite(options.settlePausedBefore)).toBe(true);
+      const started = wallClock.now(), deadline = started + 15_000;
+      let extraFrames = 0, last: Record<string, unknown> | undefined, readyAt: number | undefined;
+      try {
+        await expect.poll(async () => {
+          const state = await host.evaluate((el, rect) => {
+            const host = el as HTMLElement, canvas = host.querySelector('canvas')!, d = host.dataset;
+            const tilePixels = 8 * Number(d.renderScale), x = Number(d.cameraWorldX), y = Number(d.cameraWorldY);
+            return { commit: d.citySceneCommit, mobility: d.mobilityReady, loading: d.loading,
+              pending: d.cameraPresentationPending, loadError: d.loadError, serverNow: Number(d.roadEventServerNow),
+              plannedTask: d.everydayPlannedTask, visible: (rect.minX - x) * tilePixels + canvas.clientWidth / 2 >= 24
+                && (rect.maxX + 1 - x) * tilePixels + canvas.clientWidth / 2 <= canvas.clientWidth - 24
+                && (rect.minY - y) * tilePixels + canvas.clientHeight / 2 >= 24
+                && (rect.maxY + 1 - y) * tilePixels + canvas.clientHeight / 2 <= canvas.clientHeight - 24 };
+          }, bounds);
+          last = state;
+          // Browser clocks are paused. The original15s wall deadline must
+          // include native work; it is never reset by another frame or field.
+          if (wallClock.now() >= deadline) return false;
+          expect(state.loadError, 'A real map failure must remain a failure').not.toBe('true');
+          expect(state.serverNow, 'Camera preparation must finish before the selected event starts').toBeLessThan(options.settlePausedBefore);
+          if (state.commit === 'atomic' && state.mobility === 'true' && state.loading === 'false'
+            && state.pending === 'false' && state.visible) { readyAt = wallClock.now(); return true; }
+          await page.clock.runFor(16); extraFrames++;
+          return false;
+        }, { timeout: 15_000, intervals: [100], message: 'The real paused camera must settle within its original wall deadline and event window' }).toBe(true);
+      } finally {
+        await test.info().attach('paused-camera-readiness', { body: JSON.stringify({ taskId: task.id,
+          fixedPreparationMs: 400, extraFrames, extraSimulationMs: extraFrames * 16,
+          wallElapsedMs: (readyAt ?? wallClock.now()) - started, beforeEventStart: options.settlePausedBefore, last }), contentType: 'application/json' });
+      }
+      return { fixedPreparationMs: 400, extraFrames, extraSimulationMs: extraFrames * 16, wallElapsedMs: readyAt! - started, last };
+    }
     await ready(); await expect(host).toHaveAttribute('data-camera-presentation-pending', 'false');
     await expect.poll(() => host.evaluate((el, rect) => {
       const host = el as HTMLElement, canvas = host.querySelector('canvas')!, tilePixels = 8 * Number(host.dataset.renderScale);

@@ -4,6 +4,54 @@
 
 База: `053e061d84dbcafdeaf1841010f9bd2286c9c5f8`, версия 1.24.14. Рабочая ветка `codex/world-reliability-evolution`. Цель выпуска: `game3/dev-server/dev/all`, точный проверенный merged SHA через Builder и `docs/DEPLOYMENT.md`. Предыдущие проверки относятся к прежней ревизии; новые результаты привязываются к текущим входам.
 
+## 23 октября 2026 — v14: native12 и full24 STRICT PASS, CI/выпуск ожидаются
+
+Source `51f67980cec9fe77c7f9cb617909c3a12a1b92f0065cfb6b6b292938ac33e247`: только4static render-group flags против v13, остальные1262runtime/576QA совпадают. Server/география/assets прежние. Одна сборка/full TSC/freeze (`bc0ebc39…`) и readonly200/1000 (`9de56c39…`) PASS; geometry/status/descriptor/dumps сохранены без seed/restore/regeneration.
+
+Native12 — **12/12PASS/82,414293s**,0retry/SKIP/flaky, JSON↔journal12 exact (`ae209b6f…`). Root4actual PNG NO_OPEN: Pixel320/iPhone empty-mask, WK full-detail DAY, Chrome atlas maximum (`7a50ad79…`); resized WK не даёт exact pixel claim, физических телефонов нет. Собственная attestation822 `2cf06e36…`/920canonical и native cleanup5343FREE/DB0/business31fa unchanged сохранены.
+
+Исходная full24 — **24/24STRICT PASS**,8reports/raw equality/functional24/errors0/violations0/retries0/exclusions0, launcher47586exit0. Четыре профиля×200/1000×3/NORMAL/churn20/steady8000/coldv2/CPU/network/budgets сохранены. Max warm79,781ms/input p95 45,2ms/RAF p95 19ms/Chromium heap growth1617468B. Cold max200/1000(ms): Chrome1077,524/1968,514; Firefox1292,307/1773,052; Pixel5412,436/8256,882; iPhone800,443/1141,136 — это не loading p95.
+
+Console errors0/warnings54/trunc0; HTTP24cold/0pan/0warm/0legacy. LongTasks12Chromium steady0,12FF/WK unavailable=null; heap толькоChromium, RGBA estimate неVRAM. Postflight:5311FREE/owned2001000DBother0/readOnly/source/output fences unchanged/920+822. [Portable actual summary](evidence/city-scale-2026-10-23/task-focus-reliability-v14-summary.json), SHA `74efab046d379561c7e820cb1d82bed367ba4239d540fbde75d65bbf9f71e2ae`; private aggregate `106b6672…`. Исправлена только ссылка runnerV13→actualV14, raw/metrics не менялись.
+
+V13 STRICT_RED23/1RAF33,34>20ms, V12 coldRED3813,698>3000ms и native137/formalnull/causeUNKNOWN сохранены. Диагностика `e162/f13d` RAFRED не воспроизвела; разные119→374→464builds/+3GL calls не дают общего speedup/causal claim. Новый exact-head all10CI, merge и managed release **PENDING**, E01/E02/Q02/Q03 открыты; все33 критерия/U08/U09 сохранены. Backup по runbook + применимость имеющегося restore-proof, без нового restore gate.
+
+## Историческая контрольная точка v13, 23 октября 2026 — STRICT_RED
+
+Source `7b08afcbcc186eb839a2823d75985497ed2fea8cbaf82a196eaae7eedcc5e8c3`:
+только cooperative scheduler изменён против v12, остальные1262 runtime inputs
+совпадают. После семи native продолжений восьмая граница отдаётся обычной
+owned MessageChannel/timer задаче. Slice4ms/checkpoint8192/owner20s сохранены;
+это bounded policy, не установленная причина прежнего cold RED.
+TDD и адресные68PASS/6files, одна сборка/full TypeScript/freeze и readonly200/1000 — PASS.
+
+Первая native22 оборвалась exit137:13cases started/9notstarted,
+formalPASS/FAIL=null, причина UNKNOWN. Собственная оставшаяся fixture отдельно
+очищена исходным country→user cleanup в одной guarded transaction; QA40
+business31fa восстановлен без seed/restore/reset. История не переписана.
+Отдельная явно разрешённая R2 завершила **22/22PASS за454,832221s**;
+штатный JSON и durable journal22 точно совпали, retry/SKIP/flaky0.
+Полные sixscene —312,849s с native WebKitDPR2 и прежним720s deadline;
+task-entry/контролируемый paused RAF, recovery/quality/atlas/real-clock cases прошли.
+Root просмотрел четыре реальных PNG без открытых замечаний в этих кадрах.
+Новый dense200 native/fallback — **4/4PASS за13,748069s**;
+geometry/business/frozen920+822 и owned5343/5367/DB cleanup сохранены.
+
+**Full24 v13 — STRICT_RED:23 budget PASS/1 RAF RED, все24 функционально завершены.**
+Launcher91512 завершился exit1, выполнены все8 групп, без retries/исключений.
+Host gate прошёл. Firefox1000 report:
+sample0 RAFp95=33,34ms>20ms; два других RAF16,78/16,80ms и все три cold
+1962,993/1834,709/1745,415ms<3000ms прошли. Errors0, причина RAF UNKNOWN.
+Все raw совпали с8 report.results; source/frozen fences сохранены.
+Aggregate `.builder/world-perf-20261022/task-focus-reliability-v13-summary.json`,
+SHA256 `afd4944bd17799bc6da7e99cf56741869ea70479264f92c0b1e2bc373e01c50e`.
+На этой исторической точке следующая ограниченная диагностика ещё не запускалась; её последующий actual итог приведён в актуальном разделе v14 выше.
+Исторический v12 STRICT_RED3813,698ms>3000ms и исходный137 остаются фактами.
+Новый exact-head CI, merge и managed release не выполнены и заблокированы
+до ограниченного разбора/устранения RAF RED; E01/E02/Q02/Q03 открыты,
+все33 критерия, включая U08/U09, остаются общей областью задачи.
+[Подробные актуальные receipts и ограничения](QA-WORLD-EVOLUTION-2026-10-16.md).
+
 ## Инварианты
 
 - PostgreSQL хранит работу и географию; UI читает и навигирует, рабочие изменения выполняются MCP с явным countryId и проверенной личностью.
@@ -76,3 +124,13 @@ CI ревизии `c9eeee27` завершился с отказами. Прош�
 Docker VM оказалась заполненной. Для локальных проверок подготовлен отдельный PostgreSQL16 на macOS, loopback55436, собственные каталоги и БД; чужие volumes/контейнеры не удаляются. Секреты/URI находятся только в игнорируемых0600 файлах. Для benchmark зарезервирован свободный5311, другие тестовые процессы выбирают собственные свободные порты.
 
 Для каждой миграции фиксируются additive/compatibility свойства, текущая резервная копия и применимость независимого restore. После новых записей откат образа не означает возврат старой БД. Релиз не считается принятым при отказе health/public assets/browser smoke. Технические этапы/коммиты являются промежуточным результатом общей цели.
+
+
+Историческая контрольная точка v12 от 23 октября: новый native scheduler имеет прежний fallback
+и отмену; реальные dense200 проверки native/fallback прошли. Мобильный дефект
+alert/Retry подтверждён публичным RED и исправлен CSS с 8 native GREEN, включая
+320 px. Source `0f04382b237f2874545162f4ccbc80ccf9131c53d5b37ae05a9d625bc993ec1f`.
+Одна сборка/full TSC и readonly200/1000 PASS. Full24 завершилась STRICT_RED:
+23PASS/1coldRED Firefox1000 (3813,698мс>3000мс), все24 функционально завершены.
+Причина UNKNOWN; raw сохранены, исключений/повторов/смены бюджета нет.
+Exact-head CI и выпуск: E01/E02/Q02/Q03 пока открыты, общая задача не завершена.

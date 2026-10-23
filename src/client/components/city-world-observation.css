@@ -10,7 +10,7 @@
 .city-world-observation footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.city-world-observation footer:empty{display:none}.city-world-observation footer button{flex:1}
 .city-world-tour{left:16px;right:auto}.city-world-tour ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.city-world-tour li button{display:grid;gap:4px;width:100%;text-align:left}.city-world-tour li span{font-size:12px;font-weight:400}
 .city-world-tour-trigger{position:absolute;bottom:16px;left:16px;z-index:10;min-height:44px;border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-control);background:var(--ui-surface);color:var(--ui-text);padding:8px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
-@media(max-width:600px){.city-world-observation{bottom:78px;left:12px;right:12px;width:auto;max-height:min(390px,calc(100% - 96px));padding:12px}.city-world-tour-trigger{top:12px;bottom:auto;left:12px}}
+@media(max-width:600px){.city-world-observation{bottom:78px;left:12px;right:12px;width:auto;max-height:min(390px,calc(100% - 96px));padding:12px}.city-world-tour-trigger{top:12px;bottom:auto;left:12px}.world-streaming-error{top:68px;width:calc(100% - 24px)}.world-streaming-error .map-retry-button{min-height:44px}}
 @media(max-height:500px){.city-world-observation{bottom:82px;max-height:calc(100% - 98px)}}
 .city-world-observation progress{appearance:none;border:0;background:var(--ui-raised);color:var(--ui-success)}
 .city-world-observation progress::-webkit-progress-bar{background:var(--ui-raised)}

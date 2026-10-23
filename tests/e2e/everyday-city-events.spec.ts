@@ -121,6 +121,102 @@ clockSceneTest('paused native pan shows two distant institutions without task na
   } finally { await f.cleanup(); }
 });
 
+clockSceneTest('paused scene preparation advances a released renderer frame before the planned event', async ({ page }, info) => {
+  test.setTimeout(90000); await page.setViewportSize({ width: 720, height: 640 }); await installSceneClock(page);
+  const f = await everydayFixture(page);
+  type PanFrameGate = { read: () => { now: number; installedAt: number; releasedAt: number | null; pendingAtRelease: boolean;
+    held: number; delivered: number; registered: number }; restore: () => void };
+  try {
+    const institutions = f.tasks.filter(task => BUILDING_CATALOG.find(asset => asset.key === task.visualAssetKey)?.educationKind);
+    const center = (task: typeof institutions[number]) => ({ x: task.footprint.reduce((sum, cell) => sum + cell.x + .5, 0) / task.footprint.length,
+      y: task.footprint.reduce((sum, cell) => sum + cell.y + .5, 0) / task.footprint.length });
+    const pair = institutions.flatMap(first => institutions.filter(second => first.id !== second.id).map(second => ({ first, second,
+      distance: Math.hypot(center(first).x - center(second).x, center(first).y - center(second).y) }))).sort((a, b) => b.distance - a.distance)[0]!;
+    expect(pair.distance).toBeGreaterThan(20); await f.focus(pair.first);
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    const before = await f.host.evaluate((el, footprint) => {
+      const host = el as HTMLElement, canvas = host.querySelector('canvas')!, scale = Number(host.dataset.renderScale) * 8;
+      const x = Number(host.dataset.cameraWorldX), y = Number(host.dataset.cameraWorldY);
+      return { url: location.href, historyLength: history.length, canonicalTasks: host.dataset.canonicalTaskCount,
+        visible: footprint.every(cell => (cell.x - x) * scale + canvas.clientWidth / 2 >= 24
+          && (cell.x + 1 - x) * scale + canvas.clientWidth / 2 <= canvas.clientWidth - 24
+          && (cell.y - y) * scale + canvas.clientHeight / 2 >= 24
+          && (cell.y + 1 - y) * scale + canvas.clientHeight / 2 <= canvas.clientHeight - 24) };
+    }, pair.second.footprint);
+    expect(before.visible, 'The regression must require an actual camera pan').toBe(false);
+    await expect.poll(() => f.host.evaluate(el => {
+      const d = (el as HTMLElement).dataset, now = Number(d.roadEventServerNow), start = Number(d.everydayNextStart);
+      return d.ambientAssets === 'ready' && Number.isFinite(now) && Number.isFinite(start) && start > now + 2400;
+    }), { timeout: 15_000, message: 'The real everyday director must publish a future event before the controlled clock pause' }).toBe(true);
+    await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+    const serverNow = Number(await f.host.getAttribute('data-road-event-server-now'));
+    const eventStart = Number(await f.host.getAttribute('data-everyday-next-start'));
+    expect(Number.isFinite(serverNow) && Number.isFinite(eventStart)).toBe(true);
+    expect(eventStart, 'The selected real event must still be in the future').toBeGreaterThan(serverNow + 400);
+    await page.evaluate(() => {
+      const target = window as Window & { __qaPanFrameGate?: PanFrameGate };
+      const request = window.requestAnimationFrame, cancel = window.cancelAnimationFrame;
+      const held = new Map<number, FrameRequestCallback>(), releasedFrames = new Map<number, number>();
+      const data = { installedAt: Date.now(), releasedAt: null as number | null, pendingAtRelease: false, held: 0, delivered: 0, registered: 0 };
+      let stopped = false;
+      const pending = () => document.querySelector<HTMLElement>('.world-canvas')?.dataset.cameraPresentationPending === 'true';
+      const gatedRequest: typeof request = callback => {
+        const renderer = /WorldCanvas(?:[-.]|\/)/.test(new Error().stack ?? '');
+        if (renderer) data.registered++;
+        const id = request.call(window, time => {
+          if (!stopped && renderer && pending()) { held.set(id, callback); data.held++; return; }
+          callback.call(window, time);
+        });
+        return id;
+      };
+      const gatedCancel: typeof cancel = id => {
+        held.delete(id); cancel.call(window, releasedFrames.get(id) ?? id); releasedFrames.delete(id);
+      };
+      const release = () => {
+        stopped = true;
+        for (const [id, callback] of held) releasedFrames.set(id, request.call(window, time => {
+          releasedFrames.delete(id); data.delivered++; callback.call(window, time);
+        }));
+        held.clear();
+      };
+      window.requestAnimationFrame = gatedRequest; window.cancelAnimationFrame = gatedCancel;
+      // The fixed400ms horizon cannot run this timer or its following RAF.
+      // Delivery still uses the real renderer callback and paused browser clock.
+      const releaseTimer = setTimeout(() => { data.releasedAt = Date.now(); data.pendingAtRelease = pending(); release(); }, 401);
+      target.__qaPanFrameGate = { read: () => ({ ...data, now: Date.now() }), restore: () => {
+        clearTimeout(releaseTimer); release();
+        if (window.requestAnimationFrame === gatedRequest) window.requestAnimationFrame = request;
+        if (window.cancelAnimationFrame === gatedCancel) window.cancelAnimationFrame = cancel;
+      } };
+    });
+    const preparation = await f.panFocus(pair.second, true, { settlePausedBefore: eventStart });
+    const gate = await page.evaluate(() => {
+      const gate = (window as Window & { __qaPanFrameGate?: PanFrameGate }).__qaPanFrameGate;
+      if (!gate) throw new Error('The real renderer frame gate was not installed');
+      return gate.read();
+    });
+    expect(gate.registered).toBeGreaterThan(0); expect(gate.held).toBeGreaterThan(0);
+    expect(gate.releasedAt! - gate.installedAt).toBe(401); expect(gate.pendingAtRelease).toBe(true); expect(gate.delivered).toBeGreaterThan(0);
+    expect(preparation?.extraFrames).toBeGreaterThan(0); expect(preparation?.wallElapsedMs).toBeLessThan(15_000);
+    expect(page.url()).toBe(before.url);
+    expect(await page.evaluate(() => history.length)).toBe(before.historyLength);
+    await expect(f.host).toHaveAttribute('data-canonical-task-count', before.canonicalTasks!);
+    await expect(f.host).toHaveAttribute('data-camera-presentation-pending', 'false');
+    await expect(page.locator('.task-modal')).toHaveCount(0);
+    await writeFile(info.outputPath('released-paused-camera.json'), JSON.stringify({ targetTask: pair.second.id, before, gate, preparation }, null, 2));
+    await page.screenshot({ path: info.outputPath('released-paused-camera.png') });
+  } finally {
+    if (!page.isClosed()) {
+      const gate = await page.evaluate(() => {
+        const gate = (window as Window & { __qaPanFrameGate?: PanFrameGate }).__qaPanFrameGate;
+        const state = gate?.read(); gate?.restore(); return state;
+      });
+      if (gate) await info.attach('paused-renderer-frame-gate', { body: JSON.stringify(gate), contentType: 'application/json' });
+    }
+    await f.cleanup();
+  }
+});
+
 clockSceneTest('tow loading and water repair wait for actual service arrivals, drive and reopen safely', async ({ page }, info) => {
   test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
   const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [];
@@ -242,7 +338,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         await setSceneLife(page,false);await drainCarriers();continue;
       }
       const id = preparation.everydayPlannedTask, task = f.tasks.find(t => t.id === id);
-      expect(task, `No planned task ${id}`).toBeTruthy(); await f.panFocus(task!, true);
+      expect(task, `No planned task ${id}`).toBeTruthy(); await f.panFocus(task!, true, { settlePausedBefore: start });
       const observed=await observeEveryday(f.host,id!);
       await seek(page, f.host, start + 350); await page.clock.runFor(1000);
       const kind = await f.host.getAttribute('data-everyday-event');

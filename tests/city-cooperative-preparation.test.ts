@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as walking from '../src/client/city-walk-network';
 import * as mobility from '../src/client/city-mobility';
 import type { CityMobilityInput, CityMobility } from '../src/client/city-mobility';
 import * as cooperative from '../src/client/cooperative-preparation';
+import { CityMovementPreparation } from '../src/client/city-movement-preparation';
 import * as routeSearch from '../src/client/mobility-route-search';
 import * as mobilityNetwork from '../src/client/city-mobility-network';
 import type { MobilityNetworkInput } from '../src/client/city-mobility-network';
@@ -40,6 +41,364 @@ function mobilityStreetInput(): CityMobilityInput {
   for (const x of [-1, 0, 1]) { crosswalks.add(`${x},12`); walkGraph.set(`${x},12`, { x, y: 12 }); }
   return { roads, walkGraph, crosswalks, activityCells: new Set(['2,7']), buildingEntrances: new Set(['2,7']), seed: 73, carLimit: 0, walkerLimit: 0 };
 }
+
+describe('default cooperative task scheduling', () => {
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+  it('lets a queued normal task run before native preparation publishes its canonical result', async () => {
+    const NativeChannel = MessageChannel, normalTask = new NativeChannel();
+    const boundaries: number[] = [], closes: Array<() => number> = [];
+    let progressed = 0, ticks = 0, published = false, allocations = 0;
+    const nativeScheduler = { yield: vi.fn(function (this: unknown) {
+      expect(this).toBe(nativeScheduler);
+      return Promise.resolve();
+    }) };
+    class ObservedChannel extends NativeChannel {
+      constructor() {
+        super(); allocations++;
+        const post = this.port2.postMessage.bind(this.port2);
+        vi.spyOn(this.port2, 'postMessage').mockImplementation(message => { boundaries.push(progressed); post(message); });
+        const first = vi.spyOn(this.port1, 'close'), second = vi.spyOn(this.port2, 'close');
+        closes.push(() => first.mock.calls.length, () => second.mock.calls.length);
+      }
+    }
+    vi.stubGlobal('scheduler', nativeScheduler);
+    vi.stubGlobal('MessageChannel', ObservedChannel);
+    const observed = new Promise<{ progressed: number; published: boolean }>(resolve => {
+      normalTask.port1.onmessage = () => resolve({ progressed, published });
+    });
+    normalTask.port2.postMessage(null);
+    function* steps() {
+      const result: number[] = [];
+      for (let index = 0; index < 17; index++) { result.push(index); progressed++; yield; }
+      return result;
+    }
+    // A promptly resolved native stub models uninterrupted priority
+    // continuations; the independent normal task still uses real ports.
+    const work = cooperative.prepareCooperatively(steps(), { now: () => ticks += 4 })
+      .then(result => { published = true; return result; });
+    try {
+      expect((await observed).published).toBe(false);
+      await expect(work).resolves.toEqual(Array.from({ length: 17 }, (_, index) => index));
+      expect(boundaries).toEqual([8, 16]);
+      expect(nativeScheduler.yield).toHaveBeenCalledTimes(15);
+      expect(allocations).toBe(1);
+      expect(closes.map(count => count())).toEqual([1, 1]);
+    } finally {
+      await work;
+      normalTask.port1.close(); normalTask.port2.close();
+    }
+  });
+
+  it('cancels the movement owner at a held fairness boundary and ignores its late delivery', async () => {
+    const NativeChannel = MessageChannel, closes: Array<() => number> = [];
+    let entered!: () => void, deliverLate!: () => void, ticks = 0, advanced = 0, closed = 0;
+    const held = new Promise<void>(resolve => { entered = resolve; });
+    const nativeScheduler = { yield: vi.fn(() => Promise.resolve()) };
+    class HeldChannel extends NativeChannel {
+      constructor() {
+        super();
+        vi.spyOn(this.port2, 'postMessage').mockImplementation(() => {
+          const delivery = this.port1.onmessage!;
+          deliverLate = () => delivery.call(this.port1, new MessageEvent('message', { data: null }));
+          entered();
+        });
+        const first = vi.spyOn(this.port1, 'close'), second = vi.spyOn(this.port2, 'close');
+        closes.push(() => first.mock.calls.length, () => second.mock.calls.length);
+      }
+    }
+    vi.stubGlobal('scheduler', nativeScheduler);
+    vi.stubGlobal('MessageChannel', HeldChannel);
+    function* steps() {
+      try { for (let index = 0; index < 17; index++) { advanced++; yield; } return 'canonical'; }
+      finally { closed++; }
+    }
+    const owner = new CityMovementPreparation(), commit = vi.fn();
+    try {
+      const work = owner.request('fair preparation', signal =>
+        cooperative.prepareCooperatively(steps(), { signal, now: () => ticks += 4 }), commit);
+      await held;
+      expect(nativeScheduler.yield).toHaveBeenCalledTimes(7);
+      expect({ advanced, closed, busy: owner.busy }).toEqual({ advanced: 8, closed: 0, busy: true });
+      owner.cancel();
+      await expect(work).resolves.toBe(false);
+      expect({ advanced, closed, busy: owner.busy }).toEqual({ advanced: 8, closed: 1, busy: false });
+      expect(closes.map(count => count())).toEqual([1, 1]);
+      deliverLate(); await Promise.resolve(); await Promise.resolve();
+      expect({ advanced, closed }).toEqual({ advanced: 8, closed: 1 });
+      expect(commit).not.toHaveBeenCalled();
+    } finally { owner.dispose(); }
+  });
+
+  it.each(['throw', 'reject'] as const)('preserves a native %s after a fairness boundary without another fallback', async failure => {
+    const NativeChannel = MessageChannel, closes: Array<() => number> = [];
+    const reason = new Error('native failure after ordinary task turn');
+    let ticks = 0, advanced = 0, closed = 0, posts = 0;
+    const nativeScheduler = { yield: vi.fn(function (this: unknown) {
+      expect(this).toBe(nativeScheduler);
+      if (nativeScheduler.yield.mock.calls.length === 8) {
+        if (failure === 'throw') throw reason;
+        return Promise.reject(reason);
+      }
+      return Promise.resolve();
+    }) };
+    class ObservedChannel extends NativeChannel {
+      constructor() {
+        super();
+        const post = this.port2.postMessage.bind(this.port2);
+        vi.spyOn(this.port2, 'postMessage').mockImplementation(message => { posts++; post(message); });
+        const first = vi.spyOn(this.port1, 'close'), second = vi.spyOn(this.port2, 'close');
+        closes.push(() => first.mock.calls.length, () => second.mock.calls.length);
+      }
+    }
+    vi.stubGlobal('scheduler', nativeScheduler);
+    vi.stubGlobal('MessageChannel', ObservedChannel);
+    function* steps() {
+      try { for (let index = 0; index < 17; index++) { advanced++; yield; } }
+      finally { closed++; }
+    }
+    await expect(cooperative.prepareCooperatively(steps(), { signal: new AbortController().signal, now: () => ticks += 4 }))
+      .rejects.toBe(reason);
+    expect({ advanced, closed, posts }).toEqual({ advanced: 9, closed: 1, posts: 1 });
+    expect(nativeScheduler.yield).toHaveBeenCalledTimes(8);
+    expect(closes.map(count => count())).toEqual([1, 1]);
+  });
+
+  it('keeps long explicit schedulers independent from native fairness and fallback ports', async () => {
+    let ticks = 0;
+    const native = vi.fn(() => Promise.resolve()), override = vi.fn(() => Promise.resolve());
+    const fallback = vi.fn(function () { throw new Error('Explicit scheduler must own all boundaries'); });
+    vi.stubGlobal('scheduler', { yield: native });
+    vi.stubGlobal('MessageChannel', fallback);
+    function* steps() { for (let index = 0; index < 17; index++) yield; return 23; }
+    await expect(cooperative.prepareCooperatively(steps(), { now: () => ticks += 4, yieldTask: override })).resolves.toBe(23);
+    expect(override).toHaveBeenCalledTimes(17);
+    expect(native).not.toHaveBeenCalled();
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('counts native fairness independently for each owned builder and phase', async () => {
+    let ticks = 0;
+    const native = vi.fn(() => Promise.resolve());
+    const fallback = vi.fn(function () { throw new Error('No individual owner has reached its eighth boundary'); });
+    vi.stubGlobal('scheduler', { yield: native });
+    vi.stubGlobal('MessageChannel', fallback);
+    function* steps() { for (let index = 0; index < 7; index++) yield; return 31; }
+    for (let index = 0; index < 2; index++) {
+      await expect(cooperative.prepareCooperatively(steps(), { now: () => ticks += 4 })).resolves.toBe(31);
+    }
+    await cooperative.yieldPreparationTask();
+    expect(native).toHaveBeenCalledTimes(15);
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('uses and clears ordinary fairness timers when native yield exists without MessageChannel', async () => {
+    vi.useFakeTimers();
+    let ticks = 0;
+    const native = vi.fn(() => Promise.resolve());
+    vi.stubGlobal('scheduler', { yield: native });
+    vi.stubGlobal('MessageChannel', undefined);
+    function* steps() { for (let index = 0; index < 17; index++) yield; return 37; }
+    const work = cooperative.prepareCooperatively(steps(), { now: () => ticks += 4 });
+    await vi.runAllTimersAsync();
+    await expect(work).resolves.toBe(37);
+    expect(native).toHaveBeenCalledTimes(15);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('prefers the native scheduler with its receiver and holds the generator at a real task boundary', async () => {
+    let resume!: () => void, ticks = 0, published = false;
+    const events: string[] = [];
+    const nativeScheduler = { yield: vi.fn(function (this: unknown) {
+      expect(this).toBe(nativeScheduler);
+      return new Promise<void>(resolve => { resume = resolve; });
+    }) };
+    const fallback = vi.fn(function () { throw new Error('Unexpected MessageChannel fallback'); });
+    vi.stubGlobal('scheduler', nativeScheduler);
+    vi.stubGlobal('MessageChannel', fallback);
+    function* steps() {
+      events.push('before'); yield;
+      events.push('after'); return 'canonical result';
+    }
+    const work = cooperative.prepareCooperatively(steps(), { now: () => ticks += 4 })
+      .then(result => { published = true; return result; });
+    void work.catch(() => undefined);
+    expect(nativeScheduler.yield).toHaveBeenCalledOnce();
+    expect(fallback).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(events).toEqual(['before']);
+    expect(published).toBe(false);
+    // The external task resumes the real generator, rather than fabricating
+    // its result or replacing the preparation's task boundary with a microtask.
+    await new Promise<void>(resolve => setTimeout(() => { resume(); resolve(); }, 0));
+    await expect(work).resolves.toBe('canonical result');
+    expect(events).toEqual(['before', 'after']);
+    expect(published).toBe(true);
+  });
+
+  it('uses the native scheduler for an explicit phase boundary without allocating fallback ports', async () => {
+    let resume!: () => void, finished = false;
+    const nativeScheduler = { yield: vi.fn(() => new Promise<void>(resolve => { resume = resolve; })) };
+    const fallback = vi.fn(function () { throw new Error('Unexpected MessageChannel fallback'); });
+    vi.stubGlobal('scheduler', nativeScheduler);
+    vi.stubGlobal('MessageChannel', fallback);
+    const work = cooperative.yieldPreparationTask().then(() => { finished = true; });
+    void work.catch(() => undefined);
+    expect(nativeScheduler.yield).toHaveBeenCalledOnce();
+    await Promise.resolve();
+    expect(finished).toBe(false);
+    resume(); await work;
+    expect(finished).toBe(true);
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it.each(['resolve', 'reject'] as const)('aborts a pending native yield before its late %s without advancing or publishing', async late => {
+    let resume!: () => void, fail!: (reason: unknown) => void, ticks = 0, advanced = 0, closed = 0, published = 0;
+    const gate = new Promise<void>((resolve, reject) => { resume = resolve; fail = reject; });
+    const nativeScheduler = { yield: vi.fn(() => gate) };
+    vi.stubGlobal('scheduler', nativeScheduler);
+    const controller = new AbortController(), reason = new Error('city owner replaced during native task');
+    function* steps() {
+      try { advanced++; yield; advanced++; return 'late result'; }
+      finally { closed++; }
+    }
+    const work = cooperative.prepareCooperatively(steps(), { signal: controller.signal, now: () => ticks += 4 })
+      .then(result => { published++; return result; });
+    const rejected = expect(work).rejects.toBe(reason);
+    expect(nativeScheduler.yield).toHaveBeenCalledOnce();
+    controller.abort(reason);
+    await rejected;
+    expect({ advanced, closed, published }).toEqual({ advanced: 1, closed: 1, published: 0 });
+    if (late === 'resolve') resume(); else fail(new Error('late native failure'));
+    await gate.catch(() => undefined); await Promise.resolve();
+    expect({ advanced, closed, published }).toEqual({ advanced: 1, closed: 1, published: 0 });
+    await expect(cooperative.yieldPreparationTask(controller.signal)).rejects.toBe(reason);
+    expect(nativeScheduler.yield).toHaveBeenCalledOnce();
+  });
+
+  it('cancels the real movement owner during a native yield and never calls its commit after late completion', async () => {
+    let resume!: () => void, entered!: () => void, ticks = 0, advanced = 0, closed = 0;
+    const paused = new Promise<void>(resolve => { entered = resolve; });
+    const gate = new Promise<void>(resolve => { resume = resolve; });
+    vi.stubGlobal('scheduler', { yield: () => { entered(); return gate; } });
+    function* steps() {
+      try { advanced++; yield; advanced++; return 'canonical geometry'; }
+      finally { closed++; }
+    }
+    const owner = new CityMovementPreparation(), commit = vi.fn();
+    try {
+      const work = owner.request('initial geometry', signal =>
+        cooperative.prepareCooperatively(steps(), { signal, now: () => ticks += 4 }), commit);
+      await paused;
+      expect(owner.busy).toBe(true);
+      owner.cancel();
+      await expect(work).resolves.toBe(false);
+      expect(owner.busy).toBe(false);
+      expect({ advanced, closed }).toEqual({ advanced: 1, closed: 1 });
+      resume(); await gate; await Promise.resolve();
+      expect({ advanced, closed }).toEqual({ advanced: 1, closed: 1 });
+      expect(commit).not.toHaveBeenCalled();
+    } finally { resume(); owner.dispose(); }
+  });
+
+  it.each([{ label: 'Error', reason: new Error('native scheduling failed') }, { label: 'undefined', reason: undefined }])('preserves native $label rejection and never retries it through a fallback', async ({ reason }) => {
+      let ticks = 0, advanced = 0, closed = 0;
+      const nativeScheduler = { yield: vi.fn(() => Promise.reject(reason)) };
+      const fallback = vi.fn(function () { throw new Error('Unexpected MessageChannel fallback'); });
+      vi.stubGlobal('scheduler', nativeScheduler);
+      vi.stubGlobal('MessageChannel', fallback);
+      function* steps() {
+        try { advanced++; yield; advanced++; }
+        finally { closed++; }
+      }
+      await expect(cooperative.prepareCooperatively(steps(), { signal: new AbortController().signal, now: () => ticks += 4 }))
+        .rejects.toBe(reason);
+      expect({ advanced, closed }).toEqual({ advanced: 1, closed: 1 });
+      expect(nativeScheduler.yield).toHaveBeenCalledOnce();
+      expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('preserves a synchronous native throw without falling back to a successful task', async () => {
+    const reason = new Error('native scheduler receiver or invocation failed');
+    const nativeScheduler = { yield: vi.fn(() => { throw reason; }) };
+    const fallback = vi.fn(function () { throw new Error('Unexpected MessageChannel fallback'); });
+    vi.stubGlobal('scheduler', nativeScheduler);
+    vi.stubGlobal('MessageChannel', fallback);
+    await expect(cooperative.yieldPreparationTask()).rejects.toBe(reason);
+    expect(nativeScheduler.yield).toHaveBeenCalledOnce();
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('retains an explicitly supplied task scheduler ahead of both native and fallback defaults', async () => {
+    let ticks = 0;
+    const nativeScheduler = { yield: vi.fn(() => Promise.resolve()) };
+    const fallback = vi.fn(function () { throw new Error('Unexpected MessageChannel fallback'); });
+    const override = vi.fn(() => Promise.resolve());
+    vi.stubGlobal('scheduler', nativeScheduler);
+    vi.stubGlobal('MessageChannel', fallback);
+    function* steps() { yield; return 17; }
+    await expect(cooperative.prepareCooperatively(steps(), { now: () => ticks += 4, yieldTask: override })).resolves.toBe(17);
+    expect(override).toHaveBeenCalledOnce();
+    expect(nativeScheduler.yield).not.toHaveBeenCalled();
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, { yield: null }])('reuses and closes both MessageChannel ports when native yield is unavailable: %j', async scheduler => {
+    const NativeChannel = MessageChannel, closeCalls: Array<() => number> = [];
+    let allocations = 0, ticks = 0;
+    class ObservedChannel extends NativeChannel {
+      constructor() {
+        super(); allocations++;
+        const closeFirst = vi.spyOn(this.port1, 'close'), closeSecond = vi.spyOn(this.port2, 'close');
+        closeCalls.push(() => closeFirst.mock.calls.length, () => closeSecond.mock.calls.length);
+      }
+    }
+    vi.stubGlobal('scheduler', scheduler);
+    vi.stubGlobal('MessageChannel', ObservedChannel);
+    function* steps() { yield; yield; return 23; }
+    await expect(cooperative.prepareCooperatively(steps(), { now: () => ticks += 4 })).resolves.toBe(23);
+    expect(allocations).toBe(1);
+    expect(closeCalls.map(count => count())).toEqual([1, 1]);
+  });
+
+  it('closes fallback MessageChannel ports when their pending task is cancelled', async () => {
+    const NativeChannel = MessageChannel, closeCalls: Array<() => number> = [];
+    class ObservedChannel extends NativeChannel {
+      constructor() {
+        super();
+        const closeFirst = vi.spyOn(this.port1, 'close'), closeSecond = vi.spyOn(this.port2, 'close');
+        closeCalls.push(() => closeFirst.mock.calls.length, () => closeSecond.mock.calls.length);
+      }
+    }
+    vi.stubGlobal('scheduler', undefined);
+    vi.stubGlobal('MessageChannel', ObservedChannel);
+    const controller = new AbortController(), reason = new Error('cancel fallback task');
+    const work = cooperative.yieldPreparationTask(controller.signal);
+    controller.abort(reason);
+    await expect(work).rejects.toBe(reason);
+    expect(closeCalls.map(count => count())).toEqual([1, 1]);
+  });
+
+  it('uses the timer fallback only without native yield and MessageChannel, and clears it on cancellation', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('scheduler', undefined);
+    vi.stubGlobal('MessageChannel', undefined);
+    let finished = false;
+    const work = cooperative.yieldPreparationTask().then(() => { finished = true; });
+    await Promise.resolve();
+    expect(finished).toBe(false);
+    expect(vi.getTimerCount()).toBe(1);
+    await vi.advanceTimersByTimeAsync(0); await work;
+    expect(finished).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+    const controller = new AbortController(), reason = new Error('cancel timer task');
+    const cancelled = cooperative.yieldPreparationTask(controller.signal);
+    expect(vi.getTimerCount()).toBe(1);
+    controller.abort(reason);
+    await expect(cancelled).rejects.toBe(reason);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
 
 describe('cooperative canonical city preparation', () => {
   it('yields while preparing the complete WALK graph without changing cells, insertion order or input', async () => {

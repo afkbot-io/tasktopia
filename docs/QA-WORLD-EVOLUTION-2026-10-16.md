@@ -5,7 +5,144 @@
 База — `053e061d84dbcafdeaf1841010f9bd2286c9c5f8`, цель выпуска —
 `game3/dev-server/dev/all` через Builder и официальный updater.
 
-## 23 октября 2026 — FINAL v10: адресная приёмка PASS
+## 23 октября 2026 — v14: native12 и full24 STRICT PASS, CI/выпуск ожидаются
+
+Source `51f67980cec9fe77c7f9cb617909c3a12a1b92f0065cfb6b6b292938ac33e247`: только4static render-group flags против v13, остальные1262runtime/576QA совпадают. Server/география/assets прежние. Одна сборка/full TSC/freeze (`bc0ebc39…`) и readonly200/1000 (`9de56c39…`) PASS; geometry/status/descriptor/dumps сохранены без seed/restore/regeneration.
+
+Native12 — **12/12PASS/82,414293s**,0retry/SKIP/flaky, JSON↔journal12 exact (`ae209b6f…`). Root4actual PNG NO_OPEN: Pixel320/iPhone empty-mask, WK full-detail DAY, Chrome atlas maximum (`7a50ad79…`); resized WK не даёт exact pixel claim, физических телефонов нет. Собственная attestation822 `2cf06e36…`/920canonical и native cleanup5343FREE/DB0/business31fa unchanged сохранены.
+
+Исходная full24 — **24/24STRICT PASS**,8reports/raw equality/functional24/errors0/violations0/retries0/exclusions0, launcher47586exit0. Четыре профиля×200/1000×3/NORMAL/churn20/steady8000/coldv2/CPU/network/budgets сохранены. Max warm79,781ms/input p95 45,2ms/RAF p95 19ms/Chromium heap growth1617468B. Cold max200/1000(ms): Chrome1077,524/1968,514; Firefox1292,307/1773,052; Pixel5412,436/8256,882; iPhone800,443/1141,136 — это не loading p95.
+
+Console errors0/warnings54/trunc0; HTTP24cold/0pan/0warm/0legacy. LongTasks12Chromium steady0,12FF/WK unavailable=null; heap толькоChromium, RGBA estimate неVRAM. Postflight:5311FREE/owned2001000DBother0/readOnly/source/output fences unchanged/920+822. [Portable actual summary](evidence/city-scale-2026-10-23/task-focus-reliability-v14-summary.json), SHA `74efab046d379561c7e820cb1d82bed367ba4239d540fbde75d65bbf9f71e2ae`; private aggregate `106b6672…`. Исправлена только ссылка runnerV13→actualV14, raw/metrics не менялись.
+
+V13 STRICT_RED23/1RAF33,34>20ms, V12 coldRED3813,698>3000ms и native137/formalnull/causeUNKNOWN сохранены. Диагностика `e162/f13d` RAFRED не воспроизвела; разные119→374→464builds/+3GL calls не дают общего speedup/causal claim. Новый exact-head all10CI, merge и managed release **PENDING**, E01/E02/Q02/Q03 открыты; все33 критерия/U08/U09 сохранены. Backup по runbook + применимость имеющегося restore-proof, без нового restore gate.
+
+## Исторический кандидат v13: native PASS, full24 STRICT_RED
+
+Runtime source `7b08afcbcc186eb839a2823d75985497ed2fea8cbaf82a196eaae7eedcc5e8c3`;
+qualificationHash `4ede361bab37911dd3129044d3b71b7433f887741fd43e98f7c65d67f33b2307`.
+Только `cooperative-preparation.ts` изменён против v12, остальные1262 runtime
+inputs совпадают; QA576 содержит четыре изменённых файла и572 совпадающих.
+Сервер/shared/package/lock/assets прежние. Compiled server `dbc7be70…`,
+client `04271b71…`, HTML `f15ea4e5…`, manifest `cc55f8eb…`.
+Одна `npm run build` с `npm run typecheck`→`tsc --noEmit`, freeze/verify и readonly200/1000 — PASS.
+Новая собственная V13 attestation822 (`e75550b3…`) сохраняет920 canonical outputs;
+повторные native startup проверяли её, без новой переаттестации и копирования v12.
+
+Fairness policy даёт обычную owned MessageChannel/timer задачу после семи
+native continuation. Slice4ms/checkpoint8192/owner20s, native receiver,
+cancel/late-callback fences и обработка ошибок сохранены. TDD RED→GREEN;
+итог **68PASS/6files**, scoped TS/lint PASS, промежуточные67/1 test-isolation
+FAIL сохранены и не суммируются с68. Это не гарантия32ms wall turnaround
+и не установленная причина прежнего Firefox cold3813,698ms.
+
+Первая native22 оборвалась **exit137/INCOMPLETE**,13cases started/9notstarted;
+formalPASS/FAIL=null, причина UNKNOWN, final JSON отсутствует. Старые raw
+не изменены. Отдельная одобренная операция очистила только собственную оставшуюся
+fixture исходным country→user cleanup в одной guarded transaction и проверила
+business31fa до commit; QA40 восстановлена без seed/restore/reset.
+Receipt cleanup `1846d028…`; никакого OOM/watchdog объяснения по137 не заявлено.
+
+Отдельная R2 — **22/22PASS за454,832221s**, CLI/helper0, retry/SKIP/flaky0:
+Chrome5/Firefox4/desktopWebKit5/Pixel5/iPhone2/Pixel3201;10 frozen QA файлов,
+overrides0. Durable reporter/heartbeat добавили только наблюдаемость;
+root точно сверил22 journal tuples/status/retry с обычным JSON.
+Sixscene —312,849s/nativeDPR2/исходный720s deadline, все шесть видов с реальными
+visitors/arrivals/safety. Controlled paused RAF regression, task-entry keyboard,
+recovery/quality/resync/atlas/real-clock CPU/heap также прошли.
+Root лично просмотрел четыре actual PNG error/Retry320/iPhone и task-card/preview320:
+NO_OPEN в этих кадрах, receipt `228adcc4…`; физических устройств не было.
+
+Новый **dense4 —4/4PASS13,748069s**: два прежних200-task case×Chrome native/WebKit
+fallback. Geometry `59e5defd…`, business `6de64914…`, status160/30/10 неизменны;
+native/fallback gates подтверждены. R2 и dense4 завершили ownedserver/CLI,
+5343/5367FREE/DBother0/business/frozen920+822 cleanup PASS, без seed/restore/build.
+
+| Фактическое локальное доказательство v13 | SHA256 |
+| --- | --- |
+| build/fullTS/freeze `.builder/world-perf-20261022/reliability-v13-build-summary.json` | `b30d29426dbd2029e2998f4d83872df774e2c050260b920c1c000de6b4edcb9d` |
+| readonly200/1000 `.builder/world-perf-20261022/task-focus-reliability-v13-fixture-preflight.json` | `5a1072986ab97614aaf10343278dea830bdc7d029a70ab74be1060cb1e55ec44` |
+| first native22 interrupted summary | `5cb2f4bdde282d476f2446820fb2d0a33140c344615f36d9662ff737bd548e6a` |
+| exact own-fixture cleanup | `1846d0281ea0c81f5cb8b61f2d66948b2214dfbbf3f2877d244c2f658af9f276` |
+| `.builder/native-qa40-scheduler-v13-r2-20261023/summary.json` —22PASS | `e93388fe62feee40cc5e3ca8e5710d1533396aad6af9b02ef9fdc50d00634109` |
+| `.builder/native-qa40-scheduler-v13-r2-20261023/root-visual-review.json` —fourPNG | `228adcc458499e2dac714f61bd98ba9a2387c1124f490ec5d15009542225893b` |
+| `.builder/native-scheduler-dense200-v13-20261023/summary.json` —4PASS | `7e0b7680452a52c151928418c8999432d248d6d9aa39dcf44ea4bcda7a25bcb7` |
+
+**Full24 v13 — STRICT_RED:23 budget PASS/1 RAF RED, все24 функционально завершены.**
+Launcher91512exit1,8reports; все raw sample равны report.results,
+retries/исключений0, source/output fences сохранены. Original host gate прошёл.
+Firefox1000 sample0 RAFp95=33,34ms>20ms;
+остальные два RAF16,78/16,80ms и все cold1962,993/1834,709/1745,415ms<3000ms
+прошли, errors0. Причина RAF UNKNOWN.
+Console errors0,54warnings без усечения:24blockedSW/6contextlost/12texImage/
+6lazyinitialization/6deprecatedrendererinfo. LongTasks12Chromium steady0,
+12Firefox/WebKit unavailable=null, не измеренный ноль. HTTP24cold/0pan/warm/legacy;
+postflight5311FREE/обеownedDBother0/source920canonical+822copies сохранены.
+Aggregate `.builder/world-perf-20261022/task-focus-reliability-v13-summary.json`,
+SHA256 `afd4944bd17799bc6da7e99cf56741869ea70479264f92c0b1e2bc373e01c50e`.
+Исходные4profiles×200/1000×3, NORMAL/churn20/steady8000,
+coldv2/budgets/CPU/network/DPR не менялись. Частичный exit0 не означает STRICT PASS;
+v12 STRICT_RED ниже сохраняет собственную привязку, без retag/waiver/causalclaim.
+Последний CI fd2 `39879045508` окончательно FAIL:6SUCCESS/3FAILURE/1CANCELLED;
+browser4 totalsUNKNOWN при70min job timeout, progress161/168 не PASS count.
+Новый exact-head CI, merge и managed release не выполнены и заблокированы
+до ограниченного разбора/устранения RAF RED; общая цель33 критериев
+не завершена. Для релиза остаётся свежая резервная копия по runbook и проверка
+применимости уже имеющегося restore-доказательства; новый fresh-restore gate
+этим документом не вводится. Public smoke и300s observation ещё не выполнены.
+Следующий шаг — одна ограниченная диагностика RAF; на этой точке она ещё
+не запускалась. Никакого waiver или нового PASS по итогам23/1 не заявлено.
+
+## Историческая точка 23 октября 2026 — кандидат v12
+
+Runtime source: `0f04382b237f2874545162f4ccbc80ccf9131c53d5b37ae05a9d625bc993ec1f`.
+При наличии API подготовка города использует `scheduler.yield()`, с прежним
+MessageChannel/timer fallback, порцией 4 мс/8192 checkpoints и owner deadline 20 с.
+TDD выбора планировщика: RED→GREEN, итоговый затронутый набор **61 PASS / 6 файлов**;
+пересекающиеся промежуточные наборы не складываются. Полный TypeScript в одной
+стандартной сборке v12 и readonly preflight существующих городов 200/1000 — PASS.
+Из 1263 runtime input только два CSS отличаются от v11; сервер, shared,
+зависимости и игровые assets совпадают. Из 576 QA input изменён один spec.
+
+V11 native17 дал **16 PASS / 1 FAIL**, не успешную матрицу: Firefox-перехватчик
+JSON получил `Content-Encoding:zstd` после передачи браузерного Accept-Encoding.
+В двух тестовых JSON fetch явно выбран `identity`, как в соседних сценариях;
+production compression не менялась. Отдельные dense200 проверки — **4/4 PASS**:
+реальные native scheduler и MessageChannel, отмена и позднее обновление.
+Их неизменные логические границы сохраняют исходную привязку v11.
+
+Просмотр PNG обнаружил настоящий мобильный дефект: подпись Retry требовала 79 px
+при clientWidth 48 px, а alert пересекался с кнопкой экскурсии. Новая публичная
+проверка получила этот RED на неизменном v11. V12 задаёт ширину, перенос и
+положение alert через CSS. **8/8 новых native PASS за 28,365 с**, без SKIP/flaky:
+ошибка/pan/обязательный Retry на desktop, Pixel, iPhone и 320×568; same-content
+и resync в Firefox/Pixel. Четыре DOM attachment подтверждают границы и Retry 44 px;
+основной агент просмотрел PNG iPhone и 320 px: обрезания и наложения нет.
+Квитанция `.builder/native-streaming-error-layout-v12-20261023/summary.json`,
+SHA256 `4a0476f55a16a8b178855f02d406aee1ab363fdc3e987650c70b5c7888775148`.
+Это восемь новых проверок; исторические FAIL и RED сохранены.
+
+Полная серия v12 завершилась **STRICT_RED: 23 PASS / 1 cold RED**, все 24 замера
+и восемь групп выполнены. Firefox1000 sample1: **3813,698 мс > 3000 мс**;
+остальные два — 1717,022 и 1656,412 мс. Функциональных ошибок нет; HTTP24 cold,
+0 pan/warm/legacy. Ошибок console0, предупреждений54. LongTasks: 12 Chromium
+окон имеют0, в 12 Firefox/WebKit эта метрика недоступна (null).
+Между React-меткой готовности первого кадра и снятием переходного экрана
+в RED наблюдалось около2,18с. Это не доказательство compositor paint или причины
+задержки. Cause UNKNOWN, retries/исключений/изменения бюджетов нет. Собственные
+процессы закрыты, данные и frozen bindings сохранены.
+Квитанция `.builder/world-perf-20261022/task-focus-reliability-v12-summary.json`,
+SHA256 `be18c34210835d89ecaa43ee764f298004d19bf7723e5087341816fa12c29b79`.
+Новый exact-head CI, merge и managed release ещё не выполнены. Нельзя считать
+исторические v10 результаты производительностью v12 или объяснением прежних
+CI timeout. Точная итоговая ревизия/CI/выкладка фиксируются в задаче №53 и PR58.
+Физические телефоны по решению пользователя не проверяются: только эмуляция.
+Ранее принятый QA-порог async wall изменён **50→20000 мс** до существующего
+owner deadline; road CPU 50 мс, paired CPU p95 8 мс и heap 8 MiB сохранены.
+Это отдельное исправление смысла метрики, не утверждение о сохранении всех
+исторических порогов и не доказательство причины старого CI max 1452,7 мс.
+
+## Историческая точка 23 октября 2026 — v10: адресная приёмка PASS
 
 Source v10: `2ecdc8bec3737d85a105e366a1037e01f057093a5aafab9ae358c0cfa44badd5`.
 Открытый визуальный дефект v9 получил публичный RED **24 → 11** построек
