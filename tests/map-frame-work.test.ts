@@ -1,5 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { visibleMapPaddingReady, waitForVisibleMapWork } from "../src/client/map-frame-work";
+import { drainGroundBakeFrame, type GroundBakeWork } from "../src/client/ground-bake-budget";
+import { mapPaddingWorkPriority, type MapPaddingWorkKind, visibleMapPaddingReady, waitForVisibleMapWork } from "../src/client/map-frame-work";
+
+describe("visible map padding priority", () => {
+  const kinds: MapPaddingWorkKind[] = ["terrain-sample", "terrain-bake", "tree-sample", "tree-create", "road-bake"];
+
+  it("completes every required visible work kind before any invisible prewarming", () => {
+    const firstBackground = Math.min(...kinds.map(kind => mapPaddingWorkPriority(kind, false)));
+    for (const kind of kinds) expect(mapPaddingWorkPriority(kind, true), kind).toBeLessThan(firstBackground);
+  });
+
+  it.each(["tree-sample", "tree-create"] as const)("runs newly visible %s before older halo bakes within one interactive job", kind => {
+    const completed: string[] = [];
+    let targetVisible = false;
+    const work = (id: string, workKind: MapPaddingWorkKind, visible: () => boolean): GroundBakeWork<string> => ({
+      priority: () => mapPaddingWorkPriority(workKind, visible()),
+      valid: () => true,
+      task: () => id,
+      resolve: result => { if (result) completed.push(result); },
+      reject: error => { throw error; },
+    });
+    const queue = [work("halo-terrain", "terrain-bake", () => false), work("halo-road", "road-bake", () => false),
+      work("target-trees", kind, () => targetVisible)];
+    targetVisible = true;
+
+    expect(drainGroundBakeFrame(queue, false, () => 0)).toEqual({ completed: 1, elapsedMs: 0 });
+    expect(completed).toEqual(["target-trees"]);
+    expect(queue).toHaveLength(2);
+    drainGroundBakeFrame(queue, false, () => 0);
+    expect(completed).toEqual(["target-trees", "halo-terrain"]);
+    expect(queue).toHaveLength(1);
+  });
+});
 
 describe("first map frame", () => {
   it("does not wait for invisible prewarming", async () => {

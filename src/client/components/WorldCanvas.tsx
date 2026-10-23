@@ -43,7 +43,7 @@ import { dependencySegments, type MapDependencySelection } from "../map-dependen
 import { createTaskFocusView } from "../task-focus-view";
 import { taskAttentionAlpha } from "../task-focus-presentation";
 import { blockPlaqueRange } from "../../shared/block-plaque";
-import { visibleMapPaddingReady, waitForVisibleMapWork } from "../map-frame-work";
+import { mapPaddingWorkPriority, visibleMapPaddingReady, waitForVisibleMapWork } from "../map-frame-work";
 import { planCityRailway, railwayIntersectsRect, type CityRailway } from "../city-railway";
 import { drawCityPorts } from "../city-port-view";
 import { drawCityRailway,drawCityRailwayBridge } from "../city-railway-view";
@@ -2717,7 +2717,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           const material = provider.get(x, y);
           host.dataset.cameraPaddingSampleMaxMs = Math.max(Number(host.dataset.cameraPaddingSampleMaxMs ?? 0), performance.now() - sampledAt).toFixed(2);
           return material;
-        }, () => visiblePaddingKeys.has(id) ? 1 : 3).then(async material => {
+        }, () => mapPaddingWorkPriority("terrain-sample", visiblePaddingKeys.has(id))).then(async material => {
           if (!material || !valid()) return;
           await assetLease.load(requiredGroundAssets([material.chunk], "DETAIL"), loadTextureAssets);
           if (!valid()) return;
@@ -2728,7 +2728,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
               host.dataset.cameraPaddingBakeMaxMs = Math.max(Number(host.dataset.cameraPaddingBakeMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
               host.dataset.cameraPaddingBakes = String(Number(host.dataset.cameraPaddingBakes ?? 0) + 1);
               return { terrainView };
-            }, () => visiblePaddingKeys.has(id) ? 0 : 2);
+            }, () => mapPaddingWorkPriority("terrain-bake", visiblePaddingKeys.has(id)));
           if (!prepared?.terrainView) return;
           if (!valid()) { destroyGroundView(prepared.terrainView); return; }
           record.terrainView = prepared.terrainView;
@@ -2757,7 +2757,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           const trees = provider.get(x, y);
           host.dataset.cameraPaddingTreeSampleMaxMs = Math.max(Number(host.dataset.cameraPaddingTreeSampleMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
           return trees;
-        }, () => visiblePaddingKeys.has(id) ? 2 : 5).then(async trees => {
+        }, () => mapPaddingWorkPriority("tree-sample", visiblePaddingKeys.has(id))).then(async trees => {
           if (!trees || !valid()) return;
           record.trees = trees;
           if (!trees.length) { record.treeViews = []; record.treeComplete = true; return; }
@@ -2793,7 +2793,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             for (const band of bands) band.children.sort((left, right) => left.x - right.x);
             record.treeViews = views; record.treeComplete = true; sortWorldObjects();
             host.dataset.cameraPaddingTreeCreateMaxMs = Math.max(Number(host.dataset.cameraPaddingTreeCreateMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
-          }, () => visiblePaddingKeys.has(id) ? 2 : 4);
+          }, () => mapPaddingWorkPriority("tree-create", visiblePaddingKeys.has(id)));
         }).catch(() => {
           if (!valid()) return;
           record.treeComplete = true; record.treeFailed = true; host.dataset.loadError = "true";
@@ -2814,7 +2814,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const work = scheduleGroundBake(`padding:${++nextPaddingBakeId}:${cityScene!.sceneRevision}:${id}`, valid, () => ({
           overlayView: createInfrastructureOverlayView({ chunkX: x, chunkY: y, size: chunkSize,
             roads: roads.roads, surfaces: roads.surfaces }, "DETAIL", roads),
-        }), () => visiblePaddingKeys.has(id) ? 0 : 2).then(prepared => {
+        }), () => mapPaddingWorkPriority("road-bake", visiblePaddingKeys.has(id))).then(prepared => {
           if (!prepared?.overlayView) return;
           if (!valid()) { destroyGroundView(prepared.overlayView); return; }
           record.overlayView = prepared.overlayView;
