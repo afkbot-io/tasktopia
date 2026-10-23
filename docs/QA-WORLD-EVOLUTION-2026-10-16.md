@@ -1,5 +1,17 @@
 # Общая квалификация 1.25.0
 
+## 23 октября 2026 — V17: локальная квалификация PASS, три отказа CI и исправление тестового транспорта
+
+На HEAD `b9399fe38069de3682551a403866190b4188f03d` одна стандартная build/full TSC/freeze и readonly200/1000 прошли; native9 — **9/9 PASS**, исходная full24 — **24/24 STRICT PASS**, без retry/exclusion. Performance summary `cb0675e660c70f56ca0cb2e95fedd82ec2ea33f27a00240fee6d12db87ed1e92` приложена к Task53. HTTP24cold/0pan/0warm/0legacy, console0errors/54warnings; недоступные FF/WebKit метрики остаются null. Только эмуляция телефонов. Эти результаты не заменяют отказавший CI.
+
+[Полный CI39916145369](https://github.com/afkbot-io/tasktopia/actions/runs/39916145369) завершён: все10 jobs terminal,7SUCCESS/3FAILURE/0cancel; unit2032PASS/360files, browser512PASS/3FAIL/176SKIP/0NOTRUN. Отказы: Chromium KINDERGARTEN accepted3→arrivals0; Firefox не показал переименованную зависимость; WebKit delayed transfer опубликовал LIFT→EMPTY без CARRY. Причины первого и третьего пока UNKNOWN. Отдельные неизменённые локальные controls прошли: six-scene211622мс/KINDERGARTEN arrivals2 и transfer16807мс/CARRY. Они не переименовываются в успешный CI. Первый CDP-захват жителей INCONCLUSIVE из-за ограничения маршрута; его данные и отдельный исходный PASS сохранены.
+
+Для Firefox actual trace доказал инъекцию synthetic42 в probing WebSocket до actual upgrade5. Предварительный и browser bootstrap совпали (cursor2906, event2907), поэтому гипотеза устаревшего курсора для этого отказа опровергнута. Контролируемая задержка native2probe: прежний OPEN-only helper дал RED15774мс на исходном rename15s; helper с существующим upgradedSet/send5 pattern дал GREEN1244мс, dependencyGET1→3 и исходные rename/delete/owner assertions. Page/console errors0, SWwarning1; cleanup и схема/рабочие данные прежние.
+
+Тот же guard установлен в пяти QA helpers: task-card, news-feed, replay-recovery, navigation-scope и city-render. Тела сценариев, курсоры, таймауты и assertions вне guard byte-equal; scoped ESLint5 PASS. Disconnect продолжает закрывать все owned sockets; replay не ждёт online при удержанной истории. Runtime1263/source4402 и frozen QA18f1 не меняются; отдельный working QA578 hash `3b3865832d6416f2cc9994ee8828482aaf9e0559ed3dc3418dd13cf2aaf4813a` фиксирует пять исправлений. Исправление общей небезопасной примитивы не доказывает причины других исторических отказов.
+
+G03 повторно открыт:28/33, TESTING85. Итоговая ревизия/новый exact CI, merge, Builder, fresh backup, public smoke и300с наблюдения ещё не выполнены. Сайт не обновлён; актуальная область и полный review package находятся в [Task53](https://tasktopia.online/task/53?countryId=4201d605-751a-469b-8d5f-a7e322a7ece1&taskId=4f2ef16c-8172-4715-8e2e-27f88979df78) и [PR58](https://github.com/afkbot-io/tasktopia/pull/58).
+
 ## 23 октября 2026 — v17: приоритет видимых материалов (точка до CI и выпуска)
 
 Source `4402a481f5aca94464ffc79c3f0afcb9a9d9885a21b0fd0ed39ccd1879d97861`, QA `18f1ee04358e3a6f43e614221920640ae8543c7d51e14f9b6668174efe7cf2d1`. Только WorldCanvas/map-frame-work и регрессия очереди: обе операции видимых деревьев получают приоритет1 вместо2, раньше любого padding halo2–5. Видимость переоценивается при исполнении; FIFO и лимиты1 interactive/3 initial/4ms сохранены. Остальные приоритеты и проверки готовности прежние.

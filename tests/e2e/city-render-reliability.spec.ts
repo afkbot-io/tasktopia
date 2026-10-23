@@ -40,13 +40,14 @@ async function openWorldPreferences(page:Page,hasTouch:boolean,keyboardDesktop=f
 
 async function enterCity(page:Page) {
   await page.addInitScript(() => {
-    const NativeSocket=window.WebSocket,sockets=new Set<WebSocket>();
+    const NativeSocket=window.WebSocket,sockets=new Set<WebSocket>(),upgraded=new Set<WebSocket>();
     window.WebSocket=class extends NativeSocket {
-      constructor(url:string|URL,protocols?:string|string[]){super(url,protocols);if(String(url).includes("/socket.io")){sockets.add(this);this.addEventListener("close",()=>sockets.delete(this));}}
+      constructor(url:string|URL,protocols?:string|string[]){super(url,protocols);if(String(url).includes("/socket.io")){sockets.add(this);this.addEventListener("close",()=>{sockets.delete(this);upgraded.delete(this);});}}
+      override send(data:string|Blob|BufferSource){super.send(data);if(data==="5")upgraded.add(this);}
     };
     Object.assign(window,{qaDisconnectWorld:()=>{for(const socket of sockets)socket.close();},
-      qaWorldSockets:()=>[...sockets].filter(socket=>socket.readyState===NativeSocket.OPEN).length,
-      qaWorldFrame:(event:unknown)=>{for(const socket of sockets)if(socket.readyState===NativeSocket.OPEN)
+      qaWorldSockets:()=>[...sockets].filter(socket=>socket.readyState===NativeSocket.OPEN&&upgraded.has(socket)).length,
+      qaWorldFrame:(event:unknown)=>{for(const socket of sockets)if(socket.readyState===NativeSocket.OPEN&&upgraded.has(socket))
         socket.dispatchEvent(new MessageEvent("message",{data:`42${JSON.stringify(["world:event",event])}`}));}});
     localStorage.setItem("tasktopia:world-preferences:v2",JSON.stringify({quality:"NORMAL",cityLife:true,sound:false}));
   });

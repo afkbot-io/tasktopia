@@ -43,12 +43,13 @@ test('a compact card opens first, then pages 1000 comments with retry and bounde
 
 test('an open task refreshes renamed and deleted dependency targets received through WebSocket', async ({ page }) => {
   await page.addInitScript(() => {
-    const NativeSocket = window.WebSocket, sockets = new Set<WebSocket>();
+    const NativeSocket = window.WebSocket, sockets = new Set<WebSocket>(), upgraded = new Set<WebSocket>();
     window.WebSocket = class extends NativeSocket {
-      constructor(url: string | URL, protocols?: string | string[]) { super(url, protocols); if (String(url).includes('/socket.io')) { sockets.add(this); this.addEventListener('close', () => sockets.delete(this)); } }
+      constructor(url: string | URL, protocols?: string | string[]) { super(url, protocols); if (String(url).includes('/socket.io')) { sockets.add(this); this.addEventListener('close', () => { sockets.delete(this); upgraded.delete(this); }); } }
+      override send(data: string | Blob | BufferSource) { super.send(data); if (data === '5') upgraded.add(this); }
     };
-    Object.assign(window, { qaCardSockets: () => [...sockets].filter(socket => socket.readyState === NativeSocket.OPEN).length,
-      qaCardEvent: (event: unknown) => { for (const socket of sockets) if (socket.readyState === NativeSocket.OPEN) socket.dispatchEvent(new MessageEvent('message', { data: `42${JSON.stringify(['world:event', event])}` })); } });
+    Object.assign(window, { qaCardSockets: () => [...sockets].filter(socket => socket.readyState === NativeSocket.OPEN && upgraded.has(socket)).length,
+      qaCardEvent: (event: unknown) => { for (const socket of sockets) if (socket.readyState === NativeSocket.OPEN && upgraded.has(socket)) socket.dispatchEvent(new MessageEvent('message', { data: `42${JSON.stringify(['world:event', event])}` })); } });
   });
   expect((await page.request.post('/api/auth/login', { data: { email: process.env.E2E_CITY_EMAIL ?? 'demo@tasktopia.local', password: process.env.E2E_CITY_PASSWORD ?? 'tasktopia-demo' } })).status()).toBe(200);
   const bootstrap = await (await page.request.get('/api/bootstrap')).json() as BootstrapDto;

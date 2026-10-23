@@ -12,18 +12,19 @@ async function login(page: Page) {
 }
 async function observation(page: Page) {
   await page.addInitScript(() => {
-    const NativeSocket = window.WebSocket, sockets = new Set<WebSocket>(), trace: unknown[] = [];
+    const NativeSocket = window.WebSocket, sockets = new Set<WebSocket>(), upgraded = new Set<WebSocket>(), trace: unknown[] = [];
     const record = (event: string) => { trace.push({ event, at: performance.now(), url: location.href, state: structuredClone(history.state), title: document.title }); if (trace.length > 120) trace.shift(); };
     const push = history.pushState.bind(history), replace = history.replaceState.bind(history);
     history.pushState = (...args) => { push(...args); record('pushState'); };
     history.replaceState = (...args) => { replace(...args); record('replaceState'); };
     window.addEventListener('popstate', () => record('popstate'));
     window.WebSocket = class extends NativeSocket {
-      constructor(url: string | URL, protocols?: string | string[]) { super(url, protocols); if (String(url).includes('/socket.io')) { sockets.add(this); this.addEventListener('close', () => sockets.delete(this)); } }
+      constructor(url: string | URL, protocols?: string | string[]) { super(url, protocols); if (String(url).includes('/socket.io')) { sockets.add(this); this.addEventListener('close', () => { sockets.delete(this); upgraded.delete(this); }); } }
+      override send(data: string | Blob | BufferSource) { super.send(data); if (data === '5') upgraded.add(this); }
     };
     Object.assign(window, {
-      qaScopeSockets: () => [...sockets].filter(socket => socket.readyState === NativeSocket.OPEN).length,
-      qaScopeFrame: (event: unknown) => { for (const socket of sockets) if (socket.readyState === NativeSocket.OPEN) socket.dispatchEvent(new MessageEvent('message', { data: `42${JSON.stringify(['world:event', event])}` })); },
+      qaScopeSockets: () => [...sockets].filter(socket => socket.readyState === NativeSocket.OPEN && upgraded.has(socket)).length,
+      qaScopeFrame: (event: unknown) => { for (const socket of sockets) if (socket.readyState === NativeSocket.OPEN && upgraded.has(socket)) socket.dispatchEvent(new MessageEvent('message', { data: `42${JSON.stringify(['world:event', event])}` })); },
       qaScopeSnapshot: () => ({ url: location.href, state: history.state, title: document.title, trace }),
     });
   });

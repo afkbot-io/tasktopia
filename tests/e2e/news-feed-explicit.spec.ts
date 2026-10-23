@@ -134,13 +134,14 @@ test('touch: запрет записи прочтения убирает ран�
 test('touch: событие комментария по WebSocket обновляет ленту через revision без автоматического прочтения', async ({ page }) => {
   const { bootstrap, tasks } = await session(page); const task = tasks.items[0]!;
   await page.addInitScript(() => {
-    const NativeSocket = window.WebSocket, sockets = new Set<WebSocket>();
+    const NativeSocket = window.WebSocket, sockets = new Set<WebSocket>(), upgraded = new Set<WebSocket>();
     window.WebSocket = class extends NativeSocket {
-      constructor(url: string | URL, protocols?: string | string[]) { super(url, protocols); if (String(url).includes('/socket.io')) { sockets.add(this); this.addEventListener('close', () => sockets.delete(this)); } }
+      constructor(url: string | URL, protocols?: string | string[]) { super(url, protocols); if (String(url).includes('/socket.io')) { sockets.add(this); this.addEventListener('close', () => { sockets.delete(this); upgraded.delete(this); }); } }
+      override send(data: string | Blob | BufferSource) { super.send(data); if (data === '5') upgraded.add(this); }
     };
     Object.assign(window, {
-      qaNewsSockets: () => [...sockets].filter(socket => socket.readyState === NativeSocket.OPEN).length,
-      qaNewsFrame: (event: unknown) => { for (const socket of sockets) if (socket.readyState === NativeSocket.OPEN) socket.dispatchEvent(new MessageEvent('message', { data: `42${JSON.stringify(['world:event', event])}` })); },
+      qaNewsSockets: () => [...sockets].filter(socket => socket.readyState === NativeSocket.OPEN && upgraded.has(socket)).length,
+      qaNewsFrame: (event: unknown) => { for (const socket of sockets) if (socket.readyState === NativeSocket.OPEN && upgraded.has(socket)) socket.dispatchEvent(new MessageEvent('message', { data: `42${JSON.stringify(['world:event', event])}` })); },
     });
   });
   let items = [event(task, 77)], reads = 0, writes = 0;
