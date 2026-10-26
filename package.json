@@ -115,7 +115,7 @@
     "socket.io": "4.8.3",
     "socket.io-client": "4.8.3",
     "web-push": "^3.6.7",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
