@@ -1,5 +1,53 @@
 # Общая квалификация 1.25.0
 
+## 26 октября 2026 — жизненный цикл браузерных проверок
+
+[CI40018418358, attempt2](https://github.com/afkbot-io/tasktopia/actions/runs/40018418358/attempts/2)
+на `3a3c30f30f6388ae3e6a104336c3748e3f8e0e48` завершился отказом:
+7 SUCCESS, browser4 FAILURE, browser1 CANCELLED, aggregate FAILURE.
+Формальные итоги четырёх browser shards —528 PASS /2 FAIL /176 SKIP /0 NOT RUN
+из706. Shards2/3 переиспользованы из первой попытки, а не выполнены повторно.
+Browser1 потратил46минут на установку зависимостей и достиг общего70минутного
+лимита. До отмены Playwright успел вывести полный итог135 PASS /1 FAIL /44 SKIP;
+это не превращает отменённый job в SUCCESS.
+
+В PWA-сценарии timeout60с был замаскирован cleanup-переходом в уже закрытой
+странице. Исходная незавершённая SW-фаза неизвестна: trace не загрузился при
+отмене job. Проверка теперь ограничивает ожидание active/controller15секундами
+и MessageChannel reply5секундами, сохраняет фазы/состояния без credentials и
+всегда закрывает собственный HTTP proxy. Исходные assertions, test60с,
+notice30с, retry-error20с и production-код сохранены. На retained CI public
+четыре проверки в Chromium и mobile WebKit прошли за36,8с, retry/SKIP/flaky0.
+Прежний CI timeout локально не воспроизведён; его причина не объявлена устранённой.
+
+Native WebKit/DPR2 контроль на двух настоящих CI-модулях воспроизвёл тот же
+access-control pageerror и stack: новый `api()` с обработчиком ошибки,
+запущенный при native teardown, не дошёл до browser network/HTTP сервера.
+Оба promise rejection обработаны, `windowerror`/`unhandledrejection` отсутствуют.
+Контроль без второго запроса имеет pageerror0. Это подтверждает механизм
+браузера, описанный в [Playwright42823](https://github.com/microsoft/playwright/issues/42823),
+но не устанавливает точную callback-цепочку исторического CI приложения.
+
+Городской сценарий теперь проверяет именно последнюю stage3 и перед hard reload
+впервые открывает настоящую ленту. Появление списка с `aria-busy=false` доказывает,
+что ответ получен и разобран; открытая лента отменяет отложенный badge-запрос.
+Все прежние cinematic/reload assertions и `errors=[]` сохранены без фильтров.
+Промежуточная замена ожидающего `unrouteAll` на selective `unroute` дала RED2/2
+из-за удаления ещё работающего handler; она отменена, исходное ожидание сохранено.
+Исправленный исходный сценарий прошёл в Chromium20,587с и WebKit20,303с,
+retry0. Business40/schema44/users и retained runtime920+45+822 неизменны;
+own DB connections0, port5353 свободен.
+
+Общий browser job получает120минут на установку и выполнение; сроки отдельных
+тестов, assertions, performance budgets и required aggregate не ослаблены.
+Загрузка failure artifacts при cancellation — best effort, а не гарантия
+сохранения runner после общего timeout. Full TSC, scoped ESLint и AI review
+пройдены. Runtime/dependencies/assets не изменены: соответствующие прежние
+perf/native/recovery evidence применяются в своих границах без нового freeze/build.
+Следующий обязательный CI этой QA-ревизии нужен перед merge и managed release.
+Личные города на опубликованном сайте пользователь проверяет самостоятельно;
+публичный экран входа будет проверен отдельно на desktop и phone emulation.
+
 ## 23 октября 2026 — владение сессией во время выхода
 
 На `427ae8acde81ac5b784afc34aec3fb315dd8a8f6` исходные native-сценарии

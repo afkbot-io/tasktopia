@@ -252,7 +252,12 @@ test('delayed artwork, rapid stage coalescing, rollback, map departure and reduc
   await expect(f.host).toHaveAttribute('data-city-cinematics','0');
   await page.emulateMedia({reducedMotion:'reduce'});await expect(f.host).toHaveAttribute('data-animation-active','false');
   await f.call('task.set_status',{taskId:fresh.id,status:'IN_PROGRESS',progress:40,comment:'Разрешённый возврат из тестирования'});
-  await expect(f.host).toHaveAttribute('data-city-cinematics','0');await expect(f.host).toHaveAttribute('data-realtime-patched-tasks',new RegExp(fresh.id));
+  await expect(f.host).toHaveAttribute('data-city-cinematics','0');
+  await expect(f.host).toHaveAttribute('data-realtime-patched-tasks',new RegExp(`"taskId":"${fresh.id}","stage":3`));
+  // Opening the feed cancels its debounced badge read. The first visible list
+  // proves the real replacement response was parsed before this hard reload.
+  await page.getByLabel('Уведомления',{exact:true}).click();
+  await expect(page.getByRole('region',{name:'Уведомления',exact:true}).getByRole('list',{name:'События мира'})).toHaveAttribute('aria-busy','false');
   await page.reload();await openMapCity(page);await expect(f.host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30000});await expect(f.host).toHaveAttribute('data-city-cinematics','0');
   expect(errors).toEqual([]);
  }finally{await f.cleanup();}
