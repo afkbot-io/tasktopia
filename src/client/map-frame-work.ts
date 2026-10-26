@@ -19,12 +19,23 @@ export async function waitForVisibleMapWork(
   work: ReadonlyMap<Promise<void>, string>,
   visibleKeys: () => ReadonlySet<string>,
   active: () => boolean,
+  subscribeWake?: (wake: () => void) => () => void,
 ): Promise<void> {
   while (active()) {
-    const visible = visibleKeys();
-    const pending = [...work].filter(([, key]) => visible.has(key)).map(([job]) => job);
-    if (!pending.length) return;
-    await Promise.all(pending);
+    let wake!: () => void;
+    const changed = new Promise<void>(resolve => { wake = resolve; });
+    // Subscribe before reading the required pages, including an already ready
+    // new viewport. A former visible page may now be background prewarming.
+    const unsubscribe = subscribeWake?.(wake);
+    try {
+      const visible = visibleKeys(), pending: Promise<void>[] = [];
+      for (const [job, key] of work) if (visible.has(key)) pending.push(job.catch(error => {
+        if (active() && visibleKeys().has(key)) throw error;
+      }));
+      if (!pending.length) return;
+      const settled = Promise.all(pending);
+      await (subscribeWake ? Promise.race([settled, changed]) : settled);
+    } finally { unsubscribe?.(); }
   }
 }
 

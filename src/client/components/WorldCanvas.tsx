@@ -2638,6 +2638,12 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       const paddingTreeBands = new Map<number, Container>();
       const paddingWork = new Map<Promise<void>, string>();
       let visiblePaddingKeys = new Set<string>();
+      const paddingWakeListeners = new Set<() => void>();
+      const wakePaddingWaiters = () => { for (const wake of paddingWakeListeners) wake(); };
+      const subscribePaddingWake = (wake: () => void) => {
+        paddingWakeListeners.add(wake); return () => { paddingWakeListeners.delete(wake); };
+      };
+      let paddingWorkDisposed = false;
       let residentTerrainKeys = new Set<string>();
       let cityTerrainPadding: CityTerrainPadding | undefined;
       let cityRoadPadding: CityRoadPadding | undefined;
@@ -2693,6 +2699,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         host.dataset.cameraPaddingTreeSample = JSON.stringify(sample);
       };
       startupDisposers.push(() => {
+        paddingWorkDisposed = true; wakePaddingWaiters();
         cancelAnimationFrame(paddingPrewarmFrame);
         cancelAnimationFrame(nativeFrameReset);
         for (const record of paddingTerrain.values()) removePaddingGround(record);
@@ -2838,7 +2845,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const camera = cityCamera.pending ?? {x:world.x,y:world.y,scale:world.scale.x};
         const visible = cameraTerrainPadding(camera, camera.scale, app.screen, cameraBounds(), CELL_SIZE, chunkSize)
           .filter(([x, y]) => !residentTerrainKeys.has(chunkKey(x, y)));
-        visiblePaddingKeys = new Set(visible.map(([x, y]) => chunkKey(x, y)));
+        const nextVisibleKeys = new Set(visible.map(([x, y]) => chunkKey(x, y)));
+        if (nextVisibleKeys.size !== visiblePaddingKeys.size || [...nextVisibleKeys].some(id => !visiblePaddingKeys.has(id))) {
+          visiblePaddingKeys = nextVisibleKeys; wakePaddingWaiters();
+        }
         // The invisible halo must not spend the first-frame bake/worker budget.
         // Visible exterior still uses the same exact terrain and tree pipeline.
         const targetCoordinates = cameraTerrainPadding(camera, camera.scale, app.screen, cameraBounds(), CELL_SIZE, chunkSize, paintedFrame ? 1 : 0)
@@ -4400,8 +4410,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         report();
       }
       const waitForCityPadding = async (valid: () => boolean): Promise<boolean> => {
-        await waitForVisibleMapWork(paddingWork, () => visiblePaddingKeys, valid);
-        if (!valid()) return false;
+        const current = () => valid() && !paddingWorkDisposed;
+        await waitForVisibleMapWork(paddingWork, () => visiblePaddingKeys, current, subscribePaddingWake);
+        if (!current()) return false;
         if ([...visiblePaddingKeys].some(id => !visibleMapPaddingReady(paddingTerrain.get(id)))) {
           host!.dataset.loading = "false";
           host!.dataset.loadError = "true";
@@ -4828,6 +4839,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         }
         pendingMovementRebuild ||= Boolean(options.rebuildMovement);
         loadGeneration += 1;
+        wakePaddingWaiters();
         // Cancel only work that cannot serve the new viewport. Overlapping
         // requests remain useful, while a slow off-screen response no longer
         // holds the single drain loop behind obsolete Promise.all work.

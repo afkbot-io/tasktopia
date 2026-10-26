@@ -12,6 +12,20 @@ export function watchPwaUpdate(
   let accepted = false;
   let reloaded = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let activating: ServiceWorker | null = null;
+  let activationListener: (() => void) | undefined;
+  const clearActivation = () => {
+    clearTimeout(timer); timer = undefined;
+    if (activating && activationListener) activating.removeEventListener("statechange", activationListener);
+    activating = null; activationListener = undefined;
+  };
+  const failActivation = () => {
+    clearActivation(); accepted = false; publish("error");
+  };
+  const finishActivation = () => {
+    if (!accepted || reloaded || !activating || serviceWorker.controller !== activating || activating.state !== "activated") return;
+    reloaded = true; accepted = false; clearActivation(); reload();
+  };
   const announce = () => {
     if (registration.waiting && serviceWorker.controller && registration.waiting !== serviceWorker.controller && !accepted) {
       offered = registration.waiting;
@@ -25,15 +39,20 @@ export function watchPwaUpdate(
   };
   serviceWorker.addEventListener("controllerchange", () => {
     if (reloaded) return;
+    const unchangedController = serviceWorker.controller === previousController;
     const replacedController = !!previousController && serviceWorker.controller !== previousController;
     previousController = serviceWorker.controller;
     if (!accepted) {
       if (replacedController) { offered = serviceWorker.controller; publish("available"); }
       return;
     }
-    reloaded = true;
-    clearTimeout(timer);
-    reload();
+    if (serviceWorker.controller !== activating) {
+      if (unchangedController) return;
+      offered = serviceWorker.controller; failActivation(); return;
+    }
+    // Claiming a page can precede completion of the worker's activate event.
+    // Keep the original watchdog and this page until that controller is ready.
+    finishActivation();
   });
   registration.addEventListener("updatefound", observe);
   observe();
@@ -46,11 +65,21 @@ export function watchPwaUpdate(
       reload();
       return;
     }
-    if (!worker) { publish("error"); return; }
+    if (!worker || worker.state === "redundant") { publish("error"); return; }
     accepted = true;
+    activating = worker;
+    activationListener = () => {
+      if (!accepted || activating !== worker) return;
+      if (worker.state === "redundant") {
+        if (offered === worker) offered = null;
+        failActivation(); return;
+      }
+      finishActivation();
+    };
+    worker.addEventListener("statechange", activationListener);
     publish("updating");
-    timer = setTimeout(() => { accepted = false; publish("error"); }, 15_000);
+    timer = setTimeout(failActivation, 15_000);
     try { worker.postMessage({ type: "TASKTOPIA_SKIP_WAITING" }); }
-    catch { clearTimeout(timer); accepted = false; publish("error"); }
+    catch { failActivation(); }
   };
 }
