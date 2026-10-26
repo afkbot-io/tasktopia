@@ -1,4 +1,4 @@
-import { readWorldPreferences } from './world-preferences';
+import { readWorldPreferences, subscribeWorldPreferences } from './world-preferences';
 export type CitySoundCue='hammer'|'blast'|'rotor'|'reveal'|'siren'|'bell'|'chirp'|'whistle';
 const scores:Record<CitySoundCue,{frequency:number;end:number;duration:number;volume:number;type:OscillatorType}>={
  hammer:{frequency:190,end:75,duration:.06,volume:.025,type:'triangle'},
@@ -21,6 +21,14 @@ export async function unlockCityAudio(trusted:boolean){
 export function silenceCityAudio(){
  for(const voice of voices){voice.oscillator.onended=null;try{voice.oscillator.stop();}catch{/* Already ended. */}voice.oscillator.disconnect();voice.gain.disconnect();}
  voices.clear();
+}
+/** One application owner also covers completion notices on the planet/card. */
+export function bindCityAudioLifecycle() {
+ const mute = () => { if (!readWorldPreferences().sound || document.hidden) silenceCityAudio(); };
+ const unsubscribe = subscribeWorldPreferences(mute);
+ document.addEventListener('visibilitychange', mute);
+ window.addEventListener('pagehide', silenceCityAudio);
+ return () => { unsubscribe(); document.removeEventListener('visibilitychange', mute); window.removeEventListener('pagehide', silenceCityAudio); silenceCityAudio(); };
 }
 export function playCitySound(cue:CitySoundCue,attenuation=1){
  if(!Number.isFinite(attenuation)||attenuation<=0||!context||context.state!=='running'||!readWorldPreferences().sound||document.hidden||voices.size>=4)return false;

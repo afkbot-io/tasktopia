@@ -17,7 +17,7 @@ test("recorded bridge and its road approaches render outside resident city chunk
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("megacity-validation@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-megacity-validation");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-megacity-validation");
   await page.getByRole("button",{name:"Открыть страну",exact:true}).click();
   const city=page.locator(".world-canvas");
   await expect(city).toHaveAttribute("data-city-scene-commit","atomic",{timeout:45_000});

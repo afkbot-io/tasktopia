@@ -87,7 +87,7 @@ test("real deletion clears an already open task after its authoritative HTTP 404
   test.setTimeout(90_000);
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   const task = await openOwnTask(page);
-  const reload = page.waitForResponse(response => new URL(response.url()).pathname === `/api/tasks/${task.id}`
+  const reload = page.waitForResponse(response => new URL(response.url()).pathname === `/api/tasks/${task.id}/card`
     && response.request().method() === "GET" && response.status() === 404);
   await deleteOwnTask(page, task);
   expect((await reload).status()).toBe(404);
@@ -99,7 +99,7 @@ test("real deletion clears an already open task after its authoritative HTTP 404
 test("a definitive HTTP 403 clears task details and actions on realtime refresh", async ({ page }) => {
   test.setTimeout(90_000);
   const task = await openOwnTask(page);
-  const endpoint = `**/api/tasks/${task.id}`;
+  const endpoint = `**/api/tasks/${task.id}/card?*`;
   try {
     await page.route(endpoint, route => route.fulfill({ status: 403, json: { message: "QA: task access revoked" } }));
     await refreshOwnTask(page, task);
@@ -115,7 +115,7 @@ test("a definitive HTTP 403 clears task details and actions on realtime refresh"
 test("temporary HTTP 503 preserves the loaded card and a later refresh recovers", async ({ page }) => {
   test.setTimeout(90_000);
   const task = await openOwnTask(page);
-  const endpoint = `**/api/tasks/${task.id}`;
+  const endpoint = `**/api/tasks/${task.id}/card?*`;
   try {
     await page.route(endpoint, route => route.fulfill({ status: 503, json: { message: "QA: temporary task service failure" } }));
     await refreshOwnTask(page, task);
@@ -124,7 +124,7 @@ test("temporary HTTP 503 preserves the loaded card and a later refresh recovers"
     await expect(page.locator("#task-title")).toHaveText(task.title);
     await expect(page.getByRole("button", { name: "Ссылка", exact: true })).toBeVisible();
     await page.unroute(endpoint);
-    const reload = page.waitForResponse(response => new URL(response.url()).pathname === `/api/tasks/${task.id}`
+    const reload = page.waitForResponse(response => new URL(response.url()).pathname === `/api/tasks/${task.id}/card`
       && response.request().method() === "GET" && response.status() === 200);
     await refreshOwnTask(page, task);
     await reload;

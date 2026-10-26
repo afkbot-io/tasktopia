@@ -1,0 +1,239 @@
+{
+  "kind": "tasktopia.reliability-v9-preflight",
+  "at": "2026-10-22T23:38:13.945Z",
+  "checkpoint": true,
+  "sourceBaseRevision": "704818ee2d7327693e1d0b85cd1d28cfc4246b00",
+  "sourceHash": "a5e40775a43603a7ec0ad47fef671cfa7d6654b5ba9ec39ea050f896176f6c3c",
+  "qualificationHash": "2f423a5176be82d77cef725f3395469b530152dbebd463aa7e17ec7aafbfe536",
+  "runtimeInputs": 1263,
+  "changedFromV7": [
+    "src/client/city-mobility.ts",
+    "src/client/components/WorldCanvas.tsx",
+    "src/client/game-ui.css",
+    "src/client/mobility-route-search.ts"
+  ],
+  "changedFromV8": [
+    "src/client/city-mobility.ts",
+    "src/client/components/WorldCanvas.tsx"
+  ],
+  "build": {
+    "command": "npm run build (includes full tsc --noEmit)",
+    "passed": true,
+    "attempts": 1,
+    "serverHash": "dbc7be70b6f1fe9db5ff929d72bb799efc496866c6c6cf1de20a283493a4eb22",
+    "clientHash": "025314a7b152fef2a360363179442c33c0b447d60e60d29b74d1a13187646b6d",
+    "htmlHash": "50650f5de3d8efed3d42a9561ebd5792d75674632c45e21a0ce5cf6ef93efa6d",
+    "distHash": "9af5ef0b176aea3aa1b07072b5ede1fa16c368fe3c443f0d6fae640bc67686bb",
+    "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+    "assetRevision": "f5ba91abe09a928b",
+    "canonicalFiles": 920,
+    "startupCopies": 822
+  },
+  "backendAndDependencies": {
+    "byteEqualFrozenV7": true,
+    "note": "Полные backend/shared/package/lock и assets равны V7. Его 33 HTTP-теста/5 файлов (50 реальных tools) и compiled smoke сохраняют исходные привязки; это не новый MCP прогон."
+  },
+  "changes": [
+    "Геометрия физической подготовки сохраняет одного владельца при смене качества; поздний результат применяет актуальные лимиты населения.",
+    "Поиск маршрутов обрабатывает ограниченные порции без изменения BFS порядка, направлений и квот; scheduler4ms/opcap8192 сохранён.",
+    "Физика учитывает реальный elapsedMS до250ms/пять50ms шагов за кадр; visual cap50ms и TTL32s прежние.",
+    "Ошибка PNG после первого кадра сохраняет CITY/canvas и настоящий Retry; первоначальная ошибка входа остаётся fatal.",
+    "Мобильный статус аккаунта доступен, а проверки коротких фаз используют наблюдатель после навигации."
+  ],
+  "tests": {
+    "routing": {
+      "passed": 63,
+      "files": 6,
+      "logSha256": "b8183baccbcdaf1e188d2cc9bbdf07a3c287e88689c9ace857bac6c3d585eb16"
+    },
+    "frameTime": {
+      "publicRed": "Со старым cap50 реальная доставка не достигает DISCUSS за прежний32s TTL",
+      "focusedPassed": 9,
+      "affectedPassed": 55,
+      "deliberatelySkippedLongCases": 6,
+      "affectedFiles": 6,
+      "independentReviewSha256": "54aa96063b48ee6e8ff82709b98d918a7ba371251bef500bd69ba1fcdee6506b"
+    },
+    "note": "Наборы пересекаются и не суммируются в уникальный общий прогон."
+  },
+  "native": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 122999.435,
+    "profiles": {
+      "desktopChromium": 6,
+      "pixelChromium": 4,
+      "iphoneWebkit": 3,
+      "desktopWebkit": 3
+    },
+    "emulationOnly": true,
+    "originalDprAndBounds": true,
+    "summarySha256": "21e31e18b3465b5505f2a31f7abc70b210e2421ee11ba86bbc117d9d4f77772b",
+    "businessHashUnchanged": true,
+    "serverClosed": true,
+    "browserCliExited": true,
+    "port5343Free": true,
+    "cases": [
+      {
+        "title": "resident images finishing on the planet do not rebuild the hidden city",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 3320
+      },
+      {
+        "title": "walking routes wait for resident sprites without holding the first city frame",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 2754
+      },
+      {
+        "title": "событие у завершённого дома прибывает, действует и завершается без записей задач",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 2949
+      },
+      {
+        "title": "a quality change keeps the pending physical preparation and adopts the latest population limits",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 4010
+      },
+      {
+        "title": "same render content advances publication fences without decoding, rebaking or recompiling paths",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 4657
+      },
+      {
+        "title": "quality limits preserve the physical walk network and everyday compilation",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 3123
+      },
+      {
+        "title": "a quality change keeps the pending physical preparation and adopts the latest population limits",
+        "project": "touch-iphone",
+        "status": "passed",
+        "durationMs": 2631
+      },
+      {
+        "title": "планета открывает город напрямую и сохраняет камеру без фоновой сцены",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 4007
+      },
+      {
+        "title": "список на 150 городов загружается страницами и ищет город на последней странице",
+        "project": "native-chromium",
+        "status": "passed",
+        "durationMs": 474
+      },
+      {
+        "title": "retries a failed second history page before committing a newer WebSocket arrival",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 1522
+      },
+      {
+        "title": "retries a failed second history page before committing a newer WebSocket arrival",
+        "project": "touch-iphone",
+        "status": "passed",
+        "durationMs": 1239
+      },
+      {
+        "title": "мобильная панель: статус, цели 44px и аккаунт на 320/390",
+        "project": "touch-pixel",
+        "status": "passed",
+        "durationMs": 4145
+      },
+      {
+        "title": "мобильная панель: статус, цели 44px и аккаунт на 320/390",
+        "project": "touch-iphone",
+        "status": "passed",
+        "durationMs": 2666
+      },
+      {
+        "title": "реальные MCP комментарии и документы оживляют вход без чтения сцены, серия объединяется, стадия сохраняет дымок",
+        "project": "native-webkit",
+        "status": "passed",
+        "durationMs": 29695
+      },
+      {
+        "title": "MCP/WebSocket keeps the old building through all stages, delivers a helicopter transfer and leaves ruins after demolition",
+        "project": "native-webkit",
+        "status": "passed",
+        "durationMs": 26268
+      },
+      {
+        "title": "live cards stay current, reconnect skips old events and failed artwork cannot hold a ghost forever",
+        "project": "native-webkit",
+        "status": "passed",
+        "durationMs": 26029
+      }
+    ]
+  },
+  "fixtures": [
+    {
+      "tasks": 200,
+      "chunks": 20,
+      "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+      "statusCounts": {
+        "COMPLETED": 160,
+        "IN_PROGRESS": 30,
+        "PLANNING": 10
+      },
+      "readOnly": true
+    },
+    {
+      "tasks": 1000,
+      "chunks": 72,
+      "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+      "statusCounts": {
+        "COMPLETED": 800,
+        "IN_PROGRESS": 150,
+        "PLANNING": 50
+      },
+      "readOnly": true
+    }
+  ],
+  "review": {
+    "result": "NO_OPEN_SOURCE_FINDINGS",
+    "scmApproval": false,
+    "priorV8ReviewSha256": "85458037d39fa110dd872092d74f1cb1fb48a0290bb042d43288f29716448a17",
+    "newDeltaReviewSha256": "54aa96063b48ee6e8ff82709b98d918a7ba371251bef500bd69ba1fcdee6506b"
+  },
+  "pending": {
+    "newFull24Performance": true,
+    "newExactHeadCi": true,
+    "managedMerge": true,
+    "managedRelease": true,
+    "publicSmokeAnd300sObservation": true
+  },
+  "history": {
+    "ci704818ee": {
+      "url": "https://github.com/afkbot-io/tasktopia/actions/runs/39866777088",
+      "conclusion": "failure",
+      "unitTests": 2004,
+      "unitFiles": 360,
+      "browserShards": "4 failed; aggregate failed; raw evidence preserved"
+    },
+    "v8Native": "13/13 PASS, историческая отдельная серия; V9 проверен заново16/16",
+    "v7Performance": "Host prerequisite failed before any browser/sample; не performance-приёмка"
+  },
+  "limitations": [
+    "Физические телефоны не проверялись, по решению пользователя используется браузерная эмуляция.",
+    "Это датированный preflight до full24/нового CI/выкладки. Их итог фиксируется в Task53 и PR58, без переименования старых результатов.",
+    "Произвольно долгий main-thread stall не компенсируется полностью: один кадр выполняет не более пяти физических шагов."
+  ],
+  "historicalCheckpoint": true,
+  "supersededBy": "reliability-v10-preflight.json",
+  "historyAnnotatedAt": "2026-10-22T23:50:59.832Z",
+  "visualReview": {
+    "result": "CONFIRMED_ENTITY_RETENTION_DEFECT",
+    "publicRedBefore": 24,
+    "publicRedAfterFailure": 11,
+    "summarySha256": "dc526f930f68d87d7acb0ccb61ab4c73fcdd7dee60c711c7dfb2c90a98af4e29",
+    "note": "Native16 PASS не проверял соседние здания. Прежний source-review относится к моменту до этого наблюдения; исправление/усиленный GREEN записаны в V10."
+  }
+}

@@ -1,0 +1,215 @@
+{
+  "date": "2026-10-16",
+  "reason": "Общий PasswordField добавил кнопку с aria-label, содержащим имя поля. Точный label выбирает поле пароля и сохраняет исходное действие fill.",
+  "scope": "Только очевидные getByLabel с литералом имени поля пароля и последующим fill в legacy E2E. Исходные actions/assertions/data и production source не менялись.",
+  "files": 30,
+  "replacements": 38,
+  "changes": [
+    {
+      "file": "tests/e2e/accessibility.spec.ts",
+      "replacements": 2
+    },
+    {
+      "file": "tests/e2e/app.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/chunk-pipeline.spec.ts",
+      "replacements": 2
+    },
+    {
+      "file": "tests/e2e/city-200-loading.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/city-mobility.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/city-railway.spec.ts",
+      "replacements": 2
+    },
+    {
+      "file": "tests/e2e/compact-city.spec.ts",
+      "replacements": 2
+    },
+    {
+      "file": "tests/e2e/compact-service-art.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/compact-sites-incidents.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/device-compatibility.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/forest-ui-load.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/forest-ui-states.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/game-interface.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/growth.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/intercity-bridge.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/map-loading-geography.spec.ts",
+      "replacements": 2
+    },
+    {
+      "file": "tests/e2e/map-opening-budget.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/map-retry.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/map-streaming.spec.ts",
+      "replacements": 3
+    },
+    {
+      "file": "tests/e2e/megacity-validation.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/mobile-pwa.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/navigation-cache.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/planet-city-races.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/planet-city-ui.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/production-map-hotfix.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/readme-showcase.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/release-scale.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/task-entry.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/world-validation.spec.ts",
+      "replacements": 1
+    },
+    {
+      "file": "tests/e2e/account-lifecycle.spec.ts",
+      "replacements": 2,
+      "labels": [
+        "Повторите новый пароль",
+        "Повторите новый пароль"
+      ]
+    }
+  ],
+  "verification": {
+    "eslint": {
+      "files": 32,
+      "status": "PASS",
+      "log": ".builder/world-perf-20261016/legacy-e2e-eslint.log"
+    },
+    "strictTypescript": {
+      "status": "PASS",
+      "config": ".builder/world-perf-20261016/tsconfig-legacy-e2e.json",
+      "log": ".builder/world-perf-20261016/legacy-e2e-tsc.log",
+      "harnessRepair": "Первый узкий config исключил module augmentation @fastify/cookie. Он добавлен в types; исходники не менялись, исходный log сохранён.",
+      "initialLog": ".builder/world-perf-20261016/legacy-e2e-tsc-missing-cookie-augmentation.log"
+    },
+    "independentReview": {
+      "status": "PASS",
+      "path": ".builder/world-reliability-evolution-20261016/root/review-legacy-password-selectors.json"
+    },
+    "browser": {
+      "status": "PASS",
+      "cases": 6,
+      "durationMs": 22190.948,
+      "profile": "Chromium/Metal native browser; desktop1440 and CSS viewports320/390, not physical touch/device",
+      "runtime": "final-candidate-v2 production, exact frozen server/client; UX unchanged by signal-only optimization",
+      "fixture": "Отдельная пустая demo DB создана и seed-test дал40 задач; frozen200/1000 не менялись",
+      "actualCases": [
+        "Auth exact password input + MCP settings Axe",
+        "City art1440×1100: real building native selection, held /card request, zoom/pan/resize/canvas/scene request asserts",
+        "City art390×844: те же native /card/zoom/pan/resize asserts",
+        "Search /list-page503/loading/hide previous/retry + Axe",
+        "Search второйрезультат keyboard + Escape до реально поздно доставленного list-page response",
+        "Long title/description real /card response override at320: close/header/body/nooverflow asserts"
+      ],
+      "report": {
+        "path": ".builder/world-perf-20261016/legacy-native-results.json",
+        "sha256": "181fd4a206fb9900c53df7fb02c327cc409ce1d370ba8a2c2dcd1d9c991348af"
+      },
+      "log": ".builder/world-perf-20261016/legacy-native-driver.log",
+      "screenshotsViewed": [
+        "task-long-title.png",
+        "city-390.png"
+      ],
+      "browsersClosed": true,
+      "ownedRuntimeStopped": true,
+      "limits": "Не запускались все30legacy файлов, guardedmutablecases,480art horizon или performance probes. Этот smoke не заменяет финальный CI нового combined renderer."
+    }
+  },
+  "previousExactPasswordBatch": {
+    "files": 29,
+    "replacements": 36
+  },
+  "additionalNamedPasswordFields": [
+    {
+      "file": "tests/e2e/account-lifecycle.spec.ts",
+      "replacements": 2,
+      "labels": [
+        "Повторите новый пароль",
+        "Повторите новый пароль"
+      ]
+    }
+  ],
+  "otherAdaptations": [
+    {
+      "file": "tests/e2e/ui-design-review.spec.ts",
+      "changes": [
+        "Search failure/late response перехватывают /api/tasks/list-page с countryId и TaskListPageDto.",
+        "Escape проверяет реально удержанный и поздно доставленный list response.",
+        "Long title/description mock перехватывает TaskCardDto /card?countryId, вместо прежнего full GET.",
+        "Первый найденный результат выбирается через role=option."
+      ]
+    },
+    {
+      "file": "tests/e2e/world-digest.spec.ts",
+      "changes": [
+        "Retry empty page mock использует nextCursor:null вместо nextBefore."
+      ]
+    }
+  ],
+  "relatedReviewedWithoutChanges": [
+    "tests/e2e/map-attention.spec.ts",
+    "tests/e2e/forest-ui-surfaces.spec.ts",
+    "tests/e2e/device-compatibility.spec.ts selectors кроме точного password field"
+  ]
+}

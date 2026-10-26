@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-16",
+  "base": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+  "sourceHashes": {
+    "src/client/news-feed-reader.ts": "68653f2b05f2ee128914093586035a6cc1716334af184c5ecf23d35a74deb3ed",
+    "src/client/news-feed-state.ts": "78789deb0b2f37c91b32abc06336596024f5a4952e9743f7981847af20e06e63",
+    "src/client/use-news-feed.ts": "c26d2da9492fd6785c98847caf96ee4edf8c5f2786b082520e6ba5c73c3e0e0a",
+    "src/client/components/WorldDigest.tsx": "71c879f8996200f7caa94663281354926078b3841767fd43b0703e930d8baedd",
+    "src/client/news-feed.css": "6fa542985fe1266ba4c9940d932114278d752b68a59340bc81c27d40630e4def",
+    "tests/news-feed-reader.test.ts": "118891a99f8f6ad52be7e8d213b8336781c6cd531f9a7e179628c415a09a8be7",
+    "tests/news-feed-state.test.ts": "8cb6b244967929f6011fb8796075c6eaf7a6f7cba9e308a4d98c1cc9b3cca1bf",
+    "tests/e2e/news-feed-explicit.spec.ts": "2b0a30353c553eae4e668350c74d8e30899c5ea30d8f44b003f99487ada2251e",
+    "tests/e2e/world-digest.spec.ts": "5a8a1499671cafb7b0380cfec3cb2c3847bc0cec5fa60dece5d9fe60eaf435b5"
+  },
+  "unit": {
+    "passed": 6,
+    "files": 2,
+    "raw": ".builder/world-perf-20261016/u02-unit-second.log"
+  },
+  "browser": {
+    "runtime": "Vite5315/foundation5316, isolated fresh QA200",
+    "journeys": 6,
+    "profiles": [
+      "desktop-chromium",
+      "desktop-firefox",
+      "desktop-webkit",
+      "pixel-chromium",
+      "iphone-webkit"
+    ],
+    "successfulCombinations": 30,
+    "initialFailure": "one iPhone Task close from initial PLANET remained open, unknown timing cause; trace retained and U01 owner informed",
+    "finalVisualRepeat": {
+      "passed": 5,
+      "raw": ".builder/world-perf-20261016/u02-footer-green.log",
+      "assertions": [
+        "320px no horizontal overflow",
+        "pagination viewport ratio 1",
+        "Axe serious/critical zero in panel",
+        "pageerror zero",
+        "native task close dialog count zero"
+      ]
+    },
+    "limits": [
+      "HTTP feed/ACK mocks for failures/races; real synthetic login/tasks navigation",
+      "No DB/task/event/notification writes, auth test sessions only",
+      "No Vite performance claim",
+      "No physical-device claim",
+      "Final immutable build/CI/U01 race qualification pending"
+    ]
+  },
+  "nativeApiSmoke": {
+    "requests": 8,
+    "http200": 8,
+    "itemsEach": 0,
+    "raw": ".builder/world-perf-20261016/u02-native-smoke.json",
+    "claim": "endpoint/schema/empty state only; backend suite owns grouping/own-token eligibility"
+  },
+  "rawPrefix": ".builder/world-perf-20261016/u02-",
+  "testOnlyCleanupAfterBrowser": "Deferred mock gates now release in finally even on assertion failure; final matrix will execute this cleanup-only change.",
+  "navigationInvestigation": {
+    "profiles": [
+      "iphone-webkit"
+    ],
+    "passed": 4,
+    "phases": [
+      "lazy chunk/fallback held",
+      "card GET held",
+      "ready",
+      "CITY scene GET held while card ready"
+    ],
+    "cyclesBackForward": 2,
+    "appEdited": false,
+    "causeOfInitialTimeout": "not reproduced; not established",
+    "publicTest": "tests/e2e/task-navigation-history.spec.ts",
+    "sourceSha256": "009d82cf61befd8be6f0c6adaf54b871fa219d0501373ef8dcf65725d07c8fc1",
+    "rawPrefix": ".builder/world-perf-20261016/u01-news-history",
+    "testOnlyWriterAfterBrowser": "durable outputPath JSON + attachment; final matrix will exercise writer"
+  }
+}

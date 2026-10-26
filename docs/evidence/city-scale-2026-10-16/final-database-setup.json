@@ -1,0 +1,369 @@
+{
+  "baselinePort": 55436,
+  "finalPort": 55437,
+  "postgresVersion": "16.15",
+  "readOnlyVerification": true,
+  "originalDumpsRestored": true,
+  "regenerated": false,
+  "browserSamplesRun": 0,
+  "rows": [
+    {
+      "tasks": 200,
+      "chunks": 20,
+      "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+      "configuration": {
+        "settings": [
+          {
+            "name": "TimeZone",
+            "setting": "UTC",
+            "unit": null
+          },
+          {
+            "name": "autovacuum",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "autovacuum_naptime",
+            "setting": "60",
+            "unit": "s"
+          },
+          {
+            "name": "checkpoint_completion_target",
+            "setting": "0.9",
+            "unit": null
+          },
+          {
+            "name": "checkpoint_timeout",
+            "setting": "300",
+            "unit": "s"
+          },
+          {
+            "name": "data_checksums",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "default_statistics_target",
+            "setting": "100",
+            "unit": null
+          },
+          {
+            "name": "effective_cache_size",
+            "setting": "524288",
+            "unit": "8kB"
+          },
+          {
+            "name": "fsync",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "full_page_writes",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "huge_pages",
+            "setting": "try",
+            "unit": null
+          },
+          {
+            "name": "jit",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "lc_messages",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "lc_monetary",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "lc_numeric",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "lc_time",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "maintenance_work_mem",
+            "setting": "65536",
+            "unit": "kB"
+          },
+          {
+            "name": "max_connections",
+            "setting": "100",
+            "unit": null
+          },
+          {
+            "name": "max_parallel_workers",
+            "setting": "8",
+            "unit": null
+          },
+          {
+            "name": "max_parallel_workers_per_gather",
+            "setting": "2",
+            "unit": null
+          },
+          {
+            "name": "max_wal_size",
+            "setting": "1024",
+            "unit": "MB"
+          },
+          {
+            "name": "max_worker_processes",
+            "setting": "8",
+            "unit": null
+          },
+          {
+            "name": "min_wal_size",
+            "setting": "80",
+            "unit": "MB"
+          },
+          {
+            "name": "random_page_cost",
+            "setting": "4",
+            "unit": null
+          },
+          {
+            "name": "seq_page_cost",
+            "setting": "1",
+            "unit": null
+          },
+          {
+            "name": "server_encoding",
+            "setting": "UTF8",
+            "unit": null
+          },
+          {
+            "name": "server_version",
+            "setting": "16.15 (Homebrew)",
+            "unit": null
+          },
+          {
+            "name": "shared_buffers",
+            "setting": "16384",
+            "unit": "8kB"
+          },
+          {
+            "name": "synchronous_commit",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "track_io_timing",
+            "setting": "off",
+            "unit": null
+          },
+          {
+            "name": "wal_level",
+            "setting": "replica",
+            "unit": null
+          },
+          {
+            "name": "work_mem",
+            "setting": "4096",
+            "unit": "kB"
+          }
+        ],
+        "locale": {
+          "datcollate": "C",
+          "datctype": "C"
+        }
+      },
+      "statusCounts": {
+        "COMPLETED": 160,
+        "IN_PROGRESS": 30,
+        "PLANNING": 10
+      },
+      "frozenDumpSha256": "b8d276f6727dde5c8e45186ae4bc44a9f1dd54179d175859ee95e81e045adb7b"
+    },
+    {
+      "tasks": 1000,
+      "chunks": 72,
+      "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+      "configuration": {
+        "settings": [
+          {
+            "name": "TimeZone",
+            "setting": "UTC",
+            "unit": null
+          },
+          {
+            "name": "autovacuum",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "autovacuum_naptime",
+            "setting": "60",
+            "unit": "s"
+          },
+          {
+            "name": "checkpoint_completion_target",
+            "setting": "0.9",
+            "unit": null
+          },
+          {
+            "name": "checkpoint_timeout",
+            "setting": "300",
+            "unit": "s"
+          },
+          {
+            "name": "data_checksums",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "default_statistics_target",
+            "setting": "100",
+            "unit": null
+          },
+          {
+            "name": "effective_cache_size",
+            "setting": "524288",
+            "unit": "8kB"
+          },
+          {
+            "name": "fsync",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "full_page_writes",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "huge_pages",
+            "setting": "try",
+            "unit": null
+          },
+          {
+            "name": "jit",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "lc_messages",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "lc_monetary",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "lc_numeric",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "lc_time",
+            "setting": "C",
+            "unit": null
+          },
+          {
+            "name": "maintenance_work_mem",
+            "setting": "65536",
+            "unit": "kB"
+          },
+          {
+            "name": "max_connections",
+            "setting": "100",
+            "unit": null
+          },
+          {
+            "name": "max_parallel_workers",
+            "setting": "8",
+            "unit": null
+          },
+          {
+            "name": "max_parallel_workers_per_gather",
+            "setting": "2",
+            "unit": null
+          },
+          {
+            "name": "max_wal_size",
+            "setting": "1024",
+            "unit": "MB"
+          },
+          {
+            "name": "max_worker_processes",
+            "setting": "8",
+            "unit": null
+          },
+          {
+            "name": "min_wal_size",
+            "setting": "80",
+            "unit": "MB"
+          },
+          {
+            "name": "random_page_cost",
+            "setting": "4",
+            "unit": null
+          },
+          {
+            "name": "seq_page_cost",
+            "setting": "1",
+            "unit": null
+          },
+          {
+            "name": "server_encoding",
+            "setting": "UTF8",
+            "unit": null
+          },
+          {
+            "name": "server_version",
+            "setting": "16.15 (Homebrew)",
+            "unit": null
+          },
+          {
+            "name": "shared_buffers",
+            "setting": "16384",
+            "unit": "8kB"
+          },
+          {
+            "name": "synchronous_commit",
+            "setting": "on",
+            "unit": null
+          },
+          {
+            "name": "track_io_timing",
+            "setting": "off",
+            "unit": null
+          },
+          {
+            "name": "wal_level",
+            "setting": "replica",
+            "unit": null
+          },
+          {
+            "name": "work_mem",
+            "setting": "4096",
+            "unit": "kB"
+          }
+        ],
+        "locale": {
+          "datcollate": "C",
+          "datctype": "C"
+        }
+      },
+      "statusCounts": {
+        "COMPLETED": 800,
+        "IN_PROGRESS": 150,
+        "PLANNING": 50
+      },
+      "frozenDumpSha256": "48bc2b5a9b42304bffeaa831837d6736d37c1f943b15fc22f22d9bff9c5b18d9"
+    }
+  ]
+}

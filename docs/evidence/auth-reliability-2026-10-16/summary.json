@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-16",
+  "baseRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+  "preview": "candidate-render-v3",
+  "sourceHashes": {
+    "src/client/components/AuthScreen.tsx": "67f1a78233860911bf74fc23ff5b534448048bcd9890008c9706962995e92d5b",
+    "src/client/components/RecoveryScreen.tsx": "076dec96f1e24a4613d34b2b7d7d045364a570602b356a8ffab0e088d84fe918",
+    "src/client/components/InvitationEntry.tsx": "7aff6d4705dc1ab5803d24ba69eb0114582132cca6aa984ca53e48651005a228",
+    "src/client/components/ui.tsx": "65d4b7ac3c51aa11781f71cf93394e85dac8c25ca2e9f9f2dda957ad41cf8b16",
+    "src/client/auth-form-validation.ts": "1eba6955dde57ee0f4e65d48aaf53ea7313625ecb0226144baf010598cf0f10f",
+    "src/client/components/AuthWorldScene.tsx": "9593a958654f3e921c306a7b2425716ac013568536af72dec989910b1cae1985",
+    "src/client/auth-scene-assets.ts": "9fc02b82928f0ea188279aa790818ea42f1afd8551a3240ff2dae1f90f6e0cfd"
+  },
+  "verifiedAgainstProductionSourcesContent": true,
+  "clientEntry": "index-Bhnf0W8W.js",
+  "clientEntrySha256": "fb5bd589a2e9e2192a2ff6b1ed82b9d21e0a341ee4fe4984924b20c857cb6631",
+  "node": "24.15.0",
+  "playwright": "1.62.1",
+  "browserChecks": {
+    "passed": 49,
+    "failed": 0,
+    "profiles": [
+      "chromium",
+      "ui-review-firefox",
+      "ui-review-webkit",
+      "ui-review-mobile-chromium",
+      "ui-review-mobile-webkit"
+    ]
+  },
+  "unit": {
+    "passed": 15,
+    "files": 5
+  },
+  "eslint": "passed",
+  "scopedStrictTypecheck": "passed",
+  "fullBranchCI": "parent-release-gate",
+  "limit": "Browser emulation; physical phones not tested.",
+  "artifacts": {
+    "browserLogSha256": "d7d027198324f37278017d7dbdd216ba4af6537b9a212c0608569fcf0ef5928e",
+    "unitLogSha256": "5785aa124fbf954d06cccf41e9fad93fb8a647f167afb6f04ad549b186af42f5"
+  }
+}

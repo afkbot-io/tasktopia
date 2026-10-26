@@ -10,7 +10,7 @@ test("password change, recovery and fresh login work through the UI", async ({ p
   await page.getByRole("button", { name: "Аккаунт и настройки" }).click();
   await page.getByLabel("Текущий пароль", { exact: true }).fill("wrong-password");
   await page.getByLabel("Новый пароль", { exact: true }).fill("new-password-123");
-  await page.getByLabel("Повторите новый пароль").fill("new-password-123");
+  await page.getByLabel("Повторите новый пароль", { exact: true }).fill("new-password-123");
   await page.getByRole("button", { name: "Сменить пароль" }).click();
   await expect(page.getByRole("alert")).toContainText("Текущий пароль неверен");
   await page.getByLabel("Текущий пароль", { exact: true }).fill("old-password-123");
@@ -34,7 +34,7 @@ test("password change, recovery and fresh login work through the UI", async ({ p
   await page.screenshot({ path: "test-results/account-recovery-mobile.png" });
   await page.getByLabel("Резервный код", { exact: true }).fill(code);
   await page.getByLabel("Новый пароль", { exact: true }).fill("restored-password-123");
-  await page.getByLabel("Повторите новый пароль").fill("restored-password-123");
+  await page.getByLabel("Повторите новый пароль", { exact: true }).fill("restored-password-123");
   await page.getByRole("button", { name: "Восстановить доступ" }).click();
   await expect(page.getByRole("status")).toContainText("Пароль изменён");
   await page.getByRole("button", { name: "Вернуться ко входу" }).click();

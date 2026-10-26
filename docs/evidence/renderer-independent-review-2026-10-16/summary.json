@@ -1,0 +1,41 @@
+{
+  "review": "Независимое read-only ревью renderer",
+  "date": "2026-10-16",
+  "base": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+  "candidateSourceHash": "0929eddf5da7f54685ad352d0816b7fa41c6d73069e97e8cc76b8ef60fd8dfb4",
+  "sourceFilesMatchFrozenManifest": true,
+  "sourceHashes": {
+    "src/client/components/WorldCanvas.tsx": "070336ab60995f751ee12dddf7178b8207e11d6e59c7d252ee8ce3de49da0197",
+    "src/client/canonical-city-data.ts": "302c904df3a6dd92377d3f156c55f033ef6fe3d8d9b950b519a0bf6386c0a2df",
+    "src/client/city-residency.ts": "2ace9788ecccf4377aa9a4d5b8abfba9c207afe0825f58a9046985ff9a312b73",
+    "src/client/city-camera-presentation.ts": "646bcc27c0cbf3f5ccda14c68da036ea7fb57f6e546491c4031d5611c8f043b9",
+    "src/client/city-movement-dependencies.ts": "58b0f0267a9af815e4dea89b7560a1699bf321303b631897864f8d89ca5004bd",
+    "src/client/city-resident-itinerary.ts": "b6e0bb2e1fe97ab6d90dce38a50c8503196936f6bb14324c450fa8fe4f113506",
+    "src/client/city-scene-content.ts": "1e86563b93b464b858a8f720d1b63a5ca135e1765c54de492f06ee6105a7ce29",
+    "src/client/city-entity-collector.ts": "a46b922694a202312ea831678bd8b27938faaa1439992d5152182a237240e003",
+    "src/client/rolling-performance-metric.ts": "752ac2612b41eb464a23ba392fc51367c9078aea300a7c2b4e4647f7565cd90c",
+    "src/client/world-depth-sorter.ts": "15739b010668b6cafdb4a6f31aeb4d3db08bb3d76bf47f0c2ac228a01a3df921",
+    "src/client/bounded-map-refresh.ts": "6f21fc433ac1ddcd6ab634b5014f8726f697f711df519fc40f7d34ee5e8aeb36"
+  },
+  "blockingFindings": [],
+  "criteria": {
+    "R02": "BoundedMapRefresh: watchdog, cancel/dispose, signal и request fences вызывающего кода; последний кадр сохраняется, устаревший viewport не снимает authoritative error. WorldCanvas:4006/4702/4740/5068.",
+    "P02": "Разделены content и publication fences; terrain/ground обновляются по изменённому содержимому; событие completed snapshot требует authoritative reload. city-scene-content и WorldCanvas:4020/4044/4818.",
+    "P03": "Полный canonical snapshot сохраняется при отсутствующих worker pages; CITY data cache вмещает все чанки, offscreen stage rematerialization обновляет только данные; GPU ограничен viewport+halo, pending camera сохраняет показанную область, eviction уничтожает ground texture. WorldCanvas:3311/3921/4368/4574/4640/4864.",
+    "P04": "Physical signature исключает metadata/progress, включает entrance/footprint/completion/parking/transport; life signature отдельно учитывает incident/role/completion. Quality меняет caps без пересборки графа. WorldCanvas:3781/3891 + city-movement-dependencies.",
+    "P06": "Запись использует фиксированное кольцо O(1), percentile вычисляется при telemetry. Transport/mobility telemetry каждые250ms, depth audit1s, weak descriptor ownership. RollingPerformanceMetric/WorldDepthSorter/WorldCanvas:1373/1626/2461.",
+    "G03": "Используются существующие walkers; cap4/2 и <=one-third, планирование250ms; explicit role имеет приоритет над legacy catalog; проверяются ready и доступность, изменение destination отменяет journey, transport claims сохраняются; path retry и safe indoor exit ограничены по времени. city-resident-itinerary.ts."
+  },
+  "other31Criteria": "Проверены связанные границы изменений на регрессии; App/backend независимо ревьюировали их владельцы. Это не заявление о выполнении всех31 acceptance checks.",
+  "evidenceReused": [
+    "Прочитаны существующие focused producer/render tests",
+    "Сохранены доказательства exact geometry/config замороженных200/1000",
+    "Повторно использованы предыдущие production native viewport/canonical/quality/resync проверки",
+    "Production G15 и finalApp70 проверены их владельцами"
+  ],
+  "limits": [
+    "Исходники не изменялись; новые browser/full-suite для этого ревью не запускались",
+    "Финальные36 performance samples выполняются отдельно; strict budget нарушения не приравниваются к доказанному дефекту исходного кода",
+    "Физические устройства, VRAM и full-session INP не измерялись"
+  ]
+}

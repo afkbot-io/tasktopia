@@ -10,7 +10,7 @@ test.use({ viewport: { width: 1440, height: 1000 }, trace: { mode: "retain-on-fa
 async function login(page: Page): Promise<{ initialMap: "PLANET"; loginToFirstFrameMs: number }> {
   await page.goto("/");
   await page.getByLabel("Email").fill(process.env.E2E_NAVIGATION_EMAIL ?? "demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill(process.env.E2E_NAVIGATION_PASSWORD ?? "tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill(process.env.E2E_NAVIGATION_PASSWORD ?? "tasktopia-demo");
   await armTiming(page, "ENTRY");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   const loginToFirstFrameMs = await finishTiming(page);

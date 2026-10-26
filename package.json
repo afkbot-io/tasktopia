@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.24.14",
+  "version": "1.25.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -103,8 +103,8 @@
     "@fastify/helmet": "^13.1.0",
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/static": "10.1.2",
-    "@modelcontextprotocol/client": "^2.2.0",
-    "@modelcontextprotocol/server": "^2.0.0",
+    "@modelcontextprotocol/client": "2.3.0",
+    "@modelcontextprotocol/server": "2.3.0",
     "@resvg/resvg-js": "2.6.2",
     "fastify": "^5.12.3",
     "pixi.js": "8.19.0",
@@ -115,7 +115,7 @@
     "socket.io": "4.8.3",
     "socket.io-client": "4.8.3",
     "web-push": "^3.6.7",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -137,7 +137,7 @@
     "tsx": "^4.23.7",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0",
-    "vite": "8.2.0",
+    "vite": "8.2.4",
     "vitest": "^4.1.10"
   },
   "overrides": {

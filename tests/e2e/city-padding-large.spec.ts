@@ -14,6 +14,8 @@ const camera = (page: Page) => host(page).evaluate(node => ({ x: Number(node.get
   y: Number(node.getAttribute("data-camera-world-y")), scale: Number(node.getAttribute("data-render-scale")) }));
 async function ready(page: Page) {
   await expect(host(page)).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 60_000 });
+  await expect(host(page)).toHaveAttribute("data-camera-presentation-pending","false");
+  await expect(host(page)).toHaveAttribute("data-loading","false");
   for (const name of ["data-ground-bake-queue", "data-camera-padding-terrain-pending", "data-camera-padding-visible-untextured", "data-camera-padding-tree-pending"]) {
     await expect(host(page)).toHaveAttribute(name, "0", { timeout: 30_000 });
   }
@@ -28,6 +30,7 @@ async function panTo(page: Page, target: Cell) {
     const fraction = Math.min(1, box.width * .4 / Math.max(1, Math.abs(dx)), box.height * .4 / Math.max(1, Math.abs(dy)));
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + dx * fraction, box.y + box.height / 2 + dy * fraction, { steps: 4 }); await page.mouse.up();
+    await expect(host(page)).toHaveAttribute("data-camera-presentation-pending","false",{timeout:15_000});
     if (JSON.stringify(await camera(page)) === JSON.stringify(view)) break;
   }
   await ready(page);
@@ -68,7 +71,8 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   expect(scene.city.id).toBe("6357e8a0-1240-40b0-ab77-ba81bc2fb9aa");
   const tasks = [...new Map([...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)].map(task => [task.id, task])).values()];
   expect(tasks).toHaveLength(1000); expect(new Set(tasks.map(task => task.districtId)).size).toBe(20);
-  expect(Number(await host(page).getAttribute("data-task-building-views"))).toBe(1000);
+  expect(Number(await host(page).getAttribute("data-canonical-task-count"))).toBe(1000);
+  expect(Number(await host(page).getAttribute("data-task-building-views"))).toBeLessThan(1000);
   const plaques = [...new Map(scene.chunks.flatMap(chunk => chunk.blockPlaques ?? []).map(plaque => [plaque.id, plaque])).values()];
   expect(plaques).toHaveLength(100); expect(plaques.reduce((n, plaque) => n + plaque.taskCount, 0)).toBe(1000);
   const retainedCanvas = await page.locator("canvas[aria-label='Интерактивная карта города']").elementHandle();
@@ -134,6 +138,7 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   const box = (await page.locator("canvas[aria-label='Интерактивная карта города']").boundingBox())!;
   await page.mouse.move(box.x + box.width * .9, box.y + box.height / 2); await page.mouse.down();
   await page.mouse.move(box.x + box.width * .1, box.y + box.height / 2, { steps: 1 }); await page.mouse.up();
+  await expect(host(page)).toHaveAttribute("data-camera-presentation-pending","false",{timeout:15_000});
   const after = await camera(page);
   expect(after.x - before.x).toBeGreaterThan(64);
   expect(exteriorAt(after, box).length).toBeGreaterThan(0);

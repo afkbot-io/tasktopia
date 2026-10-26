@@ -59,7 +59,7 @@ test("renders every compact city ground chunk, opens its task, and survives coun
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   const host = page.locator(".world-canvas");
@@ -178,7 +178,7 @@ test("opens a deep-linked task card before requesting city terrain", async ({ pa
   try {
     await page.goto("/task/1");
     await page.getByLabel("Email").fill("demo@tasktopia.local");
-    await page.getByLabel("Пароль").fill("tasktopia-demo");
+    await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
     await page.getByRole("button", { name: "Открыть страну" }).click();
     await expect(page.locator("#task-title")).toBeVisible({ timeout: 5_000 });
     expect(sceneStarted).toBe(false);

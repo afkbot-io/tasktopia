@@ -113,13 +113,56 @@ stale-while-revalidate=600`. Комментарии и невизуальные 
 - `archive.get`, `archive.record_list`, `archive.record_create`, `archive.record_update`, `archive.record_delete`
 - `city.list`, `city.get`, `city.create`, `city.update`, `city.rename`, `city.delete`
 - `district.list`, `district.create`, `district.update`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
-- `task.list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.transfer`, `task.delete`
+- `task.list`, `task.list_page`, `task.collection_list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.transfer`, `task.delete`
 - `world_generation.get` — состояние принятой фоновой генерации по `jobId`
 - `task.defect_create`, `task.defect_update`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
-- `task.document_list`, `task.document_upsert`, `task.document_delete`
+- `task.document_list`, `task.document_get`, `task.document_upsert`, `task.document_delete`
 - `task.checklist_replace`, `task.checklist_item_update`
 - `task.activity`, `task.dependency_add`, `task.dependency_remove`, `task.link_add`, `task.link_remove`, `task.attachment_add`, `task.attachment_list`
+
+## Ограниченные чтения задач
+
+Прежние `task.list`, `task.get` и `GET /api/tasks/:taskId` сохраняют полный ответ.
+`task.get` с `view: "compact"` возвращает отдельный контракт `kind: "task.card", version: 1`:
+основные поля, описание, критерии, геометрию, аккаунты, реальные `counts` и не более
+50 `documentMetadata`. Длинные Markdown-материалы, MR и дочерняя история в карточку
+не входят. Документы имеют `isFilled` и `contentLength`, но не `content`.
+
+`task.collection_list` принимает `countryId`, `taskId`, `collection`, необязательные
+`limit`, `cursor`, `order`. Доступные коллекции: `comments`, `events`, `defects`,
+`attachments`, `documents`, `checklist`, `dependencies`, `mergeRequests`.
+Ответ `kind: "task.collection-page", version: 1` содержит `items` и `nextCursor`.
+Документы и чек-лист по умолчанию идут по позиции, зависимости по номеру, история
+по времени от новых к старым. Второй ключ — ID (у MR — URL). Cursor сохраняет
+точность PostgreSQL timestamp и связан со страной, задачей, коллекцией и порядком.
+Последняя страница имеет `nextCursor: null`.
+
+`task.list_page` возвращает `kind: "task.list-page", version: 1` и короткие записи
+со статусом и местоположением. Можно совместить `q`, `cityId`, `districtId`, `status`,
+`workItemType`, `priority`, `assigneeUserId`; порядок — `updatedAt DESC, id DESC`.
+Cursor нельзя использовать с другим набором фильтров или страной. Размер страницы
+у обоих инструментов по умолчанию 50, допустим от 1 до 100. Для содержимого одного
+документа используйте `task.document_get(countryId, taskId, documentId)`.
+Все новые инструменты требуют `tasks:read` и проверяют актуальное членство.
+
+Внутренние read-only HTTP endpoints требуют явный query `countryId` и дают
+`Cache-Control: private, no-store`:
+
+| Endpoint | Ответ |
+| --- | --- |
+| `GET /api/tasks/:taskId/card` | `TaskCardDto` |
+| `GET /api/tasks/:taskId/collections/:collection` | `TaskCollectionPageDto`, query `cursor`, `limit`, `order` |
+| `GET /api/tasks/:taskId/documents/:documentId` | Один полный `TaskDocumentDto` |
+| `GET /api/tasks/list-page` | `TaskListPageDto`, те же фильтры и cursor |
+
+У `task.add_comment`, `task.set_status` и `task.report_progress` необязательный
+`resultMode: "compact"` возвращает отдельный `kind: "task.command-result", version: 1`
+с номером, заголовком, статусом, прогрессом и короткими полями задачи. Режим по
+умолчанию `full` сохраняет прежний ответ. Compact comment/progress не собирают
+все комментарии, события и документы; проверки чек-листа, дефектов и назначения
+владельцу токена остаются обязательными. `resultMode` — только выбор представления,
+он не входит в command payload/hash. Retry с другим режимом не создаёт новую команду.
 
 ## Фоновая генерация
 
@@ -131,6 +174,8 @@ stale-while-revalidate=600`. Комментарии и невизуальные 
   "job": { "id": "<uuid>", "operation": "task.create", "status": "PENDING" }
 }
 ```
+
+Внутри страны очередь сохраняет порядок `createdAt, id`: следующая команда не обгоняет уже выполняющуюся. Между странами учитывается время последнего обслуживания, поэтому большой backlog одной страны не занимает все последовательные ходы. Истёкшая последняя попытка проверяет уже committed receipt: подтверждённый результат восстанавливается, иначе job становится FAILED. Ожидания coalesce по job, получают PostgreSQL notification и используют ограниченный SQL fallback.
 
 Это не ошибка и не повод повторять write с новым ключом. Опрашивайте `world_generation.get` с тем же `job.id`; `COMPLETED` содержит `result`, окончательный `FAILED` — безопасные `error.code/message`. Повтор исходной команды с тем же idempotency key и тем же payload возвращает тот же job/result; другой payload даёт `CONFLICT`.
 
@@ -267,7 +312,9 @@ receipt без нового вложения или события; недост
 
 ## Надёжность
 
-Все изменяющие операции требуют уникальный `idempotencyKey`. Повтор с тем же payload возвращает сохранённый результат; тот же ключ с другим payload даёт `CONFLICT`. Команда, размещение объекта, событие и idempotency result сохраняются одной PostgreSQL-транзакцией с блокировкой строки страны, поэтому конкурентные изменения геометрии не пересекаются.
+Номер задачи монотонен в пределах страны и не переиспользуется после удаления. Additive migration `0043` учитывает живые задачи, постоянные площадки, прежние receipts и вложенную историю событий. PostgreSQL allocator защищает также старый образ с `MAX(active)+1` при rollback; явное восстановление старых номеров доступно только доверенному SQL `SET LOCAL tasktopia.preserve_task_numbers=on`, не MCP.
+
+Все изменяющие операции требуют уникальный `idempotencyKey`. Повтор с тем же payload возвращает результат без новой команды; тот же ключ с другим payload даёт `CONFLICT`. Пространственные операции, которые уже перечитывали актуальный объект на retry, сохраняют новые bounded v2 reference receipts (`receiptVersion`, `entityKind`, `entityId`, `id`, номер задачи); старые hash/rows не переписываются. Такие retry возвращают актуальный объект в выбранном режиме. Остальные старые receipts сохраняют прежний исторический ответ. Команда, размещение объекта, событие и idempotency result сохраняются одной PostgreSQL-транзакцией с блокировкой строки страны, поэтому конкурентные изменения геометрии не пересекаются.
 
 Каждое изменение увеличивает `worldVersion` и создаёт событие. Создание задачи, смена стадии, комментарий и назначение ответственного также попадают в неизменяемую хронику с аккаунтом автора. Веб получает `world:event` через Socket.IO. Пространственные события содержат `payload.affectedBounds` (`minX`, `minY`, `maxX`, `maxY`), поэтому клиент перечитывает только пересекающиеся чанки. Открытый план повторяет только свои scoped-запросы; структурные изменения перечитывают лёгкий bootstrap со счётчиками и bounds. Если границы отсутствуют, применяется безопасная полная инвалидация резидентных чанков.
 
@@ -304,3 +351,20 @@ npm run smoke:mcp
 `actor` и `assigneeRole` не заменяют подтверждённую учётную запись. Общий токен
 означает общего владельца; не выдавайте его за отдельную личность агента.
 Настройки аккаунта и состояние прочтения уведомлений не изменяют задачи.
+
+## Короткие изменения в истории
+
+Новые task audit events дополнительно содержат `details.changes`:
+`[{field,before,after}]`. Разрешены только `title`, `status`, `progress`, `priority`,
+`estimate`, `dueAt`, `workItemType`, `assignee`. Длинные описания, критерии и Markdown
+в before/after не копируются. Прежние `from`, `to`, `changedFields`, `fromUserId`,
+`toUserId` сохраняются, старые события без changes остаются читаемыми.
+
+У `assignee` values — UUID/null, а `beforeLabel`/`afterLabel` при наличии содержат
+снимок настоящего имени участника не длиннее 60 символов, без email. В интерфейсе
+нужно использовать labels либо «Назначен»/«Не назначен», а не UUID. Начало работы
+по-прежнему назначает только владельца авторизованного токена и не заменяет уже
+имеющегося исполнителя; новые метаданные не меняют личность или полномочия.
+
+Личные read-only новости и альбом используют реальные durable events, явную
+страну, актуальные права и pagination. [Контракты и совместимость](PRODUCT-STATE-DELIVERY-2026-09-25.md#расширение-2026-10-16-личные-события-и-альбом).

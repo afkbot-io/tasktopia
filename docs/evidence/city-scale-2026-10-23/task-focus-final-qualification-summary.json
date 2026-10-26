@@ -1,0 +1,494 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-23",
+  "status": "V15_LOCAL_QUALIFICATION_PASS_EXACT_CI_MERGE_RELEASE_PENDING",
+  "candidate": "candidate-task-focus-reliability-v15",
+  "acceptance": {
+    "totalCriteria": 33,
+    "acceptedBeforeFinalCiRelease": 29,
+    "open": [
+      "E01",
+      "E02",
+      "Q02",
+      "Q03"
+    ],
+    "finalHead": null,
+    "finalTree": null,
+    "exactHeadCi": "PENDING",
+    "merge": "PENDING",
+    "managedRelease": "PENDING"
+  },
+  "binding": {
+    "sourceHash": "9f8d417815a6e8adc786694e13e3c737eb49f82e367fc411ecda6f6b342091ee",
+    "serverHash": "dbc7be70b6f1fe9db5ff929d72bb799efc496866c6c6cf1de20a283493a4eb22",
+    "clientHash": "c794c779132b5cd503d42296a4f7684e1002ce687e2ca304657c07d4e97677de",
+    "htmlHash": "f1c0405feda669246afbf121847b508fde3e44b8329646a8d3cd94d23b1ae9e7",
+    "manifestHash": "2f8be41bcf100fc9677c8e512b8c0fe6c89d4ba252ce44a088cdf65d257139ec",
+    "distHash": "5f062c5ce267f9c3aa7e38b96f12f46e6c665447cd76028c4fd51b32d4a7a58c",
+    "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+    "publicationHash": "f8a84f80bea5465bb41b187bde8104dc3889ee427724e1fefd89dedae4c8a77c",
+    "physicalDistHash": "c747c55a47193866da346af11ddde241285362cca46e97870174854389893cd6",
+    "bindingHash": "6d2b3a83d804a4d9f523c3c0285b6bb1fb4d251e8c72c05ea9663d371486ffab",
+    "hostObserverHash": "d90a080fcd42f8bae3e025fc039fa50a68c91e07d0db875ca7df9befbbb01309",
+    "qualificationHash": "9eef2d18bc767f1ca9ac56b7258157b5df612f5b6581b360cd7b2cbd0a973bee",
+    "runtimeInputs": 1263,
+    "qaInputs": 578,
+    "runtimeDeltaSinceV14": [
+      "src/client/city-everyday-life.ts"
+    ],
+    "qaModifiedSinceFrozenV14": {
+      "tests/city-everyday-life.test.ts": "ba157610d7193b0f4b1f7e1caf3df6c1df412e72f8293900882b12dc7bedeb20",
+      "tests/city-everyday-mobility.test.ts": "7bba7afbce828339f8dd681859cee76467504379644a49d143893c3d5022b0ac",
+      "tests/e2e/city-render-reliability.spec.ts": "7b196a8ebfca2f6997e1299538de778e9e40890a283dc2397951462a74314171",
+      "tests/e2e/everyday-city-events.spec.ts": "629d843a648542bcb5c1aa54b435d1ac0f7fa4b30b2d7a7b20431e2cda27ddb7",
+      "tests/e2e/living-city-events.spec.ts": "0555a182aeb488228bb4ddf7b9a4386659443cf831ffdc94833ccb2b875345bd"
+    },
+    "qaAddedSinceFrozenV14": {
+      "tests/e2e/city-clock-control.spec.ts": "46897cdccab9a02265b157c640256ff597603d3d907b81ee39ad513af145de9c",
+      "tests/e2e/city-clock-control.ts": "27d526706354c394deda4392b5327d7781f7fd1af70039088a471524fb540228"
+    },
+    "removedQaFiles": []
+  },
+  "productionChange": {
+    "file": "src/client/city-everyday-life.ts",
+    "sha256": "37055633f4c3c3fb94c7a4572cb39e042bdcbba43c888da414b0a04919c86b1b",
+    "linesChanged": 1,
+    "behavior": "Spectator endpoints exclude the eight cells adjacent to an animal pad, including diagonals; safe alternate endpoints or no unsafe site",
+    "rootCause": "A90degree walker turn may use a0.25/0.25 inset; axis-only Manhattan clearance allowed a diagonal body inside strict0.8/0.8 pad clearance",
+    "historicalCiCause": "UNKNOWN",
+    "noNewActorsTeleportOrPhysicalStepChanges": true
+  },
+  "compilerTdd": {
+    "red": {
+      "passed": 10,
+      "failed": 2,
+      "tests": 12
+    },
+    "intermediateGreen": {
+      "passed": 11,
+      "failed": 1,
+      "reason": "Old performance fixture started at newly unsafe0,1 pad"
+    },
+    "finalGreen": {
+      "passed": 12,
+      "failed": 0
+    },
+    "performanceFixtureCorrection": "Only y+2/expected0,2; kinds3/lookup<=49/ground<=2N limits unchanged",
+    "affected": {
+      "passed": 73,
+      "failed": 0,
+      "files": 8,
+      "includesOverlappingFocusedTestsDoNotSumAs85Unique": true
+    },
+    "scopedLintPassed": true
+  },
+  "buildAndFixtures": {
+    "oneStandardBuild": true,
+    "fullTscPassed": true,
+    "buildExitCode": 0,
+    "serverByteEqualV14": true,
+    "gameAssetsByteEqualV14": true,
+    "readOnlyExistingTasks": [
+      200,
+      1000
+    ],
+    "noSeedRestoreRegeneration": true,
+    "geometryStatusDescriptorDumpPreserved": true
+  },
+  "newNativeV15": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "retries": 0,
+    "reportDurationMs": 342922.86100000003,
+    "profile": "native WebKit desktop DPR2",
+    "cases": [
+      {
+        "title": "six everyday scenes use actual residents and approaches",
+        "project": "webkit-visual",
+        "status": "passed",
+        "durationMs": 315216
+      },
+      {
+        "title": "MCP/WebSocket keeps the old building through all stages, delivers a helicopter transfer and leaves ruins after demolition",
+        "project": "webkit-visual",
+        "status": "passed",
+        "durationMs": 26839
+      }
+    ],
+    "sixScenes": [
+      {
+        "kind": "BIRDS",
+        "arrivals": 2,
+        "animals": 3,
+        "fetched": false,
+        "scattered": true
+      },
+      {
+        "kind": "DOG",
+        "arrivals": 4,
+        "animals": 1,
+        "fetched": true,
+        "scattered": false
+      },
+      {
+        "kind": "KINDERGARTEN",
+        "arrivals": 3,
+        "animals": 0,
+        "fetched": false,
+        "scattered": false
+      },
+      {
+        "kind": "MARKET",
+        "arrivals": 3,
+        "animals": 0,
+        "fetched": false,
+        "scattered": false
+      },
+      {
+        "kind": "SCHOOL",
+        "arrivals": 1,
+        "animals": 0,
+        "fetched": false,
+        "scattered": false
+      },
+      {
+        "kind": "SPORT",
+        "arrivals": 4,
+        "animals": 0,
+        "fetched": false,
+        "scattered": false
+      }
+    ],
+    "unavailableSlots": 0,
+    "safetySnapshotCountersAllZero": [
+      "mobilityVehicleUnsafeTotal",
+      "mobilityPedestrianUnsafeTotal",
+      "mobilityVehiclePedestrianUnsafeTotal",
+      "wrongWayCars",
+      "walkerOffPath"
+    ],
+    "constructionStages": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ]
+    ],
+    "carryOriginalPublicAssertionsPassed": true,
+    "separateCarryJsonAvailable": false,
+    "demolitionCoverSaved": true,
+    "ruinsAndAudioAssertionsPassed": true,
+    "noAnimalPhaseOccupiedSlotOrDeadlineWaivers": true,
+    "freshOwnPublication": {
+      "manifestSha256": "f8a84f80bea5465bb41b187bde8104dc3889ee427724e1fefd89dedae4c8a77c",
+      "physicalDistHash": "c747c55a47193866da346af11ddde241285362cca46e97870174854389893cd6",
+      "canonicalFiles": 920,
+      "derivedCopies": 822,
+      "beforeCopies": 0,
+      "entryHashesMatchCanonicalMetadata": true,
+      "freezeBeforeAfterRecordsPass": true,
+      "newDistRehashExecuted": false
+    },
+    "cleanup": {
+      "serverStopped": true,
+      "browserCliExited": true,
+      "port5343Free": true,
+      "ownDatabaseOtherConnections": 0,
+      "businessHashBefore": "31fa6298ae36498a4645d628bb9f1a5bb911cab58c84fc30a44056ab9892e594",
+      "businessHashAfter": "31fa6298ae36498a4645d628bb9f1a5bb911cab58c84fc30a44056ab9892e594",
+      "tasks": 40
+    }
+  },
+  "newPerformanceV15": {
+    "strictPassed": 24,
+    "strictFailed": 0,
+    "groups": 8,
+    "allRawEqualReportResults": true,
+    "errors": 0,
+    "budgetViolations": 0,
+    "excludedSamples": 0,
+    "retries": 0,
+    "originalControlsBudgetsDprWorkload": true,
+    "profiles": [
+      "desktop-chromium",
+      "desktop-firefox",
+      "pixel-chromium",
+      "iphone-webkit"
+    ],
+    "taskSizes": [
+      200,
+      1000
+    ],
+    "samplesEach": 3,
+    "maxima": {
+      "coldCityMs": 8265.483624856948,
+      "warmCityMs": 95.92324999999983,
+      "inputP95Ms": 43.40000009536743,
+      "frameP95Ms": 19,
+      "heapGrowthBytes": 1281556
+    },
+    "http": {
+      "coldSceneRequests": 24,
+      "panSceneRequests": 0,
+      "warmSceneRequests": 0,
+      "legacyRequests": 0
+    },
+    "console": {
+      "capturedSamples": 24,
+      "errorCount": 0,
+      "warningCount": 54,
+      "truncatedSamples": 0,
+      "uniqueErrorClassifications": [],
+      "warningClassifications": [
+        {
+          "classification": "Service Worker registration blocked by Playwright",
+          "count": 24
+        },
+        {
+          "classification": "WebGL context was lost.",
+          "count": 6
+        },
+        {
+          "classification": "WebGL warning: texImage: Alpha-premult and y-flip are deprecated for non-DOM-Element uploads.",
+          "count": 12
+        },
+        {
+          "classification": "WebGL warning: drawElementsInstanced: Tex image TEXTURE_2D level 0 is incurring lazy initialization.",
+          "count": 6
+        },
+        {
+          "classification": "WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.",
+          "count": 6
+        }
+      ],
+      "separateFromOriginalReportErrors": true
+    },
+    "longTasks": {
+      "availableSamples": 12,
+      "unavailableSamples": 12,
+      "measuredSteadyCount": 0,
+      "unavailableIsNotMeasuredZero": true
+    },
+    "heap": {
+      "availableSamples": 12,
+      "unavailableSamples": 12,
+      "unavailableIsNotMeasuredZero": true
+    },
+    "host": {
+      "before": {
+        "passed": true,
+        "intervalCount": 5,
+        "idlePercent": {
+          "count": 5,
+          "min": 86.91536748329621,
+          "median": 91.35150166852058,
+          "max": 93.08999721370856
+        },
+        "waitMs": 10008.418791
+      },
+      "during": {
+        "intervalCount": 294,
+        "truncated": false,
+        "idlePercent": {
+          "count": 294,
+          "min": 77.01534170153417,
+          "median": 88.53716335260088,
+          "max": 93.25717470047367
+        },
+        "weightedIdlePercent": 88.04018516021068
+      },
+      "after": {
+        "startUtc": "2026-10-23T05:00:15.937Z",
+        "endUtc": "2026-10-23T05:00:17.939Z",
+        "wallMs": 2002.3360000000102,
+        "cpuCount": 18,
+        "available": true,
+        "totalTicksMs": 35950,
+        "idleTicksMs": 32870,
+        "idlePercent": 91.43254520166899
+      },
+      "duringLoadChangesAcceptance": false,
+      "limitation": "Only the before-series prerequisite gates launch. During/after load never removes, rejects or retries a sample and does not prove causes of historical failures."
+    },
+    "postflight": {
+      "exitCode": 0,
+      "port5311Free": true,
+      "ownedDatabases": [
+        {
+          "tasks": 200,
+          "otherConnections": 0,
+          "readOnly": true
+        },
+        {
+          "tasks": 1000,
+          "otherConnections": 0,
+          "readOnly": true
+        }
+      ],
+      "sourceAndOutputFencesUnchanged": true,
+      "canonicalFiles": 920,
+      "startupPublishedCopies": 822,
+      "ownedLauncherTerminal": true,
+      "rootPrimarySession": 19775
+    }
+  },
+  "reusedUnaffectedEvidence": {
+    "notNewV15Runs": true,
+    "nativeClockGround": {
+      "source": "V14",
+      "passed": 15,
+      "clock": 5,
+      "groundOwner": 10,
+      "sourceQaHash": "07b5089969ff0f0d3643737eda82d97db06dfc4cf8bd8c7ccf0e4f79aa97f9f8"
+    },
+    "revealTransferChrome": {
+      "source": "V14 native16",
+      "reusedCases": 6,
+      "notAll16CountedAsNew": true,
+      "selectedTestBodiesUnchanged": true,
+      "wholeSpecByteEqualToV15": false
+    },
+    "nativeFilterGlyphs": "V14native12; task-focus inputs unchanged",
+    "backend": {
+      "tests": 181,
+      "files": 27
+    },
+    "mcp": {
+      "tests": 33,
+      "files": 5,
+      "sdk": "2.3.0",
+      "vite": "8.2.4",
+      "maxToolInputElements": 10000,
+      "realSdkToolCatalogSmoke": 50,
+      "not50CrudClaims": true
+    },
+    "audit": {
+      "high": 0,
+      "critical": 0,
+      "moderate": 6
+    },
+    "recovery": {
+      "unchangedInputs": 94,
+      "unchangedMigrationInputs": 44,
+      "isolatedProofs": 2,
+      "production": false
+    }
+  },
+  "qaContractHistory": {
+    "visibleReady": "Original15s visible-critical/atomic/camera/no-error predicate, background halo recorded separately; dense full-halo case unchanged",
+    "revealSplit": "Five opening families and one transfer90s each instead of one160s; realMcp/idempotency/stages/WORK/open/reload/4500ms/CARRY retained",
+    "pausedPassenger": "Physical safe evacuation after resume; actor identity/pose/carrier conservation tested, no global0 drain required while frozen",
+    "clock": "Public fixed-date/pause/system-time boundary with19999+1ms fresh timer proof",
+    "demolitionTrace": "DOM snapshots disabled; same COVER predicate/15s,180s case/native clock, existing phase JSON attached in finally",
+    "earlierAsyncPlanningMetricCorrection": {
+      "oldMixedLimitMs": 50,
+      "cooperativeWallLimitMs": 20000,
+      "basis": "Existing movement-owner deadline, not CPU optimization",
+      "roadLimitMs": 50,
+      "cpuP95Ms": 8,
+      "retainedHeapBytes": 8388608,
+      "testTimeoutMs": 120000,
+      "workloadUnchanged": true
+    }
+  },
+  "historyAndLimits": {
+    "ci717": {
+      "runId": "39896216677",
+      "conclusion": "FAILURE",
+      "success": 6,
+      "failure": 4,
+      "cancelled": 0,
+      "notRetaggedAsGreen": true
+    },
+    "oldV12V13RedsAndNative137Preserved": true,
+    "oldV14PerformancePortableUnchanged": "74efab046d379561c7e820cb1d82bed367ba4239d540fbde75d65bbf9f71e2ae",
+    "supersededOwnV14QaOnlyReceiptArchivedPrivatelySha256": "b2f08596ed5bd359edf7c254e5e8468dabf582be027f2e55e7bc916c43266c3f",
+    "historicalCiAttribution": "UNKNOWN",
+    "noComparativeSpeedupClaim": true,
+    "physicalPhonesTested": false,
+    "browserEmulationOnly": true,
+    "threeSamplesAreNotLoadingP95": true,
+    "rafProxyNotInp": true,
+    "rgbaEstimateNotVram": true,
+    "unavailableLongTasksHeapNotZero": true,
+    "nativeCapturedViewVisualReviewNotEveryFrame": true,
+    "noNewProbeOrExecutionDuringFinalization": true,
+    "freshBackupAndExistingRestoreProofApplicabilityNeededAtRelease": true,
+    "notExactCiOrReleasePass": true
+  },
+  "artifacts": {
+    "performancePortable": {
+      "path": "docs/evidence/city-scale-2026-10-23/task-focus-reliability-v15-summary.json",
+      "sha256": "03501becf6cb3a7f5fcd824a03f2f1f3720af8e2381c0e94d9beafd6b04728e3"
+    },
+    "sourceBinding": {
+      "path": ".builder/ci-pr58-717bde42-20261023/v15-current-source-binding.json",
+      "sha256": "f2706df3964d9d320481b66aedc6d5757cfcbd01b5bd3674ed010cf1208a5794"
+    },
+    "oneBuild": {
+      "path": ".builder/world-perf-20261022/reliability-v15-build-summary.json",
+      "sha256": "bc434bbd2e0f4b61b1f55402f9f2bdfde3747bcc48eee80886fe4cdaf48eea39"
+    },
+    "readOnlyFixtures": {
+      "path": ".builder/world-perf-20261022/task-focus-reliability-v15-fixture-preflight.json",
+      "sha256": "18562d3abb68e808e875da7b0190002138d202479656b62f0d3fb03ebe9eb765"
+    },
+    "native2Summary": {
+      "path": ".builder/native-qa40-life-v15-20261023/summary.json",
+      "sha256": "177cbb0514fe8ffcb67cd02fd9948285a0b02dfbeb6efff2a8a6a7e4e11306e8"
+    },
+    "native2Postflight": {
+      "path": ".builder/native-qa40-life-v15-20261023/postflight-readback.json",
+      "sha256": "988333c6f19f0d11402b4bc59e5587d9bdcaec423328670f0dcd49b0c2331eeb"
+    },
+    "compilerTdd": {
+      "path": ".builder/ci-pr58-717bde42-20261023/birds-slot-observation-proposal/actual-tdd-root-receipt.json",
+      "sha256": "430dc5eaea2d78fa204140555cfc31a84f79c07c610b7b2e8d30748db6acd46c"
+    },
+    "compilerRed": {
+      "path": ".builder/ci-pr58-717bde42-20261023/birds-slot-observation-proposal/actual-red.json",
+      "sha256": "b1c6aeca0985f3851cd461dccdbf0aa7a21290064835971ae63ed6807989c18b"
+    },
+    "compilerIntermediateGreen": {
+      "path": ".builder/ci-pr58-717bde42-20261023/birds-slot-observation-proposal/actual-green.json",
+      "sha256": "aeef9a241c6ea5f047166f5a627a32a65a68109b254b994a0dfb56a16a9f6301"
+    },
+    "compilerFinalGreen": {
+      "path": ".builder/ci-pr58-717bde42-20261023/birds-slot-observation-proposal/actual-green-final.json",
+      "sha256": "6ae4a08b92918f44252d08cf4ee530b6e4f7ed9e44f738208d921429b02494a6"
+    },
+    "affectedUnits": {
+      "path": ".builder/ci-pr58-717bde42-20261023/birds-slot-observation-proposal/affected-unit-results.json",
+      "sha256": "ece28d6dc7b9eda1bf883a1b1e1494d9f20d124298362eb2882920d1c0dfa579"
+    },
+    "priorClockNative15": {
+      "path": ".builder/native-qa40-clock-qa-v14-20261023/summary.json",
+      "sha256": "52985c6173e71a66651fffaffdf646aa5cc75b024b6b158eec5072c4e7c9979e"
+    },
+    "priorClockNative15Post": {
+      "path": ".builder/native-qa40-clock-qa-v14-20261023/postflight-evidence-readback.json",
+      "sha256": "ce66f470dde398b495a433e5841cc170ca7107b81302a916fb08891ccae13021"
+    },
+    "priorRevealNative16": {
+      "path": ".builder/native-qa40-corrected-qa-v14-20261023/summary.json",
+      "sha256": "161124d9f79375b4ab43eb83d1715c0221f07c8663f2272aa5b9ae54e03e863d"
+    },
+    "priorV14PerformancePortable": {
+      "path": "docs/evidence/city-scale-2026-10-23/task-focus-reliability-v14-summary.json",
+      "sha256": "74efab046d379561c7e820cb1d82bed367ba4239d540fbde75d65bbf9f71e2ae"
+    }
+  }
+}

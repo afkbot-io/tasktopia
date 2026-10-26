@@ -89,7 +89,7 @@ test("корневой шрифт 200%, уменьшенное движение 
   await expect(page.getByLabel("Email")).toBeVisible();
   await page.addStyleTag({ content: "html { font-size: 32px; }" });
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну", exact: true }).click();
   await page.getByLabel("Меню", { exact: true }).click();
   await page.getByRole("button", { name: "Аккаунт и настройки", exact: true }).click();

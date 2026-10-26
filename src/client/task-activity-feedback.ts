@@ -12,6 +12,8 @@ export type TaskActivityPose = { taskId: string; eventId: number; kind: TaskActi
 type Delivery = { taskId: string; eventId: number; kind: TaskActivityKind; anchor: Cell;
   visitId: string; startedAt: number; expiresAt: number; static: boolean; arrived: number; arrivedAt?: number };
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
+// Free-flow estimate only: reserve 8s of the existing 32s delivery for waiting and arrival cues.
+const DELIVERY_TRAVEL_BUDGET_MS = 24_000;
 
 /** Ephemeral presentation only. Routes and physical actors stay owned by mobility. */
 export function createTaskActivityController(mobility: () => CityMobility | undefined) {
@@ -46,7 +48,7 @@ export function createTaskActivityController(mobility: () => CityMobility | unde
       const target = task.accessPath.find(cell => city?.visitTargets.has(key(cell)));
       const adults = city?.agents.filter(a => a.kind === 'WALKER' && a.age !== 'CHILD').map(a => a.id);
       const actors = !options.reducedMotion && target
-        ? city?.dispatchVisit(visitId, [target], kind === 'COMMENT' && !options.economy ? 2 : 1, 5000, false, adults) ?? [] : [];
+        ? city?.dispatchVisit(visitId, [target], kind === 'COMMENT' && !options.economy ? 2 : 1, 5000, false, adults, DELIVERY_TRAVEL_BUDGET_MS) ?? [] : [];
       active.set(task.id, { taskId: task.id, eventId: event.id, kind, anchor: { ...anchor }, visitId,
         startedAt: now, expiresAt: now + (options.reducedMotion ? 4000 : actors.length ? 32_000 : 6000),
         static: options.reducedMotion, arrived: 0 });

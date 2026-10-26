@@ -1,14 +1,18 @@
 import { GameTabs } from "./GameTabs";
 import { useDialogFocus } from "../use-dialog-focus";
 import { TaskSharePreview } from "./TaskSharePreview";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getBuilding } from "../../shared/catalog";
 import { TASK_PARK_LABELS } from "../../shared/task-park-catalog";
 import type { TaskDocumentDto, TaskDto } from "../../shared/contracts";
-import { loadTaskDetail, peekTaskDetail } from "../task-detail-cache";
+import type { TaskCardDto, TaskDocumentMetadataDto, TaskCollectionPageDto } from '../../shared/task-read-contracts';
+import { loadTaskCard, peekTaskCard, loadTaskDocument, forgetTaskCard } from "../task-read-cache";
+import { TaskCollectionSection } from './TaskCollectionSection';
 import { taskLink } from "../task-navigation";
 import { ApiError } from "../api";
 import { Markdown } from "./Markdown";
+import { presentTaskChanges } from '../task-history-presentation';
+import { readTaskWithInvalidationRetry } from '../owned-read-cache';
 
 const statusLabel: Record<TaskDto["status"], string> = {
   PLANNING: "В плане", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Приёмка", COMPLETED: "Завершено",
@@ -48,28 +52,44 @@ type TaskModalProps = {
   onClose: () => void;
   onAuthenticationRequired?: () => void;
   onShowDependencies?: (taskId: string) => void;
+  onNavigateTask?: (taskId: string) => void;
+  onTaskReady?: (task: TaskCardDto) => void;
 };
 
-function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
-  const firstFilled = documents.find((document) => document.content.trim());
+function DocumentShelf({ documents, countryId, taskId, revision, onAuthenticationRequired }: {
+  documents: TaskDocumentMetadataDto[]; countryId: string; taskId: string; revision: number; onAuthenticationRequired?: () => void;
+}) {
+  const firstFilled = documents.find((document) => document.isFilled);
   const [selectedId, setSelectedId] = useState<string | null>(firstFilled?.id ?? null);
-  const selected = documents.find((document) => document.id === selectedId && document.content.trim());
-  const filledCount = documents.filter((document) => document.content.trim()).length;
+  const selected = documents.find((document) => document.id === selectedId && document.isFilled);
+  const [content, setContent] = useState<TaskDocumentDto | null>(null);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
-    if (!documents.some((document) => document.id === selectedId && document.content.trim())) {
-      setSelectedId(documents.find((document) => document.content.trim())?.id ?? null);
+    if (!documents.some((document) => document.id === selectedId && document.isFilled)) {
+      setSelectedId(documents.find((document) => document.isFilled)?.id ?? null);
     }
   }, [documents, selectedId]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    setError('');
+    if (!selectedId) { setContent(null); return; }
+    setContent(current => current?.id === selectedId ? current : null);
+    void readTaskWithInvalidationRetry(controller.signal, () => loadTaskDocument(countryId, taskId, selectedId, controller.signal)).then(doc => { if (!controller.signal.aborted) setContent(doc); }).catch(reason => {
+      if (controller.signal.aborted) return;
+      if (reason instanceof ApiError && [401, 403, 404].includes(reason.status)) setContent(null);
+      if (reason instanceof ApiError && [401, 403].includes(reason.status)) void Promise.resolve(onAuthenticationRequired?.()).catch(() => undefined);
+      setError(reason instanceof Error ? reason.message : 'Не удалось открыть документ');
+    });
+    return () => controller.abort();
+  }, [countryId, taskId, selectedId, selected?.updatedAt, revision, retry, onAuthenticationRequired]);
+
   return <section className="task-documents">
-    <div className="task-section-title">
-      <div><h3>Материалы для реализации</h3><p>Планы, решения и результаты работы.</p></div>
-      <span>{filledCount}/{documents.length || 4}</span>
-    </div>
     <div className="task-document-shelf" role="tablist" aria-label="Документы задачи">
       {documents.map((document) => {
-        const filled = Boolean(document.content.trim());
+        const filled = document.isFilled;
         return <button
           key={document.id}
           type="button"
@@ -86,15 +106,16 @@ function DocumentShelf({ documents }: { documents: TaskDocumentDto[] }) {
         </button>;
       })}
     </div>
-    {selected ? <article className="task-document-preview" role="tabpanel">
+    {error && <p className="task-refresh-error" role="alert">{error} <button type="button" onClick={() => setRetry(value => value + 1)}>Повторить</button></p>}
+    {selected && content?.id === selected.id ? <article className="task-document-preview" role="tabpanel">
       <header><div><strong>{selected.title}</strong><code>{selected.fileName}</code></div><small>{selected.actor} · {dateTime(selected.updatedAt)}</small></header>
-      <Markdown text={selected.content} />
-    </article> : <p className="task-documents-empty">Материалы пока не добавлены.</p>}
+      <Markdown text={content.content} />
+    </article> : selected && !error ? <p role="status">Открываем документ…</p> : !selected ? <p className="task-documents-empty">Материалы пока не добавлены.</p> : null}
   </section>;
 }
 
-export function TaskModal({ standalone = false, countryId, taskId, revision, onClose, onAuthenticationRequired, onShowDependencies }: TaskModalProps) {
-  const [task, setTask] = useState<TaskDto | null>(() => peekTaskDetail(countryId, taskId) ?? null);
+export function TaskModal({ standalone = false, countryId, taskId, revision, onClose, onAuthenticationRequired, onShowDependencies, onNavigateTask, onTaskReady }: TaskModalProps) {
+  const [task, setTask] = useState<TaskCardDto | null>(() => peekTaskCard(countryId, taskId) ?? null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -103,31 +124,33 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   const dialogRef = useRef<HTMLElement>(null);
   const [tab,setTab] = useState<"overview"|"materials"|"discussion"|"history">("overview");
   const [visited, setVisited] = useState(() => new Set(["overview"]));
+  const documentPage = useMemo<TaskCollectionPageDto<'documents'> | undefined>(() => task ? {
+    kind: 'task.collection-page', version: 1, countryId, taskId, collection: 'documents', items: task.documentMetadata, nextCursor: task.documentsNextCursor,
+  } : undefined, [countryId, taskId, task]);
+  const collectionProps = { countryId, taskId, revision, onAuthenticationRequired };
   const changeTab = (next: typeof tab) => { setTab(next); setVisited(current => new Set([...current, next])); };
   useDialogFocus(dialogRef, { onClose });
 
   useEffect(() => {
-    let cancelled = false;
-    setTask(current => current?.id === taskId ? current : peekTaskDetail(countryId, taskId) ?? null);
+    const controller = new AbortController();
+    setTask(current => current?.id === taskId ? current : peekTaskCard(countryId, taskId) ?? null);
     setError("");
-    void loadTaskDetail(countryId, taskId).then((loaded) => { if (!cancelled) setTask(loaded); })
+    void readTaskWithInvalidationRetry(controller.signal, () => loadTaskCard(countryId, taskId, controller.signal)).then((loaded) => { if (!controller.signal.aborted) setTask(loaded); })
       .catch((reason) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         // A deleted/inaccessible task must not retain its detail body or write
         // actions. Keep the loaded card only for recoverable service failures.
         if (reason instanceof ApiError && [401, 403, 404].includes(reason.status)) setTask(null);
         if (reason instanceof ApiError && reason.status === 401) void Promise.resolve(onAuthenticationRequired?.()).catch(() => undefined);
         setError(reason instanceof Error ? reason.message : "Не удалось открыть задачу");
       });
-    return () => { cancelled = true; };
+    return () => controller.abort();
   }, [countryId, taskId, revision, retry, onClose, onAuthenticationRequired]);
 
   useEffect(() => {
     if (!task) return;
-    const sharePath = taskLink(countryId, task);
-    if (`${window.location.pathname}${window.location.search}` !== sharePath) window.history.replaceState(null, "", sharePath);
-    return () => { if (`${window.location.pathname}${window.location.search}` === sharePath) window.history.replaceState(null, "", "/"); };
-  }, [countryId, task]);
+    onTaskReady?.(task);
+  }, [task, onTaskReady]);
 
   const copyShareLink = async () => {
     if (!task) return;
@@ -144,8 +167,8 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   return <div className={`modal-backdrop task-inspector-backdrop${standalone ? " task-entry-backdrop" : ""}`} role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
     <section ref={dialogRef} className="task-modal task-inspector" role="dialog" aria-modal="true" aria-labelledby={task ? "task-title" : undefined} aria-label={task ? undefined : error ? "Задача недоступна" : "Загрузка задачи"}>
       <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Закрыть" title={standalone ? "Закрыть и открыть город" : "Закрыть"}>×</button>
-      {task && error && <p className="task-refresh-error" role="alert">{error} <button onClick={() => setRetry(value => value + 1)}>Повторить</button></p>}
-      {!task ? <div className="task-load-state" role={error ? "alert" : "status"}><strong>{error || "Загружаем задачу…"}</strong>{error && <button className="primary-button" onClick={() => setRetry(value => value + 1)}>Повторить</button>}</div> : <>
+      {task && error && <p className="task-refresh-error" role="alert">{error} <button onClick={() => { forgetTaskCard(countryId, taskId); setRetry(value => value + 1); }}>Повторить</button></p>}
+      {!task ? <div className="task-load-state" role={error ? "alert" : "status"}><strong>{error || "Загружаем задачу…"}</strong>{error && <button className="primary-button" onClick={() => { forgetTaskCard(countryId, taskId); setRetry(value => value + 1); }}>Повторить</button>}</div> : <>
         <header className="task-header" tabIndex={0} role="group" aria-label="Название и параметры задачи">
           <div className={`stage-icon stage-${task.stage}`}>{task.stage}</div>
           <div className="min-w-0"><p className="eyebrow">#{task.taskNumber} · {workItemLabel[task.workItemType]} · {task.serviceRole ? serviceLabel[task.serviceRole] : task.visualKind === "PARK" ? parkLabel[task.visualAssetKey] ?? "Парк" : getBuilding(task.buildingType).label} · <span title="Объём работ в условных единицах сложности (SP)">Объём: {task.estimate} SP</span></p><h2 id="task-title">{task.title}</h2></div>
@@ -161,10 +184,10 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
           </label>}
         </div>
         <div className="task-status-row"><span className={`status-pill status-${task.status.toLowerCase()}`}>{statusLabel[task.status]}</span><div className="progress-track"><i style={{ width: `${task.progress}%` }} /></div><strong>{task.progress}%</strong></div>
-        {task.defects?.some(defect=>defect.status!=="FIXED")&&<button className="task-defect-alert" onClick={()=>{setTab("overview");requestAnimationFrame(()=>dialogRef.current?.querySelector(".task-defects")?.scrollIntoView({block:"start"}));}}>Нужен ремонт · {task.defects.filter(defect=>defect.status!=="FIXED").length} деф.</button>}
+        {task.counts.activeDefects > 0 && <button className="task-defect-alert" onClick={()=>{setTab("overview");requestAnimationFrame(()=>dialogRef.current?.querySelector(".task-defects")?.scrollIntoView({block:"start"}));}}>Нужен ремонт · {task.counts.activeDefects} деф.</button>}
         <GameTabs id="task-sections" value={tab} onChange={changeTab} tabs={[
-          {id:"overview",label:"Задача"}, {id:"materials",label:"Материалы",count:task.documents?.filter(d=>d.content.trim()).length},
-          {id:"discussion",label:"Обсуждение",count:task.comments?.length}, {id:"history",label:"История"},
+          {id:"overview",label:"Задача"}, {id:"materials",label:"Материалы",count:task.counts.filledDocuments},
+          {id:"discussion",label:"Обсуждение",count:task.counts.comments}, {id:"history",label:"История"},
         ]} />
         <div id="task-sections-overview-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-overview-tab" hidden={tab!=="overview"} className="task-tab-content">
         <div className="task-grid">
@@ -174,30 +197,43 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
         </div>
         <section className="task-description"><h3>Описание</h3>{task.description ? <Markdown text={task.description} /> : <p>Описание пока не добавлено.</p>}</section>
         {task.acceptanceCriteria && <section className="task-description"><h3>Критерии приёмки</h3><Markdown text={task.acceptanceCriteria} /></section>}
-        {task.dependencies?.length ? <section className="task-description"><h3>Зависит от задач</h3><p>{task.dependencies.map(d => `#${d.taskNumber} · ${d.title}`).join("; ")}</p>{onShowDependencies && <button onClick={() => onShowDependencies(task.id)}>Показать зависимости на карте</button>}</section> : null}
-        <section className="task-checklist">
-          <div className="task-section-title"><div><h3>Чек-лист</h3><p>Шаги реализации и их фактический прогресс.</p></div><span>{task.checklist?.filter((item) => item.done).length ?? 0}/{task.checklist?.length ?? 0}</span></div>
-          {task.checklist?.length ? <ol>{task.checklist.map((item) => <li key={item.id} className={item.done ? "done" : ""}><i aria-hidden="true">{item.done ? "✓" : ""}</i><span>{item.title}</span></li>)}</ol> : <p className="muted">Шаги пока не добавлены.</p>}
-        </section>
-        <section className="task-defects"><h3>Связанные дефекты <span>{task.defects?.filter((defect) => defect.status !== "FIXED").length ?? 0} активно</span></h3><p className="task-defect-hint">Исправление дефекта идёт отдельным циклом: прогресс задачи на тестировании не откатывается.</p>
-          {task.defects?.length ? task.defects.map((defect) => <article key={defect.id} className={defect.status.toLowerCase()}><header><strong>{defect.title}</strong><span>{defectStatusLabel[defect.status]}</span></header>{defect.description && <Markdown text={defect.description} />}<dl><div><dt>Шаги</dt><dd>{defect.reproductionSteps}</dd></div><div><dt>Фактически</dt><dd>{defect.actualResult}</dd></div><div><dt>Ожидалось</dt><dd>{defect.expectedResult}</dd></div></dl></article>) : <p className="muted">Связанных дефектов нет.</p>}
-        </section>
+        {task.counts.dependencies > 0 && <TaskCollectionSection {...collectionProps} collection="dependencies" total={task.counts.dependencies} label="Зависит от задач" empty="Зависимостей нет." className="task-description">
+          {items => <><ul>{items.map(dependency => <li key={dependency.id}><a href={taskLink(countryId, dependency)} onClick={event => {
+            if (onNavigateTask && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && event.button === 0) { event.preventDefault(); onNavigateTask(dependency.id); }
+          }}>#{dependency.taskNumber} · {dependency.title}</a><small> · {statusLabel[dependency.status]}</small></li>)}</ul>{onShowDependencies && <button onClick={() => onShowDependencies(task.id)}>Показать зависимости на карте</button>}</>}
+        </TaskCollectionSection>}
+        <TaskCollectionSection {...collectionProps} collection="checklist" total={task.counts.checklistTotal} label={`Чек-лист · ${task.counts.checklistDone}/${task.counts.checklistTotal}`} empty="Шаги пока не добавлены." className="task-checklist">
+          {items => <ol>{items.map(item => <li key={item.id} className={item.done ? 'done' : ''}><i aria-hidden="true">{item.done ? '✓' : ''}</i><span>{item.title}</span></li>)}</ol>}
+        </TaskCollectionSection>
+        <TaskCollectionSection {...collectionProps} collection="defects" total={task.counts.defects} label={`Связанные дефекты · ${task.counts.activeDefects} активно`} empty="Связанных дефектов нет." className="task-defects">
+          {items => items.map(defect => <article key={defect.id} className={defect.status.toLowerCase()}><header><strong>{defect.title}</strong><span>{defectStatusLabel[defect.status]}</span></header>{defect.description && <Markdown text={defect.description} />}<dl><div><dt>Шаги</dt><dd>{defect.reproductionSteps}</dd></div><div><dt>Фактически</dt><dd>{defect.actualResult}</dd></div><div><dt>Ожидалось</dt><dd>{defect.expectedResult}</dd></div></dl></article>)}
+        </TaskCollectionSection>
         </div>
         <div id="task-sections-materials-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-materials-tab" hidden={tab!=="materials"} className="task-tab-content">
         {visited.has("materials") && <>
-        <DocumentShelf documents={task.documents ?? []} />
-        {task.mergeRequests.length > 0 && <section className="task-links"><h3>Связанные MR <span>{task.mergeRequests.length}</span></h3><ul>{task.mergeRequests.map((link) => <li key={link.url}><a href={link.url} target="_blank" rel="noreferrer noopener">{link.title}</a><small>{link.actor} · {new Date(link.addedAt).toLocaleDateString("ru-RU")}</small></li>)}</ul></section>}
-        {task.attachments?.length ? <section className="task-attachments"><h3>Файлы <span>{task.attachments.length}</span></h3><ul>{task.attachments.map((attachment) => <li key={attachment.id}><a href={`/api/attachments/${attachment.id}`}>{attachment.fileName}</a><small>{fileSize(attachment.sizeBytes)} · {attachment.actor} · {new Date(attachment.createdAt).toLocaleDateString("ru-RU")}</small></li>)}</ul></section> : null}
+        <TaskCollectionSection {...collectionProps} collection="documents" total={task.counts.documents} seed={documentPage} label="Материалы для реализации" empty="Материалы пока не добавлены." className="task-documents">
+          {items => <DocumentShelf documents={items} {...collectionProps} />}
+        </TaskCollectionSection>
+        {task.counts.mergeRequests > 0 && <TaskCollectionSection {...collectionProps} collection="mergeRequests" total={task.counts.mergeRequests} label="Связанные MR" empty="Связанных MR нет." className="task-links">
+          {items => <ul>{items.map(link => <li key={link.url}><a href={link.url} target="_blank" rel="noreferrer noopener">{link.title}</a><small>{link.actor} · {new Date(link.addedAt).toLocaleDateString('ru-RU')}</small></li>)}</ul>}
+        </TaskCollectionSection>}
+        {task.counts.attachments > 0 && <TaskCollectionSection {...collectionProps} collection="attachments" total={task.counts.attachments} label="Файлы" empty="Файлов нет." className="task-attachments">
+          {items => <ul>{items.map(attachment => <li key={attachment.id}><a href={`/api/attachments/${attachment.id}`}>{attachment.fileName}</a><small>{fileSize(attachment.sizeBytes)} · {attachment.actor} · {new Date(attachment.createdAt).toLocaleDateString('ru-RU')}</small></li>)}</ul>}
+        </TaskCollectionSection>}
         </>}
         </div>
         <div id="task-sections-discussion-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-discussion-tab" hidden={tab!=="discussion"} className="task-tab-content">
         {visited.has("discussion") && <>
-        <section className="comments"><h3>Ход работы</h3>{task.comments?.length ? task.comments.map((comment) => <article key={comment.id}><header className="comment-meta"><strong>{comment.actor}</strong><time>{new Date(comment.createdAt).toLocaleString("ru-RU")}</time></header><Markdown text={comment.body} /></article>) : <p className="muted">Комментариев пока нет.</p>}</section>
+        <TaskCollectionSection {...collectionProps} collection="comments" total={task.counts.comments} label="Ход работы" empty="Комментариев пока нет." className="comments">
+          {items => items.map(comment => <article key={comment.id}><header className="comment-meta"><strong>{comment.actor}</strong><time>{new Date(comment.createdAt).toLocaleString('ru-RU')}</time></header><Markdown text={comment.body} /></article>)}
+        </TaskCollectionSection>
         </>}
         </div>
         <div id="task-sections-history-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-history-tab" hidden={tab!=="history"} className="task-tab-content">
         {visited.has("history") && <>
-        <section className="task-history"><h3>Хроника {task.visualKind === "PARK" ? "парка" : "здания"}</h3>{task.events?.length ? task.events.map((event) => <article key={event.id}><i /><div><strong>{(task.visualKind === "PARK" ? parkEventLabel : buildingEventLabel)[event.type]}</strong><span>{event.actor} · {new Date(event.createdAt).toLocaleString("ru-RU")}</span></div></article>) : <p className="muted">Хроника начнёт заполняться при следующем изменении.</p>}</section>
+        <TaskCollectionSection {...collectionProps} collection="events" total={task.counts.events} label={`Хроника ${task.visualKind === 'PARK' ? 'парка' : 'здания'}`} empty="Хроника начнёт заполняться при следующем изменении." className="task-history">
+          {items => items.map(event => <article key={event.id}><i /><div><strong>{(task.visualKind === 'PARK' ? parkEventLabel : buildingEventLabel)[event.type]}</strong>{presentTaskChanges(event).map(change => <p key={change.label} className="task-history-change"><b>{change.label}:</b> <span>{change.before}</span> → <span>{change.after}</span></p>)}<span>{event.actor} · {new Date(event.createdAt).toLocaleString('ru-RU')}</span></div></article>)}
+        </TaskCollectionSection>
         </>}
         </div>
       </>}

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { TaskSearchResultDto } from "../../shared/contracts";
-import { api } from "../api";
+import { useTaskListPage } from "../use-task-list-page";
 import { GameIcon } from "./ui";
 
 const statusLabel: Record<TaskSearchResultDto["status"], string> = {
@@ -8,34 +8,15 @@ const statusLabel: Record<TaskSearchResultDto["status"], string> = {
 };
 
 /** Header search: by task number (#42 or 42) or by title substring. */
-export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDto) => void }) {
+export function TaskSearch({ countryId, revision = 0, onSelect }: { countryId: string; revision?:number; onSelect: (result: TaskSearchResultDto) => void }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TaskSearchResultDto[]>([]);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const [retry, setRetry] = useState(0);
   const [active, setActive] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
-  const requestRef = useRef(0);
   const listId = useId();
 
-  useEffect(() => {
-    const requestId = ++requestRef.current;
-    const controller = new AbortController();
-    const text = query.trim().replace(/^#/, "");
-    if (!text) return;
-    const timer = setTimeout(() => {
-      void api<TaskSearchResultDto[]>(`/api/tasks/search?q=${encodeURIComponent(text)}&limit=10`, { signal: controller.signal })
-        .then((found) => {
-          if (controller.signal.aborted || requestRef.current !== requestId) return;
-          setResults(found);
-        })
-        .catch(() => { if (!controller.signal.aborted && requestRef.current === requestId) setError(true); })
-        .finally(() => { if (!controller.signal.aborted && requestRef.current === requestId) setLoading(false); });
-    }, 220);
-    return () => { clearTimeout(timer); controller.abort(); };
-  }, [query, retry]);
+  const page = useTaskListPage({countryId,revision,filters:{q:query},enabled:Boolean(query.trim().replace(/^#/,'')),debounceMs:220});
+  const results=page.items,loading=page.pending,error=page.error;
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -49,11 +30,8 @@ export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDt
   }, [active, open, listId]);
 
   const begin = (value: string) => {
-    // Invalidate before effect cleanup: no stale result can be selected while typing.
-    requestRef.current++;
-    setResults([]); setActive(-1); setError(false);
-    const hasText = Boolean(value.trim().replace(/^#/, ""));
-    setLoading(hasText); setOpen(hasText);
+    setActive(-1);
+    setOpen(Boolean(value.trim().replace(/^#/,'')));
   };
   const select = (result: TaskSearchResultDto) => {
     begin(""); setQuery(""); onSelect(result);
@@ -80,13 +58,13 @@ export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDt
         aria-label="Поиск здания по номеру или названию"
         role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? listId : undefined}
         aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
-        autoComplete="off" spellCheck={false}
+        maxLength={160} autoComplete="off" spellCheck={false}
       />
       {open && <div className="task-search-results" tabIndex={0} role="region" aria-label="Результаты поиска" onKeyDown={event => {
         if (event.key === "Escape") { event.stopPropagation(); setOpen(false); rootRef.current?.querySelector("input")?.focus(); }
       }}>
         {loading && <p className="task-search-empty" role="status">Ищем задачи…</p>}
-        {error && <div className="task-search-empty" role="alert"><p>Не удалось выполнить поиск.</p><button type="button" onClick={() => { begin(query); setRetry(n => n + 1); }}>Повторить поиск</button></div>}
+        {error && <div className="task-search-empty" role="alert"><p>Не удалось выполнить поиск.</p><button type="button" onClick={() => { begin(query); page.retry(); }}>Повторить поиск</button></div>}
         {!loading && !error && results.length === 0 && <p className="task-search-empty" role="status">Ничего не найдено</p>}
         <ul id={listId} role="listbox" aria-label="Найденные задачи" aria-busy={loading}>
         {results.map((result, index) => (
@@ -104,6 +82,11 @@ export function TaskSearch({ onSelect }: { onSelect: (result: TaskSearchResultDt
           </li>
         ))}
         </ul>
+        {(page.hasPrevious||page.hasNext)&&<nav className="task-list-pagination" aria-label="Страницы поиска">
+          <button type="button" disabled={loading||!page.hasPrevious} onClick={()=>{setActive(-1);page.previous();rootRef.current?.querySelector('input')?.focus();}}>Назад</button>
+          <span role="status">Страница {page.pageNumber}</span>
+          <button type="button" disabled={loading||!page.hasNext} onClick={()=>{setActive(-1);page.next();rootRef.current?.querySelector('input')?.focus();}}>Далее</button>
+        </nav>}
       </div>}
     </div>
   );

@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "status": "ROOT_ACCEPTED",
+  "kind": "ONE_VISIBLE_WORLD_GLYPH_CASE_NOT_PERFORMANCE_QUALIFICATION",
+  "sourceHash": "f58376d7d761cc45627ac4ea61d832674212a60fa4c8f920aed20b7b19343fe5",
+  "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+  "clientHash": "58baad0ebc042bdf6281fa5e0e7fd244cb037933f53d61217c137643412e9790",
+  "htmlHash": "c46ad01f799d9f59693d306b2db037adbd3ea08e0660c390035dbacdf15aad7e",
+  "harnessSha256": "baab22209a632e30c54d5f4a9c0533e3536cae30f3cdd7955cff0d68b8633f3a",
+  "rawSummarySha256": "98b0608d6b6a3e23c21fdfbd922cf1617f4b3cf146b8e636cce5b5973c47559a",
+  "startedAt": "2026-10-22T21:46:53.316Z",
+  "finishedAt": "2026-10-22T21:47:06.778Z",
+  "correctedCasePass": true,
+  "automaticRetries": 0,
+  "profile": "iphone-webkit",
+  "browser": "26.5",
+  "parameters": {
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dpr": 3,
+    "touch": true,
+    "cpu": 1,
+    "network": false
+  },
+  "canonicalTasks": 1000,
+  "canonicalEligible": 25,
+  "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+  "initialResidentEligible": 0,
+  "navigation": {
+    "actualPans": 4,
+    "maximumPans": 24,
+    "maximumNavigationMs": 45000,
+    "basisCounts": {
+      "actual-canonical-task-center": 1,
+      "actual-native-glyph": 3
+    },
+    "nativeInput": "Trusted mouse-pointer drag on WebKit emulation; not a hardware touch swipe"
+  },
+  "states": {
+    "normal": {
+      "kind": "WORK",
+      "spriteAlpha": 1,
+      "ownerAlpha": 1,
+      "cssBounds": {
+        "x": 190.59999999999997,
+        "y": 444.7999999999996,
+        "width": 8.800000000000011,
+        "height": 8.800000000000011
+      },
+      "pixiGlobalBounds": {
+        "x": 190.59999999999997,
+        "y": 388.7999999999996,
+        "width": 8.800000000000011,
+        "height": 8.800000000000011
+      },
+      "bodyBounds": {
+        "x": 149.79999999999998,
+        "y": 443.19999999999965,
+        "width": 51.19999999999999,
+        "height": 89.59999999999997
+      },
+      "canvas": {
+        "x": 0,
+        "y": 56,
+        "width": 390,
+        "height": 788
+      },
+      "rendererScreen": {
+        "width": 390,
+        "height": 788
+      },
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "renderScale": 0.8,
+      "fullyInsideCanvasAndViewport": true,
+      "matchesOwnInteractiveBuilding": true
+    },
+    "filtered": {
+      "kind": "WORK",
+      "spriteAlpha": 1,
+      "ownerAlpha": 0.16,
+      "cssBounds": {
+        "x": 190.59999999999997,
+        "y": 444.7999999999996,
+        "width": 8.800000000000011,
+        "height": 8.800000000000011
+      },
+      "pixiGlobalBounds": {
+        "x": 190.59999999999997,
+        "y": 388.7999999999996,
+        "width": 8.800000000000011,
+        "height": 8.800000000000011
+      },
+      "bodyBounds": {
+        "x": 149.79999999999998,
+        "y": 443.19999999999965,
+        "width": 51.19999999999999,
+        "height": 89.59999999999997
+      },
+      "canvas": {
+        "x": 0,
+        "y": 56,
+        "width": 390,
+        "height": 788
+      },
+      "rendererScreen": {
+        "width": 390,
+        "height": 788
+      },
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "renderScale": 0.8,
+      "fullyInsideCanvasAndViewport": true,
+      "matchesOwnInteractiveBuilding": true
+    },
+    "reset": {
+      "kind": "WORK",
+      "spriteAlpha": 1,
+      "ownerAlpha": 1,
+      "cssBounds": {
+        "x": 190.59999999999997,
+        "y": 444.7999999999996,
+        "width": 8.800000000000011,
+        "height": 8.800000000000011
+      },
+      "pixiGlobalBounds": {
+        "x": 190.59999999999997,
+        "y": 388.7999999999996,
+        "width": 8.800000000000011,
+        "height": 8.800000000000011
+      },
+      "bodyBounds": {
+        "x": 149.79999999999998,
+        "y": 443.19999999999965,
+        "width": 51.19999999999999,
+        "height": 89.59999999999997
+      },
+      "canvas": {
+        "x": 0,
+        "y": 56,
+        "width": 390,
+        "height": 788
+      },
+      "rendererScreen": {
+        "width": 390,
+        "height": 788
+      },
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "renderScale": 0.8,
+      "fullyInsideCanvasAndViewport": true,
+      "matchesOwnInteractiveBuilding": true
+    },
+    "zoom": {
+      "kind": "WORK",
+      "spriteAlpha": 1,
+      "ownerAlpha": 1,
+      "cssBounds": {
+        "x": 189.732243602264,
+        "y": 443.77446971176613,
+        "width": 10.53551279547193,
+        "height": 10.535512795471902
+      },
+      "pixiGlobalBounds": {
+        "x": 189.732243602264,
+        "y": 387.77446971176613,
+        "width": 10.53551279547193,
+        "height": 10.535512795471902
+      },
+      "bodyBounds": {
+        "x": 140.8857751868941,
+        "y": 441.8589219307712,
+        "width": 61.297528991836714,
+        "height": 107.27067573571424
+      },
+      "canvas": {
+        "x": 0,
+        "y": 56,
+        "width": 390,
+        "height": 788
+      },
+      "rendererScreen": {
+        "width": 390,
+        "height": 788
+      },
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "renderScale": 0.9577738904974482,
+      "fullyInsideCanvasAndViewport": true,
+      "matchesOwnInteractiveBuilding": true
+    }
+  },
+  "identityPreserved": true,
+  "strictZoomIncrease": true,
+  "allScreenshotsHaveClosedMenu": true,
+  "filterMode": "MINE",
+  "filterSceneChunkRequests": 0,
+  "canonicalGeometryAndCanvasAssertionsPassed": true,
+  "recordedErrors": 0,
+  "recordedWarnings": 1,
+  "warningsSummary": [
+    "Service Worker blocked by browser harness"
+  ],
+  "apiWrites": 0,
+  "captureLimits": {
+    "errors": 128,
+    "warnings": 128,
+    "requests": 5000,
+    "writes": 128,
+    "textCharacters": 4096
+  },
+  "captureTruncated": {
+    "errors": false,
+    "warnings": false,
+    "requests": false,
+    "writes": false,
+    "text": false
+  },
+  "priorHarnessFailure": {
+    "summaryPath": ".builder/task-focus-design-20261022/visible-world-badge-v5/summary.json",
+    "summarySha256": "e48af2356a614cdcf6909651f624660e675076195fae925d86c0b087931d6cc8",
+    "failure": "A real eligible resident glyph is required; no fabricated object",
+    "panCount": 0,
+    "canonicalEligible": 25,
+    "preserved": true,
+    "classification": "HARNESS_PRECONDITION_FAILURE_NOT_PRODUCT_DEFECT",
+    "diagnosis": "Обвязка требовала resident glyph до разрешённого pan к настоящей canonical задаче. Исправлена только обвязка; runtime/fixtures/assertions/budgets сохранены.",
+    "observationLimit": "Начальный snapshot первого неуспешного запуска не сохранялся; precise count из него не заявляется. Исправленный запуск явно сохранил initialResidentEligible0."
+  },
+  "visualReview": {
+    "reviewedImages": [
+      {
+        "path": ".builder/task-focus-design-20261022/visible-world-badge-v5-v2/visible-glyph-detail.png",
+        "sha256": "4b9edc54601a0f11925cbcf7e80232d2eb63ab9bac4ea939850c41e15231c5fd"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/visible-world-badge-v5-v2/visible-glyph-context.png",
+        "sha256": "b6f51c93d7eca3b582bdf316b9536988c789cc2bc0db5317f6c5822f8c0d985c"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/visible-world-badge-v5-v2/visible-glyph-filtered.png",
+        "sha256": "6d884cac3adebbea8333ac3cbc202ff5f250488bd9a004ea7a9aa97f19134878"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/visible-world-badge-v5-v2/visible-glyph-reset.png",
+        "sha256": "ad04b43b6d91f3a77059bdbe3ef8f5ffd6cf955026c4d85e00cc6ce9d68b529f"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/visible-world-badge-v5-v2/visible-glyph-zoom.png",
+        "sha256": "18572c313c49d03d2e291f64f1359e45bd812abaab547c047e8bfc7f38541fc0"
+      }
+    ],
+    "agentFindings": [],
+    "agentObservation": "Чёткий молоток у верхнего правого края своей постройки, отдельный номер снизу; положение соответствует миру, номер и вход не перекрыты. Normal/filtered/reset с закрытым меню показывают маску0.16/1; zoom увеличивает glyph без размытия.",
+    "rootAcceptance": "ROOT_ACCEPTED_NO_OPEN",
+    "rootReviewedAllFiveImages": true
+  },
+  "cleanup": {
+    "preSourceFence": true,
+    "postSourceFence": true,
+    "ownedBrowserClosed": true,
+    "ownedServerClosedAndPort5367Free": true
+  },
+  "limits": [
+    "Проверен один видимый WORK glyph на существующей задаче; все шесть RGBA/template/legend шаблонов покрыты отдельными проверками и не повторялись этой серией.",
+    "Это один исправленный PASS после сохранённого отдельного неуспешного harness-precondition запуска, не один беспроблемный запуск с самого начала.",
+    "Fixture login/auth session разрешены; reseed/MCP/SQL/work writes отсутствуют. Нет rawfixture IDs,URI,credentials,raw URLs или абсолютных host paths.",
+    "Loading performance остаётся STRICT_RED в отдельной24sampleсерии v5; этот visualcase не заменяет benchmark и не снимает61ms longtask."
+  ]
+}

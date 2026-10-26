@@ -1,0 +1,13 @@
+export type BackgroundPollStats = { closed: boolean; running: boolean; requested: boolean; attempts: number; successes: number; errors: number;
+  consecutiveFailures: number; lastSuccessAt: number | null; lastFailureAt: number | null; backoffRemainingMs: number };
+export type CacheCounters = { hits: number; misses: number; builds: number; bypasses: number };
+export type CacheRuntimeStats = CacheCounters & { entries: number; maxEntries: number };
+export type AppServiceRuntimeStats = { kind: "app-service.runtime-stats"; version: 1;
+  caches: { layouts: CacheRuntimeStats; chunks: CacheRuntimeStats; countryOverviews: CacheRuntimeStats; cityScenes: CacheRuntimeStats };
+  pendingChunkBuilds: number; knownCountryVersions: number };
+export type GenerationDispatcherStats = { closed: boolean; observers: number; waiters: number; requests: number; notifications: number; pollReads: number;
+  pollErrors: number; waitTimeouts: number; completedRequests: number; failedRequests: number; lastPollSuccessAt: number | null; lastPollErrorAt: number | null };
+export type WorldGenerationQueueStats = { sampledAt: number; pending: number; running: number; expiredRunning: number; oldestPendingAgeMs: number | null };
+export type WorldEventRelayStats = { initialized: boolean; closed: boolean; countryCursors: number; notifications: number; delivered: number; poll: BackgroundPollStats };
+export type GenerationWorkerStats = { closed: boolean; running: boolean; iterations: number; processed: number; errors: number; lastSuccessAt: number | null;
+  lastFailureAt: number | null; backoffRemainingMs: number };

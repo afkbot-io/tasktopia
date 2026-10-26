@@ -72,6 +72,14 @@ export function createCityCinematicView(options: Options) {
     },
     has(id: string) { return shots.has(id); },
     reservedCells() { return reserved; },
+    setTaskOpacity(resolve: (taskId: string) => number) {
+      for (const [id, shot] of shots) {
+        const alpha = resolve(id);
+        for (const view of [shot.building, shot.platform, shot.root, shot.target?.building, shot.target?.platform]) {
+          if (view && !view.destroyed) view.alpha = alpha;
+        }
+      }
+    },
     target(id: string, target: Target) {
       const shot = shots.get(id); if (!shot) return;
       showTargets(shot); shot.target = target;
@@ -79,6 +87,13 @@ export function createCityCinematicView(options: Options) {
       gate(shot, false);
     },
     update(now: number) {
+      let trimmed = false;
+      if (options.economy()) for (const shot of shots.values()) {
+        if (shot.workers.length <= 3) continue;
+        for (const worker of shot.workers.splice(3)) { worker.view.removeFromParent(); worker.view.destroy(); }
+        trimmed = true;
+      }
+      if (trimmed) reservePaths();
       const frames = timeline.sample(now);
       for (const frame of frames) {
         const shot = shots.get(frame.taskId); if (!shot) continue;

@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T22:39:44.396855+00:00",
+  "status": "SECURITY_PREFLIGHT_PASSED_SCALE_AND_EXACT_HEAD_CI_PENDING",
+  "sourceBaseRevision": "a22a23a598d8f1a123714ae3e1b8bca57213c8fd",
+  "taskNumber": 53,
+  "pullRequest": "https://github.com/afkbot-io/tasktopia/pull/58",
+  "scope": "Датированная точка после security-fix; последующие scale/CI/release результаты фиксируются в задаче №53 и PR58. Это не отчёт о выполненной scale-квалификации v7.",
+  "candidate": {
+    "sourceHash": "80b3015a0c1d5f791351290131e816d000c0c32c720beee3cad3612365466b69",
+    "qualificationHash": "981d683ebae288b8c092c84cf629c200d1417ed90ceb168582ff96ca178282d5",
+    "serverHash": "dbc7be70b6f1fe9db5ff929d72bb799efc496866c6c6cf1de20a283493a4eb22",
+    "clientHash": "58c7e809c4b86ad277b370a71af591e87846aa860e50724d53a577de46223242",
+    "htmlHash": "33c1603efba0c777217191ffa30159835f3c8cfb2c53b12cc42506fc07679220",
+    "distHash": "3a0c1a34a3534c3aab98f900685a3ba513dd101bc0b4c4d937c1c1e064150912",
+    "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+    "assetRevision": "f5ba91abe09a928b"
+  },
+  "runtimeInputDelta": {
+    "total": 1263,
+    "unchanged": 1260,
+    "changed": [
+      "package.json",
+      "package-lock.json",
+      "src/server/mcp.ts"
+    ],
+    "newVersions": {
+      "@modelcontextprotocol/client": "2.3.0",
+      "@modelcontextprotocol/server": "2.3.0",
+      "@modelcontextprotocol/core": "2.3.0",
+      "vite": "8.2.4"
+    },
+    "lockSha256": "06055f96d6fae652057d55056c0b1562039656c65c6298dfa6c0367b812dca8e",
+    "productionChange": "maxToolInputElements:10_000; per-request factory, authentication, tool schemas and body limit unchanged"
+  },
+  "build": {
+    "status": "PASS",
+    "command": "npm run build",
+    "fullTypeScript": true,
+    "standardBuildCount": 1,
+    "originalDistFiles": 920,
+    "startupRevisionCopies": 822,
+    "canonicalOutputsPreservedAfterStartup": true,
+    "sourceManifestSha256": "4a2f015a9cb2eeb7933e5e0d507f0444d050ba7712d0ef175cc25f93558d5b5c",
+    "buildLogSha256": "bede3f008b451e523190bebf1c0b0bc87f545cde421d5b864bb24ddefd809fd8"
+  },
+  "audit": {
+    "command": "npm audit --audit-level=high --json",
+    "exitCode": 0,
+    "counts": {
+      "info": 0,
+      "low": 0,
+      "moderate": 6,
+      "high": 0,
+      "critical": 0,
+      "total": 6
+    },
+    "reportSha256": "2e721d89f2e4075cbc6294492565048a667ba933ac40ac1d7cfd21d6849a559c",
+    "residual": "6 moderate package entries remain. Source review found no currently applicable release-blocking path; this is not an audit-zero or exploit-safety claim."
+  },
+  "mcp": {
+    "affectedSuite": {
+      "files": 5,
+      "passed": 33,
+      "exitCode": 0,
+      "allAdvertisedToolsCalledOverRealHttp": 50,
+      "focusedGreenIsSubsetOfAffectedSuite": true,
+      "receiptSha256": "f5813f2b59699ae2595eae1fc091ae5c83f9ffdaffe6ecd6b6d88837f94886d4"
+    },
+    "red": {
+      "failed": 1,
+      "reason": "10001 members/elements accepted without pre-schema complexity guard",
+      "receiptSha256": "e1d7fafcae690a24943b2dc747a601a3791ef24f3b5861a69a7c42631df4152d"
+    },
+    "boundaries": {
+      "10000Accepted": true,
+      "10001Rejected": true,
+      "legitimateChecklist50Persisted": true,
+      "forcedOverlapEqualJsonRpcIdsModernAndLegacyDifferentCountries": true
+    },
+    "scopedTypesAndEslint": "PASS",
+    "compiledSmoke": {
+      "status": "PASS",
+      "exitCode": 0,
+      "advertisedTools": 50,
+      "modernLegacyAuthScopeRevocation": true,
+      "additionalCompiledComplexityAndEqualIdChecks": true,
+      "receiptSha256": "db88cbbab135f57fa6ec789f30a7c8828c7203a289d69b3347ba7d2c6ba08cb2",
+      "businessHashBefore": "31fa6298ae36498a4645d628bb9f1a5bb911cab58c84fc30a44056ab9892e594",
+      "businessHashAfter": "31fa6298ae36498a4645d628bb9f1a5bb911cab58c84fc30a44056ab9892e594",
+      "fixtureTasks": 40,
+      "newOwnedFixtureOnly": true,
+      "priorQa40AndPerformanceFixturesUntouched": true,
+      "ownedServerStopped": true,
+      "ownedPortFree": true,
+      "otherFixtureConnections": 0
+    }
+  },
+  "performanceApplicability": {
+    "oldV6Qualification": "HISTORICAL_21_V5_PLUS_3_V6_PASS_NOT_REUSED_AS_V7_QUALIFICATION",
+    "reason": "Vite/Rolldown changed emitted client JavaScript:41 to36 chunks. All3 CSS outputs and game assets are byte-equal, but emitted JS is not.",
+    "comparisonSha256": "74ba2b2d6996b195c5a05d3a20f77de01912343ad164af4b6bdf2597ac99c676",
+    "newV7Qualification": {
+      "status": "PENDING",
+      "profiles": [
+        "desktop-chromium",
+        "desktop-firefox",
+        "pixel-chromium",
+        "iphone-webkit"
+      ],
+      "taskCounts": [
+        200,
+        1000
+      ],
+      "samplesEach": 3,
+      "total": 24,
+      "quality": "NORMAL",
+      "originalMeasurementAndBudgetsUnchanged": true,
+      "priorFailuresPreserved": true
+    }
+  },
+  "review": {
+    "status": "NO_OPEN",
+    "type": "AI_SOURCE_REVIEW_NOT_SCM_APPROVAL",
+    "fixedDiffReviewSha256": "18b764ab3f153ea16b20ce26c9f627a6d879fc80e004b94444c41d21b0e4c273"
+  },
+  "ci": {
+    "priorRun": "https://github.com/afkbot-io/tasktopia/actions/runs/39864375087",
+    "priorHead": "a22a23a598d8f1a123714ae3e1b8bca57213c8fd",
+    "priorResult": "FAILURE_DEPENDENCY_AUDIT",
+    "passed": [
+      "build-assets",
+      "unit",
+      "recovery"
+    ],
+    "skipped": [
+      "mcp",
+      "browser"
+    ],
+    "skippedIsNotPassed": true,
+    "newExactHeadCi": "PENDING"
+  },
+  "primarySources": [
+    "https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-46jr-4wx8-v453",
+    "https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-jm63-cq47-j5jp",
+    "https://github.com/advisories/GHSA-6prh-2h8m-c8cw",
+    "https://github.com/vitejs/vite/releases/tag/v8.2.4"
+  ],
+  "limitations": [
+    "No v7 scale or final CI result is claimed by this preflight record.",
+    "Browser emulation does not certify physical phones or every GPU.",
+    "Source-only residual dependency review is not exploit reproduction.",
+    "Old evidence and failed runs keep their original source, dependency and output bindings."
+  ]
+}

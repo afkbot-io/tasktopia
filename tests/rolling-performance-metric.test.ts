@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RollingPerformanceMetric } from "../src/client/rolling-performance-metric";
 
 describe("RollingPerformanceMetric", () => {
@@ -13,5 +13,17 @@ describe("RollingPerformanceMetric", () => {
     expect(new RollingPerformanceMetric().snapshot()).toEqual({
       samples: 0, last: 0, max: 0, p50: 0, p95: 0, p99: 0,
     });
+  });
+
+  it("records a frame without sorting samples and preserves a wrapped recent window", () => {
+    const metric = new RollingPerformanceMetric(3);
+    const sort = vi.spyOn(Array.prototype, "sort");
+    try {
+      for (const value of [10, 4, 7, 2, 9]) metric.record(value);
+      expect(sort).not.toHaveBeenCalled();
+    } finally { sort.mockRestore(); }
+    expect(metric.snapshot()).toEqual({ samples: 3, last: 9, max: 9, p50: 7, p95: 9, p99: 9 });
+    metric.record(Number.NaN);
+    expect(metric.snapshot().samples).toBe(3);
   });
 });

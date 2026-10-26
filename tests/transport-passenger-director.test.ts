@@ -33,3 +33,15 @@ it("keeps a shared queue when another fleet slot disappears, clears it after the
  director.compile([]);expect(clear).toHaveBeenCalledTimes(1);expect(director.metrics.providers).toBe(0);
  director.dispose();expect(clear).toHaveBeenCalledTimes(1);
 });
+it("inspects the selected real vehicle's current visit, not cumulative counts from the whole fleet",()=>{
+ const {mobility,director,provider,setState}=fixture();director.compile([provider]);setState({activity:"BOARDING"});
+ for(let t=0;t<20_000;t+=100){director.advance(t);mobility.advance(100);}
+ const first=director.inspect(provider.vehicleId)!;
+ expect(first.visitId).toBe("visit");expect(first.boarded).toBeGreaterThan(0);expect(first.aboard).toBe(director.metrics.carried);
+ expect(director.inspect("unknown")).toBeUndefined();
+ setState({activity:"ALIGHTING",visitId:"next-visit"});director.advance(20_300);
+ const next=director.inspect(provider.vehicleId)!;
+ expect(next).toMatchObject({visitId:"next-visit",boarded:0});expect(next.alighted).toBeGreaterThan(0);
+ expect(next.alighted+next.aboard).toBe(first.aboard);
+ director.compile([]);expect(director.inspect(provider.vehicleId)).toBeUndefined();
+});

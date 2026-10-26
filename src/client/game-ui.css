@@ -22,6 +22,8 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .game-popover-panel button { min-height:44px;border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-control);text-align:left;padding:8px 10px;color:var(--game-ink);background:var(--ui-raised);cursor:pointer; }
 .game-popover-panel button:hover { background:var(--ui-hover); }
 .game-popover-panel .map-attention { display:grid;gap:6px; }
+.game-popover-panel:has(> .map-attention) { max-height:calc(100dvh - 80px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain; }
+.game-popover-panel .task-sprint-legend ul { grid-template-columns:minmax(0,1fr); }
 .game-popover-panel .map-attention button { width:100%; }
 .game-popover-panel .map-attention button[aria-pressed="true"] { background:var(--ui-selected);border-color:var(--ui-accent); }
 .map-legend-panel p,.map-legend-panel dd { color:var(--ui-muted);font-size:12px; }
@@ -109,16 +111,21 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
  .map-toolbar .country-title-button strong { max-width:100px;font-size:12px; }
 }
 @media(max-width:600px) {
- .app-header.map-toolbar {gap:5px;padding:6px;height:56px;min-height:56px;grid-template-columns:minmax(52px,1fr) minmax(64px,1.2fr) auto; }
+ .app-header.map-toolbar {gap:5px;padding:6px;height:56px;min-height:56px;grid-template-columns:minmax(44px,1fr) minmax(64px,1.2fr) auto; }
  .map-toolbar-location { gap:0; }
  .map-toolbar-location:has(.header-city) .country-title-button { display:none; }
  .map-toolbar .header-city { display:grid;padding:0;border:0; }
  .map-toolbar .header-city strong { max-width:90px;font-size:12px; }
  .map-toolbar-actions nav { gap:3px; }
- .map-toolbar-actions .map-legend:not(.world-preferences),.map-toolbar-actions .profile-presence { display:none; }
+ .map-toolbar-actions .map-legend:not(.world-preferences) { display:none; }
  .game-popover summary,.map-toolbar .map-legend summary {padding:0 6px;height:44px;min-width:44px; }
  .map-toolbar .world-preferences { display:none; }
  .world-menu .game-popover-panel { position:fixed;top:62px;right:12px;max-height:calc(100dvh - 74px);overflow-y:auto;overscroll-behavior:contain; }
+ .game-popover-panel:has(> .map-attention) {
+  position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));
+  max-height:calc(100dvh - 74px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+  overflow-y:auto;overscroll-behavior:contain;
+ }
  .city-directory { top:10px;right:10px;max-width:calc(100% - 20px);max-height:calc(100% - 86px); }
  .task-inspector-backdrop { padding:0; }
  .task-modal.task-inspector { width:100%;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border-width:0;border-radius:0; }
@@ -275,6 +282,12 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .game-field {color:var(--ui-muted);}
 .game-field input {border-radius:var(--ui-radius-control);border-color:var(--ui-border-control);background:var(--ui-canvas);color:var(--ui-text);min-height:48px;box-shadow:none;}
 .game-field small {color:var(--ui-muted);}
+.game-field > label {color:inherit;font:inherit;}
+.game-field-control {position:relative;min-width:0;}
+.game-password-control input {padding-right:54px;}
+.game-password-control .game-password-toggle {position:absolute;right:2px;top:2px;width:44px;min-height:44px;padding:0;}
+.game-field .game-field-error {color:var(--ui-danger);}
+.game-field input[aria-invalid="true"] {border-color:var(--ui-danger);}
 /* Account entry is a game scene with one foreground window. */
 .auth-game-entry {display:grid;grid-template-columns:minmax(0,1fr) 496px;height:100%;min-height:0;background:var(--ui-canvas);color:var(--ui-text);}
 .auth-landscape {position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--ui-canvas);}
@@ -292,6 +305,9 @@ button:focus-visible,summary:focus-visible,a:focus-visible,[role="button"]:focus
 .auth-panel-head .game-icon {flex-shrink:0;color:var(--ui-accent);}
 .auth-panel-body {display:grid;gap:20px;padding:24px 28px 28px;}
 .auth-panel-body > p {margin:0;color:var(--ui-muted);font-size:14px;line-height:1.65;}
+.auth-config-status {display:grid;gap:8px;padding:12px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-control);color:var(--ui-muted);font-size:13px;line-height:1.5;}
+.auth-config-status p {margin:0;}
+.auth-config-status .game-button {justify-self:start;padding-inline:0;text-align:left;}
 .auth-entry-form,.auth-entry-form fieldset {display:grid;gap:16px;margin:0;padding:0;border:0;min-width:0;}
 .auth-entry-form fieldset[hidden] {display:none;}
 .auth-entry-form .auth-form-description {margin:0;color:var(--ui-muted);font-size:14px;line-height:1.6;}
@@ -565,4 +581,42 @@ summary { min-height:44px; }
  .city-documents { display:block;overflow-y:auto;overscroll-behavior:contain;scroll-padding-top:88px; }
  .city-documents > header { position:sticky;top:0;z-index:1; }
  .city-documents .document-body { overflow:visible; }
+}
+
+/* Cursor catalog shares the game's surfaces and retains at most fifty task rows. */
+.task-list-pagination {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:12px 0;}
+.task-list-pagination span {min-width:0;text-align:center;color:var(--ui-muted);font-size:12px;line-height:1.5;overflow-wrap:anywhere;}
+.task-list-pagination button {min-height:44px;padding:8px 12px;border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-control);background:var(--ui-raised);color:var(--ui-text);cursor:pointer;}
+.task-search-results .task-list-pagination {position:sticky;bottom:-6px;margin-top:6px;padding:8px;background:var(--ui-surface);border-top:1px solid var(--ui-border);}
+.task-search-results .task-list-pagination button {display:block;text-align:center;width:auto;}
+.task-catalog {display:flex;flex-direction:column;gap:12px;min-height:0;color:var(--ui-text);}
+.task-catalog-filters {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;flex:0 0 auto;min-height:0;}
+.task-catalog-filters :is(label,select) {min-width:0;max-width:100%;}
+.task-catalog-filters select {width:100%;min-height:44px;border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-control);background:var(--ui-canvas);color:var(--ui-text);padding:8px;font-size:13px;}
+.task-catalog-mine {display:flex;align-items:center;gap:8px;min-height:44px;}
+.task-catalog-mine input {width:20px;height:20px;margin:0;padding:0;accent-color:var(--ui-accent);}
+.task-catalog-page {min-height:100px;max-height:42vh;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;}
+.task-catalog-rows {list-style:none;margin:0;padding:0;}
+.task-catalog-rows .plan-row > button:first-child {padding:12px 8px;}
+.task-catalog-rows .plan-row strong {white-space:normal;overflow-wrap:anywhere;}
+.task-catalog-rows .plan-row small {white-space:normal;line-height:1.5;}
+.task-catalog .plan-error p {margin:0 0 8px;}
+.task-catalog-backdrop {z-index:70;padding:16px;}
+.task-catalog-dialog {display:flex;flex-direction:column;width:min(720px,100%);height:min(800px,calc(100dvh - 32px));max-height:100%;overflow:hidden;border:1px solid var(--ui-border);border-radius:var(--ui-radius-panel);background:var(--ui-surface);color:var(--ui-text);box-shadow:var(--ui-shadow);}
+.task-catalog-dialog > header {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--ui-border);background:var(--game-frame);}
+.task-catalog-dialog h2 {font-size:20px;line-height:1.4;margin:0;}
+.task-catalog-dialog > header button {width:44px;flex-shrink:0;padding:0;}
+.task-catalog-body {display:flex;flex-direction:column;min-height:0;flex:1;padding:16px 20px;overflow:auto;}
+.task-catalog-body .task-catalog {flex:1;}
+.task-catalog-body .task-catalog-filters {max-height:35vh;overflow:auto;}
+.task-catalog-body .task-catalog-page {max-height:none;}
+.directory-city-row .directory-city-districts,.directory-all-tasks {min-height:44px;padding:8px 12px;border:1px solid var(--ui-border-control);border-radius:var(--ui-radius-control);background:var(--ui-raised);color:var(--ui-link);cursor:pointer;}
+.directory-city-row .directory-city-districts {align-self:center;margin:4px;font-size:12px;}
+.directory-all-tasks {width:100%;margin:4px 0 12px;}
+.directory-content .directory-search {min-height:44px;font-size:14px;}
+@media(max-width:400px) {
+ .task-catalog-filters {grid-template-columns:minmax(0,1fr);}
+ .task-catalog-backdrop {padding:8px;}
+ .task-catalog-dialog {height:calc(100dvh - 16px);}
+ .task-catalog-dialog > header,.task-catalog-body {padding:12px;}
 }

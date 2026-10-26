@@ -1,0 +1,1814 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-23T03:36:00.775Z",
+  "status": "STRICT_PASS",
+  "title": "V14: все 24 исходных измерения завершены и проходят исходные strict budgets; без ретрая или исключения",
+  "candidate": "candidate-task-focus-reliability-v14",
+  "binding": {
+    "sourceHash": "51f67980cec9fe77c7f9cb617909c3a12a1b92f0065cfb6b6b292938ac33e247",
+    "serverHash": "dbc7be70b6f1fe9db5ff929d72bb799efc496866c6c6cf1de20a283493a4eb22",
+    "clientHash": "c38805186b74f2693d8ecb9a809dce3c887009d0903f82246dc8c23e7f83bf97",
+    "htmlHash": "f389ca5e67e882a022707b0822e8a4cdc6bbe1f7dd18fe4138ffe4e2357552d3",
+    "manifestHash": "da17181234dad93fc79167d2fe3d0c01b39b0320485e8957fa17f4134b60d89a",
+    "distHash": "e3df36473bc81f8009f98b85ec90f18ca71a752a0405d53b7a69e97c9239e16c",
+    "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+    "publicationHash": "2cf06e367f1841298e75aae96855b3c048309ca89769a50df26755b830b363f1",
+    "physicalDistHash": "bfb423de2189ca51603d651a73ea783d36918cb519bca76811cfe40384320122",
+    "bindingHash": "4ee13d3ed81a98858f80858201da1c80d2b002e538e706c5b9a24c0c9bae480f",
+    "hostObserverHash": "d90a080fcd42f8bae3e025fc039fa50a68c91e07d0db875ca7df9befbbb01309"
+  },
+  "measurementContract": {
+    "version": 2,
+    "coldMetric": "browser-first-atomic-transition-ready-upper-bound",
+    "start": "node-city-start-bracketed-by-existing-browser-clock-rpc",
+    "end": "first-observed-atomic-and-zero-map-level-transitions-after-trusted-city-enter",
+    "legacyColdMetric": "node-city-ready-await-return",
+    "ownership": "no-world-canvas-at-start-or-before-trusted-city-enter"
+  },
+  "controls": {
+    "profiles": [
+      "desktop-chromium",
+      "desktop-firefox",
+      "pixel-chromium",
+      "iphone-webkit"
+    ],
+    "sizes": [
+      200,
+      1000
+    ],
+    "samples": 3,
+    "churn": 20,
+    "steadyMs": 8000,
+    "quality": "NORMAL",
+    "strictBudgets": true,
+    "coldContractVersion": 2,
+    "controlHashes": {
+      "scripts/measure-city-scale.ts": "576069f6837f87bba4c885ff784b55ab805761b00ad63d3a16979810e32fe516",
+      "scripts/city-scale-cold-metric.ts": "4474b2e80aa459b821adb7239834de33411aad3dfe9238e6d0b51ce52d921727",
+      "scripts/city-scale-benchmark-contract.ts": "678f2716ceff2a566f3ecc8172308ea1995d90aad5aab096aa7c184390f55ab3"
+    },
+    "continuationDriverHash": "7fb30e69ca1515b411fc79f671f013eb4e40f7145df9aa36b684064b926a9cc6",
+    "policyHash": "3edac91f6eb84f817f2a8be58423760c1f4b727b094dbebc8234ef830ba033f4",
+    "loadingStatistic": "min/median/max of three actual samples; no loading p95 claim",
+    "inputStatistic": "per-sample native event dispatch to second RAF p95; not full-session INP",
+    "trace": false,
+    "additionalForcedGc": false,
+    "originalBeforeAfterHeapGcPreserved": true
+  },
+  "coverage": {
+    "groups": 8,
+    "samples": 24,
+    "completed": 24,
+    "errorsCount": 0,
+    "budgetViolationsCount": 0,
+    "excludedSamples": 0,
+    "retries": 0,
+    "allRawSampleFilesEqualReportResults": true,
+    "canonicalGeometryAndTaskCountsPreserved": true,
+    "sameCanvasAcross20WarmReturns": "All original per-cycle assertions passed; completed original workloads",
+    "http": {
+      "coldSceneRequests": 24,
+      "panSceneRequests": 0,
+      "warmSceneRequests": 0,
+      "legacyRequests": 0
+    },
+    "longTasks": {
+      "availableSamples": 12,
+      "unavailableSamples": 12,
+      "measuredSteadyCount": 0,
+      "unavailableIsNotMeasuredZero": true
+    },
+    "console": {
+      "capturedSamples": 24,
+      "errorCount": 0,
+      "warningCount": 54,
+      "truncatedSamples": 0,
+      "uniqueErrorClassifications": [],
+      "warningClassifications": [
+        {
+          "classification": "Service Worker registration blocked by Playwright",
+          "count": 24
+        },
+        {
+          "classification": "WebGL context was lost.",
+          "count": 6
+        },
+        {
+          "classification": "WebGL warning: texImage: Alpha-premult and y-flip are deprecated for non-DOM-Element uploads.",
+          "count": 12
+        },
+        {
+          "classification": "WebGL warning: drawElementsInstanced: Tex image TEXTURE_2D level 0 is incurring lazy initialization.",
+          "count": 6
+        },
+        {
+          "classification": "WEBGL_debug_renderer_info is deprecated in Firefox and will be removed. Please use RENDERER.",
+          "count": 6
+        }
+      ],
+      "separateFromOriginalReportErrors": true
+    },
+    "functionalFailures": 0,
+    "strictGroupsPassed": 8,
+    "strictSamplesPassed": 24,
+    "strictSamplesFailed": 0,
+    "budgetViolations": []
+  },
+  "rows": [
+    {
+      "tasks": 200,
+      "profile": "desktop-chromium",
+      "browser": "151.0.7922.34",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "network": "local unrestricted",
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-desktop-chromium/report.json",
+        "sha256": "46e574933bb93b1e142e94ec02c6cd584b4bfa591d3014d1aafff95a39b52fba"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "405b86a289e7829b52be17063afa695389cedc879cf693b851063063150097b1"
+        },
+        {
+          "sample": 1,
+          "sha256": "3a935f0889501c9eb9d53aff5faf3dc4d7a219154213238bec0280d854c261bc"
+        },
+        {
+          "sample": 2,
+          "sha256": "37407194934000b3635795f297684f5c28f0c495b4161756d0ff6e0201f0a0fe"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 1500,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 200,
+        "sceneChunks": 20,
+        "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+        "statusCounts": {
+          "COMPLETED": 160,
+          "IN_PROGRESS": 30,
+          "PLANNING": 10
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 945.3425420000021,
+          "median": 947.3921249046325,
+          "max": 1077.5244169046327
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 8.602874999996857,
+          "median": 8.719916999994894,
+          "max": 29.865999999999985
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 18.59999990463257,
+          "median": 19.399999856948853,
+          "max": 19.700000047683716
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 9.899999999999636,
+          "median": 9.899999999999636,
+          "max": 9.899999999999636
+        },
+        "heapGrowthBytes": {
+          "available": true,
+          "count": 3,
+          "min": 900824,
+          "median": 1101908,
+          "max": 1617468
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8009.799999952316,
+          "median": 8009.799999952316,
+          "max": 8011.400000095367
+        },
+        "steadyLongTasks": {
+          "available": true,
+          "measuredSampleCounts": [
+            0,
+            0,
+            0
+          ],
+          "measuredTotal": 0,
+          "unavailableSamples": 0
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 67230816,
+            "median": 67231328,
+            "max": 67231584
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 60941664,
+            "median": 60941664,
+            "max": 60942176
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 17258,
+            "median": 17258,
+            "max": 17258
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 140,
+            "median": 143,
+            "max": 144
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 3,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    },
+    {
+      "tasks": 200,
+      "profile": "desktop-firefox",
+      "browser": "153.0",
+      "parameters": {
+        "engine": "firefox",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "network": "local unrestricted",
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-desktop-firefox/report.json",
+        "sha256": "7aea5ca5a7dd22f2507f2e78e79d262b6aa358df12fd264424c11c1fe2ff6166"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "79f89bc48598cfe9a93ffe56cc0ae50388570111f90f77606abb5ec1605936e5"
+        },
+        {
+          "sample": 1,
+          "sha256": "cfbce3039e5dcaed2e6fa461c120af9c5e43eafa0aa6d1c71d723be93e3a7fc6"
+        },
+        {
+          "sample": 2,
+          "sha256": "0e265dade2eb007aa20eec9eac36b501ed5abcc8af6a877269f8213ce150ab5f"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 1500,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 200,
+        "sceneChunks": 20,
+        "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+        "statusCounts": {
+          "COMPLETED": 160,
+          "IN_PROGRESS": 30,
+          "PLANNING": 10
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 1189.6708749999998,
+          "median": 1207.316833,
+          "max": 1292.3074579999957
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 15.610249999997905,
+          "median": 16.04491699999926,
+          "max": 18.369542000000365
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 37,
+          "median": 37,
+          "max": 37
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 16.859999999998763,
+          "median": 16.8799999999992,
+          "max": 16.93999999999869
+        },
+        "heapGrowthBytes": {
+          "available": false,
+          "count": 0,
+          "min": null,
+          "median": null,
+          "max": null
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8013,
+          "median": 8017,
+          "max": 8031
+        },
+        "steadyLongTasks": {
+          "available": false,
+          "measuredSampleCounts": [
+            null,
+            null,
+            null
+          ],
+          "measuredTotal": null,
+          "unavailableSamples": 3
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 67253344,
+            "median": 67254624,
+            "max": 67254880
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 60964960,
+            "median": 60965728,
+            "max": 60967776
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 17255,
+            "median": 17258,
+            "max": 17258
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 144,
+            "median": 147,
+            "max": 147
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 18,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 6,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 6,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 6,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    },
+    {
+      "tasks": 200,
+      "profile": "pixel-chromium",
+      "browser": "151.0.7922.34",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 393,
+          "height": 851
+        },
+        "dpr": 2.75,
+        "touch": true,
+        "cpu": 4,
+        "network": true
+      },
+      "network": {
+        "latencyMs": 60,
+        "downloadBps": 1600000,
+        "uploadBps": 750000,
+        "method": "CDP"
+      },
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-pixel-chromium/report.json",
+        "sha256": "0cd7ee9a454f2d6c8cab579b4b386a95b2730afb5fa7639a7f95431967afb48f"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "c78f08a02ae3b9ec7ed330f502161ba6002bdd22a6e4683de9ab6617eaca2ff0"
+        },
+        {
+          "sample": 1,
+          "sha256": "b6e35012cb52b20ef51f43f67d63fe81f77a969e7fa089a6393715ca71453633"
+        },
+        {
+          "sample": 2,
+          "sha256": "b083838adef9295214822bfd87c154d77f59b1b7240ad0ff0fd98bdd61e1556f"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 6000,
+        "warmCityMs": 750,
+        "inputP95Ms": 200,
+        "frameP95Ms": 34,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 200,
+        "sceneChunks": 20,
+        "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+        "statusCounts": {
+          "COMPLETED": 160,
+          "IN_PROGRESS": 30,
+          "PLANNING": 10
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 5316.604874904631,
+          "median": 5323.784540952316,
+          "max": 5412.436417047684
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 75.50687499999913,
+          "median": 78.63762500000303,
+          "max": 79.7809159999997
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 29.299999952316284,
+          "median": 30.40000009536743,
+          "max": 43.40000009536743
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 10.099999999998545,
+          "median": 10.099999999998545,
+          "max": 10.100000000002183
+        },
+        "heapGrowthBytes": {
+          "available": true,
+          "count": 3,
+          "min": 1084384,
+          "median": 1134464,
+          "max": 1146032
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8005.5,
+          "median": 8012.5,
+          "max": 8012.5
+        },
+        "steadyLongTasks": {
+          "available": true,
+          "measuredSampleCounts": [
+            0,
+            0,
+            0
+          ],
+          "measuredTotal": 0,
+          "unavailableSamples": 0
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 24172384,
+            "median": 24172384,
+            "max": 24172640
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 31790176,
+            "median": 31790688,
+            "max": 31790944
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 13376,
+            "median": 13376,
+            "max": 13376
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 110,
+            "median": 112,
+            "max": 115
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 3,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    },
+    {
+      "tasks": 200,
+      "profile": "iphone-webkit",
+      "browser": "26.5",
+      "parameters": {
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "touch": true,
+        "cpu": 1,
+        "network": false
+      },
+      "network": "local unrestricted",
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-iphone-webkit/report.json",
+        "sha256": "1ad598141b950b50df3e1643bb9b85642b08d841af6f1616e5aaa89e09c7761e"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "abd9ca6548a1d0f6fe8fc4fd590977829929fce7c61fd77b3c53adb432738d97"
+        },
+        {
+          "sample": 1,
+          "sha256": "d2b4e29c916dfb41bef62feac9adba371cd6c873e119b86c3bcc7c694f923f05"
+        },
+        {
+          "sample": 2,
+          "sha256": "8eea5f99e61eff6fa12216fe6e8fa3c13ac887e701d79581f9570bf6edfef06b"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 1500,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 200,
+        "sceneChunks": 20,
+        "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+        "statusCounts": {
+          "COMPLETED": 160,
+          "IN_PROGRESS": 30,
+          "PLANNING": 10
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 767.6425829999971,
+          "median": 769.0543749999997,
+          "max": 800.442541
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 16.26299999999901,
+          "median": 34.48579199999949,
+          "max": 36.06758400000035
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 35,
+          "median": 35,
+          "max": 36
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 19,
+          "median": 19,
+          "max": 19
+        },
+        "heapGrowthBytes": {
+          "available": false,
+          "count": 0,
+          "min": null,
+          "median": null,
+          "max": null
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8003,
+          "median": 8007,
+          "max": 8027
+        },
+        "steadyLongTasks": {
+          "available": false,
+          "measuredSampleCounts": [
+            null,
+            null,
+            null
+          ],
+          "measuredTotal": null,
+          "unavailableSamples": 3
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 24172384,
+            "median": 24173152,
+            "max": 24173920
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 31527264,
+            "median": 31527776,
+            "max": 31529056
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 13373,
+            "median": 13373,
+            "max": 13373
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 110,
+            "median": 113,
+            "max": 113
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 3,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    },
+    {
+      "tasks": 1000,
+      "profile": "desktop-chromium",
+      "browser": "151.0.7922.34",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "network": "local unrestricted",
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-desktop-chromium/report.json",
+        "sha256": "5de26a46108bb9bffd4e4879e6178f5314c58ad7e979a19b895e1e28491ac472"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "e969b7a64c4dbac679263fcff0f11121e20431833999afe7ef53c288fc887e88"
+        },
+        {
+          "sample": 1,
+          "sha256": "8e5dd0130be96805ab04d86aaad30966aaf2aae9850a1be67cc3a3534bdc30fd"
+        },
+        {
+          "sample": 2,
+          "sha256": "2fbfb42ec4157d61764e399d66e987a26d3a202fe853d5c4e2ca46d935d1e31a"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 1000,
+        "sceneChunks": 72,
+        "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "statusCounts": {
+          "COMPLETED": 800,
+          "IN_PROGRESS": 150,
+          "PLANNING": 50
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 1460.6039169046344,
+          "median": 1514.7552499523154,
+          "max": 1968.5140000476836
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 9.08495799999946,
+          "median": 11.474958999999217,
+          "max": 32.78299999999581
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 22.09999990463257,
+          "median": 24.100000143051147,
+          "max": 27.700000047683716
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 9.700000000000728,
+          "median": 9.800000000001091,
+          "max": 9.900000000001455
+        },
+        "heapGrowthBytes": {
+          "available": true,
+          "count": 3,
+          "min": 1048948,
+          "median": 1103900,
+          "max": 1525048
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8004.200000047684,
+          "median": 8009.5,
+          "max": 8017
+        },
+        "steadyLongTasks": {
+          "available": true,
+          "measuredSampleCounts": [
+            0,
+            0,
+            0
+          ],
+          "measuredTotal": 0,
+          "unavailableSamples": 0
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 84246624,
+            "median": 84247392,
+            "max": 84247648
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 77958752,
+            "median": 77958752,
+            "max": 77959520
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 37129,
+            "median": 37129,
+            "max": 37129
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 166,
+            "median": 166,
+            "max": 166
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 3,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    },
+    {
+      "tasks": 1000,
+      "profile": "desktop-firefox",
+      "browser": "153.0",
+      "parameters": {
+        "engine": "firefox",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "network": "local unrestricted",
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-desktop-firefox/report.json",
+        "sha256": "70ef2de0f5f5ebf0db80d7e7dc08f549b6286426fbaae7f339cf3607216c6ad0"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "3501cb9f931aea2c1810351d45c33179d783c05afc0ba4493805888dd20fb971"
+        },
+        {
+          "sample": 1,
+          "sha256": "5b309ad1ccabccec9024d13306f48d16b3c3cb2f2bea1bfae0cd07f57df2c915"
+        },
+        {
+          "sample": 2,
+          "sha256": "6ee6eb23413080d86aab9430fcc9f33c91a68e0e17cdd9427eb39993f05faaaa"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 1000,
+        "sceneChunks": 72,
+        "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "statusCounts": {
+          "COMPLETED": 800,
+          "IN_PROGRESS": 150,
+          "PLANNING": 50
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 1731.7084160000013,
+          "median": 1757.3967090000006,
+          "max": 1773.0519160000001
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 14.992417000001296,
+          "median": 15.164416999999958,
+          "max": 15.25458300000173
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 38,
+          "median": 38,
+          "max": 39
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 16.840000000000146,
+          "median": 16.860000000000582,
+          "max": 16.88000000000102
+        },
+        "heapGrowthBytes": {
+          "available": false,
+          "count": 0,
+          "min": null,
+          "median": null,
+          "max": null
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8017,
+          "median": 8020,
+          "max": 8020
+        },
+        "steadyLongTasks": {
+          "available": false,
+          "measuredSampleCounts": [
+            null,
+            null,
+            null
+          ],
+          "measuredTotal": null,
+          "unavailableSamples": 3
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 84271456,
+            "median": 84271456,
+            "max": 84271712
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 77982560,
+            "median": 77983840,
+            "max": 77984096
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 37129,
+            "median": 37150,
+            "max": 37150
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 165,
+            "median": 166,
+            "max": 166
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 18,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 6,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 6,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 6,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    },
+    {
+      "tasks": 1000,
+      "profile": "pixel-chromium",
+      "browser": "151.0.7922.34",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 393,
+          "height": 851
+        },
+        "dpr": 2.75,
+        "touch": true,
+        "cpu": 4,
+        "network": true
+      },
+      "network": {
+        "latencyMs": 60,
+        "downloadBps": 1600000,
+        "uploadBps": 750000,
+        "method": "CDP"
+      },
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-pixel-chromium/report.json",
+        "sha256": "e8d13ae9b0653a581bbf0397e0cf36f4ad488cecf06ca1879769fa9da91ccec0"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "b6d45c00d4b7767deca16b02ef272282b976f7e38cacd3bdd39fdc845bf23351"
+        },
+        {
+          "sample": 1,
+          "sha256": "e223feebb0d36ff34a506bf86d3f0da6fa0df322530baae214be45f5f629da80"
+        },
+        {
+          "sample": 2,
+          "sha256": "de2fb3abd6b81751c2f171d7098c6520c66b03c4b4a7a4b83668e4987785b59e"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 12000,
+        "warmCityMs": 750,
+        "inputP95Ms": 200,
+        "frameP95Ms": 34,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 1000,
+        "sceneChunks": 72,
+        "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "statusCounts": {
+          "COMPLETED": 800,
+          "IN_PROGRESS": 150,
+          "PLANNING": 50
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 8226.18641609537,
+          "median": 8230.39537504768,
+          "max": 8256.881749952316
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 69.73466700000426,
+          "median": 74.43470800000068,
+          "max": 76.80104199999187
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 31.200000047683716,
+          "median": 42.89999985694885,
+          "max": 45.200000047683716
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 10.099999999998545,
+          "median": 10.099999999998545,
+          "max": 10.100000000002183
+        },
+        "heapGrowthBytes": {
+          "available": true,
+          "count": 3,
+          "min": 978900,
+          "median": 1147792,
+          "max": 1344404
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8006.099999904633,
+          "median": 8010.400000095367,
+          "max": 8012.599999904633
+        },
+        "steadyLongTasks": {
+          "available": true,
+          "measuredSampleCounts": [
+            0,
+            0,
+            0
+          ],
+          "measuredTotal": 0,
+          "unavailableSamples": 0
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 27230216,
+            "median": 27230728,
+            "max": 27231240
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 35964680,
+            "median": 35964936,
+            "max": 35965448
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 21001,
+            "median": 21001,
+            "max": 21001
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 104,
+            "median": 105,
+            "max": 105
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 3,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    },
+    {
+      "tasks": 1000,
+      "profile": "iphone-webkit",
+      "browser": "26.5",
+      "parameters": {
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "touch": true,
+        "cpu": 1,
+        "network": false
+      },
+      "network": "local unrestricted",
+      "status": "STRICT_PASS",
+      "completed": true,
+      "samples": 3,
+      "excludedSamples": 0,
+      "retries": 0,
+      "rawReport": {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-iphone-webkit/report.json",
+        "sha256": "ab6c31c8ae8722517b931a53b43a461d24649bc1443a0002a3d5bca260153257"
+      },
+      "rawSamples": [
+        {
+          "sample": 0,
+          "sha256": "1c37f342331caeb31635e1b2db6368863da187c30c59694d72c16d3400cfb36a"
+        },
+        {
+          "sample": 1,
+          "sha256": "409bb3d4796029cad6cd240294011c91491ab6c2e98cae87389bfd6ff0d94ace"
+        },
+        {
+          "sample": 2,
+          "sha256": "0cb1712d89b2c7c78410b8f5d536bc619ae24426e4f8274541461c1854b0a409"
+        }
+      ],
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "errorsCount": 0,
+      "budgetViolations": [],
+      "canonical": {
+        "tasks": 1000,
+        "sceneChunks": 72,
+        "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "statusCounts": {
+          "COMPLETED": 800,
+          "IN_PROGRESS": 150,
+          "PLANNING": 50
+        },
+        "auditViolations": 0,
+        "allSamplesPreserved": true
+      },
+      "metrics": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 1117.0770420000044,
+          "median": 1126.525625,
+          "max": 1141.1362919999992
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 31.510499999996682,
+          "median": 32.07462499999383,
+          "max": 40.49725000000035
+        },
+        "inputP95Ms": {
+          "count": 3,
+          "min": 35,
+          "median": 35,
+          "max": 35
+        },
+        "frameP95Ms": {
+          "count": 3,
+          "min": 19,
+          "median": 19,
+          "max": 19
+        },
+        "heapGrowthBytes": {
+          "available": false,
+          "count": 0,
+          "min": null,
+          "median": null,
+          "max": null
+        },
+        "steadyWindowMs": {
+          "count": 3,
+          "min": 8012,
+          "median": 8013,
+          "max": 8016
+        },
+        "steadyLongTasks": {
+          "available": false,
+          "measuredSampleCounts": [
+            null,
+            null,
+            null
+          ],
+          "measuredTotal": null,
+          "unavailableSamples": 3
+        },
+        "http": {
+          "coldSceneRequests": [
+            1,
+            1,
+            1
+          ],
+          "panSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "warmSceneRequests": [
+            0,
+            0,
+            0
+          ],
+          "legacyRequests": [
+            0,
+            0,
+            0
+          ]
+        },
+        "resources": {
+          "warmedRgbaEstimateBytes": {
+            "count": 3,
+            "min": 27230216,
+            "median": 27230984,
+            "max": 27230984
+          },
+          "finalRgbaEstimateBytes": {
+            "count": 3,
+            "min": 35703048,
+            "median": 35703304,
+            "max": 35704840
+          },
+          "finalViews": {
+            "count": 3,
+            "min": 20998,
+            "median": 20998,
+            "max": 20998
+          },
+          "finalTextureSources": {
+            "count": 3,
+            "min": 99,
+            "median": 103,
+            "max": 105
+          }
+        }
+      },
+      "console": {
+        "errorCount": 0,
+        "warningCount": 3,
+        "truncatedSamples": 0,
+        "samples": [
+          {
+            "sample": 0,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 1,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          },
+          {
+            "sample": 2,
+            "errorCount": 0,
+            "warningCount": 1,
+            "truncated": false
+          }
+        ],
+        "uniqueErrorClassifications": []
+      }
+    }
+  ],
+  "host": {
+    "before": {
+      "passed": true,
+      "intervalCount": 5,
+      "idlePercent": {
+        "count": 5,
+        "min": 91.35768051296348,
+        "median": 92.65033407572383,
+        "max": 93.79694019471488
+      },
+      "waitMs": 10012.000292
+    },
+    "during": {
+      "intervalCount": 293,
+      "truncated": false,
+      "idlePercent": {
+        "count": 293,
+        "min": 74.55357142857143,
+        "median": 87.71929824561404,
+        "max": 93.2255366601617
+      },
+      "weightedIdlePercent": 87.75550110122178
+    },
+    "after": {
+      "startUtc": "2026-10-23T03:33:50.703Z",
+      "endUtc": "2026-10-23T03:33:52.705Z",
+      "wallMs": 2002.4417919999687,
+      "cpuCount": 18,
+      "available": true,
+      "totalTicksMs": 35900,
+      "idleTicksMs": 33860,
+      "idlePercent": 94.3175487465181
+    },
+    "duringLoadChangesAcceptance": false,
+    "limitation": "Only the before-series prerequisite gates launch. During/after load never removes, rejects or retries a sample and does not prove causes of historical failures."
+  },
+  "postflight": {
+    "exitCode": 0,
+    "port5311Free": true,
+    "ownedDatabases": [
+      {
+        "tasks": 200,
+        "otherConnections": 0,
+        "readOnly": true
+      },
+      {
+        "tasks": 1000,
+        "otherConnections": 0,
+        "readOnly": true
+      }
+    ],
+    "sourceAndOutputFencesUnchanged": true,
+    "canonicalFiles": 920,
+    "startupPublishedCopies": 822,
+    "ownedLauncherTerminal": true
+  },
+  "artifacts": {
+    "reports": [
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-desktop-chromium/report.json",
+        "sha256": "46e574933bb93b1e142e94ec02c6cd584b4bfa591d3014d1aafff95a39b52fba"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-desktop-firefox/report.json",
+        "sha256": "7aea5ca5a7dd22f2507f2e78e79d262b6aa358df12fd264424c11c1fe2ff6166"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-pixel-chromium/report.json",
+        "sha256": "0cd7ee9a454f2d6c8cab579b4b386a95b2730afb5fa7639a7f95431967afb48f"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-200-iphone-webkit/report.json",
+        "sha256": "1ad598141b950b50df3e1643bb9b85642b08d841af6f1616e5aaa89e09c7761e"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-desktop-chromium/report.json",
+        "sha256": "5de26a46108bb9bffd4e4879e6178f5314c58ad7e979a19b895e1e28491ac472"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-desktop-firefox/report.json",
+        "sha256": "70ef2de0f5f5ebf0db80d7e7dc08f549b6286426fbaae7f339cf3607216c6ad0"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-pixel-chromium/report.json",
+        "sha256": "e8d13ae9b0653a581bbf0397e0cf36f4ad488cecf06ca1879769fa9da91ccec0"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-1000-iphone-webkit/report.json",
+        "sha256": "ab6c31c8ae8722517b931a53b43a461d24649bc1443a0002a3d5bca260153257"
+      }
+    ],
+    "supporting": [
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-qualification-preflight.json",
+        "sha256": "270ea05f6276c8d9dbdf6d8b7c1c718ec05301a6c3745e0f31452a9c9265cf29"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-qualification-postflight.json",
+        "sha256": "1b003e2ca4b9ba017b4d115d49ad847f4075520b4f86a97e06031a6dd03d4fca"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-host-preflight.json",
+        "sha256": "8a162c0a143ba0669fb0044714dad4cc3c81599bda28a9b5f6a770771fcf5405"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-host-observation.json",
+        "sha256": "9b81c190d745dcacbc166264b2d92e38f2ef5c08922b8b3ef8a0b3893ac5ccaf"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-runs.json",
+        "sha256": "60dc0caf62286648f2c03eeccb855fe8c0094e4a701fa414a9a1f4e0c264f710"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-qualification-policy.json",
+        "sha256": "3edac91f6eb84f817f2a8be58423760c1f4b727b094dbebc8234ef830ba033f4"
+      },
+      {
+        "path": ".builder/world-perf-20261022/task-focus-reliability-v14-fixture-preflight.json",
+        "sha256": "9de56c39d45bb61539e8bf65b2e5feae7b2cf289639a026dede27080c62fc11c"
+      },
+      {
+        "path": ".builder/world-perf-20261022/run-reliability-v14-scale.mjs",
+        "sha256": "4535a4459a971843a44322984245c6fbf8409889eb32a98fe58aa43b27c1e05c"
+      },
+      {
+        "path": ".builder/world-perf-20261022/candidate-task-focus-reliability-v14-binding.json",
+        "sha256": "4ee13d3ed81a98858f80858201da1c80d2b002e538e706c5b9a24c0c9bae480f"
+      },
+      {
+        "path": ".builder/world-perf-20261022/candidate-task-focus-reliability-v14/source-manifest.json",
+        "sha256": "da17181234dad93fc79167d2fe3d0c01b39b0320485e8957fa17f4134b60d89a"
+      },
+      {
+        "path": ".builder/world-perf-20261022/candidate-task-focus-reliability-v14-runtime-asset-publication-manifest.json",
+        "sha256": "2cf06e367f1841298e75aae96855b3c048309ca89769a50df26755b830b363f1"
+      }
+    ]
+  },
+  "limits": [
+    "Только браузерная эмуляция: физических телефонов, батареи и реального Safari-устройства не измеряли.",
+    "CPU4 и сетевые ограничения применены только к Pixel Chromium; iPhone WebKit использует cpu1 и local unrestricted.",
+    "LongTasks API недоступен в Firefox/WebKit: отсутствие записей там не означает измеренный ноль.",
+    "Post-GC JS heap доступен только в Chromium; tracked RGBA estimates не являются измерением VRAM.",
+    "Firefox WebGL warnings сохранены отдельно от report.errors[]; причинная интерпретация этих предупреждений не утверждается.",
+    "Перед серией проверена тишина CPU; during/after observation не исключает, не повторяет и не отклоняет samples.",
+    "Исторические отказы/gate failures, native v9 и retention RED не изменены. Сравнительного causal speedup claim нет.",
+    "Этот результат не подменяет exact-head CI, merge или deploy.",
+    "Новый finalcandidateV14 проходит original24 strict budgets; это не отменяет историческиеV12/V13 STRICT_RED и не устанавливает их причины.",
+    "V14 не является paired speedupexperiment; rendererdiagnosticA/B/A не подменяет квалификацию."
+  ],
+  "metadataCorrection": {
+    "at": "2026-10-23T03:36:00.774Z",
+    "kind": "ACTUAL_V14_RUNNER_ARTIFACT_BINDING_ONLY",
+    "previousSummarySha256": "c839bbcfdd8685283427305c9a70d11869a90841da76b124052f52c3991f52a0",
+    "note": "Исправлен copied supporting-path/hash V13runner→actualV14runner. Все measuredreports/raw/metrics/qualification data неизменны."
+  },
+  "sourceBinding": {
+    "runtimeSourceHash": "51f67980cec9fe77c7f9cb617909c3a12a1b92f0065cfb6b6b292938ac33e247",
+    "qualificationHash": "4ede361bab37911dd3129044d3b71b7433f887741fd43e98f7c65d67f33b2307",
+    "runtimeInputs": 1263,
+    "qualificationInputs": 576,
+    "baseGitRevision": "fd2bb47c3c2ad3869a2aaf0b6eb2493737d060c0",
+    "baseGitTree": "2ab1185e8574e7dc11f8283d770c0e4c7b58d01e",
+    "gitRevisionLimit": "BaseGitRevision — историческая tracked база. Измеряется точный runtimeSourceHash замороженного V14 snapshot; финальный GitSHA этого evidence намеренно не self-reference.",
+    "actualRunner": {
+      "path": ".builder/world-perf-20261022/run-reliability-v14-scale.mjs",
+      "sha256": "4535a4459a971843a44322984245c6fbf8409889eb32a98fe58aa43b27c1e05c"
+    },
+    "ignoredSummary": {
+      "path": ".builder/world-perf-20261022/task-focus-reliability-v14-summary.json",
+      "sha256": "106b6672d9b67477707d4ff9d6f4716d3813d3f36841ec9dd6b4b8b0b57431e7"
+    }
+  }
+}

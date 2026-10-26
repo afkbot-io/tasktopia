@@ -1,9 +1,28 @@
-import type { Rect } from '../shared/contracts';
+import type { Cell, Rect } from '../shared/contracts';
 import { incidentMode } from './task-incidents';
 import type { CityMobility, CityMobilityAgent } from './city-mobility';
-import { approachRoute, cellKey, compileEverydaySites, compileTransitStops, everydayPose, EVERYDAY_WINDOW_MS,
+import { approachRoute, cellKey, compileEverydaySitesSteps, compileTransitStopsSteps, everydayPose, EVERYDAY_WINDOW_MS,
   openingKind, planEverydayEpisode, rainPose, type EverydayEpisode, type EverydayInput, type EverydayPose, type EverydaySite,
   type EverydayTask, type RainPose, type TransitStop } from './city-everyday-life';
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from './cooperative-preparation';
+
+const everydayPreparation = Symbol('prepared-everyday-sites');
+type EverydayPreparation = { input: EverydayInput; sites: EverydaySite[]; stops: TransitStop[]; kinds: string };
+export type PreparedEveryday = { readonly [everydayPreparation]: EverydayPreparation };
+function* prepareEverydaySteps(input: EverydayInput, canDrive: ((from: Cell, to: Cell) => boolean) | undefined): Generator<void, PreparedEveryday, void> {
+  const sites = yield* compileEverydaySitesSteps(input);
+  const stops = yield* compileTransitStopsSteps({ ...input, canDrive });
+  const kinds = new Set<EverydaySite['kind']>();
+  for (const site of sites) { kinds.add(site.kind); yield; }
+  const ordered = yield* stableSortPreparation(kinds, (a, b) => a < b ? -1 : a > b ? 1 : 0);
+  return { [everydayPreparation]: { input, sites, stops, kinds: ordered.join(',') } };
+}
+/** Only canonical sites/curbs are prepared. Actors, visits and reservations are
+ * read by the synchronous guarded commit, never captured across an await. */
+export function prepareEverydayAsync(input: EverydayInput, canDrive: ((from: Cell, to: Cell) => boolean) | undefined,
+  options: CooperativePreparationOptions = {}): Promise<PreparedEveryday> {
+  return prepareCooperatively(prepareEverydaySteps(input, canDrive), options);
+}
 
 export type TransitRun = { id: string; vehicleId: string; role: 'BUS' | 'SCHOOL_BUS'; stop: TransitStop; destination?: TransitStop;
   school?: { taskId: string; entrance: { x: number; y: number } };
@@ -71,8 +90,9 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     let ids: string[];
     if (episode.kind.includes('SCHOOL') || episode.kind.includes('KINDERGARTEN')) {
       const children = city.agents.filter(a => a.age === 'CHILD').map(a => a.id), adults = city.agents.filter(a => a.age === 'ADULT').map(a => a.id);
-      ids = [...city.dispatchVisit(episode.id, targets, economy ? 2 : 3, 9500, true, children),
-        ...city.dispatchVisit(episode.id, targets, episode.kind.includes('KINDERGARTEN') && !economy ? 2 : 1, 9500, true, adults)];
+      const arrivalBudget = episode.end - 10_000 - lastNow - 8000;
+      ids = [...city.dispatchVisit(episode.id, targets, economy ? 2 : 3, 9500, true, children, arrivalBudget),
+        ...city.dispatchVisit(episode.id, targets, episode.kind.includes('KINDERGARTEN') && !economy ? 2 : 1, 9500, true, adults, arrivalBudget)];
     } else if (episode.kind === 'SPORT') {
       players = city.dispatchVisit(episode.id, episode.playTargets ?? [], 2, 800, false);
       ids = [...players, ...city.dispatchVisit(episode.id, targets, Math.max(1, count - players.length), 28_000, false)];
@@ -145,18 +165,25 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       if (now - run.since >= 6000) endTransit();
     }
   };
+  const commitPrepared = (prepared: PreparedEveryday, isCurrent: () => boolean): boolean => {
+    if (!isCurrent()) return false;
+    const next = prepared[everydayPreparation];
+    if (!next) throw new TypeError('Invalid everyday preparation');
+    const first = !input;
+    input = next.input; sites = next.sites; stops = next.stops; kinds = next.kinds;
+    if (first) window = -1;
+    if (active && !validEpisode(active)) { lastSkip = 'invalidated'; endEpisode(); metrics.cancellations++; }
+    if (planned && !validEpisode(planned)) planned = undefined;
+    for (const [id, school] of schoolVisits) if (!validSchool(school)) { mobility()?.clearVisits(id); schoolVisits.delete(id); }
+    if (run && (run.school && !validSchool(run.school) || !stops.some(stop => stop.id === run!.stop.id) || run.destination && !stops.some(stop => stop.id === run!.destination!.id))) endTransit();
+    rebuildReservations(enabledLast);
+    return true;
+  };
   return {
     compile(next: EverydayInput) {
-      const first = !input;
-      input = next; sites = compileEverydaySites(next); stops = compileTransitStops({ ...next, canDrive: mobility()?.canDrive });
-      kinds = [...new Set(sites.map(site => site.kind))].sort().join(',');
-      if (first) window = -1;
-      if (active && !validEpisode(active)) { lastSkip = 'invalidated'; endEpisode(); metrics.cancellations++; }
-      if (planned && !validEpisode(planned)) planned = undefined;
-      for (const [id, school] of schoolVisits) if (!validSchool(school)) { mobility()?.clearVisits(id); schoolVisits.delete(id); }
-      if (run && (run.school && !validSchool(run.school) || !stops.some(stop => stop.id === run!.stop.id) || run.destination && !stops.some(stop => stop.id === run!.destination!.id))) endTransit();
-      rebuildReservations(enabledLast);
+      commitPrepared(completePreparation(prepareEverydaySteps(next, mobility()?.canDrive)), () => true);
     },
+    commitPrepared,
     open(task: EverydayTask, version: string, now: number) {
       const current = input?.tasks.find(candidate => candidate.id === task.id);
       if (!input || !current || !enabledLast || task.status !== 'COMPLETED' || task.stage !== 5 || incidentMode(task) !== 'NONE' || seen.has(version)
@@ -179,6 +206,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     },
     reservedCells: () => reservations,
     get sites() { return sites; },
+    get transitStops():readonly TransitStop[] {return stops;},
     get kinds() { return kinds; },
     get planned() { return planned; },
     get lastSkip() { return lastSkip; },

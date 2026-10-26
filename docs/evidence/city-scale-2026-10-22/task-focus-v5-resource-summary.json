@@ -1,0 +1,600 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "kind": "ATTENTION_RESOURCE_PROBE_NOT_LOADING_QUALIFICATION",
+  "started": "2026-10-22T21:27:55.988Z",
+  "finishedAt": "2026-10-22T21:28:37.518Z",
+  "sourceHash": "f58376d7d761cc45627ac4ea61d832674212a60fa4c8f920aed20b7b19343fe5",
+  "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+  "clientHash": "58baad0ebc042bdf6281fa5e0e7fd244cb037933f53d61217c137643412e9790",
+  "htmlHash": "c46ad01f799d9f59693d306b2db037adbd3ea08e0660c390035dbacdf15aad7e",
+  "probeScriptSha256": "c71decd094cf940251197bdd135fbc21ec1046c7d8f3aa36f0aa44039a479fbd",
+  "rawSummarySha256": "73ee98be6b971b5d6c54580424963f3fb5578494976f81682a08d65c01bb43e5",
+  "passedCases": 4,
+  "expectedCases": 4,
+  "reruns": 0,
+  "workload": "Desktop Chromium и iPhone WebKit × 200/1000; NORMAL/life=true/reducedMotion=false/sound=false;20 доверенных pointerdown→2RAF переключений на случай.",
+  "inputLimit": "Прежний p95≤100ms для unthrottled-профилей; не INP и не CPU4.",
+  "cases": [
+    {
+      "tasks": 200,
+      "profile": "desktop-chromium",
+      "completed": true,
+      "browser": "151.0.7922.34",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "reportSha256": "0693be0d17b236b0b673312c1e4e69ac1b217ceb958d59056b4aaa309135c056",
+      "fixtureFileSha256": "ea0da30795ad758effa18b540ad71b67385afbc34736349442ca9c7cc8c3243b",
+      "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+      "canonicalTasks": 200,
+      "metadataTasks": 200,
+      "activeDistrictCount": 1,
+      "canonicalEligibleTasks": 15,
+      "residentTaskBuildings": 200,
+      "residentBadgeSprites": 15,
+      "viewportIntersectingBadgeBounds": 0,
+      "nativeAtlas": {
+        "sources": 1,
+        "width": 66,
+        "height": 11,
+        "bytes": 2904,
+        "scaleMode": "nearest",
+        "rgbaSha256": "baa49cc5495d19ca37dd4f78f6f9f7cf6114f38a7205a63fedec07af2ced839a",
+        "allSharedPatternPixelsAsserted": true
+      },
+      "badgeSpriteTextureAndSourceIdentitiesStable": true,
+      "alphaStates": {
+        "initial": [
+          1
+        ],
+        "mine": [
+          0.16,
+          1
+        ],
+        "intersection": [
+          0.16
+        ],
+        "final": [
+          1
+        ]
+      },
+      "actualEmptyIntersection": {
+        "modes": [
+          "MINE",
+          "TESTING"
+        ],
+        "allResidentAlpha016": true
+      },
+      "unchangedCounters": {
+        "groundRebuilds": true,
+        "entityRebuilds": true,
+        "entityReplacements": true,
+        "walkNetworkBuilds": true,
+        "movementRebuilds": true,
+        "mobilityNetworkBuilds": true
+      },
+      "cameraAndScaleUnchanged": true,
+      "canonicalGeometryAndCanvasAssertionsPassed": true,
+      "input": {
+        "samples": 20,
+        "allTrusted": true,
+        "sampleMs": [
+          14.5,
+          19.899999856948853,
+          19.600000143051147,
+          20.59999990463257,
+          20.299999952316284,
+          16.59999990463257,
+          16.299999952316284,
+          15.5,
+          16,
+          20.09999990463257,
+          19.5,
+          19,
+          20.5,
+          15.299999952316284,
+          15.700000047683716,
+          16,
+          15.900000095367432,
+          15.100000143051147,
+          15.799999952316284,
+          15.099999904632568
+        ],
+        "distribution": {
+          "count": 20,
+          "p50": 16,
+          "p95": 20.5,
+          "max": 20.59999990463257
+        },
+        "budgetP95Ms": 100
+      },
+      "filterWindow": {
+        "requests": 1,
+        "sceneChunkViewportRequests": 0,
+        "apiWrites": 0
+      },
+      "recordedPageHttpOrRequestErrors": 0,
+      "layout320": {
+        "columns": 1,
+        "glyphSvgs": 6,
+        "paths": 25,
+        "horizontalOverflow": false,
+        "panel": {
+          "top": 62,
+          "bottom": 700.390625,
+          "clientHeight": 636,
+          "scrollHeight": 636,
+          "overflowY": "auto",
+          "viewportHeight": 844
+        },
+        "boundsAndLastActionAssertionsPassed": true
+      }
+    },
+    {
+      "tasks": 200,
+      "profile": "iphone-webkit",
+      "completed": true,
+      "browser": "26.5",
+      "parameters": {
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "touch": true,
+        "cpu": 1,
+        "network": false
+      },
+      "reportSha256": "d368bb7dbfd019f3b5cb121f82a94ec11119b74aa223072059707158d135a89a",
+      "fixtureFileSha256": "ea0da30795ad758effa18b540ad71b67385afbc34736349442ca9c7cc8c3243b",
+      "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+      "canonicalTasks": 200,
+      "metadataTasks": 200,
+      "activeDistrictCount": 1,
+      "canonicalEligibleTasks": 15,
+      "residentTaskBuildings": 187,
+      "residentBadgeSprites": 9,
+      "viewportIntersectingBadgeBounds": 0,
+      "nativeAtlas": {
+        "sources": 1,
+        "width": 66,
+        "height": 11,
+        "bytes": 2904,
+        "scaleMode": "nearest",
+        "rgbaSha256": "baa49cc5495d19ca37dd4f78f6f9f7cf6114f38a7205a63fedec07af2ced839a",
+        "allSharedPatternPixelsAsserted": true
+      },
+      "badgeSpriteTextureAndSourceIdentitiesStable": true,
+      "alphaStates": {
+        "initial": [
+          1
+        ],
+        "mine": [
+          0.16,
+          1
+        ],
+        "intersection": [
+          0.16
+        ],
+        "final": [
+          1
+        ]
+      },
+      "actualEmptyIntersection": {
+        "modes": [
+          "MINE",
+          "TESTING"
+        ],
+        "allResidentAlpha016": true
+      },
+      "unchangedCounters": {
+        "groundRebuilds": true,
+        "entityRebuilds": true,
+        "entityReplacements": true,
+        "walkNetworkBuilds": true,
+        "movementRebuilds": true,
+        "mobilityNetworkBuilds": true
+      },
+      "cameraAndScaleUnchanged": true,
+      "canonicalGeometryAndCanvasAssertionsPassed": true,
+      "input": {
+        "samples": 20,
+        "allTrusted": true,
+        "sampleMs": [
+          33,
+          32,
+          32,
+          32,
+          32,
+          36,
+          32,
+          28,
+          32,
+          31,
+          34,
+          32,
+          32,
+          31,
+          33,
+          37,
+          33,
+          31,
+          29,
+          29
+        ],
+        "distribution": {
+          "count": 20,
+          "p50": 32,
+          "p95": 36,
+          "max": 37
+        },
+        "budgetP95Ms": 100
+      },
+      "filterWindow": {
+        "requests": 1,
+        "sceneChunkViewportRequests": 0,
+        "apiWrites": 0
+      },
+      "recordedPageHttpOrRequestErrors": 0,
+      "layout320": {
+        "columns": 1,
+        "glyphSvgs": 6,
+        "paths": 25,
+        "horizontalOverflow": false,
+        "panel": {
+          "top": 62,
+          "bottom": 700.390625,
+          "clientHeight": 636,
+          "scrollHeight": 636,
+          "overflowY": "auto",
+          "viewportHeight": 844
+        },
+        "boundsAndLastActionAssertionsPassed": true
+      }
+    },
+    {
+      "tasks": 1000,
+      "profile": "desktop-chromium",
+      "completed": true,
+      "browser": "151.0.7922.34",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "reportSha256": "5bfbf426db785382a97ee3aa738bff410a186d18f3be99115fd19866aa03bcd2",
+      "fixtureFileSha256": "9df4558a0f5c7142f08a3c2f2f16bc4ef162de51e23cab32dafbcdcb33dc3ec6",
+      "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+      "canonicalTasks": 1000,
+      "metadataTasks": 1000,
+      "activeDistrictCount": 1,
+      "canonicalEligibleTasks": 25,
+      "residentTaskBuildings": 558,
+      "residentBadgeSprites": 25,
+      "viewportIntersectingBadgeBounds": 0,
+      "nativeAtlas": {
+        "sources": 1,
+        "width": 66,
+        "height": 11,
+        "bytes": 2904,
+        "scaleMode": "nearest",
+        "rgbaSha256": "baa49cc5495d19ca37dd4f78f6f9f7cf6114f38a7205a63fedec07af2ced839a",
+        "allSharedPatternPixelsAsserted": true
+      },
+      "badgeSpriteTextureAndSourceIdentitiesStable": true,
+      "alphaStates": {
+        "initial": [
+          1
+        ],
+        "mine": [
+          0.16,
+          1
+        ],
+        "intersection": [
+          0.16
+        ],
+        "final": [
+          1
+        ]
+      },
+      "actualEmptyIntersection": {
+        "modes": [
+          "MINE",
+          "TESTING"
+        ],
+        "allResidentAlpha016": true
+      },
+      "unchangedCounters": {
+        "groundRebuilds": true,
+        "entityRebuilds": true,
+        "entityReplacements": true,
+        "walkNetworkBuilds": true,
+        "movementRebuilds": true,
+        "mobilityNetworkBuilds": true
+      },
+      "cameraAndScaleUnchanged": true,
+      "canonicalGeometryAndCanvasAssertionsPassed": true,
+      "input": {
+        "samples": 20,
+        "allTrusted": true,
+        "sampleMs": [
+          25.200000047683716,
+          25.700000047683716,
+          21.299999952316284,
+          22.5,
+          21.09999990463257,
+          20.700000047683716,
+          21.299999952316284,
+          20,
+          25,
+          20.800000190734863,
+          20.200000047683716,
+          20.299999952316284,
+          19.799999952316284,
+          21.299999952316284,
+          20.200000047683716,
+          19.5,
+          23.40000009536743,
+          24.59999990463257,
+          26.200000047683716,
+          21.700000047683716
+        ],
+        "distribution": {
+          "count": 20,
+          "p50": 21.299999952316284,
+          "p95": 25.700000047683716,
+          "max": 26.200000047683716
+        },
+        "budgetP95Ms": 100
+      },
+      "filterWindow": {
+        "requests": 4,
+        "sceneChunkViewportRequests": 0,
+        "apiWrites": 0
+      },
+      "recordedPageHttpOrRequestErrors": 0,
+      "layout320": {
+        "columns": 1,
+        "glyphSvgs": 6,
+        "paths": 25,
+        "horizontalOverflow": false,
+        "panel": {
+          "top": 62,
+          "bottom": 700.390625,
+          "clientHeight": 636,
+          "scrollHeight": 636,
+          "overflowY": "auto",
+          "viewportHeight": 844
+        },
+        "boundsAndLastActionAssertionsPassed": true
+      }
+    },
+    {
+      "tasks": 1000,
+      "profile": "iphone-webkit",
+      "completed": true,
+      "browser": "26.5",
+      "parameters": {
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "touch": true,
+        "cpu": 1,
+        "network": false
+      },
+      "reportSha256": "e79f70f1158295651c6e4c278abe59aedd75ddb4705b38d2cdc1695c4b55378e",
+      "fixtureFileSha256": "9df4558a0f5c7142f08a3c2f2f16bc4ef162de51e23cab32dafbcdcb33dc3ec6",
+      "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+      "canonicalTasks": 1000,
+      "metadataTasks": 1000,
+      "activeDistrictCount": 1,
+      "canonicalEligibleTasks": 25,
+      "residentTaskBuildings": 282,
+      "residentBadgeSprites": 25,
+      "viewportIntersectingBadgeBounds": 0,
+      "nativeAtlas": {
+        "sources": 1,
+        "width": 66,
+        "height": 11,
+        "bytes": 2904,
+        "scaleMode": "nearest",
+        "rgbaSha256": "baa49cc5495d19ca37dd4f78f6f9f7cf6114f38a7205a63fedec07af2ced839a",
+        "allSharedPatternPixelsAsserted": true
+      },
+      "badgeSpriteTextureAndSourceIdentitiesStable": true,
+      "alphaStates": {
+        "initial": [
+          1
+        ],
+        "mine": [
+          0.16,
+          1
+        ],
+        "intersection": [
+          0.16
+        ],
+        "final": [
+          1
+        ]
+      },
+      "actualEmptyIntersection": {
+        "modes": [
+          "MINE",
+          "TESTING"
+        ],
+        "allResidentAlpha016": true
+      },
+      "unchangedCounters": {
+        "groundRebuilds": true,
+        "entityRebuilds": true,
+        "entityReplacements": true,
+        "walkNetworkBuilds": true,
+        "movementRebuilds": true,
+        "mobilityNetworkBuilds": true
+      },
+      "cameraAndScaleUnchanged": true,
+      "canonicalGeometryAndCanvasAssertionsPassed": true,
+      "input": {
+        "samples": 20,
+        "allTrusted": true,
+        "sampleMs": [
+          38,
+          38,
+          32,
+          32,
+          32,
+          31,
+          31,
+          32,
+          27,
+          27,
+          30,
+          33,
+          38,
+          36,
+          31,
+          32,
+          25,
+          31,
+          26,
+          26
+        ],
+        "distribution": {
+          "count": 20,
+          "p50": 31,
+          "p95": 38,
+          "max": 38
+        },
+        "budgetP95Ms": 100
+      },
+      "filterWindow": {
+        "requests": 4,
+        "sceneChunkViewportRequests": 0,
+        "apiWrites": 0
+      },
+      "recordedPageHttpOrRequestErrors": 0,
+      "layout320": {
+        "columns": 1,
+        "glyphSvgs": 6,
+        "paths": 25,
+        "horizontalOverflow": false,
+        "panel": {
+          "top": 62,
+          "bottom": 700.390625,
+          "clientHeight": 636,
+          "scrollHeight": 636,
+          "overflowY": "auto",
+          "viewportHeight": 844
+        },
+        "boundsAndLastActionAssertionsPassed": true
+      }
+    }
+  ],
+  "visualReview": {
+    "reviewedImages": [
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/200-desktop-chromium/normal-native.png",
+        "sha256": "863e1d352472aa83a8b3fb212edbbe99b066af7c3a288645737c071c677fa987"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/200-desktop-chromium/filtered-native.png",
+        "sha256": "52ce785f67e1edba51c30b3c2c6576cf3483051c4c70740318b3467f7ee366aa"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/200-desktop-chromium/panel-320.png",
+        "sha256": "542136b83fc13ffebaa428ace75a07c3270daf3fe92763b571693e7938cddda8"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/200-iphone-webkit/normal-native.png",
+        "sha256": "9d54216c4d1c206176d040334e4b505339b7ec6f67c18d4df276f6b28caf188b"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/200-iphone-webkit/filtered-native.png",
+        "sha256": "87f244c91e50d9b794643f4c0275a9162186ef0ab3cc24e206d45d806314c110"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/200-iphone-webkit/panel-320.png",
+        "sha256": "b25ca1f539a5a4576ec0982b2c6d129c36d9ea872c4b86c6953625aa6672f26b"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/1000-desktop-chromium/normal-native.png",
+        "sha256": "1edd54bcc41e593b1e8c9e1f81e10662a086b11a2c57b1a0c3d2f283fe8a8000"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/1000-desktop-chromium/filtered-native.png",
+        "sha256": "ae246d02e800675e2e38ba6c000b814a5b2831bf90e4622a5e2cc2cf34d7bf75"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/1000-desktop-chromium/panel-320.png",
+        "sha256": "154d0ec91f15fdf855b9658212901578d60cfc39ff3fbae941839c904a3d6505"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/1000-iphone-webkit/normal-native.png",
+        "sha256": "13824f98167042cc6ecaa89f79a433e0321f0857ca3c81c95076c561723aea6e"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/1000-iphone-webkit/filtered-native.png",
+        "sha256": "b7a732e6eb881fc2c436753f240723c2c1e7d777cdf313b9dcdb578049315c62"
+      },
+      {
+        "path": ".builder/task-focus-design-20261022/resource-probe-v5/1000-iphone-webkit/panel-320.png",
+        "sha256": "430186c8119c766c15baa878c8295fbf48d7a27d33c73c8faf514bd0062a3475"
+      }
+    ],
+    "findings": [],
+    "observations": [
+      "В обычных и нулевых состояниях карта сохраняет дороги и географию; все неподходящие здания сильно приглушены, число0/сброс явно видимы.",
+      "В320px легенда из6знаков и подписей читается в одну колонку, наложений и горизонтального переполнения не видно; нижние пункты внутри панели."
+    ],
+    "limit": "Ресурсы resident badge Sprite и atlas проверены нативно, но bounds этих знаков в четырёх сохранённых нормальных кадрах не пересекали viewport. Эти PNG не доказывают видимость glyph на карте; дизайн6glyph виден в легенде, отдельный кадр видимого world glyph ещё PENDING."
+  },
+  "postflight": {
+    "probeExitCode": 0,
+    "port": 5367,
+    "portFree": true,
+    "sourceFenceFailure": null,
+    "allFourOwnedContextsBrowsersAndServersClosed": true,
+    "postflightSha256": "4feeb1471487b6b4be8f359b09aec7afecf3007b0b8f6f7ea7a3efe7d5cf3f43"
+  },
+  "limits": [
+    "Отдельные немаркированные platform roots покрыты существующими Pixi unit-тестами; native-alpha coverage относится кtask buildings иbadge parents.",
+    "scrollIntoViewIfNeeded готовит CSS/PNG-границы программной прокруткой DOM; не доказывает trusted keyboard/touch scroll.",
+    "errors[] охватывает pageerror,HTTP и requestfailed, но probe не слушает console; отсутствие всех console-ошибок не заявлено.",
+    "Разрешён только fixture login/auth session; рабочего reseed/SQL/MCP write не было. В portable нетfixture IDs,URI,credentials,raw URLs или абсолютных host paths.",
+    "Это4случая resource/input QA, не24-sample loading benchmark; исходнаяfailedv4серия15/24 не заменяется.",
+    "Android/iPhone — браузерная эмуляция, физических устройств не было."
+  ],
+  "strictV5LoadingQualification": "PENDING_SEPARATE_OWNER",
+  "acceptanceCheckpointReportedByRoot": {
+    "done": 28,
+    "total": 33,
+    "u08": "DONE",
+    "u09": "REOPENED_PENDING_VISIBLE_WORLD_GLYPH",
+    "remaining": [
+      "U09",
+      "E01",
+      "E02",
+      "Q02",
+      "Q03"
+    ]
+  }
+}

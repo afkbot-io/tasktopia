@@ -39,3 +39,15 @@ describe("compiled animal routes", () => {
     expect(plan({ x: 0, y: 0 }, 42, 12, { x: 1, y: 0 }).route).toEqual([{ x: 0, y: 0 }, { x: 1, y: 0 }]);
   });
 });
+
+it("prepares canonical animal ground cooperatively with the same seeded routes and aborts unpublished work",async()=>{
+  const {createAgentRoutePlannerAsync}=await import("../src/client/agent-route-planner");
+  const cells=fixtures[2]!.cells,graph=new Map(cells.map(c=>[`${c.x},${c.y}`,c]));let ticks=0,yields=0;
+  const prepared=await createAgentRoutePlannerAsync(graph,{now:()=>ticks++,budgetMs:4,yieldTask:async()=>{yields++;}});
+  const old=createAgentRoutePlanner(graph),start=cells[100]!;
+  expect(prepared(start,73,9)).toEqual(old(start,73,9));expect(yields).toBeGreaterThan(0);
+  const original=[...graph],controller=new AbortController(),reason=new Error("obsolete animal ground");
+  await expect(createAgentRoutePlannerAsync(graph,{signal:controller.signal,now:()=>ticks++,budgetMs:4,
+    yieldTask:async()=>{controller.abort(reason);}})).rejects.toBe(reason);
+  expect([...graph]).toEqual(original);
+});

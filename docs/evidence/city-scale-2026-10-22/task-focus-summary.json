@@ -1,0 +1,2264 @@
+{
+  "date": "2026-10-22",
+  "status": "STRICT_RED",
+  "sourceBaseRevision": "c9eeee279912b3b68d787f99a3daa0c23a78b601",
+  "sourceHash": "bc166a6f3bfbefb01a76878d04aab0cadf175ef477568eed39e3c7756e1f7c9d",
+  "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+  "clientHash": "aeea440764dae051c600d5881c9141e787b59870cf20d83834c2c311855db1df",
+  "htmlHash": "1770b28001e4600fae89e5e48b07506e79cda3915d2217125514ee0c3bcd10da",
+  "distHash": "d28f135b47644dc1ac3b540365a5d9d28e614f6e5e6515cd884594b8b251ffb8",
+  "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+  "assetRevision": "f5ba91abe09a928b",
+  "sourceManifestHash": "50222475305e416378927dbb0bb66f2f963806cef07067d9146fe5ab5c2d08ca",
+  "physicalDistHash": "f072122b462625815db38d3ee2c1cb505a7aeaaa54d1784e020e0b9a4661472e",
+  "runtimeAssetPublicationHash": "b414f398540e3bbe7107ee1fd5b54d0fe5618a3f2f4f2bb746aaebbffc155dff",
+  "qualificationSourceHash": "544651d9e1d053da6ecef3fc24569285bbf8af8e492d32d73a3a3d61a8cbcdfe",
+  "controls": {
+    "scripts/measure-city-scale.ts": "6f5636839da131fbae9f227a4918cf6d2f2eccf5834c3edcc9234133efecdf0f",
+    "scripts/city-scale-cold-metric.ts": "4474b2e80aa459b821adb7239834de33411aad3dfe9238e6d0b51ce52d921727",
+    "scripts/city-scale-benchmark-contract.ts": "678f2716ceff2a566f3ecc8172308ea1995d90aad5aab096aa7c184390f55ab3"
+  },
+  "measurementContractVersion": 2,
+  "parameters": {
+    "profiles": [
+      "desktop-chromium",
+      "desktop-firefox",
+      "pixel-chromium",
+      "iphone-webkit"
+    ],
+    "sizes": [
+      200,
+      1000
+    ],
+    "samples": 3,
+    "churn": 20,
+    "steadyMs": 8000,
+    "quality": "NORMAL",
+    "strictBudgets": true,
+    "coldContractVersion": 2
+  },
+  "completedProfiles": 8,
+  "expectedProfiles": 8,
+  "sampleCount": 24,
+  "expectedSamples": 24,
+  "budgetViolationCount": 3,
+  "functionalErrors": 0,
+  "missing": [],
+  "allCanonicalGeometryPreserved": true,
+  "allRequestBudgetsPreserved": true,
+  "allRetainedCanvasAssertionsPassed": true,
+  "driverExitCode": 1,
+  "rows": [
+    {
+      "tasks": 200,
+      "profile": "desktop-chromium",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "browser": "151.0.7922.34",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 1500,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 955.0152080476837,
+          "median": 1020.1442909999969,
+          "max": 1145.677333
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 10.009749999997439,
+          "median": 16.54662500000086,
+          "max": 39.53404199999932
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 1145.677333,
+          "legacyColdCityMs": 1337.215083,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1144.5,
+            "upperBoundMs": 1145.677333,
+            "clockUncertaintyMs": 1.177332999999976,
+            "legacyColdCityMs": 1337.215083
+          },
+          "warmCityMs": 16.54662500000086,
+          "frames": {
+            "count": 960,
+            "p50": 8.300000000001091,
+            "p95": 9.100000000000364,
+            "max": 9.400000000001455
+          },
+          "input": {
+            "count": 21,
+            "p50": 15.599999904632568,
+            "p95": 19.899999856948853,
+            "max": 22.399999856948853
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 925,
+            "JSHeapUsedSize": 95504048,
+            "JSHeapTotalSize": 100581376
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 946,
+            "JSHeapUsedSize": 96633424,
+            "JSHeapTotalSize": 99008512
+          },
+          "heapGrowthBytes": 1129376,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            167
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 18584,
+            "textureViews": 350,
+            "textureSources": 148,
+            "managedSources": 198,
+            "slots": 198,
+            "rgbaEstimateBytes": 67230048
+          },
+          "finalResources": {
+            "available": true,
+            "views": 17263,
+            "textureViews": 341,
+            "textureSources": 140,
+            "managedSources": 199,
+            "slots": 205,
+            "rgbaEstimateBytes": 60940384
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "15",
+            "taskBuildingViews": "200",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 955.0152080476837,
+          "legacyColdCityMs": 1346.4541249999966,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 954.2000000476837,
+            "upperBoundMs": 955.0152080476837,
+            "clockUncertaintyMs": 0.8152079999999842,
+            "legacyColdCityMs": 1346.4541249999966
+          },
+          "warmCityMs": 39.53404199999932,
+          "frames": {
+            "count": 960,
+            "p50": 8.300000000000182,
+            "p95": 9.100000000000364,
+            "max": 9.400000000000546
+          },
+          "input": {
+            "count": 21,
+            "p50": 15.199999809265137,
+            "p95": 27.299999952316284,
+            "max": 31.899999856948853
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 925,
+            "JSHeapUsedSize": 95634028,
+            "JSHeapTotalSize": 100057088
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 949,
+            "JSHeapUsedSize": 96627160,
+            "JSHeapTotalSize": 99008512
+          },
+          "heapGrowthBytes": 993132,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            54,
+            148
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 18587,
+            "textureViews": 355,
+            "textureSources": 150,
+            "managedSources": 201,
+            "slots": 201,
+            "rgbaEstimateBytes": 67230816
+          },
+          "finalResources": {
+            "available": true,
+            "views": 17266,
+            "textureViews": 344,
+            "textureSources": 142,
+            "managedSources": 206,
+            "slots": 212,
+            "rgbaEstimateBytes": 60942176
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "15",
+            "taskBuildingViews": "200",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 1020.1442909999969,
+          "legacyColdCityMs": 1380.104124999998,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1016.5,
+            "upperBoundMs": 1020.1442909999969,
+            "clockUncertaintyMs": 3.6442909999968833,
+            "legacyColdCityMs": 1380.104124999998
+          },
+          "warmCityMs": 10.009749999997439,
+          "frames": {
+            "count": 960,
+            "p50": 8.300000000000182,
+            "p95": 9.100000000000364,
+            "max": 9.400000000001455
+          },
+          "input": {
+            "count": 21,
+            "p50": 15.5,
+            "p95": 18.300000190734863,
+            "max": 23.59999990463257
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 925,
+            "JSHeapUsedSize": 95407136,
+            "JSHeapTotalSize": 99794944
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 946,
+            "JSHeapUsedSize": 96608216,
+            "JSHeapTotalSize": 99794944
+          },
+          "heapGrowthBytes": 1201080,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            178
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 18587,
+            "textureViews": 348,
+            "textureSources": 147,
+            "managedSources": 198,
+            "slots": 198,
+            "rgbaEstimateBytes": 67230048
+          },
+          "finalResources": {
+            "available": true,
+            "views": 17266,
+            "textureViews": 344,
+            "textureSources": 143,
+            "managedSources": 206,
+            "slots": 212,
+            "rgbaEstimateBytes": 60942176
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "15",
+            "taskBuildingViews": "200",
+            "canonicalDecodedChunks": "20"
+          }
+        }
+      ],
+      "reportSha256": "e65a2787def50116fc1a7e80881061de89d58f87a6a7366c5b1a2e43d6507d7d"
+    },
+    {
+      "tasks": 200,
+      "profile": "desktop-firefox",
+      "parameters": {
+        "engine": "firefox",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "browser": "153.0",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 1500,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 1145.5972909999982,
+          "median": 1166.9048340000008,
+          "max": 1336.2482499999996
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 14.564249999995809,
+          "median": 28.577666000004683,
+          "max": 29.015833000001294
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 1336.2482499999996,
+          "legacyColdCityMs": 1384.7342919999996,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1331,
+            "upperBoundMs": 1336.2482499999996,
+            "clockUncertaintyMs": 5.2482499999996435,
+            "legacyColdCityMs": 1384.7342919999996
+          },
+          "warmCityMs": 29.015833000001294,
+          "frames": {
+            "count": 961,
+            "p50": 8.339999999999236,
+            "p95": 9.05999999999949,
+            "max": 9.299999999999272
+          },
+          "input": {
+            "count": 21,
+            "p50": 13,
+            "p95": 20,
+            "max": 24
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 18585,
+            "textureViews": 350,
+            "textureSources": 146,
+            "managedSources": 196,
+            "slots": 196,
+            "rgbaEstimateBytes": 67254112
+          },
+          "finalResources": {
+            "available": true,
+            "views": 17264,
+            "textureViews": 343,
+            "textureSources": 143,
+            "managedSources": 202,
+            "slots": 208,
+            "rgbaEstimateBytes": 60965728
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "15",
+            "taskBuildingViews": "200",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 1145.5972909999982,
+          "legacyColdCityMs": 1497.5833329999987,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1144,
+            "upperBoundMs": 1145.5972909999982,
+            "clockUncertaintyMs": 1.597290999998222,
+            "legacyColdCityMs": 1497.5833329999987
+          },
+          "warmCityMs": 14.564249999995809,
+          "frames": {
+            "count": 960,
+            "p50": 8.319999999999709,
+            "p95": 9.119999999998981,
+            "max": 9.340000000000146
+          },
+          "input": {
+            "count": 21,
+            "p50": 13,
+            "p95": 18,
+            "max": 19
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 18587,
+            "textureViews": 352,
+            "textureSources": 150,
+            "managedSources": 203,
+            "slots": 203,
+            "rgbaEstimateBytes": 67255904
+          },
+          "finalResources": {
+            "available": true,
+            "views": 17266,
+            "textureViews": 349,
+            "textureSources": 147,
+            "managedSources": 204,
+            "slots": 210,
+            "rgbaEstimateBytes": 60966240
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "15",
+            "taskBuildingViews": "200",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 1166.9048340000008,
+          "legacyColdCityMs": 1489.0571249999994,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1164,
+            "upperBoundMs": 1166.9048340000008,
+            "clockUncertaintyMs": 2.9048340000008466,
+            "legacyColdCityMs": 1489.0571249999994
+          },
+          "warmCityMs": 28.577666000004683,
+          "frames": {
+            "count": 960,
+            "p50": 8.320000000001528,
+            "p95": 9.1200000000008,
+            "max": 9.319999999999709
+          },
+          "input": {
+            "count": 21,
+            "p50": 18,
+            "p95": 20,
+            "max": 25
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 18587,
+            "textureViews": 350,
+            "textureSources": 146,
+            "managedSources": 199,
+            "slots": 199,
+            "rgbaEstimateBytes": 67254880
+          },
+          "finalResources": {
+            "available": true,
+            "views": 17266,
+            "textureViews": 349,
+            "textureSources": 148,
+            "managedSources": 210,
+            "slots": 216,
+            "rgbaEstimateBytes": 60967776
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "15",
+            "taskBuildingViews": "200",
+            "canonicalDecodedChunks": "20"
+          }
+        }
+      ],
+      "reportSha256": "c8c2b1d67fa0df0e32956c4512ac829bc266496867fae4c203e029a4009c81ef"
+    },
+    {
+      "tasks": 200,
+      "profile": "pixel-chromium",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 393,
+          "height": 851
+        },
+        "dpr": 2.75,
+        "touch": true,
+        "cpu": 4,
+        "network": true
+      },
+      "browser": "151.0.7922.34",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 6000,
+        "warmCityMs": 750,
+        "inputP95Ms": 200,
+        "frameP95Ms": 34,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [
+        "1:coldCityMs exceeded 6000",
+        "2:coldCityMs exceeded 6000"
+      ],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 5913.810542143051,
+          "median": 6021.083624999999,
+          "max": 6269.158374952312
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 98.78662499999336,
+          "median": 104.99095899999884,
+          "max": 134.051959000004
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 5913.810542143051,
+          "legacyColdCityMs": 5998.954125,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 5902.600000143051,
+            "upperBoundMs": 5913.810542143051,
+            "clockUncertaintyMs": 11.210541999999805,
+            "legacyColdCityMs": 5998.954125
+          },
+          "warmCityMs": 104.99095899999884,
+          "frames": {
+            "count": 814,
+            "p50": 8.400000000001455,
+            "p95": 16.799999999999272,
+            "max": 34.20000000000073
+          },
+          "input": {
+            "count": 22,
+            "p50": 20.299999952316284,
+            "p95": 58.5,
+            "max": 73.59999990463257
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 925,
+            "JSHeapUsedSize": 83401760,
+            "JSHeapTotalSize": 87539712
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 947,
+            "JSHeapUsedSize": 84434068,
+            "JSHeapTotalSize": 89112576
+          },
+          "heapGrowthBytes": 1032308,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            192,
+            50,
+            71,
+            62,
+            713,
+            61,
+            128,
+            77,
+            80,
+            76
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 13223,
+            "textureViews": 302,
+            "textureSources": 105,
+            "managedSources": 158,
+            "slots": 158,
+            "rgbaEstimateBytes": 24174176
+          },
+          "finalResources": {
+            "available": true,
+            "views": 13404,
+            "textureViews": 309,
+            "textureSources": 113,
+            "managedSources": 178,
+            "slots": 178,
+            "rgbaEstimateBytes": 31791456
+          },
+          "coldResidency": {
+            "residentChunks": "9",
+            "visibleChunks": "2",
+            "taskBuildingViews": "187",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 6021.083624999999,
+          "legacyColdCityMs": 6115.115042000005,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 5999.5,
+            "upperBoundMs": 6021.083624999999,
+            "clockUncertaintyMs": 21.5836249999993,
+            "legacyColdCityMs": 6115.115042000005
+          },
+          "warmCityMs": 134.051959000004,
+          "frames": {
+            "count": 865,
+            "p50": 8.399999999997817,
+            "p95": 16.700000000000728,
+            "max": 17.700000000000728
+          },
+          "input": {
+            "count": 22,
+            "p50": 23.59999990463257,
+            "p95": 82.40000009536743,
+            "max": 100.40000009536743
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 925,
+            "JSHeapUsedSize": 83249944,
+            "JSHeapTotalSize": 88326144
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 947,
+            "JSHeapUsedSize": 84381932,
+            "JSHeapTotalSize": 89112576
+          },
+          "heapGrowthBytes": 1131988,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            53,
+            184,
+            77,
+            63,
+            775,
+            63,
+            143,
+            106,
+            88,
+            83
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 13225,
+            "textureViews": 306,
+            "textureSources": 108,
+            "managedSources": 153,
+            "slots": 153,
+            "rgbaEstimateBytes": 24172896
+          },
+          "finalResources": {
+            "available": true,
+            "views": 13384,
+            "textureViews": 311,
+            "textureSources": 115,
+            "managedSources": 177,
+            "slots": 177,
+            "rgbaEstimateBytes": 31791200
+          },
+          "coldResidency": {
+            "residentChunks": "9",
+            "visibleChunks": "2",
+            "taskBuildingViews": "187",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 6269.158374952312,
+          "legacyColdCityMs": 6381.084292,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 6244.799999952316,
+            "upperBoundMs": 6269.158374952312,
+            "clockUncertaintyMs": 24.35837499999616,
+            "legacyColdCityMs": 6381.084292
+          },
+          "warmCityMs": 98.78662499999336,
+          "frames": {
+            "count": 818,
+            "p50": 8.400000000001455,
+            "p95": 16.799999999999272,
+            "max": 33.099999999998545
+          },
+          "input": {
+            "count": 22,
+            "p50": 21.600000143051147,
+            "p95": 52.5,
+            "max": 99.39999985694885
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 925,
+            "JSHeapUsedSize": 83321124,
+            "JSHeapTotalSize": 87801856
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 947,
+            "JSHeapUsedSize": 84338648,
+            "JSHeapTotalSize": 88326144
+          },
+          "heapGrowthBytes": 1017524,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            190,
+            50,
+            97,
+            72,
+            955,
+            73,
+            152,
+            104,
+            103,
+            86
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 13203,
+            "textureViews": 303,
+            "textureSources": 107,
+            "managedSources": 154,
+            "slots": 154,
+            "rgbaEstimateBytes": 24173152
+          },
+          "finalResources": {
+            "available": true,
+            "views": 13384,
+            "textureViews": 308,
+            "textureSources": 112,
+            "managedSources": 176,
+            "slots": 176,
+            "rgbaEstimateBytes": 31790944
+          },
+          "coldResidency": {
+            "residentChunks": "9",
+            "visibleChunks": "2",
+            "taskBuildingViews": "187",
+            "canonicalDecodedChunks": "20"
+          }
+        }
+      ],
+      "reportSha256": "abf58b6742758f349be5687ecc649487b3728556d816f698e5741cbfd664d4d8"
+    },
+    {
+      "tasks": 200,
+      "profile": "iphone-webkit",
+      "parameters": {
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "touch": true,
+        "cpu": 1,
+        "network": false
+      },
+      "browser": "26.5",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 1500,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 829.4537500000006,
+          "median": 870.0857499999984,
+          "max": 937.0054169999999
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 13.961124999994354,
+          "median": 36.84887499999968,
+          "max": 38.86158299999806
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 937.0054169999999,
+          "legacyColdCityMs": 989.8562919999997,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 935,
+            "upperBoundMs": 937.0054169999999,
+            "clockUncertaintyMs": 2.005416999999852,
+            "legacyColdCityMs": 989.8562919999997
+          },
+          "warmCityMs": 36.84887499999968,
+          "frames": {
+            "count": 480,
+            "p50": 17,
+            "p95": 18,
+            "max": 24
+          },
+          "input": {
+            "count": 22,
+            "p50": 31,
+            "p95": 36,
+            "max": 36
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 13203,
+            "textureViews": 297,
+            "textureSources": 103,
+            "managedSources": 149,
+            "slots": 149,
+            "rgbaEstimateBytes": 24171872
+          },
+          "finalResources": {
+            "available": true,
+            "views": 13381,
+            "textureViews": 305,
+            "textureSources": 109,
+            "managedSources": 169,
+            "slots": 169,
+            "rgbaEstimateBytes": 31527264
+          },
+          "coldResidency": {
+            "residentChunks": "9",
+            "visibleChunks": "2",
+            "taskBuildingViews": "187",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 870.0857499999984,
+          "legacyColdCityMs": 901.4608329999974,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 867,
+            "upperBoundMs": 870.0857499999984,
+            "clockUncertaintyMs": 3.08574999999837,
+            "legacyColdCityMs": 901.4608329999974
+          },
+          "warmCityMs": 38.86158299999806,
+          "frames": {
+            "count": 480,
+            "p50": 17,
+            "p95": 18,
+            "max": 19
+          },
+          "input": {
+            "count": 22,
+            "p50": 32,
+            "p95": 36,
+            "max": 45
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 13203,
+            "textureViews": 303,
+            "textureSources": 106,
+            "managedSources": 150,
+            "slots": 150,
+            "rgbaEstimateBytes": 24172128
+          },
+          "finalResources": {
+            "available": true,
+            "views": 13381,
+            "textureViews": 312,
+            "textureSources": 115,
+            "managedSources": 174,
+            "slots": 174,
+            "rgbaEstimateBytes": 31528544
+          },
+          "coldResidency": {
+            "residentChunks": "9",
+            "visibleChunks": "2",
+            "taskBuildingViews": "187",
+            "canonicalDecodedChunks": "20"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 829.4537500000006,
+          "legacyColdCityMs": 847.5204169999997,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 828,
+            "upperBoundMs": 829.4537500000006,
+            "clockUncertaintyMs": 1.453750000000582,
+            "legacyColdCityMs": 847.5204169999997
+          },
+          "warmCityMs": 13.961124999994354,
+          "frames": {
+            "count": 480,
+            "p50": 17,
+            "p95": 18,
+            "max": 23
+          },
+          "input": {
+            "count": 22,
+            "p50": 30,
+            "p95": 33,
+            "max": 38
+          },
+          "canonicalTasks": 200,
+          "geometryHash": "59e5defddb16da18246f4e5bdbe4fab344c13dd966e0d566c811ad9bd98141b2",
+          "geometryPreserved": true,
+          "sceneChunks": 20,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 13203,
+            "textureViews": 303,
+            "textureSources": 107,
+            "managedSources": 150,
+            "slots": 150,
+            "rgbaEstimateBytes": 24172128
+          },
+          "finalResources": {
+            "available": true,
+            "views": 13381,
+            "textureViews": 310,
+            "textureSources": 114,
+            "managedSources": 174,
+            "slots": 174,
+            "rgbaEstimateBytes": 31528544
+          },
+          "coldResidency": {
+            "residentChunks": "9",
+            "visibleChunks": "2",
+            "taskBuildingViews": "187",
+            "canonicalDecodedChunks": "20"
+          }
+        }
+      ],
+      "reportSha256": "d3f158a06a65e562bc35065e58c1ab16f3e3593dce8bf34fd159842b9db35aba"
+    },
+    {
+      "tasks": 1000,
+      "profile": "desktop-chromium",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "browser": "151.0.7922.34",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 1691.1987910000025,
+          "median": 1721.6693750953673,
+          "max": 2416.802042143051
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 10.092875000002095,
+          "median": 21.747749999998632,
+          "max": 40.34529199999815
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 2416.802042143051,
+          "legacyColdCityMs": 2417.16125,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 2415.100000143051,
+            "upperBoundMs": 2416.802042143051,
+            "clockUncertaintyMs": 1.7020420000000058,
+            "legacyColdCityMs": 2417.16125
+          },
+          "warmCityMs": 21.747749999998632,
+          "frames": {
+            "count": 960,
+            "p50": 8.299999999999272,
+            "p95": 9.199999999998909,
+            "max": 9.399999999999636
+          },
+          "input": {
+            "count": 21,
+            "p50": 15.200000047683716,
+            "p95": 25.299999952316284,
+            "max": 63.39999985694885
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 931,
+            "JSHeapUsedSize": 230416808,
+            "JSHeapTotalSize": 239386624
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 952,
+            "JSHeapUsedSize": 231584796,
+            "JSHeapTotalSize": 237813760
+          },
+          "heapGrowthBytes": 1167988,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            69,
+            96,
+            601,
+            62,
+            77
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 38624,
+            "textureViews": 357,
+            "textureSources": 172,
+            "managedSources": 274,
+            "slots": 274,
+            "rgbaEstimateBytes": 84248416
+          },
+          "finalResources": {
+            "available": true,
+            "views": 37154,
+            "textureViews": 350,
+            "textureSources": 168,
+            "managedSources": 280,
+            "slots": 286,
+            "rgbaEstimateBytes": 77960032
+          },
+          "coldResidency": {
+            "residentChunks": "36",
+            "visibleChunks": "20",
+            "taskBuildingViews": "558",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 1721.6693750953673,
+          "legacyColdCityMs": 1721.6185000000005,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1719.9000000953674,
+            "upperBoundMs": 1721.6693750953673,
+            "clockUncertaintyMs": 1.7693749999998545,
+            "legacyColdCityMs": 1721.6185000000005
+          },
+          "warmCityMs": 40.34529199999815,
+          "frames": {
+            "count": 960,
+            "p50": 8.300000000001091,
+            "p95": 9.100000000000364,
+            "max": 9.300000000001091
+          },
+          "input": {
+            "count": 21,
+            "p50": 15.100000143051147,
+            "p95": 25.09999990463257,
+            "max": 25.59999990463257
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 931,
+            "JSHeapUsedSize": 230556124,
+            "JSHeapTotalSize": 236503040
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 952,
+            "JSHeapUsedSize": 231396260,
+            "JSHeapTotalSize": 237289472
+          },
+          "heapGrowthBytes": 840136,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            89,
+            595,
+            60,
+            76
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 38624,
+            "textureViews": 357,
+            "textureSources": 171,
+            "managedSources": 273,
+            "slots": 273,
+            "rgbaEstimateBytes": 84248160
+          },
+          "finalResources": {
+            "available": true,
+            "views": 37154,
+            "textureViews": 352,
+            "textureSources": 168,
+            "managedSources": 274,
+            "slots": 280,
+            "rgbaEstimateBytes": 77958496
+          },
+          "coldResidency": {
+            "residentChunks": "36",
+            "visibleChunks": "20",
+            "taskBuildingViews": "558",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 1691.1987910000025,
+          "legacyColdCityMs": 1691.4935830000031,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1690,
+            "upperBoundMs": 1691.1987910000025,
+            "clockUncertaintyMs": 1.1987910000025295,
+            "legacyColdCityMs": 1691.4935830000031
+          },
+          "warmCityMs": 10.092875000002095,
+          "frames": {
+            "count": 960,
+            "p50": 8.300000000000182,
+            "p95": 9.100000000000364,
+            "max": 9.399999999999636
+          },
+          "input": {
+            "count": 21,
+            "p50": 15.299999952316284,
+            "p95": 23.299999952316284,
+            "max": 32.200000047683716
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 931,
+            "JSHeapUsedSize": 230457548,
+            "JSHeapTotalSize": 244367360
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 952,
+            "JSHeapUsedSize": 231507596,
+            "JSHeapTotalSize": 234405888
+          },
+          "heapGrowthBytes": 1050048,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            78,
+            569,
+            56,
+            73
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 38624,
+            "textureViews": 357,
+            "textureSources": 175,
+            "managedSources": 271,
+            "slots": 271,
+            "rgbaEstimateBytes": 84247648
+          },
+          "finalResources": {
+            "available": true,
+            "views": 37154,
+            "textureViews": 348,
+            "textureSources": 165,
+            "managedSources": 272,
+            "slots": 278,
+            "rgbaEstimateBytes": 77957984
+          },
+          "coldResidency": {
+            "residentChunks": "36",
+            "visibleChunks": "20",
+            "taskBuildingViews": "558",
+            "canonicalDecodedChunks": "72"
+          }
+        }
+      ],
+      "reportSha256": "d032bd328e7d8bad59e02fd391d7ff574e96ad725c63f5ca3e9fa0ee16c3cb06"
+    },
+    {
+      "tasks": 1000,
+      "profile": "desktop-firefox",
+      "parameters": {
+        "engine": "firefox",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "dpr": 1,
+        "touch": false,
+        "cpu": 1,
+        "network": false
+      },
+      "browser": "153.0",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [
+        "0:coldCityMs exceeded 3000"
+      ],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 2109.693708999999,
+          "median": 2296.4652919999935,
+          "max": 5451.295833
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 19.535582999997132,
+          "median": 20.358250000004773,
+          "max": 23.670333999998547
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 5451.295833,
+          "legacyColdCityMs": 5452.7457079999995,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 5446,
+            "upperBoundMs": 5451.295833,
+            "clockUncertaintyMs": 5.29583300000013,
+            "legacyColdCityMs": 5452.7457079999995
+          },
+          "warmCityMs": 23.670333999998547,
+          "frames": {
+            "count": 942,
+            "p50": 8.320000000003347,
+            "p95": 9.200000000000728,
+            "max": 25.340000000000146
+          },
+          "input": {
+            "count": 21,
+            "p50": 35,
+            "p95": 43,
+            "max": 45
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 38624,
+            "textureViews": 358,
+            "textureSources": 172,
+            "managedSources": 272,
+            "slots": 272,
+            "rgbaEstimateBytes": 84272480
+          },
+          "finalResources": {
+            "available": true,
+            "views": 37154,
+            "textureViews": 348,
+            "textureSources": 166,
+            "managedSources": 280,
+            "slots": 286,
+            "rgbaEstimateBytes": 77984608
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "20",
+            "taskBuildingViews": "558",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 2109.693708999999,
+          "legacyColdCityMs": 2224.074042,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 2108,
+            "upperBoundMs": 2109.693708999999,
+            "clockUncertaintyMs": 1.6937089999992168,
+            "legacyColdCityMs": 2224.074042
+          },
+          "warmCityMs": 19.535582999997132,
+          "frames": {
+            "count": 960,
+            "p50": 8.319999999999709,
+            "p95": 9.159999999999854,
+            "max": 9.340000000000146
+          },
+          "input": {
+            "count": 21,
+            "p50": 14,
+            "p95": 24,
+            "max": 25
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 38624,
+            "textureViews": 355,
+            "textureSources": 171,
+            "managedSources": 267,
+            "slots": 267,
+            "rgbaEstimateBytes": 84271200
+          },
+          "finalResources": {
+            "available": true,
+            "views": 37154,
+            "textureViews": 344,
+            "textureSources": 164,
+            "managedSources": 275,
+            "slots": 281,
+            "rgbaEstimateBytes": 77983328
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "20",
+            "taskBuildingViews": "558",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 2296.4652919999935,
+          "legacyColdCityMs": 2296.636833999997,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 2293,
+            "upperBoundMs": 2296.4652919999935,
+            "clockUncertaintyMs": 3.4652919999934966,
+            "legacyColdCityMs": 2296.636833999997
+          },
+          "warmCityMs": 20.358250000004773,
+          "frames": {
+            "count": 959,
+            "p50": 8.320000000001528,
+            "p95": 9.159999999999854,
+            "max": 16.719999999999345
+          },
+          "input": {
+            "count": 21,
+            "p50": 17,
+            "p95": 28,
+            "max": 29
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 38624,
+            "textureViews": 359,
+            "textureSources": 175,
+            "managedSources": 273,
+            "slots": 273,
+            "rgbaEstimateBytes": 84272736
+          },
+          "finalResources": {
+            "available": true,
+            "views": 37154,
+            "textureViews": 345,
+            "textureSources": 164,
+            "managedSources": 283,
+            "slots": 289,
+            "rgbaEstimateBytes": 77985376
+          },
+          "coldResidency": {
+            "residentChunks": "20",
+            "visibleChunks": "20",
+            "taskBuildingViews": "558",
+            "canonicalDecodedChunks": "72"
+          }
+        }
+      ],
+      "reportSha256": "38337d0a10d986e7c3d88db40443cea98b01010dfabf096275ac44185cab0ddc"
+    },
+    {
+      "tasks": 1000,
+      "profile": "pixel-chromium",
+      "parameters": {
+        "engine": "chromium",
+        "viewport": {
+          "width": 393,
+          "height": 851
+        },
+        "dpr": 2.75,
+        "touch": true,
+        "cpu": 4,
+        "network": true
+      },
+      "browser": "151.0.7922.34",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 12000,
+        "warmCityMs": 750,
+        "inputP95Ms": 200,
+        "frameP95Ms": 34,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 8615.844291952315,
+          "median": 8732.293750095367,
+          "max": 9154.031917095359
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 91.73916599998483,
+          "median": 102.44933299999684,
+          "max": 117.33441599999787
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 8732.293750095367,
+          "legacyColdCityMs": 8807.908707999999,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 8710.400000095367,
+            "upperBoundMs": 8732.293750095367,
+            "clockUncertaintyMs": 21.893750000000182,
+            "legacyColdCityMs": 8807.908707999999
+          },
+          "warmCityMs": 117.33441599999787,
+          "frames": {
+            "count": 533,
+            "p50": 16.5,
+            "p95": 25.100000000002183,
+            "max": 49.900000000001455
+          },
+          "input": {
+            "count": 22,
+            "p50": 71.59999990463257,
+            "p95": 116,
+            "max": 143.79999995231628
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 905,
+            "JSHeapUsedSize": 192476184,
+            "JSHeapTotalSize": 198672384
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 928,
+            "JSHeapUsedSize": 193520052,
+            "JSHeapTotalSize": 201031680
+          },
+          "heapGrowthBytes": 1043868,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            187,
+            226,
+            59,
+            75,
+            61,
+            1332,
+            118,
+            97,
+            70,
+            73
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 14999,
+            "textureViews": 264,
+            "textureSources": 94,
+            "managedSources": 145,
+            "slots": 145,
+            "rgbaEstimateBytes": 27230728
+          },
+          "finalResources": {
+            "available": true,
+            "views": 21017,
+            "textureViews": 279,
+            "textureSources": 104,
+            "managedSources": 190,
+            "slots": 190,
+            "rgbaEstimateBytes": 35966728
+          },
+          "coldResidency": {
+            "residentChunks": "12",
+            "visibleChunks": "2",
+            "taskBuildingViews": "233",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 8615.844291952315,
+          "legacyColdCityMs": 8687.590291999993,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 8595.299999952316,
+            "upperBoundMs": 8615.844291952315,
+            "clockUncertaintyMs": 20.544291999998677,
+            "legacyColdCityMs": 8687.590291999993
+          },
+          "warmCityMs": 102.44933299999684,
+          "frames": {
+            "count": 893,
+            "p50": 8.30000000000291,
+            "p95": 16.400000000001455,
+            "max": 40.79999999999927
+          },
+          "input": {
+            "count": 22,
+            "p50": 23.09999990463257,
+            "p95": 42.299999952316284,
+            "max": 80
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 905,
+            "JSHeapUsedSize": 192356932,
+            "JSHeapTotalSize": 199458816
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 927,
+            "JSHeapUsedSize": 193427756,
+            "JSHeapTotalSize": 202080256
+          },
+          "heapGrowthBytes": 1070824,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            190,
+            201,
+            75,
+            65,
+            1262,
+            117,
+            95,
+            68,
+            73
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 14999,
+            "textureViews": 262,
+            "textureSources": 94,
+            "managedSources": 149,
+            "slots": 149,
+            "rgbaEstimateBytes": 27231752
+          },
+          "finalResources": {
+            "available": true,
+            "views": 21017,
+            "textureViews": 278,
+            "textureSources": 103,
+            "managedSources": 182,
+            "slots": 182,
+            "rgbaEstimateBytes": 35964680
+          },
+          "coldResidency": {
+            "residentChunks": "12",
+            "visibleChunks": "2",
+            "taskBuildingViews": "233",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 9154.031917095359,
+          "legacyColdCityMs": 9235.966291999997,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 9134.900000095367,
+            "upperBoundMs": 9154.031917095359,
+            "clockUncertaintyMs": 19.131916999991518,
+            "legacyColdCityMs": 9235.966291999997
+          },
+          "warmCityMs": 91.73916599998483,
+          "frames": {
+            "count": 884,
+            "p50": 8.30000000000291,
+            "p95": 16.599999999998545,
+            "max": 25
+          },
+          "input": {
+            "count": 22,
+            "p50": 22.300000190734863,
+            "p95": 43.80000019073486,
+            "max": 86.40000009536743
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": {
+            "Documents": 1,
+            "Nodes": 906,
+            "JSHeapUsedSize": 192291092,
+            "JSHeapTotalSize": 201031680
+          },
+          "heapAfter": {
+            "Documents": 1,
+            "Nodes": 928,
+            "JSHeapUsedSize": 193423004,
+            "JSHeapTotalSize": 201555968
+          },
+          "heapGrowthBytes": 1131912,
+          "longTasksAvailable": true,
+          "coldLongTaskDurationsMs": [
+            213,
+            202,
+            54,
+            89,
+            75,
+            1690,
+            51,
+            123,
+            107,
+            75,
+            81
+          ],
+          "steadyLongTaskDurationsMs": [],
+          "warmedResources": {
+            "available": true,
+            "views": 14999,
+            "textureViews": 264,
+            "textureSources": 95,
+            "managedSources": 144,
+            "slots": 144,
+            "rgbaEstimateBytes": 27230472
+          },
+          "finalResources": {
+            "available": true,
+            "views": 21017,
+            "textureViews": 275,
+            "textureSources": 100,
+            "managedSources": 185,
+            "slots": 185,
+            "rgbaEstimateBytes": 35965448
+          },
+          "coldResidency": {
+            "residentChunks": "12",
+            "visibleChunks": "2",
+            "taskBuildingViews": "233",
+            "canonicalDecodedChunks": "72"
+          }
+        }
+      ],
+      "reportSha256": "0eaf1454e1a87b625c090a78d075f6af79de715af9ff8b3883e9508d544b6015"
+    },
+    {
+      "tasks": 1000,
+      "profile": "iphone-webkit",
+      "parameters": {
+        "engine": "webkit",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "dpr": 3,
+        "touch": true,
+        "cpu": 1,
+        "network": false
+      },
+      "browser": "26.5",
+      "completed": true,
+      "failure": null,
+      "budgets": {
+        "coldCityMs": 3000,
+        "warmCityMs": 500,
+        "inputP95Ms": 100,
+        "frameP95Ms": 20,
+        "steadyLongTasks": 0,
+        "retainedHeapBytes": 8388608,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "legacyRequests": 0,
+        "errors": 0
+      },
+      "budgetViolations": [],
+      "errorCount": 0,
+      "timing": {
+        "coldCityMs": {
+          "count": 3,
+          "min": 1186.2634169999983,
+          "median": 1188.051625,
+          "max": 1401.9593750000004
+        },
+        "warmCityMs": {
+          "count": 3,
+          "min": 34.648541999999,
+          "median": 35.82245800000237,
+          "max": 38.649665999997524
+        }
+      },
+      "canonicalGeometryPreserved": true,
+      "requestBudgetPreserved": true,
+      "samples": [
+        {
+          "sample": 0,
+          "coldCityMs": 1401.9593750000004,
+          "legacyColdCityMs": 1424.881167,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1398,
+            "upperBoundMs": 1401.9593750000004,
+            "clockUncertaintyMs": 3.959375000000364,
+            "legacyColdCityMs": 1424.881167
+          },
+          "warmCityMs": 34.648541999999,
+          "frames": {
+            "count": 480,
+            "p50": 17,
+            "p95": 18,
+            "max": 36
+          },
+          "input": {
+            "count": 22,
+            "p50": 31,
+            "p95": 38,
+            "max": 41
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 14999,
+            "textureViews": 261,
+            "textureSources": 93,
+            "managedSources": 146,
+            "slots": 146,
+            "rgbaEstimateBytes": 27230984
+          },
+          "finalResources": {
+            "available": true,
+            "views": 21014,
+            "textureViews": 281,
+            "textureSources": 107,
+            "managedSources": 182,
+            "slots": 182,
+            "rgbaEstimateBytes": 35702792
+          },
+          "coldResidency": {
+            "residentChunks": "12",
+            "visibleChunks": "2",
+            "taskBuildingViews": "233",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 1,
+          "coldCityMs": 1186.2634169999983,
+          "legacyColdCityMs": 1322.8840840000012,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1185,
+            "upperBoundMs": 1186.2634169999983,
+            "clockUncertaintyMs": 1.2634169999982987,
+            "legacyColdCityMs": 1322.8840840000012
+          },
+          "warmCityMs": 35.82245800000237,
+          "frames": {
+            "count": 480,
+            "p50": 17,
+            "p95": 19,
+            "max": 31
+          },
+          "input": {
+            "count": 22,
+            "p50": 29,
+            "p95": 37,
+            "max": 38
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 14999,
+            "textureViews": 269,
+            "textureSources": 99,
+            "managedSources": 147,
+            "slots": 147,
+            "rgbaEstimateBytes": 27231240
+          },
+          "finalResources": {
+            "available": true,
+            "views": 21014,
+            "textureViews": 277,
+            "textureSources": 103,
+            "managedSources": 180,
+            "slots": 180,
+            "rgbaEstimateBytes": 35702280
+          },
+          "coldResidency": {
+            "residentChunks": "12",
+            "visibleChunks": "2",
+            "taskBuildingViews": "233",
+            "canonicalDecodedChunks": "72"
+          }
+        },
+        {
+          "sample": 2,
+          "coldCityMs": 1188.051625,
+          "legacyColdCityMs": 1327.870167000001,
+          "coldBounds": {
+            "contractVersion": 2,
+            "lowerBoundMs": 1187,
+            "upperBoundMs": 1188.051625,
+            "clockUncertaintyMs": 1.0516250000000582,
+            "legacyColdCityMs": 1327.870167000001
+          },
+          "warmCityMs": 38.649665999997524,
+          "frames": {
+            "count": 480,
+            "p50": 17,
+            "p95": 19,
+            "max": 20
+          },
+          "input": {
+            "count": 22,
+            "p50": 32,
+            "p95": 38,
+            "max": 43
+          },
+          "canonicalTasks": 1000,
+          "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+          "geometryPreserved": true,
+          "sceneChunks": 72,
+          "coldSceneRequests": 1,
+          "panSceneRequests": 0,
+          "warmSceneRequests": 0,
+          "legacyRequests": 0,
+          "requestBudgetPreserved": true,
+          "retainedCanvasChecks": 20,
+          "heapBefore": null,
+          "heapAfter": null,
+          "heapGrowthBytes": null,
+          "longTasksAvailable": false,
+          "coldLongTaskDurationsMs": null,
+          "steadyLongTaskDurationsMs": null,
+          "warmedResources": {
+            "available": true,
+            "views": 14999,
+            "textureViews": 262,
+            "textureSources": 94,
+            "managedSources": 146,
+            "slots": 146,
+            "rgbaEstimateBytes": 27230984
+          },
+          "finalResources": {
+            "available": true,
+            "views": 21036,
+            "textureViews": 278,
+            "textureSources": 102,
+            "managedSources": 185,
+            "slots": 185,
+            "rgbaEstimateBytes": 35703560
+          },
+          "coldResidency": {
+            "residentChunks": "12",
+            "visibleChunks": "2",
+            "taskBuildingViews": "233",
+            "canonicalDecodedChunks": "72"
+          }
+        }
+      ],
+      "reportSha256": "fee93b809284f2d4cd6ab057658d995d49a90dcf3af90ed5550a129c8f5591d7"
+    }
+  ],
+  "historicalContext": {
+    "path": "docs/evidence/city-scale-2026-10-16/cold-measurement-v2-summary.json",
+    "note": "Отдельный исторический v2 baseline FF200. Новая матрица проверяет абсолютные строгие бюджеты; улучшение скорости в парном сравнении не заявлено."
+  },
+  "limits": [
+    "Только браузерная эмуляция; физических телефонов и измерения батареи нет.",
+    "Pixel Chromium: CPU4 и CDP network. iPhone WebKit: touch/DPR3, без CPU/network throttling; это не аппаратный Safari.",
+    "Cold v2 — консервативная верхняя граница первого atomic DOM без map-level-transition; это не compositor paint. Legacy Node elapsed сохранён.",
+    "По3 loading samples показываются median/min/max, loading p95 не заявляется. Frame/input p95 рассчитаны из более крупных серий событий.",
+    "Input до второго RAF является proxy, не full-session INP. Размеры RGBA оценивают texture sources, не native/GPU memory.",
+    "Post-GC heap/longtask доступны не во всех движках; недоступные измерения остаются null, не нулём.",
+    "Retained canvas подтверждается нативными assertions неизменённого driver на каждом churn cycle; сырые личные/DB данные не включены.",
+    "Исходные fixture geometry и budgets сохранены. OS/PG caches не объявляются холодными. Предыдущий03fc не сертифицирует этот runtime."
+  ],
+  "evidence": {
+    "preflightSha256": "8ca6a3942d170b1a72b5a7aeb57a5fe65a31609b71fa96be5f80387d0001d8de",
+    "postflightSha256": "f6cb9ed05fc42ef84d781cab73e76cd68e8d03cfc19d048b74999f25a0878d2b"
+  },
+  "generatedAt": "2026-10-22T20:27:25.058Z",
+  "environment": {
+    "compilationDuringSeries": true,
+    "compileWindowUtc": {
+      "start": "2026-10-22T20:19:19.598Z",
+      "end": "2026-10-22T20:19:22.226Z"
+    },
+    "checkedColdSamples": 6,
+    "directColdOverlapSamples": 0,
+    "note": "Параллельные scoped TypeScript/ESLint были внутри общей серии, но не пересекли холодные окна всех6 проверенных Pixel200/Firefox1000 samples, включая все3RED. Это не устанавливает причинность и не отменяетRED."
+  }
+}

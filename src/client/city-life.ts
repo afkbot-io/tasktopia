@@ -1,5 +1,6 @@
 import type { Cell, ChunkTaskDto, Rect } from '../shared/contracts';
 import { incidentMode } from './task-incidents';
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from './cooperative-preparation';
 export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'>;
 
 export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL';
@@ -21,15 +22,20 @@ function kindFor(task:CityLifeTask):CityLifeKind {
 }
 
 /** Compile only real walkable approaches. Completed task records remain immutable. */
-export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):CityLifeSite[] {
+export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):Generator<void,CityLifeSite[],void> {
   const sites:CityLifeSite[]=[];
-  for(const task of [...new Map(tasks.map(task=>[task.id,task])).values()].sort((a,b)=>a.id.localeCompare(b.id))) {
+  const unique=new Map<string,CityLifeTask>();
+  for(const task of tasks){unique.set(task.id,task);yield;}
+  const ordered=yield* stableSortPreparation(unique.values(),(a,b)=>a.id.localeCompare(b.id));
+  for(const task of ordered) {
+    yield;
     if(task.status!=='COMPLETED'||task.stage!==5||incidentMode(task)!=='NONE')continue;
     const entrance=task.accessPath.find(cell=>walkGraph.has(key(cell))&&!blocked.has(key(cell)));
     if(!entrance)continue;
     const queue:Cell[][]=[[entrance]],seen=new Set([key(entrance)]);
     let route:Cell[]=[];
     for(let index=0;index<queue.length&&index<96;index++) {
+      yield;
       const current=queue[index]!;
       if(current.length>=7){route=current;break;}
       for(const delta of directions) {
@@ -42,6 +48,12 @@ export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMa
     sites.push({taskId:task.id,kind:kindFor(task),route:route.reverse()});
   }
   return sites;
+}
+export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):CityLifeSite[] {
+  return completePreparation(cityLifeSitesSteps(tasks,walkGraph,blocked));
+}
+export function cityLifeSitesAsync(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,options:CooperativePreparationOptions={}):Promise<CityLifeSite[]> {
+  return prepareCooperatively(cityLifeSitesSteps(tasks,walkGraph,blocked),options);
 }
 
 /** One deterministic scene per window; compile candidates only when the window

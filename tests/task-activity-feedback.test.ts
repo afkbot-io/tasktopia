@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { createCityMobility } from '../src/client/city-mobility';
+import { advanceCityMobilityFrame, createCityMobility } from '../src/client/city-mobility';
 import { createTaskActivityController } from '../src/client/task-activity-feedback';
 import type { Cell } from '../src/shared/contracts';
 
@@ -31,6 +31,66 @@ it('новый комментарий доставляют существующ�
   expect(f.controller.metrics.delivered).toBe(1);
   expect(f.city.agents.some(a => a.visit)).toBe(false);
   expect(f.city.metrics.pedestrianUnsafeTotal).toBe(0);
+});
+
+it('доставка комментария успевает до прежнего срока 32с при реальных кадрах по 200мс', () => {
+  const cells = Array.from({ length: 64 }, (_, x) => ({ x, y: 0 }));
+  const city = createCityMobility({ roads: new Map(), walkGraph: new Map(cells.map(cell => [`${cell.x},${cell.y}`, cell])),
+    crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['0,0', '63,0']),
+    seed: 19, carLimit: 0, walkerLimit: 2 });
+  const adults = city.agents.filter(agent => agent.kind === 'WALKER' && agent.age === 'ADULT');
+  expect(city.agents).toHaveLength(2); expect(adults).toHaveLength(1);
+  const adult = adults[0]!, target = { x: adult.current.x + (adult.current.x <= 47 ? 16 : -16), y: 0 };
+  expect(Math.abs(target.x - adult.current.x)).toBe(16);
+  expect(city.visitTargets.has(`${target.x},${target.y}`)).toBe(true);
+  const task = { id: 'long-comment-approach', stage: 5, accessPath: [target] }, tasks = new Map([[task.id, task]]);
+  const controller = createTaskActivityController(() => city), options = { enabled: true, reducedMotion: false, economy: false };
+  const residents = city.agents.map(agent => agent.id);
+  expect(controller.begin({ id: 1, worldVersion: 3, type: 'task.comment_added', taskId: task.id,
+    createdAt: new Date(now).toISOString() }, task, now, options)).toBe(true);
+  expect(city.agents.filter(agent => agent.visit).map(agent => agent.id)).toEqual([adult.id]);
+  expect(controller.update(now, tasks, options)[0]).toMatchObject({ phase: 'DELIVER', expiresAt: now + 32_000 });
+  let discussed = false;
+  for (let wall = 200; wall <= 32_000; wall += 200) {
+    advanceCityMobilityFrame(city, 200);
+    const pose = controller.update(now + wall, tasks, options)[0];
+    if (pose?.phase === 'DISCUSS') { expect(pose.arrived).toBeGreaterThan(0); discussed = true; }
+    expect(city.agents.map(agent => agent.id)).toEqual(residents);
+    expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
+  }
+  expect(discussed, 'Fresh delivery must arrive before its unchanged wall-clock TTL').toBe(true);
+  expect(controller.metrics.delivered).toBe(1);
+});
+
+it('слишком далёкий житель не начинает доставку, которая физически не успеет за 32с', () => {
+  const cells = Array.from({ length: 128 }, (_, x) => ({ x, y: 0 }));
+  const city = createCityMobility({ roads: new Map(), walkGraph: new Map(cells.map(cell => [`${cell.x},${cell.y}`, cell])),
+    crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['0,0', '127,0']),
+    seed: 19, carLimit: 0, walkerLimit: 2 });
+  const adults = city.agents.filter(agent => agent.age === 'ADULT');
+  expect(city.agents).toHaveLength(2); expect(adults).toHaveLength(1);
+  const adult = adults[0]!, target = { x: adult.current.x + (adult.current.x <= 81 ? 46 : -46), y: 0 };
+  expect(adult.progress).toBe(0);
+  expect(city.visitTargets.has(`${target.x},${target.y}`)).toBe(true);
+  expect(Math.abs(target.x - adult.current.x) / adult.speed).toBeGreaterThan(32_000);
+  const residents = city.agents, task = { id: 'unreachable-in-time', stage: 5, accessPath: [target] };
+  const tasks = new Map([[task.id, task]]), controller = createTaskActivityController(() => city);
+  const options = { enabled: true, reducedMotion: false, economy: false };
+  expect(controller.begin({ id: 1, worldVersion: 3, type: 'task.comment_added', taskId: task.id,
+    createdAt: new Date(now).toISOString() }, task, now, options)).toBe(true);
+  expect(controller.update(now, tasks, options)[0]).toMatchObject({ phase: 'SIGNAL', visitors: [], arrived: 0, expiresAt: now + 6000 });
+  expect(city.agents).toEqual(residents);
+  expect(controller.update(now + 6000, tasks, options)).toEqual([]);
+  expect(controller.metrics.delivered).toBe(0);
+});
+
+it('один очень долгий кадр выполняет не более пяти обычных физических шагов', () => {
+  const { city } = fixture(), residents = city.agents.map(agent => agent.id), before = city.metrics.fixedSteps;
+  advanceCityMobilityFrame(city, 10_000);
+  const steps = city.metrics.fixedSteps - before;
+  expect(steps).toBeGreaterThan(0); expect(steps).toBeLessThanOrEqual(5);
+  expect(city.agents.map(agent => agent.id)).toEqual(residents);
+  expect(city.metrics.pedestrianUnsafeTotal).toBe(0);
 });
 
 it('повторы и старый replay не доставляют письмо заново, серия комментариев объединяется без новых жителей', () => {
@@ -96,4 +156,74 @@ it('свежий комментарий после истечения срока
   expect(f.controller.begin({...f.event,id:2,createdAt:new Date(later).toISOString()},f.task,later,f.options)).toBe(true);
   expect(f.controller.update(later,f.tasks,f.options)).toHaveLength(1);
   expect(f.controller.metrics).toMatchObject({started:2,merged:0});
+});
+
+function framedCommentLine() {
+  const cells = Array.from({ length: 128 }, (_, x) => ({ x, y: 0 }));
+  const city = createCityMobility({ roads: new Map(), walkGraph: new Map(cells.map(cell => [`${cell.x},${cell.y}`, cell])),
+    crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['0,0', '127,0']),
+    seed: 19, carLimit: 0, walkerLimit: 2 });
+  expect(city.agents).toHaveLength(2);
+  expect(city.agents.filter(agent => agent.age === 'ADULT')).toHaveLength(1);
+  return city;
+}
+
+it('после медленных кадров не обещает доставку дольше доступной физики, оставляя прежний шестисекундный сигнал', () => {
+  const slow = framedCommentLine(), healthy = framedCommentLine();
+  for (let frame = 0; frame < 10; frame++) {
+    advanceCityMobilityFrame(slow, 400);
+    advanceCityMobilityFrame(healthy, 250);
+  }
+  // Same seed/population and exactly2500ms of real fixed-step physics. Only
+  // the observed wall-frame history differs; no pose, route or clock is set.
+  expect(slow.metrics.fixedSteps).toBe(50);
+  expect(healthy.metrics.fixedSteps).toBe(50);
+  expect(slow.agents).toEqual(healthy.agents);
+  const adult = slow.agents.find(agent => agent.age === 'ADULT')!;
+  expect(['east', 'west']).toContain(adult.direction);
+  const moving = adult.progress > 0 && adult.current.x !== adult.next.x;
+  const start = moving ? adult.next : adult.current, direction = adult.direction === 'east' ? 1 : -1;
+  const cells = Math.ceil(21_000 * adult.speed), target = { x: start.x + direction * cells, y: 0 };
+  const freeFlowMs = (cells + (moving ? 1 - adult.progress : 0)) / adult.speed;
+  expect(slow.visitTargets.has(`${target.x},${target.y}`)).toBe(true);
+  expect(cells + (moving ? 2 : 1)).toBeLessThanOrEqual(48);
+  expect(freeFlowMs).toBeGreaterThan(20_000);
+  expect(freeFlowMs).toBeLessThan(24_000);
+  const task = { id: 'slow-frame-comment', stage: 5, accessPath: [target] }, tasks = new Map([[task.id, task]]);
+  const options = { enabled: true, reducedMotion: false, economy: false };
+  const event = { id: 1, worldVersion: 3, type: 'task.comment_added' as const, taskId: task.id, createdAt: new Date(now).toISOString() };
+  const slowController = createTaskActivityController(() => slow), healthyController = createTaskActivityController(() => healthy);
+  const before = slow.agents, ids = before.map(agent => agent.id);
+  expect(slowController.begin(event, task, now, options)).toBe(true);
+  expect(healthyController.begin(event, task, now, options)).toBe(true);
+  const slowInitial = slowController.update(now, tasks, options)[0], slowAfterBegin = slow.agents;
+  expect(healthyController.update(now, tasks, options)[0]).toMatchObject({ phase: 'DELIVER', expiresAt: now + 32_000 });
+  const slowInitialSteps = slow.metrics.fixedSteps;
+  let slowDiscussed = false, healthyDiscussed = false, slowAtSixSeconds: unknown;
+  for (let frame = 1; frame <= 128; frame++) {
+    if (frame <= 80) {
+      const steps = slow.metrics.fixedSteps; advanceCityMobilityFrame(slow, 400);
+      expect(slow.metrics.fixedSteps - steps).toBeLessThanOrEqual(5);
+      const poses = slowController.update(now + frame * 400, tasks, options);
+      slowDiscussed = slowDiscussed || poses.some(pose => pose.phase === 'DISCUSS' && pose.arrived > 0);
+      if (frame === 15) slowAtSixSeconds = poses;
+    }
+    const steps = healthy.metrics.fixedSteps; advanceCityMobilityFrame(healthy, 250);
+    expect(healthy.metrics.fixedSteps - steps).toBeLessThanOrEqual(5);
+    const poses = healthyController.update(now + frame * 250, tasks, options);
+    healthyDiscussed = healthyDiscussed || poses.some(pose => pose.phase === 'DISCUSS' && pose.arrived > 0);
+    for (const city of [slow, healthy]) {
+      expect(city.agents.map(agent => agent.id)).toEqual(ids);
+      expect(city.metrics.vehicleUnsafeTotal + city.metrics.pedestrianUnsafeTotal + city.metrics.vehiclePedestrianUnsafeTotal).toBe(0);
+    }
+  }
+  // The positive control must really deliver. A failed setup is not admission RED.
+  expect(healthyDiscussed).toBe(true); expect(healthyController.metrics.delivered).toBe(1);
+  expect((slow.metrics.fixedSteps - slowInitialSteps) * 50).toBe(20_000);
+  expect(slowDiscussed).toBe(false); expect(slowController.metrics.delivered).toBe(0);
+  const diagnostic = { freeFlowMs, target, slowInitial, slowAfterBegin, before };
+  expect(slowInitial, `SLOW_FRAME_ADMISSION: ${JSON.stringify(diagnostic)}`)
+    .toMatchObject({ phase: 'SIGNAL', visitors: [], arrived: 0, expiresAt: now + 6000 });
+  expect(slowAfterBegin).toEqual(before);
+  expect(slowAtSixSeconds).toEqual([]);
 });

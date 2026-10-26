@@ -1,0 +1,600 @@
+{
+  "date": "2026-10-23",
+  "status": "IMPACT_BASED_STRICT_PASS",
+  "qualificationScope": "21 v5 samples reused by declared one-line impact analysis; 3 new v6 Pixel1000 samples. This is not a full24 v6 qualification.",
+  "currentRuntime": {
+    "sourceHash": "4173045433eb24e2b9e85d9a72270cb25b06d740c879b9f9e9302e712816e717",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "d92d2761cf01b7f4424555d7bb1864f9ec28efd3233b0a1a52725f6af3ac361e",
+    "htmlHash": "d3bc6db528b0e10437efa445ef12a3a698b840c6b4e9eb3b72be1bb0a8fc8e50",
+    "distHash": "f4ba53e6dbbd860d7baf90ac73ff3cb456f9bb65171cf55c786a772af59adfac",
+    "gameAssetHash": "0c7590749da60fa21784ca5c15307fc41b07f6a9ed86e0195d18cad7628ee553",
+    "sourceManifestHash": "46300078781cf813c9882137f04be8ef0b729083ce8098d8d1ddaea19459f633",
+    "physicalDistHash": "82a2bb6e5dab91106d72b62cde233350293e6175abb8313f6257cb05457bd074",
+    "publicationHash": "bc2d77abd5ef0d796b59c7b2269aa0ef7886aa04be0bf7476c5449be755ac898",
+    "qualificationSourceHash": "16918c4bb490f697d5c96c79df28ce0befe124ec5e10776f7a344eeead749f28"
+  },
+  "policyHash": "cc2c1cad31544587d6215f1d3f90f3e03a39148aede39cb7fe5d54a120acaae3",
+  "parameters": {
+    "profiles": [
+      "pixel-chromium"
+    ],
+    "sizes": [
+      1000
+    ],
+    "samples": 3,
+    "churn": 20,
+    "steadyMs": 8000,
+    "quality": "NORMAL",
+    "strictBudgets": true,
+    "coldContractVersion": 2
+  },
+  "measurementControls": {
+    "scripts/measure-city-scale.ts": "576069f6837f87bba4c885ff784b55ab805761b00ad63d3a16979810e32fe516",
+    "scripts/city-scale-cold-metric.ts": "4474b2e80aa459b821adb7239834de33411aad3dfe9238e6d0b51ce52d921727",
+    "scripts/city-scale-benchmark-contract.ts": "678f2716ceff2a566f3ecc8172308ea1995d90aad5aab096aa7c184390f55ab3"
+  },
+  "reusedV5": {
+    "sourceHash": "f58376d7d761cc45627ac4ea61d832674212a60fa4c8f920aed20b7b19343fe5",
+    "serverHash": "dae136ca64c93bbc7d0dfac2a675c38ed5edc800d895a5a78af7f4ed48c61937",
+    "clientHash": "58baad0ebc042bdf6281fa5e0e7fd244cb037933f53d61217c137643412e9790",
+    "htmlHash": "c46ad01f799d9f59693d306b2db037adbd3ea08e0660c390035dbacdf15aad7e",
+    "summaryPath": "docs/evidence/city-scale-2026-10-22/task-focus-v5-summary.json",
+    "summarySha256": "0e630c9c3574c35546f45b4cbd47a2d6313154ebb769b24c16111ecd744123ee",
+    "sampleCount": 21,
+    "rows": [
+      {
+        "tasks": 200,
+        "profile": "desktop-chromium",
+        "sampleCount": 3,
+        "completed": true,
+        "budgetViolations": [],
+        "errorCount": 0,
+        "reportSha256": "0a15bda31bb3e1c7023ef695916a69ee93c52cc1227b78357d7acb45a7c0496d",
+        "timing": {
+          "coldCityMs": {
+            "count": 3,
+            "min": 952.3087920953622,
+            "median": 1032.1076251430532,
+            "max": 1076.0675830476837
+          },
+          "warmCityMs": {
+            "count": 3,
+            "min": 9.248208999997587,
+            "median": 9.776167000003625,
+            "max": 14.17570799999885
+          }
+        },
+        "canonicalGeometryPreserved": true,
+        "requestBudgetPreserved": true
+      },
+      {
+        "tasks": 200,
+        "profile": "desktop-firefox",
+        "sampleCount": 3,
+        "completed": true,
+        "budgetViolations": [],
+        "errorCount": 0,
+        "reportSha256": "8f56ad865030c815529beb698539e7b0f4a34af15ac93e34bc83acf3a8c153e8",
+        "timing": {
+          "coldCityMs": {
+            "count": 3,
+            "min": 1220.9122080000016,
+            "median": 1281.4399589999998,
+            "max": 1401.2342080000017
+          },
+          "warmCityMs": {
+            "count": 3,
+            "min": 17.94825000000128,
+            "median": 24.18937499999447,
+            "max": 26.922208000003593
+          }
+        },
+        "canonicalGeometryPreserved": true,
+        "requestBudgetPreserved": true
+      },
+      {
+        "tasks": 200,
+        "profile": "pixel-chromium",
+        "sampleCount": 3,
+        "completed": true,
+        "budgetViolations": [],
+        "errorCount": 0,
+        "reportSha256": "cc90a10e01a4e26cd9e0efa148067e839753df453ad7ee23acdf2cd83e0074d5",
+        "timing": {
+          "coldCityMs": {
+            "count": 3,
+            "min": 5840.649417047694,
+            "median": 5889.252374952317,
+            "max": 5971.48725
+          },
+          "warmCityMs": {
+            "count": 3,
+            "min": 87.79020899999887,
+            "median": 105.64595800000825,
+            "max": 113.09875000000102
+          }
+        },
+        "canonicalGeometryPreserved": true,
+        "requestBudgetPreserved": true
+      },
+      {
+        "tasks": 200,
+        "profile": "iphone-webkit",
+        "sampleCount": 3,
+        "completed": true,
+        "budgetViolations": [],
+        "errorCount": 0,
+        "reportSha256": "9c95f08914e529f716347cdcf3b9d231bbaa106bdced33b8d0d151fc4e396eed",
+        "timing": {
+          "coldCityMs": {
+            "count": 3,
+            "min": 784.5358339999984,
+            "median": 791.0131669999973,
+            "max": 816.8272089999998
+          },
+          "warmCityMs": {
+            "count": 3,
+            "min": 11.82404200000019,
+            "median": 32.069540999997116,
+            "max": 36.059000000001106
+          }
+        },
+        "canonicalGeometryPreserved": true,
+        "requestBudgetPreserved": true
+      },
+      {
+        "tasks": 1000,
+        "profile": "desktop-chromium",
+        "sampleCount": 3,
+        "completed": true,
+        "budgetViolations": [],
+        "errorCount": 0,
+        "reportSha256": "2ede1e27ffab45f4a741b63b50e0d52f1729c97ed243bbe16eb7f87111fc5534",
+        "timing": {
+          "coldCityMs": {
+            "count": 3,
+            "min": 1529.6662920000017,
+            "median": 1579.3564161430477,
+            "max": 2170.5480410953674
+          },
+          "warmCityMs": {
+            "count": 3,
+            "min": 9.882417000000714,
+            "median": 15.769749999999476,
+            "max": 38.423707999994804
+          }
+        },
+        "canonicalGeometryPreserved": true,
+        "requestBudgetPreserved": true
+      },
+      {
+        "tasks": 1000,
+        "profile": "desktop-firefox",
+        "sampleCount": 3,
+        "completed": true,
+        "budgetViolations": [],
+        "errorCount": 0,
+        "reportSha256": "9087c3967224c716f9dbbeb540326febc18f16d677906a5bf1062696847a684d",
+        "timing": {
+          "coldCityMs": {
+            "count": 3,
+            "min": 1791.7328750000015,
+            "median": 2032.5067090000011,
+            "max": 2452.841542
+          },
+          "warmCityMs": {
+            "count": 3,
+            "min": 19.64875000000029,
+            "median": 19.687916000002588,
+            "max": 19.890792000005604
+          }
+        },
+        "canonicalGeometryPreserved": true,
+        "requestBudgetPreserved": true
+      },
+      {
+        "tasks": 1000,
+        "profile": "iphone-webkit",
+        "sampleCount": 3,
+        "completed": true,
+        "budgetViolations": [],
+        "errorCount": 0,
+        "reportSha256": "8bb60aa200647653d8e62ed5e16d6132fdc6f7bad4de28ed7f0a94ff38b2f6ce",
+        "timing": {
+          "coldCityMs": {
+            "count": 3,
+            "min": 1166.1445410000015,
+            "median": 1203.134874999996,
+            "max": 1391.230292
+          },
+          "warmCityMs": {
+            "count": 3,
+            "min": 12.533584000004339,
+            "median": 42.3572920000006,
+            "max": 43.267957999996725
+          }
+        },
+        "canonicalGeometryPreserved": true,
+        "requestBudgetPreserved": true
+      }
+    ],
+    "originalStatusPreserved": "STRICT_RED",
+    "excluded": {
+      "tasks": 1000,
+      "profile": "pixel-chromium",
+      "samples": [
+        0,
+        1,
+        2
+      ]
+    },
+    "note": "Original v5 report, including the61ms steady RED, is preserved. These21 results retain their v5 binding."
+  },
+  "actualV6": {
+    "profile": "pixel-chromium",
+    "tasks": 1000,
+    "completed": true,
+    "sampleCount": 3,
+    "expectedSamples": 3,
+    "driverExitCode": 0,
+    "errorCount": 0,
+    "failure": null,
+    "budgets": {
+      "coldCityMs": 12000,
+      "warmCityMs": 750,
+      "inputP95Ms": 200,
+      "frameP95Ms": 34,
+      "steadyLongTasks": 0,
+      "retainedHeapBytes": 8388608,
+      "coldSceneRequests": 1,
+      "panSceneRequests": 0,
+      "legacyRequests": 0,
+      "errors": 0
+    },
+    "budgetViolations": [],
+    "reportSha256": "2b7b8fc0ff2d87cd61c106b4c8ff853c421ef46d2d9c0b10181e8ec9e571ec97",
+    "timing": {
+      "coldCityMs": {
+        "min": 8615.849250047686,
+        "median": 9511.834375047685,
+        "max": 9847.141124809266
+      },
+      "warmCityMs": {
+        "min": 94.16033300000709,
+        "median": 110.58720799999719,
+        "max": 166.89929200000188
+      },
+      "frameP95Ms": {
+        "min": 16.60000000000582,
+        "median": 16.69999999999709,
+        "max": 24
+      },
+      "inputP95Ms": {
+        "min": 49.40000009536743,
+        "median": 49.60000014305115,
+        "max": 71.40000009536743
+      }
+    },
+    "samples": [
+      {
+        "sample": 0,
+        "coldCityMs": 9847.141124809266,
+        "coldBounds": {
+          "contractVersion": 2,
+          "lowerBoundMs": 9820.699999809265,
+          "upperBoundMs": 9847.141124809266,
+          "clockUncertaintyMs": 26.441125000000284,
+          "legacyColdCityMs": 9848.59475
+        },
+        "warmCityMs": 110.58720799999719,
+        "canonicalTasks": 1000,
+        "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "canonicalGeometryPreserved": true,
+        "sceneChunks": 72,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "warmSceneRequests": 0,
+        "legacyRequests": 0,
+        "retainedCanvasAssertionsPassed": true,
+        "retainedCanvasCycles": 20,
+        "frames": {
+          "count": 871,
+          "p50": 8.39999999999418,
+          "p95": 16.69999999999709,
+          "max": 33.599999999998545
+        },
+        "input": {
+          "count": 22,
+          "p50": 26.200000047683716,
+          "p95": 71.40000009536743,
+          "max": 90.90000009536743
+        },
+        "heapBefore": {
+          "Documents": 1,
+          "Nodes": 905,
+          "JSHeapUsedSize": 185892752,
+          "JSHeapTotalSize": 191709184
+        },
+        "heapAfter": {
+          "Documents": 1,
+          "Nodes": 927,
+          "JSHeapUsedSize": 186991980,
+          "JSHeapTotalSize": 191971328
+        },
+        "heapGrowthBytes": 1099228,
+        "warmedResources": {
+          "available": true,
+          "views": 14988,
+          "textureViews": 264,
+          "textureSources": 94,
+          "managedSources": 146,
+          "slots": 146,
+          "rgbaEstimateBytes": 27230984
+        },
+        "finalResources": {
+          "available": true,
+          "views": 21001,
+          "textureViews": 280,
+          "textureSources": 105,
+          "managedSources": 188,
+          "slots": 188,
+          "rgbaEstimateBytes": 35966216
+        },
+        "longTasksAvailable": true,
+        "steadyWindow": {
+          "timeOrigin": 1792707155736,
+          "start": 28185.39999985695,
+          "end": 36195.59999990463
+        },
+        "coldLongTaskDurationsMs": [
+          198,
+          235,
+          52,
+          93,
+          80,
+          1954,
+          62,
+          152,
+          126,
+          109
+        ],
+        "steadyLongTaskDurationsMs": []
+      },
+      {
+        "sample": 1,
+        "coldCityMs": 9511.834375047685,
+        "coldBounds": {
+          "contractVersion": 2,
+          "lowerBoundMs": 9475.200000047684,
+          "upperBoundMs": 9511.834375047685,
+          "clockUncertaintyMs": 36.634375000001455,
+          "legacyColdCityMs": 9596.036290999997
+        },
+        "warmCityMs": 166.89929200000188,
+        "canonicalTasks": 1000,
+        "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "canonicalGeometryPreserved": true,
+        "sceneChunks": 72,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "warmSceneRequests": 0,
+        "legacyRequests": 0,
+        "retainedCanvasAssertionsPassed": true,
+        "retainedCanvasCycles": 20,
+        "frames": {
+          "count": 857,
+          "p50": 8.399999999997817,
+          "p95": 16.60000000000582,
+          "max": 42.39999999999782
+        },
+        "input": {
+          "count": 22,
+          "p50": 29.5,
+          "p95": 49.60000014305115,
+          "max": 97.5
+        },
+        "heapBefore": {
+          "Documents": 1,
+          "Nodes": 905,
+          "JSHeapUsedSize": 185805712,
+          "JSHeapTotalSize": 190922752
+        },
+        "heapAfter": {
+          "Documents": 1,
+          "Nodes": 927,
+          "JSHeapUsedSize": 186997380,
+          "JSHeapTotalSize": 190922752
+        },
+        "heapGrowthBytes": 1191668,
+        "warmedResources": {
+          "available": true,
+          "views": 14988,
+          "textureViews": 265,
+          "textureSources": 96,
+          "managedSources": 149,
+          "slots": 149,
+          "rgbaEstimateBytes": 27231752
+        },
+        "finalResources": {
+          "available": true,
+          "views": 21001,
+          "textureViews": 280,
+          "textureSources": 106,
+          "managedSources": 181,
+          "slots": 181,
+          "rgbaEstimateBytes": 35964424
+        },
+        "longTasksAvailable": true,
+        "steadyWindow": {
+          "timeOrigin": 1792707209685,
+          "start": 27867.599999904633,
+          "end": 35882.39999985695
+        },
+        "coldLongTaskDurationsMs": [
+          75,
+          230,
+          253,
+          57,
+          99,
+          89,
+          1751,
+          59,
+          134,
+          110,
+          79,
+          87
+        ],
+        "steadyLongTaskDurationsMs": []
+      },
+      {
+        "sample": 2,
+        "coldCityMs": 8615.849250047686,
+        "coldBounds": {
+          "contractVersion": 2,
+          "lowerBoundMs": 8595.700000047684,
+          "upperBoundMs": 8615.849250047686,
+          "clockUncertaintyMs": 20.149250000002212,
+          "legacyColdCityMs": 8691.097374999998
+        },
+        "warmCityMs": 94.16033300000709,
+        "canonicalTasks": 1000,
+        "geometryHash": "bb94b5e59b363d4002e2d86d3c470e49e3e5bb87d9d5ef9da97e5e7952b2be47",
+        "canonicalGeometryPreserved": true,
+        "sceneChunks": 72,
+        "coldSceneRequests": 1,
+        "panSceneRequests": 0,
+        "warmSceneRequests": 0,
+        "legacyRequests": 0,
+        "retainedCanvasAssertionsPassed": true,
+        "retainedCanvasCycles": 20,
+        "frames": {
+          "count": 794,
+          "p50": 8.400000000001455,
+          "p95": 24,
+          "max": 25.900000000001455
+        },
+        "input": {
+          "count": 22,
+          "p50": 21.699999809265137,
+          "p95": 49.40000009536743,
+          "max": 79
+        },
+        "heapBefore": {
+          "Documents": 1,
+          "Nodes": 905,
+          "JSHeapUsedSize": 185914136,
+          "JSHeapTotalSize": 191971328
+        },
+        "heapAfter": {
+          "Documents": 1,
+          "Nodes": 927,
+          "JSHeapUsedSize": 187256960,
+          "JSHeapTotalSize": 193806336
+        },
+        "heapGrowthBytes": 1342824,
+        "warmedResources": {
+          "available": true,
+          "views": 14988,
+          "textureViews": 268,
+          "textureSources": 97,
+          "managedSources": 149,
+          "slots": 149,
+          "rgbaEstimateBytes": 27231752
+        },
+        "finalResources": {
+          "available": true,
+          "views": 21024,
+          "textureViews": 282,
+          "textureSources": 105,
+          "managedSources": 189,
+          "slots": 189,
+          "rgbaEstimateBytes": 35966472
+        },
+        "longTasksAvailable": true,
+        "steadyWindow": {
+          "timeOrigin": 1792707261599.6,
+          "start": 24628,
+          "end": 32645.5
+        },
+        "coldLongTaskDurationsMs": [
+          51,
+          202,
+          200,
+          76,
+          65,
+          1214,
+          114,
+          96,
+          71,
+          74
+        ],
+        "steadyLongTaskDurationsMs": []
+      }
+    ],
+    "consoleEvidence": {
+      "errorCount": 0,
+      "warningCount": 3,
+      "truncatedSampleRecords": 0,
+      "manualReviewRequired": true
+    }
+  },
+  "environment": {
+    "attempt": 2,
+    "attemptPolicyHash": "0078a0f94261aa67bfd186c8bd17f79d0548d88153ddf99bf455493009885aab",
+    "exclusiveAgentHeavyWorkWindow": true,
+    "before": {
+      "passed": true,
+      "waitMs": 54030.621083,
+      "intervals": 27,
+      "requiredConsecutiveSamples": 5,
+      "minIdlePercentEach": 80,
+      "lastFiveIdlePercent": [
+        81.38950892857143,
+        82.38747553816047,
+        85.84194359117565,
+        83.76569037656904,
+        86.6778149386845
+      ]
+    },
+    "during": {
+      "intervals": 79,
+      "truncated": false,
+      "idlePercent": {
+        "min": 0,
+        "median": 68.90756302521008,
+        "max": 85.78212290502793
+      }
+    },
+    "after": {
+      "startUtc": "2026-10-22T22:15:09.257Z",
+      "endUtc": "2026-10-22T22:15:11.259Z",
+      "wallMs": 2001.4528329999885,
+      "cpuCount": 18,
+      "available": true,
+      "totalTicksMs": 35880,
+      "idleTicksMs": 31620,
+      "idlePercent": 88.12709030100335
+    },
+    "observationSha256": "2cd3f4c2b68280277eba91020ac76a9aabf54e7c90138b234726670e0bab83c0",
+    "duringLoadChangesAcceptance": false,
+    "note": "Before-only idle prerequisite; during/after observations never discard/retry samples and do not attribute old failures. No parallel agent heavy jobs; unrelated OS work is not controlled."
+  },
+  "cleanup": {
+    "port5311Free": true,
+    "ownedConnectionsReleased": true,
+    "sourceFencesPreserved": true
+  },
+  "limits": [
+    "Только браузерная эмуляция; физических телефонов нет.",
+    "Данные21v5+3v6 не называются24v6.",
+    "Доказанный диагностический путь startTransit(BUS/SCHOOL_BUS) не доказывает причину исходного61ms.",
+    "CPU4/network/NORMAL/3s settle/8s steady/churn20, budgets и original GC неизменны. Без profiler/trace/дополнительного forcedGC.",
+    "Frames/input p95 proxy; RGBA не native/GPU memory; browser unavailable metrics не равны нулю."
+  ],
+  "evidence": {
+    "preflightSha256": "1c97096a9320e154145d6824411cb0c9c5f3ab90e1dcb79e649c03be0df5f6d2",
+    "postflightSha256": "228b84666106e29528024feb1d625abb4996e1874b85606c500ae973f1c01c3d"
+  },
+  "generatedAt": "2026-10-22T22:16:02.042Z"
+}

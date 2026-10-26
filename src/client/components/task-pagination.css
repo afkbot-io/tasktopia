@@ -1,0 +1,5 @@
+.task-page-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; margin-top: 12px; border-top: 1px solid var(--ui-border-control); }
+.task-page-navigation span { font-size: .75rem; white-space: nowrap; }
+.task-page-navigation button { min-height: 44px; padding: 8px 12px; }
+.task-page-navigation button:disabled { opacity: .45; cursor: default; }
+@media (max-width: 480px) { .task-page-navigation { gap: 8px; } .task-page-navigation button { padding-inline: 8px; } }

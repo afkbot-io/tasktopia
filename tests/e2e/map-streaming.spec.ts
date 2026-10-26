@@ -32,7 +32,7 @@ test("initial realtime connection preserves the scene but reconnect refreshes tr
 async function openDemoCity(page: Page) {
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   const host = page.locator(".world-canvas");
@@ -64,7 +64,8 @@ test("loads a complete city through one request and never calls chunk endpoints"
   expect(staticDecorationLayers).toBeGreaterThan(0);
   expect(staticDecorationLayers).toBeLessThan(staticDecorationParticles / 4);
   await expect(host).toHaveAttribute("data-world-object-depth-errors", "0");
-  expect(Number(await host.getAttribute("data-resident-chunks"))).toBe(Number(await host.getAttribute("data-city-scene-chunks")));
+  expect(Number(await host.getAttribute("data-canonical-decoded-chunks"))).toBe(Number(await host.getAttribute("data-city-scene-chunks")));
+  expect(Number(await host.getAttribute("data-resident-chunks"))).toBeLessThanOrEqual(Number(await host.getAttribute("data-city-resident-chunk-budget")));
   await expect(host).toHaveAttribute("data-map-lod", "detail");
 
   dataRequests.length = 0;
@@ -111,7 +112,7 @@ test("keeps the loader visible until the delayed whole-city scene commits", asyn
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   await expect.poll(() => sceneStarted).toBe(true);
@@ -134,7 +135,7 @@ test("returns to the planet and allows city re-entry when the scene request fail
   });
   await page.goto("/");
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   const alert = page.getByRole("alert");

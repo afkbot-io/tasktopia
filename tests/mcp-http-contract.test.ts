@@ -19,7 +19,7 @@ const expectedNames = [
   "country.get", "country.list", "country.update_profile", "world_generation.get",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
   "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
-  "task.list", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete",
+  "task.list", "task.list_page", "task.collection_list", "task.document_get", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete",
   "task.set_status", "task.report_progress", "task.add_comment", "task.assign", "task.activity", "task.dependency_add", "task.dependency_remove",
   "task.document_list", "task.document_upsert", "task.document_delete", "task.checklist_replace", "task.checklist_item_update",
   "task.link_add", "task.link_remove", "task.attachment_add", "task.attachment_list",
@@ -40,7 +40,7 @@ const errorCode = (value: Awaited<ReturnType<Client["callTool"]>>) => {
 describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000 }, () => {
   let db: Db, app: FastifyInstance, service: AppService, base: string, uploads: string;
   let countryId: string, userId: string, foreignCountryId: string, viewerId: string;
-  let ownerToken: string, readToken: string, viewerToken: string, taskOnlyToken: string;
+  let ownerToken: string, readToken: string, viewerToken: string, taskOnlyToken: string, foreignToken: string;
   let home: TaskDto, foreign: TaskDto, jobId: string, tools: Tool[], client: Client;
   const clients: Client[] = [];
   const connect = async (token = ownerToken, modern = true) => {
@@ -56,7 +56,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
   const snapshot = async () => ({ version: await version(), events: await service.listEvents(countryId), task: await service.getTask(countryId, home.id) });
   const minimal = (tool: Tool): Record<string, unknown> => {
     const values: Record<string, unknown> = {
-      countryId, cityId: home.cityId, districtId: home.districtId, taskId: home.id,
+      countryId, collection: "comments", limit: 50, cityId: home.cityId, districtId: home.districtId, taskId: home.id,
       recordId: crypto.randomUUID(), defectId: crypto.randomUUID(), documentId: crypto.randomUUID(), itemId: crypto.randomUUID(),
       targetDistrictId: home.districtId, dependsOnTaskId: home.id, jobId,
       name: "Проверка MCP", title: "Проверка MCP", confirmName: "Проверка MCP", confirmTitle: home.title,
@@ -90,6 +90,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     home = await seed(countryId); foreign = await seed(foreignCountryId);
     jobId = (await enqueueWorldGenerationJob(db, countryId, "city.create", "contract-job", { name: "Ожидающий город", idempotencyKey: "contract-job" })).id;
     ownerToken = (await createMcpToken(db, countryId, "Owner", userId)).token;
+    foreignToken = (await createMcpToken(db, foreignCountryId, "Foreign owner", outsider.user.id)).token;
     readToken = (await createMcpToken(db, reader.user.countryId, "Read", reader.user.id, { scopes: ["country:read"] })).token;
     taskOnlyToken = (await createMcpToken(db, taskReader.user.countryId, "Tasks", taskReader.user.id, { scopes: ["tasks:read"] })).token;
     // A token retaining its home-country write scopes still cannot write in a
@@ -132,6 +133,63 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     expect((await client.readResource({ uri: "tasktopia://catalog/buildings" })).contents).toHaveLength(1);
   });
 
+  it("bounds tool argument complexity before schema validation and keeps serving requests", async () => {
+    const before = await snapshot();
+    // Two root members +9,998 array elements =10,000 total members/elements.
+    expect(result<{ country: { id: string } }>(await call("country.get", { extra: Array(9_998).fill(null) })).country.id).toBe(countryId);
+    const rejected = await call("country.get", { extra: Array(9_999).fill(null) });
+    expect(rejected.isError).toBe(true);
+    expect(JSON.stringify(rejected.content)).toContain("10000");
+    expect(await snapshot()).toEqual(before);
+    expect(result<{ country: { id: string } }>(await call("country.get")).country.id).toBe(countryId);
+  });
+
+  it("accepts the largest legitimate checklist below the tool complexity limit", async () => {
+    const items = Array.from({ length: 50 }, (_, index) => ({ title: `Проверка ${index + 1}`, done: false }));
+    expect(result<unknown[]>(await call("task.checklist_replace", {
+      taskId: home.id, items, idempotencyKey: "complexity-valid-checklist",
+    }))).toHaveLength(50);
+    const persisted = result<TaskDto>(await call("task.get", { taskId: home.id })).checklist!;
+    expect(persisted.map(({ title, done }) => ({ title, done }))).toEqual(items);
+  });
+
+  it.each([true, false])("isolates overlapping HTTP clients with equal JSON-RPC ids (modern=%s)", async modern => {
+    const wireIds: unknown[][] = [[], []], transports: StreamableHTTPClientTransport[] = [];
+    const peers: Client[] = [];
+    let release!: () => void, arrived = 0;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const original = service.getCountry.bind(service);
+    const held = vi.spyOn(service, "getCountry").mockImplementation(async scope => {
+      if (++arrived === 2) release();
+      await gate; return original(scope);
+    });
+    try {
+      for (const [index, token] of [ownerToken, foreignToken].entries()) {
+        const peer = new Client({ name: "isolated-client", version: "1.0.0" }, modern ? { versionNegotiation: { mode: "auto" } } : undefined);
+        const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp`), {
+          requestInit: { headers: { authorization: `Bearer ${token}` } },
+          fetch: (input, init) => {
+            if (typeof init?.body === "string") {
+              const envelope = JSON.parse(init.body) as { method?: string; id?: unknown };
+              if (envelope.method === "tools/call") wireIds[index]!.push(envelope.id);
+            }
+            return fetch(input, init);
+          },
+        });
+        peers.push(peer); transports.push(transport); await peer.connect(transport);
+      }
+      const replies = await Promise.all(peers.map((peer, index) => peer.callTool({ name: "country.get",
+        arguments: { countryId: index ? foreignCountryId : countryId } }, { timeout: 5000 })));
+      expect(arrived).toBe(2);
+      expect(wireIds[0]).toHaveLength(1); expect(wireIds[0]).toEqual(wireIds[1]);
+      expect(wireIds[0]![0]).toBeDefined();
+      expect(replies.map(reply => result<{ country: { id: string } }>(reply).country.id)).toEqual([countryId, foreignCountryId]);
+      expect(transports.map(transport => transport.sessionId)).toEqual([undefined, undefined]);
+    } finally {
+      release(); held.mockRestore(); for (const peer of peers) await peer.close();
+    }
+  });
+
   it("executes every advertised tool through HTTP, reads real state and retries every write without new events", async () => {
     const used = new Set<string>();
     const checked = async <T>(name: string, args: Record<string, unknown> = {}): Promise<T> => {
@@ -165,6 +223,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     const dependency = await checked<TaskDto>("task.create", { cityId: city.id, districtId: district.id, title: "Зависимая задача", estimate: 2, idempotencyKey: "all-dependency" });
     const taskId = task.id;
     await checked("task.list", { districtId: district.id }); await checked("task.get", { taskId });
+    await checked("task.list_page", { districtId: district.id }); await checked("task.collection_list", { taskId, collection: "comments" });
     await checked("task.rename", { taskId, title: "Обновлённая задача", idempotencyKey: "all-rename" });
     await checked("task.update_fields", { taskId, description: "Новый текст", workItemType: "BUG", dueAt: null, idempotencyKey: "all-fields" });
     const fieldEvent = (await service.listEvents(countryId)).findLast(event => event.type === 'task.fields_updated' && event.payload.taskId === taskId)!;
@@ -176,7 +235,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     await checked("task.dependency_remove", { taskId, dependsOnTaskId: dependency.id, idempotencyKey: "all-dep-remove" });
     await checked("task.document_upsert", { taskId, fileName: "architecture.md", content: "# Архитектура", idempotencyKey: "all-standard-doc" });
     const document = await checked<{ id: string }>("task.document_upsert", { taskId, fileName: "qa.md", title: "Проверка", content: "# Проверка", idempotencyKey: "all-extra-doc" });
-    await checked("task.document_list", { taskId });
+    await checked("task.document_list", { taskId }); await checked("task.document_get", { taskId, documentId: document.id });
     await checked("task.document_delete", { taskId, documentId: document.id, idempotencyKey: "all-doc-delete" });
     const checklist = await checked<Array<{ id: string }>>("task.checklist_replace", { taskId, items: [{ title: "Проверить MCP" }], idempotencyKey: "all-checklist" });
     await checked("task.checklist_item_update", { taskId, itemId: checklist[0]!.id, done: true, idempotencyKey: "all-checklist-done" });

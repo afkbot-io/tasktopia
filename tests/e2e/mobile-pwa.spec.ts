@@ -37,7 +37,7 @@ async function login(page: Page): Promise<void> {
   await page.goto("/");
   await page.evaluate(() => document.fonts.ready);
   await page.getByLabel("Email").fill("demo@tasktopia.local");
-  await page.getByLabel("Пароль").fill("tasktopia-demo");
+  await page.getByLabel("Пароль", { exact: true }).fill("tasktopia-demo");
   await page.getByRole("button", { name: "Открыть страну" }).click();
   await openMapCity(page);
   await expect(page.locator("canvas[aria-label='Интерактивная карта города']")).toBeVisible({ timeout: 90_000 });

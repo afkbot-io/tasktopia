@@ -6,7 +6,7 @@ export function cameraTerrainPadding(position: CameraPosition, scale: number, sc
   if (!Number.isInteger(haloChunks) || haloChunks < 0 || haloChunks > 1) throw new Error("Padding prewarm halo must be 0 or 1 chunk");
   const pixels = cellSize * chunkSize * scale;
   const visible = { minX: Math.floor(-position.x / pixels), minY: Math.floor(-position.y / pixels),
-    maxX: Math.floor((screen.width - position.x - 1) / pixels), maxY: Math.floor((screen.height - position.y - 1) / pixels) };
+    maxX: Math.ceil((screen.width - position.x) / pixels) - 1, maxY: Math.ceil((screen.height - position.y) / pixels) - 1 };
   const chunks = { minX: Math.floor(resident.minX / chunkSize), minY: Math.floor(resident.minY / chunkSize),
     maxX: Math.floor(resident.maxX / chunkSize), maxY: Math.floor(resident.maxY / chunkSize) };
   const result: ChunkCoordinate[] = [];

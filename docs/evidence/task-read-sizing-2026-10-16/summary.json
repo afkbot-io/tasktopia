@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-16",
+  "status": "passed",
+  "criterion": "P05",
+  "baseRevision": "053e061d84dbcafdeaf1841010f9bd2286c9c5f8",
+  "runtime": "Node24, nativePostgreSQL16.15, ownlocalDB, isolatedcreateTestDbschemas, actualFastifyinjectandSDKInMemoryTransport",
+  "fixture": "One real task per case; existingcommentsseededSQL2000ASCIIbytes, no fabricatedHTTPcounts; eachcaseexecutesoneactualMCPcommentcommandandprojectionretry.",
+  "sourceSha256": {
+    "tests/task-read-projections.test.ts": "03a05950374f86843146e5b48582ed962fe33eb3609e6538da9950e5b37bdb6b",
+    "src/server/app-service.ts": "23f828282e9cdd78ff9bd88d776655873b3c3c280d15b24c89e666cd205c9153",
+    "src/server/task-detail-read.ts": "d120f0e1fbb9eeba173f1341eb4385792cca7937026213125f5a8b1762284181",
+    "src/server/mcp.ts": "f9388f2590ab2602f5ed8745a8cff2e73da7eef0adb1c93b5af8f4cebd453f04"
+  },
+  "verification": [
+    {
+      "command": "npm test -- --no-file-parallelism tests/task-read-projections.test.ts",
+      "result": "14/14 passed",
+      "durationSeconds": 6.32,
+      "logSha256": "3bba4bab5cbb1dca86cecbc2fe05787696cdab5ed7f177339f99cff7d8dad746"
+    },
+    {
+      "command": "npm test -- --no-file-parallelism tests/task-read-projections.test.ts -t \"keeps card and MCP receipts bounded\" --disableConsoleIntercept --silent=false",
+      "result": "3 passed /11 intentionally filtered out",
+      "durationSeconds": 2.59,
+      "reason": "Repeat only three new cases to retain actualsizingstdout, suppressed by defaultconsoleinterception; not threeadditionaluniquetests.",
+      "logSha256": "a6297699ed0b7d98862c3bb2db2d30f2a84011487a38fd9431586b22d353bdb6"
+    },
+    {
+      "command": "npx eslint tests/task-read-projections.test.ts",
+      "result": "passed"
+    }
+  ],
+  "results": [
+    {
+      "comments": 0,
+      "commentBodyBytes": 2000,
+      "cardBytes": 3063,
+      "fullReadBytes": 3133,
+      "compactReadMcpBytes": 8779,
+      "compactCommandMcpBytes": 1018,
+      "receiptBytes": 149,
+      "fullRetryMcpBytes": 9804,
+      "acceptedCommands": 1,
+      "storedComments": 1,
+      "storedCommentEvents": 1,
+      "sameReceiptAndRequestHashAfterProjectionRetry": true
+    },
+    {
+      "comments": 100,
+      "commentBodyBytes": 2000,
+      "cardBytes": 3065,
+      "fullReadBytes": 219232,
+      "compactReadMcpBytes": 8783,
+      "compactCommandMcpBytes": 1018,
+      "receiptBytes": 149,
+      "fullRetryMcpBytes": 449704,
+      "acceptedCommands": 1,
+      "storedComments": 101,
+      "storedCommentEvents": 1,
+      "sameReceiptAndRequestHashAfterProjectionRetry": true
+    },
+    {
+      "comments": 1000,
+      "commentBodyBytes": 2000,
+      "cardBytes": 3066,
+      "fullReadBytes": 2164132,
+      "compactReadMcpBytes": 8785,
+      "compactCommandMcpBytes": 1018,
+      "receiptBytes": 149,
+      "fullRetryMcpBytes": 4408804,
+      "acceptedCommands": 1,
+      "storedComments": 1001,
+      "storedCommentEvents": 1,
+      "sameReceiptAndRequestHashAfterProjectionRetry": true
+    }
+  ],
+  "limits": [
+    "SDKresultbytesuseUTF8JSON.stringify, notHTTP/SSEframingorcompressedwirebytes.",
+    "HTTPbodybytesareactualFastifyJSONpayload, notpublicCDN/networklatency.",
+    "Syntheticexistingcommentsfixturedoesnotmodel1000MCPwritesorfulluserhistory.",
+    "No server/migration/runtimebehaviorchanged; strictfinalperformance/CI/releaseseparatelypending."
+  ]
+}
