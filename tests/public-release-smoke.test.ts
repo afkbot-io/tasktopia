@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -56,6 +56,10 @@ beforeEach(async () => {
     const local = path.startsWith('/game-assets/') ? path.replace(`/revisions/${revision}`, '') : path;
     await mkdir(join(root, local, '..'), { recursive: true });
     await writeFile(join(root, local), body);
+    if (path.startsWith('/game-assets/')) {
+      await mkdir(join(root, path, '..'), { recursive: true });
+      await writeFile(join(root, path), body);
+    }
   }
 });
 afterEach(async () => {
@@ -70,6 +74,42 @@ it('checks the exact entry, compiled modules, manifest and representative versio
   expect(result.status).toBe('ok');
   expect(result.checked).toBe(6);
   expect(requests).toContain(`/game-assets/v5/revisions/${revision}/buildings/school/stage-5.png`);
+});
+
+it('ignores actual source-art provenance while checking each published runtime sprite', async () => {
+  const actual = JSON.parse(await readFile(new URL('../public/game-assets/v5/manifest.json', import.meta.url), 'utf8'));
+  const prop = actual.props['city-event-child-west'];
+  const ambient = actual.microAmbient.sprites['micro-car-blue-north'];
+  const transport = actual.cityTransport.sprites['ferry-south'];
+  const manifest = JSON.stringify({
+    ...JSON.parse(bodies.get(`/game-assets/v5/revisions/${revision}/manifest.json`)!.toString()),
+    props: { child: prop },
+    microAmbient: { sources: actual.microAmbient.sources, sprites: { car: ambient } },
+    cityTransport: { sprites: { ferry: transport } },
+  });
+  bodies.set(`/game-assets/v5/revisions/${revision}/manifest.json`, Buffer.from(manifest));
+  for (const [path, body] of [
+    ['manifest.json', Buffer.from(manifest)],
+    ...[prop.path, ambient.path, transport.path].map(path => [path, Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 3])] as const),
+  ] as const) {
+    const url = `/game-assets/v5/revisions/${revision}/${path}`;
+    bodies.set(url, body);
+    for (const local of [`game-assets/v5/${path}`, url]) {
+      await mkdir(join(root, local, '..'), { recursive: true });
+      await writeFile(join(root, local), body);
+    }
+  }
+  const result = JSON.parse((await smoke()).stdout);
+  expect(result.checked).toBe(9);
+  for (const path of [prop.path, ambient.path, transport.path]) {
+    expect(requests).toContain(`/game-assets/v5/revisions/${revision}/${path}`);
+  }
+  expect(requests.some(path => path.includes('ai-authored'))).toBe(false);
+});
+
+it('rejects a missing versioned runtime sprite even when its unversioned copy exists', async () => {
+  await rm(join(root, `game-assets/v5/revisions/${revision}/terrain/grass.png`));
+  await expect(smoke()).rejects.toThrow();
 });
 
 it('fails when public JS returns 504 despite a healthy application', async () => {

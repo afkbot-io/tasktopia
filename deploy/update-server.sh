@@ -131,12 +131,47 @@ if [[ -z "$app_image_ref" ]]; then
   echo "Unable to resolve the configured app image" >&2
   exit 1
 fi
+
+check_previous_image_ref() {
+  local image_id
+  if ! image_id="$(docker image inspect --format '{{.Id}}' "$1")" \
+    || [[ "$image_id" != "$previous_app_image_id" ]]; then
+    echo "Previous image reference is missing or changed: $1" >&2
+    return 1
+  fi
+}
+
+verify_previous_role_images() {
+  local service container_id image_state
+  for service in app mcp world; do
+    if ! container_id="$(docker compose ps -q "$service")" || [[ -z "$container_id" ]] \
+      || ! image_state="$(docker inspect --format '{{.Image}} {{.State.Running}}' "$container_id")" \
+      || [[ "$image_state" != "$previous_app_image_id true" ]]; then
+      echo "Previous image identity/running state mismatch for $service" >&2
+      return 1
+    fi
+  done
+}
+
+release_id="$(date +%Y%m%d%H%M%S)-$(git rev-parse --short HEAD)"
+rollback_image_ref=""
+if [[ "$app_was_running" == "true" ]]; then
+  verify_previous_role_images
+  rollback_image_ref="tasktopia-rollback:${release_id}-$$"
+  # A container's recorded Image field is not an image-store retention pin.
+  # Keep a distinct tag before build can overwrite the shared mutable app tag.
+  if ! docker tag "$previous_app_image_id" "$rollback_image_ref"; then
+    echo "Unable to pin the exact previous app image before build" >&2
+    exit 1
+  fi
+  check_previous_image_ref "$rollback_image_ref"
+  echo "Pinned previous app image $previous_app_image_id as $rollback_image_ref"
+fi
 docker compose build --pull app
 
 # Export the complete public tree before the application is replaced. Otherwise
 # the new HTML can reference a content-addressed bundle that the pull CDN cannot
 # reach yet, and the CDN may retain that transient origin error.
-release_id="$(date +%Y%m%d%H%M%S)-$(git rev-parse --short HEAD)"
 static_release_dir="$STATIC_DIR/releases/$release_id"
 static_staging_dir="$STATIC_DIR/releases/.incoming-$release_id"
 static_next_link="$STATIC_DIR/current.next"
@@ -151,7 +186,7 @@ wait_for_app_health() {
   for port in 3000 3002 3003; do
     curl --fail --silent --show-error \
       --retry "$HEALTH_RETRY_COUNT" --retry-delay 2 --retry-connrefused --retry-all-errors \
-      "http://127.0.0.1:${port}/health"
+      "http://127.0.0.1:${port}/health" || return 1
   done
 }
 
@@ -211,25 +246,35 @@ cleanup_deployment() {
     docker rm -f -- "$static_export_container" >/dev/null 2>&1 || true
   fi
   if (( exit_code != 0 )) && [[ "$deployment_committed" != "true" ]]; then
-    if [[ "$(readlink -f "$STATIC_DIR/current" 2>/dev/null || true)" == "$static_release_dir" ]]; then
-      if [[ -n "$previous_static_target" && -d "$previous_static_target" ]]; then
-        rm -f -- "$static_next_link"
-        ln -s "$previous_static_target" "$static_next_link"
-        mv -Tf -- "$static_next_link" "$STATIC_DIR/current"
-      else
-        rm -f -- "$STATIC_DIR/current"
-      fi
-    fi
     if [[ "$app_replaced" == "true" && "$app_was_running" == "true" \
       && -n "$previous_app_image_id" ]]; then
       echo "Deployment failed; restoring previous app image $previous_app_image_id" >&2
-      docker tag "$previous_app_image_id" "$app_image_ref"
-      docker compose up -d --remove-orphans --force-recreate app mcp world
-      if ! wait_for_app_health; then
-        echo "Rollback app image failed its health check" >&2
+      if check_previous_image_ref "$rollback_image_ref" \
+        && docker tag "$rollback_image_ref" "$app_image_ref" \
+        && check_previous_image_ref "$app_image_ref" \
+        && docker compose up -d --remove-orphans --force-recreate app mcp world \
+        && wait_for_app_health && verify_previous_role_images; then
+        echo "Rollback restored and verified previous image for app/mcp/world" >&2
+      else
+        echo "Rollback failed: previous image restoration was not verified" >&2
+        echo "Preserving current static release, candidate directory and prepublish journal for recovery" >&2
+        exit "$exit_code"
       fi
     elif [[ "$app_replaced" == "true" ]]; then
       docker compose rm -sf app mcp world
+    fi
+    if [[ "$(readlink -f "$STATIC_DIR/current" 2>/dev/null || true)" == "$static_release_dir" ]]; then
+      if [[ -n "$previous_static_target" && -d "$previous_static_target" ]]; then
+        if ! { rm -f -- "$static_next_link" \
+          && ln -s "$previous_static_target" "$static_next_link" \
+          && mv -Tf -- "$static_next_link" "$STATIC_DIR/current"; }; then
+          echo "Rollback static switch failed; preserving candidate directory and prepublish journal" >&2
+          exit "$exit_code"
+        fi
+      elif ! rm -f -- "$STATIC_DIR/current"; then
+        echo "Rollback static removal failed; preserving candidate directory and prepublish journal" >&2
+        exit "$exit_code"
+      fi
     fi
     if [[ -n "$previous_static_target" && -f "$prepublish_journal" ]]; then
       if [[ "$app_replaced" == "true" ]]; then
@@ -309,6 +354,9 @@ if [[ -z "$current_static_dir" ]]; then
   mv -Tf -- "$static_next_link" "$STATIC_DIR/current"
 fi
 
+if [[ "$app_was_running" == "true" ]]; then
+  check_previous_image_ref "$rollback_image_ref"
+fi
 app_replaced="true"
 docker compose up -d --remove-orphans app mcp world
 docker compose ps

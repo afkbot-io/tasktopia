@@ -209,9 +209,10 @@ describe("production reverse proxy", () => {
     expect(installScript).toContain("bootstrap_static_release_from_container");
     expect(updateScript).toContain('rollback_prepublished_paths "$prepublish_journal"');
     expect(updateScript.indexOf("preserve_failed_prepublished_generation")).toBeGreaterThan(
-      updateScript.indexOf('docker tag "$previous_app_image_id" "$app_image_ref"'),
+      updateScript.indexOf('docker tag "$rollback_image_ref" "$app_image_ref"'),
     );
-    expect(updateScript).toContain('docker tag "$previous_app_image_id" "$app_image_ref"');
+    expect(updateScript).toContain('docker tag "$previous_app_image_id" "$rollback_image_ref"');
+    expect(updateScript).toContain('docker tag "$rollback_image_ref" "$app_image_ref"');
     expect(updateScript).toContain("docker compose up -d --remove-orphans --force-recreate app");
   });
 

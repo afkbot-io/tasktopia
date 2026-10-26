@@ -55,6 +55,26 @@ def png_paths(value):
     return []
 
 
+def runtime_png_sections(manifest):
+    # Mirror catalog, micro-ambient and city-transport consumers. Authoring
+    # provenance (sourceSheet, sources, source) is not a published asset URL.
+    def entry_paths(entries):
+        return [entry["path"] for entry in entries.values()]
+
+    return {
+        "terrain": manifest.get("terrain", {}),
+        "transitions": manifest.get("transitions", {}),
+        "tiles": entry_paths(manifest.get("tiles", {})),
+        "blockSurfaces": entry_paths(manifest.get("blockSurfaces", {}).get("tiles", {})),
+        "buildings": [entry["stages"] for entry in manifest.get("buildings", {}).values()],
+        "props": entry_paths(manifest.get("props", {})),
+        "propAtlas": manifest.get("propAtlas", {}).get("path"),
+        "microAmbient": entry_paths(manifest.get("microAmbient", {}).get("sprites", {})),
+        "atlasClouds": manifest.get("atlasClouds", []),
+        "cityTransport": entry_paths(manifest.get("cityTransport", {}).get("sprites", {})),
+    }
+
+
 def verify(args):
     origin = validate_origin(args.origin)
     root = Path(args.public_root).resolve(strict=True)
@@ -66,11 +86,6 @@ def verify(args):
     entry_url = urllib.parse.urljoin(origin + "/", parser.modules[0])
     static_origin = validate_origin(urllib.parse.urlunsplit((*urllib.parse.urlsplit(entry_url)[:2], "", "", "")))
     allowed = {origin, static_origin}
-    manifest_path = root / "game-assets/v5/manifest.json"
-    manifest_bytes = manifest_path.read_bytes()
-    manifest = json.loads(manifest_bytes)
-    if manifest.get("assetRevision") != args.asset_revision:
-        raise ValueError("Candidate asset revision does not match exporter")
     objects = {origin + "/": expected_html}
 
     def local_bytes(path):
@@ -80,6 +95,14 @@ def verify(args):
         if not source.is_relative_to(root) or not source.is_file():
             raise ValueError("Candidate asset escapes public tree")
         return source.read_bytes()
+
+    revision_prefix = "game-assets/v5/revisions/" + args.asset_revision + "/"
+    manifest_bytes = local_bytes(revision_prefix + "manifest.json")
+    if manifest_bytes != local_bytes("game-assets/v5/manifest.json"):
+        raise ValueError("Published revision manifest differs from candidate manifest")
+    manifest = json.loads(manifest_bytes)
+    if manifest.get("assetRevision") != args.asset_revision:
+        raise ValueError("Candidate asset revision does not match exporter")
 
     for reference in parser.paths:
         url = urllib.parse.urljoin(origin + "/", reference)
@@ -100,17 +123,17 @@ def verify(args):
     # A bounded sample covers each manifest section plus all five stages of a
     # representative building. Full sprite geometry is a separate asset gate.
     samples = set()
-    for value in manifest.values():
+    for value in runtime_png_sections(manifest).values():
         paths = png_paths(value)
         if paths:
             samples.update((paths[0], paths[-1]))
     buildings = manifest.get("buildings", {})
     if isinstance(buildings, dict) and buildings:
-        samples.update(png_paths(next(iter(buildings.values()))))
+        samples.update(png_paths(next(iter(buildings.values()))["stages"]))
     if len(samples) > 40:
         raise ValueError("PNG smoke budget exceeded")
     for path in sorted(samples):
-        expected = local_bytes("game-assets/v5/" + path)
+        expected = local_bytes(revision_prefix + path)
         if not expected.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValueError("Candidate PNG signature is invalid")
         objects[asset_base + path] = expected
