@@ -6,8 +6,10 @@ import { DomainError } from "./app-service";
 import type { Db } from "./db";
 import { now } from "./db";
 import { startBackgroundPoll } from "./background-poll";
+import { currentGenerationRequestSignal } from "./generation-request-context";
 
-export type WorldGenerationOperation = "city.create" | "district.create" | "task.create" | "country.regenerate";
+export type WorldGenerationOperation = "city.create" | "district.create" | "task.create" | "country.regenerate"
+  | "task.set_status" | "task.transfer" | "task.delete" | "city.delete" | "district.delete" | "district.complete";
 export type WorldGenerationJobStatus = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
 export type WorldGenerationJob = {
   id: string;
@@ -32,12 +34,17 @@ type Row = Record<string, unknown>;
 const RECEIPT_OPERATIONS: Record<WorldGenerationOperation, string> = {
   "city.create": "city.create.v3", "district.create": "district.create.v3",
   "task.create": "task.create.v3", "country.regenerate": "country.regenerate.v1",
+  "task.set_status": "task.status.v3", "task.transfer": "task.transfer.v1", "task.delete": "task.delete.v1",
+  "city.delete": "city.delete.v1", "district.delete": "district.delete.v1", "district.complete": "district.complete.v3",
 };
+const LEGACY_OPERATIONS = new Set<WorldGenerationOperation>(["city.create", "district.create", "task.create", "country.regenerate"]);
+const GENERATION_FAILED_MESSAGE = "Генерация завершилась с ошибкой";
 const GENERATION_CHANNEL = "tasktopia_generation_job_v1";
 type GenerationWaiter = {
   resolve(job: WorldGenerationJob): void;
   reject(error: unknown): void;
   timer: ReturnType<typeof setTimeout>;
+  abortCleanup?: () => void;
 };
 type GenerationObservation = {
   current: WorldGenerationJob;
@@ -87,12 +94,14 @@ function jsonCompatiblePayload(payload: Record<string, unknown>): Record<string,
 }
 
 function jobFromRow(row: Row): WorldGenerationJob {
+  const error = row.error_json == null ? undefined : json<{ code: string; message: string }>(row.error_json);
   return {
     id: String(row.id), countryId: String(row.country_id), operation: String(row.operation) as WorldGenerationOperation,
-    idempotencyKey: String(row.idempotency_key), payload: json<Record<string, unknown>>(row.payload_json),
-    status: String(row.status) as WorldGenerationJobStatus, attempts: Number(row.attempts), maxAttempts: Number(row.max_attempts),
+    idempotencyKey: String(row.idempotency_key), payload: json<Record<string, unknown>>(row.payload_serialized ?? row.payload_json),
+    status: (row.status === "QUEUED" ? "PENDING" : row.status === "EXECUTING" ? "RUNNING" : String(row.status)) as WorldGenerationJobStatus,
+    attempts: Number(row.attempts), maxAttempts: Number(row.max_attempts),
     ...(row.result_json == null ? {} : { result: json(row.result_json) }),
-    ...(row.error_json == null ? {} : { error: json<{ code: string; message: string }>(row.error_json) }),
+    ...(error ? { error: error.code === "GENERATION_FAILED" ? { code: error.code, message: GENERATION_FAILED_MESSAGE } : error } : {}),
   };
 }
 
@@ -106,10 +115,15 @@ export async function enqueueWorldGenerationJob(
   const timestamp = now();
   const normalizedPayload = jsonCompatiblePayload(payload);
   await db.prepare(`INSERT INTO world_generation_jobs_v1
-    (id, country_id, operation, idempotency_key, payload_json, status, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?::jsonb, 'PENDING', ?, ?)
+    (id, country_id, operation, idempotency_key, payload_json, payload_serialized, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?)
     ON CONFLICT (country_id, operation, idempotency_key) DO NOTHING`)
-    .run(randomUUID(), countryId, operation, idempotencyKey, JSON.stringify(normalizedPayload), timestamp, timestamp);
+    .run(randomUUID(), countryId, operation, idempotencyKey, JSON.stringify(normalizedPayload),
+      // The DB adapter parses strings starting with {/[ as JSON parameters.
+      // Leading JSON whitespace keeps this TEXT value and its original key
+      // order intact; JSON.parse and the DB equality constraint accept it.
+      LEGACY_OPERATIONS.has(operation) ? null : ` ${JSON.stringify(normalizedPayload)}`,
+      LEGACY_OPERATIONS.has(operation) ? "PENDING" : "QUEUED", timestamp, timestamp);
   const row = await db.prepare(`SELECT * FROM world_generation_jobs_v1
     WHERE country_id = ? AND operation = ? AND idempotency_key = ?`).get(countryId, operation, idempotencyKey) as Row | undefined;
   if (!row) throw new Error("World generation job was not persisted");
@@ -134,11 +148,11 @@ export async function readWorldGenerationQueueStats(db: Db, leaseMs = 15 * 60_00
   if (!observation.pending) {
     const active = observation;
     active.pending = (async () => {
-      const row = await db.prepare(`SELECT COUNT(*) FILTER(WHERE status='PENDING')::int AS pending,
-        COUNT(*) FILTER(WHERE status='RUNNING')::int AS running,
-        COUNT(*) FILTER(WHERE status='RUNNING' AND locked_at<now()-(?*INTERVAL '1 millisecond'))::int AS expired,
-        EXTRACT(EPOCH FROM (now()-MIN(created_at) FILTER(WHERE status='PENDING')))*1000 AS oldest_age
-        FROM world_generation_jobs_v1 WHERE status IN ('PENDING','RUNNING')`).get<Row>(leaseMs);
+      const row = await db.prepare(`SELECT COUNT(*) FILTER(WHERE status IN ('PENDING','QUEUED'))::int AS pending,
+        COUNT(*) FILTER(WHERE status IN ('RUNNING','EXECUTING'))::int AS running,
+        COUNT(*) FILTER(WHERE status IN ('RUNNING','EXECUTING') AND locked_at<now()-(?*INTERVAL '1 millisecond'))::int AS expired,
+        EXTRACT(EPOCH FROM (now()-MIN(created_at) FILTER(WHERE status IN ('PENDING','QUEUED'))))*1000 AS oldest_age
+        FROM world_generation_jobs_v1 WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING')`).get<Row>(leaseMs);
       const value: WorldGenerationQueueStats = { sampledAt: Date.now(), pending: Number(row?.pending ?? 0), running: Number(row?.running ?? 0),
         expiredRunning: Number(row?.expired ?? 0), oldestPendingAgeMs: row?.oldest_age == null ? null : Math.max(0, Number(row.oldest_age)) };
       active.value = value; return value;
@@ -171,7 +185,12 @@ export class PostgresWorldGenerationDispatcher {
     void observation.poll?.close().catch(this.onError).catch(() => undefined);
   }
 
-  private wait(job: WorldGenerationJob): Promise<WorldGenerationJob> {
+  private clearWaiter(waiter: GenerationWaiter): void {
+    clearTimeout(waiter.timer);
+    waiter.abortCleanup?.();
+  }
+
+  private wait(job: WorldGenerationJob, signal?: AbortSignal): Promise<WorldGenerationJob> {
     let observation = this.observations.get(job.id);
     if (!observation) {
       observation = { current: job, waiters: new Set() };
@@ -184,7 +203,7 @@ export class PostgresWorldGenerationDispatcher {
         if (!current || this.observations.get(job.id) !== watched) return;
         watched.current = current;
         if (current.status === "PENDING" || current.status === "RUNNING") return;
-        for (const waiter of watched.waiters) { clearTimeout(waiter.timer); waiter.resolve(current); }
+        for (const waiter of watched.waiters) { this.clearWaiter(waiter); waiter.resolve(current); }
         watched.waiters.clear();
         this.stopObservation(watched);
       }, this.pollMs, error => { this.counters.pollErrors++; this.counters.lastPollErrorAt = Date.now(); this.onError(error); }, { maxBackoffMs: Math.max(2_000, this.pollMs) });
@@ -193,11 +212,25 @@ export class PostgresWorldGenerationDispatcher {
     return new Promise((resolve, reject) => {
       const waiter: GenerationWaiter = { resolve, reject, timer: setTimeout(() => {
         this.counters.waitTimeouts++;
+        this.clearWaiter(waiter);
         watched.waiters.delete(waiter);
         reject(new GenerationPendingError(watched.current));
         if (watched.waiters.size === 0) this.stopObservation(watched);
       }, this.waitMs) };
       watched.waiters.add(waiter);
+      if (signal) {
+        const abort = () => {
+          this.clearWaiter(waiter);
+          watched.waiters.delete(waiter);
+          // Persistence is the acceptance boundary. Disconnecting a caller
+          // releases its wait only; the durable command remains for the worker.
+          reject(new GenerationPendingError(watched.current));
+          if (watched.waiters.size === 0) this.stopObservation(watched);
+        };
+        waiter.abortCleanup = () => signal.removeEventListener("abort", abort);
+        signal.addEventListener("abort", abort, { once: true });
+        if (signal.aborted) abort();
+      }
     });
   }
 
@@ -206,7 +239,7 @@ export class PostgresWorldGenerationDispatcher {
     const polls: Promise<void>[] = [];
     for (const observation of this.observations.values()) {
       for (const waiter of observation.waiters) {
-        clearTimeout(waiter.timer);
+        this.clearWaiter(waiter);
         waiter.reject(new GenerationPendingError(observation.current));
       }
       observation.waiters.clear();
@@ -223,11 +256,13 @@ export class PostgresWorldGenerationDispatcher {
     payload: Record<string, unknown>,
   ): Promise<T> {
     this.counters.requests++;
+    const signal = currentGenerationRequestSignal();
+    if (signal?.aborted) throw new DomainError("CANCELLED", "Запрос отменён до принятия операции");
     const job = await enqueueWorldGenerationJob(this.db, countryId, operation, idempotencyKey, payload);
     let current = job;
     if (current.status === "PENDING" || current.status === "RUNNING") {
-      if (this.closed || this.waitMs <= 0) throw new GenerationPendingError(current);
-      current = await this.wait(current);
+      if (this.closed || this.waitMs <= 0 || signal?.aborted) throw new GenerationPendingError(current);
+      current = await this.wait(current, signal);
     }
     if (current.status === "FAILED") {
       this.counters.failedRequests++;
@@ -241,19 +276,20 @@ export class PostgresWorldGenerationDispatcher {
 async function claimWorldGenerationJob(db: Db, workerId: string, leaseMs: number): Promise<(WorldGenerationJob & { recoveryOnly: boolean }) | undefined> {
   const row = await db.prepare(`WITH country_heads AS (
       SELECT DISTINCT ON (country_id) id FROM world_generation_jobs_v1
-      WHERE status IN ('PENDING','RUNNING') ORDER BY country_id,created_at,id
+      WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING') ORDER BY country_id,created_at,id
     ), candidate AS (
       SELECT job.id,job.country_id,job.attempts >= job.max_attempts AS recovery_only
       FROM world_generation_jobs_v1 job JOIN country_heads head ON head.id=job.id
       JOIN countries country ON country.id=job.country_id
-      WHERE (job.status='PENDING' AND job.attempts < job.max_attempts)
-        OR (job.status='RUNNING' AND job.locked_at < now() - (? * interval '1 millisecond'))
+      WHERE (job.status IN ('PENDING','QUEUED') AND job.attempts < job.max_attempts)
+        OR (job.status IN ('RUNNING','EXECUTING') AND job.locked_at < now() - (? * interval '1 millisecond'))
       ORDER BY country.generation_last_served_at,job.created_at,job.id FOR UPDATE OF country,job SKIP LOCKED LIMIT 1
     ), served AS (
       UPDATE countries country SET generation_last_served_at=clock_timestamp()
       FROM candidate WHERE country.id=candidate.country_id RETURNING country.id
     ) UPDATE world_generation_jobs_v1 job SET
-      status='RUNNING', attempts=job.attempts + CASE WHEN candidate.recovery_only THEN 0 ELSE 1 END,
+      status=CASE WHEN job.status IN ('QUEUED','EXECUTING') THEN 'EXECUTING' ELSE 'RUNNING' END,
+      attempts=job.attempts + CASE WHEN candidate.recovery_only THEN 0 ELSE 1 END,
       locked_at=now(), locked_by=?, updated_at=now()
     FROM candidate,served WHERE job.id=candidate.id AND served.id=candidate.country_id
     RETURNING job.*, candidate.recovery_only`).get(leaseMs, workerId) as Row | undefined;
@@ -269,7 +305,8 @@ async function recoverCommittedFinalAttempt(db: Db, job: WorldGenerationJob): Pr
       WHERE country_id=? AND operation=? AND idempotency_key=?`)
       .get<Row>(job.countryId, RECEIPT_OPERATIONS[job.operation], job.idempotencyKey);
     if (!receipt) throw new DomainError("GENERATION_LEASE_EXPIRED", "Последняя попытка генерации прервана; подтверждённого результата нет");
-    const requestHash = createHash("sha256").update(JSON.stringify(job.payload)).digest("hex");
+    const commandPayload = job.operation === "district.complete" ? { districtId: job.payload.districtId } : job.payload;
+    const requestHash = createHash("sha256").update(JSON.stringify(commandPayload)).digest("hex");
     if (receipt.request_hash !== requestHash) throw new DomainError("CONFLICT", "Этот idempotencyKey уже использован с другими данными генерации");
     return json(receipt.response_json);
   });
@@ -280,7 +317,14 @@ async function executeJob(service: AppService, job: WorldGenerationJob): Promise
   if (job.operation === "city.create") return service.createCity(job.countryId, input);
   if (job.operation === "district.create") return service.createDistrict(job.countryId, input);
   if (job.operation === "task.create") return service.createTask(job.countryId, input);
-  return service.regenerateCountry(job.countryId, input);
+  if (job.operation === "country.regenerate") return service.regenerateCountry(job.countryId, input);
+  if (job.operation === "task.set_status") return service.updateTaskStatus(job.countryId, input, "compact");
+  if (job.operation === "task.transfer") return service.transferTask(job.countryId, input, "compact");
+  if (job.operation === "task.delete") return service.deleteTask(job.countryId, input);
+  if (job.operation === "city.delete") return service.deleteCity(job.countryId, input);
+  if (job.operation === "district.delete") return service.deleteDistrict(job.countryId, input);
+  if (job.operation === "district.complete") return service.completeDistrict(job.countryId, String(job.payload.districtId), job.idempotencyKey);
+  throw new DomainError("INVALID_INPUT", "Неподдерживаемая фоновая операция");
 }
 
 export async function processNextWorldGenerationJob(
@@ -295,7 +339,7 @@ export async function processNextWorldGenerationJob(
   const heartbeatEveryMs = Math.max(10, Math.floor(leaseMs / 3));
   const heartbeat = startBackgroundPoll(async () => {
     await db.prepare(`UPDATE world_generation_jobs_v1 SET locked_at=now(), updated_at=now()
-      WHERE id=? AND locked_by=? AND status='RUNNING'`).run(job.id, workerId);
+      WHERE id=? AND locked_by=? AND status IN ('RUNNING','EXECUTING')`).run(job.id, workerId);
   }, heartbeatEveryMs, onError);
   try {
     const result = job.recoveryOnly ? await recoverCommittedFinalAttempt(db, job) : await executeJob(service, job);
@@ -305,11 +349,14 @@ export async function processNextWorldGenerationJob(
   } catch (error) {
     const failure = {
       code: error instanceof DomainError ? error.code : "GENERATION_FAILED",
-      message: error instanceof Error ? error.message : String(error),
+      message: error instanceof DomainError ? error.message : GENERATION_FAILED_MESSAGE,
     };
+    if (!(error instanceof DomainError)) {
+      try { onError(error); } catch { /* Logging cannot prevent durable failure/retry publication. */ }
+    }
     const terminal = error instanceof DomainError;
     await db.prepare(`UPDATE world_generation_jobs_v1 SET
-      status=CASE WHEN attempts >= max_attempts OR ? THEN 'FAILED' ELSE 'PENDING' END,
+      status=CASE WHEN attempts >= max_attempts OR ? THEN 'FAILED' WHEN status='EXECUTING' THEN 'QUEUED' ELSE 'PENDING' END,
       error_json=?::jsonb, locked_at=NULL, locked_by=NULL,
       finished_at=CASE WHEN attempts >= max_attempts OR ? THEN now() ELSE NULL END, updated_at=now()
       WHERE id=? AND locked_by=?`).run(terminal, JSON.stringify(failure), terminal, job.id, workerId);

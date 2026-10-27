@@ -1,34 +1,35 @@
 # Tasktopia AI integration guide
 
-Version: 1.23.0
-Last updated: 2026-09-05
+Version: 1.26.0
+Last updated: 2026-10-28
 Public guide: https://tasktopia.online/ai.md  
 MCP endpoint: https://tasktopia.online/mcp
 
 Tasktopia turns work into a living country. Countries contain cities, cities
 contain districts, and every task is represented by a building.
 
-The active CITY client loads one complete version-3
+The active CITY client loads one complete version-5
 `/api/countries/:countryId/cities/:cityId/scene` response, containing compact
 version-2 chunk payloads. Moving inside that city does not fetch viewport chunks.
 These browser endpoints are not MCP
 resources and external agents should use the tools and resources below.
 
 The country overview uses the internal authenticated
-`GET /api/countries/:countryId/overview` read model (`schemaVersion: 6`).
+`GET /api/countries/:countryId/overview` read model (`schemaVersion: 8`).
 It carries planet-derived bounded terrain, aggregate district progress and a
-semantic city miniature; full buildings, roads, surfaces and props are absent.
+semantic city miniature, compact ground-road corridors and transport connections;
+full city buildings, surfaces and props are absent.
 This endpoint is private UI infrastructure, uses ETag plus conditional
 background revalidation, and is not an MCP resource. Agents must continue to
 use explicit-country `country.get`, `city.list`, `district.list`, and the task tools.
 
 The planet overview uses the authenticated browser-only `GET /api/planet-atlas`
-read model (`schemaVersion: 4`). It contains only countries visible to the
+read model (`schemaVersion: 5`). It contains only countries visible to the
 current account, compact progress aggregates, canonical world bounds, city and
 district centres, and task-backed airports. The browser projects the shared
 geography from these coordinates and `planetSeed`; four-connected land groups
 define continents. Logical airport connections are not ground roads. The
-response uses a private ETag cache (`max-age=60`, `stale-while-revalidate=600`),
+response uses a private ETag cache with revalidation,
 and browser snapshots are isolated by account. This endpoint is UI
 infrastructure, not an MCP resource; agents should use `country.list` and the
 country tools below.
@@ -36,7 +37,7 @@ country tools below.
 The authenticated browser-only `GET /api/tasks/search` response includes the
 building `origin`, `cityId`/`cityName`, and the city's `cityCenter` and
 `cityBounds`. The UI uses that viewport to switch cities before focusing a
-building; external agents should continue to use `task.list` and `task.get`.
+building; external agents should use `task.list_page` and compact `task.get`.
 
 This document is intended for AI agents and developers integrating through the
 Model Context Protocol (MCP).
@@ -179,12 +180,12 @@ role are resolved for the requested country on every call.
 
 Follow this sequence unless the user explicitly asks for something else:
 
-1. Call `country.list` and choose the user-confirmed `countryId`.
-2. Call `country.get` with that `countryId`.
-3. Call `archive.record_list` with the same `countryId` when project rules, repository links or architecture context affect the work.
-4. Call `city.list` with that `countryId`; do not invent city IDs.
-5. Call `district.list` with `countryId` for the relevant city.
-6. Call `task.list` and `task.get` with the same `countryId` before updating an existing task.
+1. Call `country.list` with `view: "compact"` and choose the user-confirmed `countryId`.
+2. Call `country.get` with that `countryId` and `view: "compact"`.
+3. Page through `archive.record_list` with `view: "compact"` when project context matters; use `archive.record_get` for the needed bodies.
+4. Page through compact `city.list` with that `countryId`; do not invent city IDs.
+5. Use compact `district.list` with `countryId` for the relevant city.
+6. Find an existing task with `task.list_page`, read compact `task.get`, then only the necessary collection pages and documents in the same country.
 7. Make the smallest requested change.
 8. Re-read the changed entity and report the result to the user.
 
@@ -196,8 +197,8 @@ exists, the agent may use it after stating the assumption.
 
 For progress-centric operation:
 
-1. Read `task.get` before every update.
-2. Read the checklist and implementation documents, then update the relevant checklist item after a measurable checkpoint.
+1. Read compact `task.get` before an update; reuse that snapshot until a meaningful checkpoint or external change.
+2. Read relevant checklist pages with `task.collection_list` and implementation documents with `task.document_get`, then update the relevant checklist item after a measurable checkpoint.
 3. Use `task.report_progress` after a measurable checkpoint, not on a timer.
 4. Base the percentage on completed checklist items, acceptance criteria or verified artifacts,
    never on effort spent.
@@ -215,12 +216,32 @@ text, comments, logs, or tool arguments.
 
 ## Tools
 
-World-changing creates are isolated from the MCP process. `city.create`,
-`district.create`, and `task.create` normally return their existing result, but
+Spatial commands are isolated from the MCP process: `city.create`,
+`district.create`, `task.create`, `country.regenerate`, `task.set_status`
+(including `task.report_progress`), `task.transfer`, `task.delete`, `city.delete`,
+`district.delete`, and `district.complete` normally return their existing result, but
 may return `{ "status": "accepted", "job": { ... } }` when generation exceeds
 the bounded wait. This is a successful durable acceptance, not a tool error.
 Keep the same idempotency key and poll `world_generation.get` with `job.id`;
 do not submit a second command with a new key.
+
+Acceptance means durable enqueue, not a completed mutation. The worker checks
+current state and exact deletion confirmation; a rejected guard produces a
+terminal `FAILED` without a partial mutation. The current worker preserves FIFO
+inside a country and fair turns across countries. Migration `0046` keeps the six
+new commands in internal `QUEUED`/`EXECUTING` states, exposed publicly as
+`PENDING`/`RUNNING`. Older workers cannot claim them. During a mixed-version
+rollout or rollback they wait for a current worker; strict combined FIFO is not
+guaranteed with an old worker, and durable data/jobs remain preserved.
+Migration `0047` preserves original new-command serialization across JSONB
+queueing so pre-upgrade synchronous receipt retries retain their identity;
+historical receipt hashes are not rewritten.
+
+Disconnecting a waiting HTTP/MCP caller releases that caller's wait, not the
+committed command. The job may complete afterward: retry the same key or poll.
+Cancellation signals never enter payload/command identity and do not cancel the
+worker's SQL transaction.
+An already-cancelled request before enqueue returns `CANCELLED` without a new job.
 
 #### `world_generation.get`
 
@@ -231,15 +252,45 @@ Reads one accepted generation operation in the explicitly requested country.
 ```
 
 `PENDING` and `RUNNING` are transient. `COMPLETED` includes `result`; final
-`FAILED` includes a safe error object. Required scope: `country:read`.
+`FAILED` includes a safe error object. Polling `task.*` operations requires
+`tasks:read`; country/city/district operations require `country:read`. A write
+scope alone does not grant polling. Accepted and polling responses omit input
+`payload`. Unexpected `GENERATION_FAILED` messages, including historical jobs,
+are fixed to `Генерация завершилась с ошибкой`; resource failures redact internal
+server errors too.
 
-The server exposes 50 tools.
+Pass optional `view: "compact"` to get a completed `task.create`, `task.set_status`
+or `task.transfer` result as a short `task.command-result` without
+history/documents/comments. Other operation
+results retain their shapes. Omitted `view` returns the compatible full result.
+
+The server exposes 51 tools.
+
+### Compact structure reads
+
+Prefer `view: "compact"` for `country.list`, `city.list`, `district.list`, and
+`archive.record_list`. Each returns `kind`, `version: 1`, `items`, `nextCursor`
+and, except the account country list, `countryId`. Their kinds are
+`country.list-page`, `city.list-page`, `district.list-page`, `archive.record-page`.
+Optional `limit` defaults to 50 and accepts 1–100; `cursor` and `limit` apply
+only to compact mode. Continue with the same context until `nextCursor: null`.
+Ordering is creation time then ID ascending, preserving PostgreSQL timestamp
+precision. A cursor belongs to its list kind, account for countries, country,
+and optional `cityId` for districts. Incompatible cursors are rejected.
+
+These metadata pages omit long country/city descriptions, district `cells` and
+`lots`, and archive `body`. Cities expose task/district counts, districts expose
+grouped `workload`, archive metadata exposes `bodyLength`. Full mode or omitted
+`view` preserves the old complete arrays/shapes without truncation. Tool JSON text
+uses compact serialization; `structuredContent` contains the same data.
 
 ### Countries
 
 #### `country.get`
 
 Returns the explicitly requested country, its State Archive, and cities.
+With `view: "compact"`, returns `kind: "country.card", version: 1`, the country
+profile, archive, and `counts.cities` instead of the city list.
 
 ```json
 { "countryId": "<country-id>" }
@@ -249,7 +300,8 @@ Required scope: `country:read`.
 
 #### `country.list`
 
-Lists countries available to the owner. No arguments.
+Lists countries available to the owner. With no arguments it preserves the full
+array; prefer the compact metadata page described above.
 
 Required scope: `country:read`.
 
@@ -279,8 +331,14 @@ Required scope: `country:read`.
 
 #### `archive.record_list`
 
-Lists every compact archive record for the requested country. Read this before
-adding overlapping context. Required scope: `tasks:read`.
+Lists archive records for the requested country. Prefer `view: "compact"` to
+page through metadata without `body` before adding overlapping context. The
+default preserves the full array. Required scope: `tasks:read`.
+
+#### `archive.record_get`
+
+Reads one complete archive record using `countryId` and `recordId`, rejecting
+foreign or deleted records. Required scope: `tasks:read`.
 
 #### `archive.record_create`
 
@@ -317,7 +375,8 @@ is required because deletion is permanent.
 
 #### `city.list`
 
-Lists cities in the requested country. Pass `countryId`.
+Lists cities in the requested country. Pass `countryId`; prefer `view: "compact"`
+for metadata pages with district/task counts.
 
 Required scope: `country:read`.
 
@@ -329,7 +388,9 @@ Reads one city.
 { "countryId": "<country-id>", "cityId": "<city-id>" }
 ```
 
-Required scopes: `country:read` and `tasks:read`.
+Full mode requires `country:read` and `tasks:read`. With `view: "compact"`, the
+`kind: "city.card", version: 1` response contains city metadata/counts without
+tasks or district geometry and requires only `country:read`.
 
 #### `city.create`
 
@@ -525,7 +586,7 @@ and order. Both tools default to 50 records and accept 1–100; the final page h
 `task.document_get` takes `countryId`, `taskId`, `documentId` and returns only that
 full Markdown document. It rejects foreign or deleted documents.
 
-`task.add_comment`, `task.set_status`, `task.report_progress` accept optional
+`task.add_comment`, `task.set_status`, `task.report_progress`, `task.transfer` accept optional
 `resultMode: "compact"` for a small, explicitly tagged `task.command-result`
 (version 1). The default remains full. Result mode does not change command
 identity: retrying the same key and payload with another mode never repeats the
@@ -593,7 +654,8 @@ must permit writes. It preserves UUID, number, status, history and service role.
 }
 ```
 
-All fields except `comment` are required. `comment` is limited to 4000 characters;
+`comment` and `resultMode: "full" | "compact"` are optional; other fields are required.
+`comment` is limited to 4000 characters;
 unknown fields are rejected. A completed/abandoned destination or another city
 is not allowed. Размещение и история меняются атомарно; при ошибке исходная задача остаётся
 на месте. Повтор с тем же ключом не выполняет перенос повторно. The response is the current task plus its canonical browser URL.

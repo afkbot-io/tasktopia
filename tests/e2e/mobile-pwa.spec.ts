@@ -4,7 +4,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 type GestureInterval = { startedAt: number; endedAt: number };
 type LongTaskEntry = { startTime: number; duration: number };
 
-async function dispatchPinch(page: Page, target: Locator, factor: number): Promise<GestureInterval> {
+async function dispatchPinch(target: Locator, factor: number): Promise<GestureInterval> {
   return target.evaluate((element, zoomFactor) => {
     const box = element.getBoundingClientRect();
     const center = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
@@ -64,7 +64,7 @@ test("mobile viewport keeps controls safe and all map levels accept continuous t
   const measurePinch = async (target: Locator, factor: number) => {
     await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await page.evaluate(() => { (window as typeof window & { __mobileLongTasks?: LongTaskEntry[] }).__mobileLongTasks = []; });
-    const interval = await dispatchPinch(page, target, factor);
+    const interval = await dispatchPinch(target, factor);
     await page.waitForTimeout(180);
     return page.evaluate(({ startedAt, endedAt }) => (
       (window as typeof window & { __mobileLongTasks?: LongTaskEntry[] }).__mobileLongTasks ?? []

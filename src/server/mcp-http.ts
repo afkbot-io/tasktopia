@@ -29,17 +29,20 @@ export function registerMcpHttp(app: FastifyInstance, db: Db, service: AppServic
       const abort = () => abortController.abort();
       const abortDisconnectedResponse = () => { if (!reply.raw.writableEnded) abort(); };
       request.raw.once("aborted", abort);
-      const webRequest = new Request(new URL(request.url, appOrigin), {
-        method: request.method,
-        headers,
-        signal: abortController.signal,
-      });
+      reply.raw.once("close", abortDisconnectedResponse);
+      // Authentication awaited the database before these listeners existed.
+      // Preserve a disconnect that already happened during that await.
+      if (request.raw.aborted || reply.raw.destroyed) abort();
       try {
+        const webRequest = new Request(new URL(request.url, appOrigin), {
+          method: request.method,
+          headers,
+          signal: abortController.signal,
+        });
         const response = await mcpHandler.fetch(webRequest, { authInfo: authentication.authInfo, parsedBody: request.body });
         reply.hijack();
         reply.raw.statusCode = response.status;
         response.headers.forEach((value, name) => reply.raw.setHeader(name, value));
-        reply.raw.once("close", abortDisconnectedResponse);
         if (!response.body) reply.raw.end();
         else try {
           await pipeline(Readable.fromWeb(response.body as import("node:stream/web").ReadableStream), reply.raw);

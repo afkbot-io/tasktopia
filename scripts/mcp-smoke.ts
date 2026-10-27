@@ -30,7 +30,7 @@ const transport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`), {
 const expectedTools = [
   "country.get", "country.list", "country.update_profile",
   "world_generation.get",
-  "archive.get", "archive.record_list", "archive.record_create", "archive.record_update", "archive.record_delete",
+  "archive.get", "archive.record_list", "archive.record_get", "archive.record_create", "archive.record_update", "archive.record_delete",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
   "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
   "task.list", "task.list_page", "task.collection_list", "task.document_get", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete", "task.set_status", "task.report_progress", "task.add_comment", "task.assign",

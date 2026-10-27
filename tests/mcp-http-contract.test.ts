@@ -23,7 +23,7 @@ const expectedNames = [
   "task.set_status", "task.report_progress", "task.add_comment", "task.assign", "task.activity", "task.dependency_add", "task.dependency_remove",
   "task.document_list", "task.document_upsert", "task.document_delete", "task.checklist_replace", "task.checklist_item_update",
   "task.link_add", "task.link_remove", "task.attachment_add", "task.attachment_list",
-  "archive.get", "archive.record_list", "archive.record_create", "archive.record_update", "archive.record_delete",
+  "archive.get", "archive.record_list", "archive.record_get", "archive.record_create", "archive.record_update", "archive.record_delete",
 ] as const;
 const result = <T>(value: Awaited<ReturnType<Client["callTool"]>>): T => {
   expect(value.isError, JSON.stringify(value.content)).not.toBe(true);
@@ -208,6 +208,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     await checked("archive.get");
     const record = await checked<{ id: string }>("archive.record_create", { kind: "CONVENTION", title: "Контракт", body: "Правило", idempotencyKey: "all-record" });
     await checked("archive.record_list");
+    await checked("archive.record_get", { recordId: record.id });
     await checked("archive.record_update", { recordId: record.id, sourceUrl: null, body: "Новое правило", idempotencyKey: "all-record-update" });
     await checked("archive.record_delete", { recordId: record.id, confirmTitle: "Контракт", idempotencyKey: "all-record-delete" });
     const city = await checked<CityDto>("city.create", { name: "Контрактный город", idempotencyKey: "all-city" });
@@ -294,7 +295,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     const required = (name: string): string[] => {
       if (name === "city.get") return ["country:read", "tasks:read"];
       if (name === "task.add_comment") return ["comments:write"];
-      if (name === "archive.record_list") return ["tasks:read"];
+      if (["archive.record_list", "archive.record_get"].includes(name)) return ["tasks:read"];
       if (name === "country.update_profile" || name.startsWith("city.") && !["city.list", "city.get"].includes(name)) return ["cities:write"];
       if (name.startsWith("district.") && name !== "district.list") return ["districts:write"];
       if (name.startsWith("archive.record_")) return ["cities:write"];

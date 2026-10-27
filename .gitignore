@@ -42,3 +42,4 @@ backups/
 
 # RepoWise derives this index locally for each worktree.
 /.repowise/
+.builder/
