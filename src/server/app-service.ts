@@ -94,13 +94,14 @@ import { freezePermanentSiteGeometry, permanentSiteBounds, readPermanentSiteFeat
 import { listAccessibleCountries,registerUser,type AuthUser,type RegistrationInput } from "./auth";
 import { config } from "./config";
 import type { Db } from "./db";
+import type { WorldGenerationOperation } from "./world-generation-jobs";
 import { isTransactionActive,now,onTransactionCommit,onTransactionRollback,transaction } from "./db";
 import type { SharedWorldCache } from "./optional-redis-cache";
 import { readTaskCardRow,readTaskCoreRow,readTaskDetailRow,taskDetailRows } from "./task-detail-read";
 import { readTaskListPageRows, type TaskListFilters } from "./task-list-read";
 import { collectionCursor, readTaskCollectionRows, type CollectionOrder } from "./task-collection-read";
 import type { TaskListPageDto,TaskCardDto,TaskCollection,TaskCollectionItems,TaskCollectionPageDto,TaskCollectionCounts,TaskCommandResultDto,TaskDocumentMetadataDto,TaskMutationResult,TaskResultMode } from "../shared/task-read-contracts";
-import { blockTaskGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchronizeCityBlocks,CitySceneCapacityError } from "./world/active-block-layout";
+import { readTaskBlockGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchronizeCityBlocks,CitySceneCapacityError } from "./world/active-block-layout";
 import { readCountryRoads, synchronizeCountryRoads } from "./world/intercity-road-store";
 import { citySceneIntercityRoads, intercityRoadCorridors, intercityRoadRasterNetwork } from "../shared/intercity-roads";
 import { projectCountryRoads } from "./world/country-road-projection";
@@ -135,10 +136,10 @@ const SPRINT_COLORS = ["#52a8d8", "#dfa94b", "#9877c7", "#69ad67", "#c86f67", "#
 // original result shapes even when they contain an id or taskId.
 const SPATIAL_RESULT_KINDS = new Map<string, "city" | "district" | "task">([
   ...["city.create", "city.create.v3", "city.rename.v1", "city.update.v18"].map(operation => [operation, "city"] as const),
-  ...["district.create", "district.create.v3", "district.rename.v1", "district.update.v18", "district.activate.v3", "district.complete.v3"]
+  ...["district.create", "district.create.v3", "district.rename.v1", "district.update.v18", "district.activate.v3", "district.complete", "district.complete.v3"]
     .map(operation => [operation, "district"] as const),
   ...["task.create", "task.create.v3", "task.link.add.v1", "task.link.remove.v1", "task.rename.v1", "task.fields.v18",
-    "task.status.v3", "task.comment.v3", "task.assign.v7", "task.dependency.add.v1", "task.dependency.remove.v1", "task.transfer.v1"]
+    "task.set_status", "task.status.v3", "task.comment.v3", "task.assign.v7", "task.dependency.add.v1", "task.dependency.remove.v1", "task.transfer", "task.transfer.v1"]
     .map(operation => [operation, "task"] as const),
 ]);
 
@@ -303,6 +304,13 @@ function taskChecklistItemDto(row: Row): TaskChecklistItemDto {
   };
 }
 
+function taskDefectDto(row: Row): TaskDefectDto {
+  return { id: String(row.id), taskId: String(row.task_id), title: String(row.title), description: String(row.description),
+    reproductionSteps: String(row.reproduction_steps), actualResult: String(row.actual_result), expectedResult: String(row.expected_result),
+    status: String(row.status) as TaskDefectDto["status"], fixedAt: row.fixed_at ? String(row.fixed_at) : null,
+    createdAt: String(row.created_at), updatedAt: String(row.updated_at) };
+}
+
 
 type TaskCoreDto = Omit<TaskCardDto, "kind" | "version" | "countryId" | "counts" | "documentMetadata" | "documentsNextCursor">;
 function documentMetadataDto(row: Row): TaskDocumentMetadataDto {
@@ -316,10 +324,7 @@ function collectionItemDto(collection: TaskCollection, row: Row, taskId: string)
     case "events": return { id: Number(row.id), taskId, type: String(row.event_type) as TaskEventDto["type"],
       actor: String(row.actor_label), actorUserId: row.actor_user_id ? String(row.actor_user_id) : null,
       details: json<Record<string, unknown>>(row.details_json), createdAt: String(row.created_at) };
-    case "defects": return { id: String(row.id), taskId, title: String(row.title), description: String(row.description),
-      reproductionSteps: String(row.reproduction_steps), actualResult: String(row.actual_result), expectedResult: String(row.expected_result),
-      status: String(row.status) as TaskDefectDto["status"], fixedAt: row.fixed_at ? String(row.fixed_at) : null,
-      createdAt: String(row.created_at), updatedAt: String(row.updated_at) };
+    case "defects": return taskDefectDto(row);
     case "attachments": return attachmentDto(row);
     case "documents": return documentMetadataDto(row);
     case "checklist": return taskChecklistItemDto(row);
@@ -385,7 +390,7 @@ type ViewportSpatialSnapshot = {
 export interface WorldGenerationDispatcher {
   execute<T>(
     countryId: string,
-    operation: "city.create" | "district.create" | "task.create" | "country.regenerate",
+    operation: WorldGenerationOperation,
     idempotencyKey: string,
     payload: Record<string, unknown>,
   ): Promise<T>;
@@ -458,11 +463,7 @@ export class AppService {
   }
 
   private async projectTasks(rows: Row[]): Promise<TaskDto[]> {
-    const geometry = new Map<string, ReturnType<typeof blockSlots>[number]>();
-    for (const cityId of new Set(rows.map((row) => String(row.city_id)))) {
-      const layout = await this.activeLayout(cityId);
-      if (layout) for (const [taskId, slot] of blockTaskGeometry(layout)) geometry.set(taskId, slot);
-    }
+    const geometry = await readTaskBlockGeometry(this.db, rows.map(row => ({ id: String(row.id), cityId: String(row.city_id) })));
     return rows.map((row) => {
       const slot = geometry.get(String(row.id));
       if (!slot) throw new DomainError("WORLD_REGENERATION_REQUIRED", "Геометрия города ещё не пересобрана. Требуется перегенерация мира.");
@@ -668,8 +669,7 @@ export class AppService {
       WHERE task.id = ? AND city.country_id = ?`).get(taskId, countryId) as Row | undefined;
     if (!row) return undefined;
     const status = String(row.status) as TaskStatus;
-    const layout = await this.activeLayout(String(row.city_id));
-    const origin = layout ? blockTaskGeometry(layout).get(taskId)?.origin : undefined;
+    const origin = (await readTaskBlockGeometry(this.db, [{ id: taskId, cityId: String(row.city_id) }])).get(taskId)?.origin;
     if (!origin) return undefined;
     return {
       id: String(row.id),
@@ -1492,10 +1492,12 @@ export class AppService {
     return scene;
   }
 
-  async listTasks(countryId: string, districtId?: string): Promise<TaskDto[]> {
-    const rows = districtId
-      ? await this.db.prepare("SELECT t.* FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id WHERE c.country_id = ? AND t.district_id = ? ORDER BY t.created_at").all(countryId, districtId)
-      : await this.db.prepare("SELECT t.* FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id WHERE c.country_id = ? ORDER BY t.created_at").all(countryId);
+  async listTasks(countryId: string, districtId?: string, cityId?: string): Promise<TaskDto[]> {
+    const where = ["c.country_id = ?"], parameters: unknown[] = [countryId];
+    if (districtId) { where.push("t.district_id = ?"); parameters.push(districtId); }
+    if (cityId) { where.push("t.city_id = ?"); parameters.push(cityId); }
+    const rows = await this.db.prepare(`SELECT t.* FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id
+      WHERE ${where.join(" AND ")} ORDER BY t.created_at`).all(...parameters);
     return this.projectTasks(rows as Row[]);
   }
 
@@ -1698,12 +1700,7 @@ export class AppService {
       actor: String(event.actor_label), actorUserId: event.actor_user_id ? String(event.actor_user_id) : null,
       details: json<Record<string, unknown>>(event.details_json), createdAt: String(event.created_at),
     }));
-    task.defects = taskDetailRows(row,"defects").map((defect) => ({
-      id: String(defect.id), taskId, title: String(defect.title), description: String(defect.description),
-      reproductionSteps: String(defect.reproduction_steps), actualResult: String(defect.actual_result), expectedResult: String(defect.expected_result),
-      status: String(defect.status) as TaskDefectDto["status"], fixedAt: defect.fixed_at ? String(defect.fixed_at) : null,
-      createdAt: String(defect.created_at), updatedAt: String(defect.updated_at),
-    }));
+    task.defects = taskDetailRows(row,"defects").map(taskDefectDto);
     task.attachments = taskDetailRows(row,"attachments").map(attachmentDto);
     task.documents = taskDetailRows(row,"documents").map(taskDocumentDto);
     task.checklist = taskDetailRows(row,"checklist").map(taskChecklistItemDto);
@@ -1752,11 +1749,7 @@ export class AppService {
   }
 
   private async projectTaskSearchRows(rows: Row[]): Promise<TaskSearchResultDto[]> {
-    const projected = new Map<string, Cell>();
-    for (const cityId of new Set(rows.map(row=>String(row.city_id)))) {
-      const layout=await this.activeLayout(cityId);
-      if (layout) for(const [id,slot] of blockTaskGeometry(layout)) projected.set(id,slot.origin);
-    }
+    const projected = await readTaskBlockGeometry(this.db, rows.map(row => ({ id: String(row.id), cityId: String(row.city_id) })));
     return rows.map((row) => {
       const status = String(row.status) as TaskStatus;
       return {
@@ -1770,7 +1763,7 @@ export class AppService {
         origin: (() => {
           const origin = projected.get(String(row.id));
           if (!origin) throw new DomainError("WORLD_REGENERATION_REQUIRED", "Для задачи отсутствует активный участок");
-          return origin;
+          return origin.origin;
         })(),
       };
     });
@@ -1846,7 +1839,7 @@ export class AppService {
         .run(stableHash(payload), countryId, input.idempotencyKey);
     });
     return this.mutate(countryId, "task.attachment.add.v1", input.idempotencyKey, payload, async () => {
-      const task = await this.getTask(countryId, input.taskId);
+      const task = await this.getTaskCore(countryId, input.taskId);
       const id = randomUUID();
       const createdAt = now();
       const relative = join(countryId, task.id, `${id}-${fileName}`);
@@ -1901,11 +1894,12 @@ export class AppService {
     if (title.length < 2 || title.length > 100) throw new DomainError("INVALID_INPUT", "Название документа должно содержать от 2 до 100 символов");
     if (input.content.length > 64_000) throw new DomainError("INVALID_INPUT", "Markdown-документ не должен превышать 64 000 символов");
     return this.mutate(countryId, "task.document.upsert.v1", input.idempotencyKey, { ...input, fileName }, async () => {
-      const task = await this.getTask(countryId, input.taskId);
-      const current = task.documents?.find((document) => document.fileName === fileName);
+      const task = await this.getTaskCore(countryId, input.taskId);
+      const current = await this.db.prepare("SELECT id FROM task_documents_v1 WHERE task_id=? AND file_name=?").get<{ id: string }>(task.id, fileName);
       const timestamp = now();
       const id = current?.id ?? randomUUID();
-      const position = standard?.position ?? Math.max(4, ...(task.documents ?? []).map((document) => document.position + 1));
+      const position = standard?.position ?? Math.max(4, Number((await this.db.prepare("SELECT COALESCE(MAX(position)+1,4) AS position FROM task_documents_v1 WHERE task_id=?")
+        .get<{ position: number }>(task.id))!.position));
       await this.db.prepare(`INSERT INTO task_documents_v1
         (id, task_id, file_name, title, content, is_default, position, actor, actor_user_id, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1927,8 +1921,9 @@ export class AppService {
     taskId: string; documentId: string; actor?: string; actorUserId?: string; idempotencyKey: string;
   }): Promise<{ ok: true }> {
     return this.mutate(countryId, "task.document.delete.v1", input.idempotencyKey, input, async () => {
-      const task = await this.getTask(countryId, input.taskId);
-      const document = task.documents?.find((candidate) => candidate.id === input.documentId);
+      const task = await this.getTaskCore(countryId, input.taskId);
+      const row = await this.db.prepare("SELECT * FROM task_documents_v1 WHERE task_id=? AND id=?").get<Row>(task.id, input.documentId);
+      const document = row ? taskDocumentDto(row) : undefined;
       if (!document) throw new DomainError("NOT_FOUND", "Документ задачи не найден");
       if (document.isDefault) throw new DomainError("DEFAULT_DOCUMENT", "Стандартный документ нельзя удалить; очистите его содержимое");
       await this.db.prepare("DELETE FROM task_documents_v1 WHERE id = ?").run(document.id);
@@ -1949,8 +1944,9 @@ export class AppService {
     const normalized = items.map((item) => item.title.toLocaleLowerCase("ru-RU"));
     if (new Set(normalized).size !== normalized.length) throw new DomainError("INVALID_INPUT", "Пункты чек-листа не должны повторяться");
     return this.mutate(countryId, "task.checklist.replace.v1", input.idempotencyKey, { ...input, items }, async () => {
-      const task = await this.getTask(countryId, input.taskId);
-      const before = (task.checklist ?? []).map(({ id, title, done, position }) => ({ id, title, done, position }));
+      const task = await this.getTaskCore(countryId, input.taskId);
+      const before = (await this.db.prepare("SELECT id,title,done,position FROM task_checklist_items_v1 WHERE task_id=? ORDER BY position,id").all<Row>(task.id))
+        .map(row => ({ id: String(row.id), title: String(row.title), done: Boolean(row.done), position: Number(row.position) }));
       await this.db.prepare("DELETE FROM task_checklist_items_v1 WHERE task_id = ?").run(task.id);
       const timestamp = now();
       const result: TaskChecklistItemDto[] = [];
@@ -1976,10 +1972,11 @@ export class AppService {
     const title = input.title?.trim();
     if (title !== undefined && (title.length < 1 || title.length > 240)) throw new DomainError("INVALID_INPUT", "Пункт чек-листа должен содержать от 1 до 240 символов");
     return this.mutate(countryId, "task.checklist.item.update.v1", input.idempotencyKey, input, async () => {
-      const task = await this.getTask(countryId, input.taskId);
-      const current = task.checklist?.find((item) => item.id === input.itemId);
+      const task = await this.getTaskCore(countryId, input.taskId);
+      const checklist = (await this.db.prepare("SELECT * FROM task_checklist_items_v1 WHERE task_id=? ORDER BY position,id").all<Row>(task.id)).map(taskChecklistItemDto);
+      const current = checklist.find((item) => item.id === input.itemId);
       if (!current) throw new DomainError("NOT_FOUND", "Пункт чек-листа не найден");
-      if (title !== undefined && task.checklist?.some((item) => item.id !== current.id && item.title.toLocaleLowerCase("ru-RU") === title.toLocaleLowerCase("ru-RU"))) {
+      if (title !== undefined && checklist.some((item) => item.id !== current.id && item.title.toLocaleLowerCase("ru-RU") === title.toLocaleLowerCase("ru-RU"))) {
         throw new DomainError("INVALID_INPUT", "Пункты чек-листа не должны повторяться");
       }
       const timestamp = now();
@@ -2079,6 +2076,7 @@ export class AppService {
   }
 
   async deleteCity(countryId: string, input: { cityId: string; confirmName: string; idempotencyKey: string }): Promise<{ deleted: true; cityId: string; name: string; districtsDeleted: number; tasksDeleted: number; roadsDeleted: number }> {
+    if (this.generationDispatcher) return this.generationDispatcher.execute(countryId, "city.delete", input.idempotencyKey, input);
     return await this.mutate(countryId, "city.delete.v1", input.idempotencyKey, input, async () => {
                       const row = await this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(input.cityId, countryId) as Row | undefined;
                       if (!row) throw new DomainError("NOT_FOUND", "Город не найден");
@@ -2171,6 +2169,7 @@ export class AppService {
   }
 
   async deleteDistrict(countryId: string, input: { districtId: string; confirmName: string; idempotencyKey: string }): Promise<{ deleted: true; districtId: string; cityId: string; name: string; tasksDeleted: number; activatedDistrictId: string | null }> {
+    if (this.generationDispatcher) return this.generationDispatcher.execute(countryId, "district.delete", input.idempotencyKey, input);
     return this.mutate(countryId,"district.delete.v1",input.idempotencyKey,input,async()=>{
       const district=(await this.listDistricts(countryId)).find(d=>d.id===input.districtId);
       if(!district) throw new DomainError("NOT_FOUND","Район не найден");
@@ -2217,6 +2216,8 @@ export class AppService {
   }
 
   async completeDistrict(countryId: string, districtId: string, idempotencyKey: string): Promise<DistrictDto> {
+    if (this.generationDispatcher) return this.rehydrateGenerationResult(countryId, "district.complete",
+      await this.generationDispatcher.execute<DistrictDto>(countryId, "district.complete", idempotencyKey, { districtId, idempotencyKey }));
     return await this.mutate(countryId, "district.complete.v3", idempotencyKey, { districtId }, async () => {
                       const row = await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE d.id = ? AND c.country_id = ?").get(districtId, countryId) as Row | undefined;
                       if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
@@ -2228,10 +2229,6 @@ export class AppService {
                       const data = (await this.listDistricts(countryId,String(row.city_id))).find(d=>d.id===districtId)!;
                       return { data, eventType: "district.completed", eventPayload: { districtId, cityId: data.cityId, affectedBounds: json<Rect>(row.spatial_bounds_json) } };
                     });
-  }
-
-  private async listTasksForCity(cityId: string): Promise<TaskDto[]> {
-    return this.projectTasks(await this.db.prepare("SELECT * FROM tasks_v3 WHERE city_id = ?").all(cityId) as Row[]);
   }
 
   async createTask(countryId: string, input: {
@@ -2299,7 +2296,7 @@ export class AppService {
     const title = input.title.trim();
     if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название задачи должно содержать от 2 до 160 символов");
     return await this.mutate(countryId, "task.rename.v1", input.idempotencyKey, input, async () => {
-                      const task = await this.getTask(countryId, input.taskId);
+                      const task = await this.getTaskCore(countryId, input.taskId);
                       const updatedAt = now();
                       await this.db.prepare("UPDATE tasks_v3 SET title = ?, updated_at = ? WHERE id = ?").run(title, updatedAt, input.taskId);
                       await this.recordTaskEvent(input.taskId, "TITLE_CHANGED", input.actor ?? "MCP", input.actorUserId, { from: task.title, to: title, changes: taskScalarChanges(task, { ...task, title }) }, updatedAt);
@@ -2364,7 +2361,7 @@ export class AppService {
     actor?: string; actorUserId?: string; idempotencyKey: string;
   }): Promise<TaskDefectDto> {
     return this.mutate(countryId, "task.defect.create.v18", input.idempotencyKey, input, async () => {
-      const task = await this.getTask(countryId, input.taskId);
+      const task = await this.getTaskCore(countryId, input.taskId);
       const title = input.title.trim();
       if (title.length < 2 || title.length > 160) throw new DomainError("INVALID_INPUT", "Название дефекта должно содержать от 2 до 160 символов");
       const id = randomUUID();
@@ -2376,7 +2373,7 @@ export class AppService {
         input.actualResult.trim().slice(0, 8000), input.expectedResult.trim().slice(0, 8000), createdAt, createdAt,
       );
       await this.recordTaskEvent(task.id, "DEFECT_CREATED", input.actor ?? "MCP", input.actorUserId, { defectId: id, title }, createdAt);
-      const data = (await this.getTask(countryId, task.id)).defects!.find((defect) => defect.id === id)!;
+      const data = taskDefectDto((await this.db.prepare("SELECT * FROM task_defects_v18 WHERE id=? AND task_id=?").get<Row>(id, task.id))!);
       return { data, eventType: "task.defect_created", eventPayload: { taskId: task.id, defectId: id, affectedBounds: boundsOf(task.footprint) } };
     });
   }
@@ -2393,7 +2390,7 @@ export class AppService {
       for (const [field, value] of [["шаги воспроизведения", input.reproductionSteps], ["фактический результат", input.actualResult], ["ожидаемый результат", input.expectedResult]] as const) {
         if (value !== undefined && value.trim().length === 0) throw new DomainError("INVALID_INPUT", `${field} не могут быть пустыми`);
       }
-      const task = await this.getTask(countryId, String(row.task_id));
+      const task = await this.getTaskCore(countryId, String(row.task_id));
       const previousStatus = String(row.status) as TaskDefectDto["status"];
       const status = input.status ?? String(row.status) as TaskDefectDto["status"];
       if (!DEFECT_TRANSITIONS[previousStatus].has(status)) {
@@ -2411,14 +2408,15 @@ export class AppService {
         status, fixedAt, updatedAt, input.defectId,
       );
       await this.recordTaskEvent(task.id, "DEFECT_UPDATED", input.actor ?? "MCP", input.actorUserId, { defectId: input.defectId, status }, updatedAt);
-      const data = (await this.getTask(countryId, task.id)).defects!.find((defect) => defect.id === input.defectId)!;
+      const data = taskDefectDto((await this.db.prepare("SELECT * FROM task_defects_v18 WHERE id=? AND task_id=?").get<Row>(input.defectId, task.id))!);
       return { data, eventType: "task.defect_updated", eventPayload: { taskId: task.id, defectId: input.defectId, status, affectedBounds: boundsOf(task.footprint) } };
     });
   }
 
   async deleteTask(countryId: string, input: { taskId: string; confirmTitle: string; idempotencyKey: string }): Promise<{ deleted: true; taskId: string; districtId: string; cityId: string; title: string }> {
+    if (this.generationDispatcher) return this.generationDispatcher.execute(countryId, "task.delete", input.idempotencyKey, input);
     return this.mutate(countryId,"task.delete.v1",input.idempotencyKey,input,async()=>{
-      const task=await this.getTask(countryId,input.taskId),building=await this.buildingEventContext(countryId,input.taskId);
+      const task=await this.getTaskCore(countryId,input.taskId),building=await this.buildingEventContext(countryId,input.taskId);
       if(input.confirmTitle.trim()!==task.title) throw new DomainError("CONFIRMATION_MISMATCH","Для удаления укажите точное название задачи");
       const placement=await this.db.prepare("SELECT p.* FROM task_placements_v1 p JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE p.task_id=?").get<Row>(task.id);
       await this.scheduleAttachmentCleanup(countryId, "task", task.id);
@@ -2431,10 +2429,14 @@ export class AppService {
     });
   }
 
-  async transferTask(countryId: string, input: { taskId: string; targetDistrictId: string; comment?: string;
-    actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
-    return this.mutate(countryId,"task.transfer.v1",input.idempotencyKey,input,async()=>{
-      const task = await this.getTask(countryId,input.taskId);
+  async transferTask<Mode extends TaskResultMode = "full">(countryId: string, input: { taskId: string; targetDistrictId: string; comment?: string;
+    actor?: string; actorUserId?: string; idempotencyKey: string }, resultMode?: Mode): Promise<TaskMutationResult<Mode>> {
+    if (this.generationDispatcher) {
+      const result = await this.generationDispatcher.execute<TaskMutationResult<Mode>>(countryId, "task.transfer", input.idempotencyKey, input);
+      return await this.rehydrateGenerationResult(countryId, "task.transfer", result, resultMode ?? "full") as TaskMutationResult<Mode>;
+    }
+    return this.mutate<TaskMutationResult<Mode>>(countryId,"task.transfer.v1",input.idempotencyKey,input,async()=>{
+      const task = await this.getTaskCore(countryId,input.taskId);
       const target = await this.db.prepare(`SELECT d.id,d.city_id,d.status FROM districts_v3 d
         JOIN cities_v3 c ON c.id=d.city_id WHERE d.id=? AND c.country_id=?`).get<Row>(input.targetDistrictId,countryId);
       if (!target) throw new DomainError("NOT_FOUND","Район не найден");
@@ -2461,16 +2463,21 @@ export class AppService {
         .run(target.id,timestamp,task.id);
       const layout = await this.synchronizeBlocks(countryId,task.cityId);
       await this.recordTaskEvent(task.id,"FIELDS_UPDATED",input.actor ?? "MCP",input.actorUserId,
-        {changedFields:["districtId"],fromDistrictId:task.districtId,toDistrictId:target.id,oldOrigin:task.origin,newOrigin:(await this.getTask(countryId,task.id)).origin,comment:input.comment?.trim() || null},timestamp);
-      const data = await this.getTask(countryId,task.id);
+        {changedFields:["districtId"],fromDistrictId:task.districtId,toDistrictId:target.id,oldOrigin:task.origin,newOrigin:(await this.getTaskCore(countryId,task.id)).origin,comment:input.comment?.trim() || null},timestamp);
+      const updated = resultMode === "compact" ? await this.getTaskCore(countryId, task.id) : await this.getTask(countryId,task.id);
+      const data = (resultMode === "compact" ? this.taskCommandResult(countryId, updated) : updated) as TaskMutationResult<Mode>;
       return {data,eventType:"task.transferred",eventPayload:{taskId:task.id,cityId:task.cityId,
-        fromDistrictId:task.districtId,toDistrictId:target.id,serviceRole:data.serviceRole,
-        oldBounds:boundsOf(task.footprint),newBounds:boundsOf(data.footprint),
+        fromDistrictId:task.districtId,toDistrictId:target.id,serviceRole:updated.serviceRole,
+        oldBounds:boundsOf(task.footprint),newBounds:boundsOf(updated.footprint),
         affectedBounds:unionRect(layout.bounds,expandRect(boundsOf([...task.footprint,...task.accessPath]),1))}};
-    });
+    }, resultMode);
   }
 
   async updateTaskStatus<Mode extends TaskResultMode = "full">(countryId: string, input: { taskId: string; status: TaskStatus; progress?: number; comment?: string; actor?: string; actorUserId?: string; idempotencyKey: string }, resultMode?: Mode): Promise<TaskMutationResult<Mode>> {
+    if (this.generationDispatcher) {
+      const result = await this.generationDispatcher.execute<TaskMutationResult<Mode>>(countryId, "task.set_status", input.idempotencyKey, input);
+      return await this.rehydrateGenerationResult(countryId, "task.set_status", result, resultMode ?? "full") as TaskMutationResult<Mode>;
+    }
     return await this.mutate<TaskMutationResult<Mode>>(countryId, "task.status.v3", input.idempotencyKey, input, async () => {
                       const task = await this.getTaskCore(countryId, input.taskId);
                       const district = await this.db.prepare("SELECT status FROM districts_v3 WHERE id = ?").get(task.districtId) as Row | undefined;
@@ -2559,7 +2566,7 @@ export class AppService {
 
   async assignTask(countryId: string, input: { taskId: string; assigneeUserId: string | null; assigneeRole?: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
     return await this.mutate(countryId, "task.assign.v7", input.idempotencyKey, input, async () => {
-                      const task = await this.getTask(countryId, input.taskId);
+                      const task = await this.getTaskCore(countryId, input.taskId);
                       const targetMember = input.assigneeUserId ? await this.db.prepare("SELECT account.name FROM country_members membership JOIN users account ON account.id=membership.user_id WHERE membership.country_id=? AND membership.user_id=?").get<Row>(countryId, input.assigneeUserId) : undefined;
                       if (input.assigneeUserId && !targetMember) {
                         throw new DomainError("ASSIGNEE_NOT_MEMBER", "Ответственный должен состоять в правительстве страны");
@@ -2580,8 +2587,8 @@ export class AppService {
 
   async addTaskDependency(countryId: string, input: { taskId: string; dependsOnTaskId: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
     return await this.mutate(countryId, "task.dependency.add.v1", input.idempotencyKey, input, async () => {
-                      const task = await this.getTask(countryId, input.taskId);
-                      const dependency = await this.getTask(countryId, input.dependsOnTaskId);
+                      const task = await this.getTaskCore(countryId, input.taskId);
+                      const dependency = await this.getTaskCore(countryId, input.dependsOnTaskId);
                       if (task.cityId !== dependency.cityId) throw new DomainError("INVALID_INPUT", "Связь возможна только между задачами одного города");
                       try {
                         await this.db.prepare("INSERT INTO task_dependencies_v1 (task_id, depends_on_task_id, created_at) VALUES (?, ?, ?)")
@@ -2598,7 +2605,7 @@ export class AppService {
 
   async removeTaskDependency(countryId: string, input: { taskId: string; dependsOnTaskId: string; actor?: string; actorUserId?: string; idempotencyKey: string }): Promise<TaskDto> {
     return await this.mutate(countryId, "task.dependency.remove.v1", input.idempotencyKey, input, async () => {
-                      await this.getTask(countryId, input.taskId);
+                      await this.getTaskCore(countryId, input.taskId);
                       await this.db.prepare("DELETE FROM task_dependencies_v1 WHERE task_id = ? AND depends_on_task_id = ?").run(input.taskId, input.dependsOnTaskId);
                       await this.recordTaskEvent(input.taskId, "FIELDS_UPDATED", input.actor ?? "MCP", input.actorUserId, { removedDependsOnTaskId: input.dependsOnTaskId }, now());
                       const data = await this.getTask(countryId, input.taskId);

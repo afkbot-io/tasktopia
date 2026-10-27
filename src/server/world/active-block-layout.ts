@@ -3,7 +3,7 @@ import { PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
 import { countryPortReservations, portReservationRects, type LocalPortPlan } from "./port-reservations";
 import { createPortSiteProvider } from "./port-site-provider";
 import { freezeCityRailway, countryRailwayReservations } from "./city-railway-store";
-import type { BlockServiceRole, CompiledBlockLayoutV1, ConstructionStage } from "../../shared/block-world";
+import type { BlockServiceRole, CityBlockV1, CompiledBlockLayoutV1, ConstructionStage } from "../../shared/block-world";
 import { blockSlots } from "../../shared/block-templates";
 import { isTaskParkVariant, selectTaskParkVariant, taskParkSize } from "../../shared/task-park-catalog";
 import { TASK_STAGE, type Rect, type TaskStatus } from "../../shared/contracts";
@@ -52,13 +52,7 @@ function activeBlockLayoutFromRow(row: Row): CompiledBlockLayoutV1 {
     seed: Number(row.seed), revision: Number(row.revision), status: "READY",
     bounds: parse(row.bounds_json), checksum: String(row.checksum),
     districtLayouts: districts.map((d) => ({ id: String(d.id), districtId: String(d.district_id), sequence: Number(d.sequence), archetype: String(d.archetype), bounds: parse(d.bounds_json) })),
-    blocks: blocks.map((b) => ({
-      id: String(b.id), districtLayoutId: String(b.district_layout_id), sequence: Number(b.sequence),
-      kind: String(b.kind) as CompiledBlockLayoutV1["blocks"][number]["kind"], templateKey: String(b.template_key),
-      templateVersion: Number(b.template_version), variant: String(b.variant), seed: Number(b.seed),
-      origin: { x: Number(b.origin_x), y: Number(b.origin_y) }, width: Number(b.width), height: Number(b.height),
-      parameters: parse(b.parameters_json), summary: parse(b.summary_json),
-    })),
+    blocks: blocks.map(blockFromRow),
     placements: placements.map((p) => {
       const serviceRole = rolesByBlock.get(String(p.block_id))?.[String(p.slot_key)];
       return { taskId: String(p.task_id), blockId: String(p.block_id), slotKey: String(p.slot_key), buildingFamily: String(p.building_family),
@@ -68,6 +62,39 @@ function activeBlockLayoutFromRow(row: Row): CompiledBlockLayoutV1 {
     siteMarkers: markers.map((m) => ({ id: String(m.id), blockId: String(m.block_id), slotKey: String(m.slot_key), kind: String(m.kind) as "RUINED" | "RELOCATED", targetTaskId: m.target_task_id ? String(m.target_task_id) : undefined, snapshot: parse(m.snapshot_json), assetVariant: String(m.asset_variant) })),
     roadNetwork: { id: String(road.id), checksum: String(road.checksum), schemaVersion: 1, nodes: parse(road.nodes_json), segments: parse(road.segments_json) },
   };
+}
+
+function blockFromRow(row: Row): CityBlockV1 {
+  return { id: String(row.id), districtLayoutId: String(row.district_layout_id), sequence: Number(row.sequence),
+    kind: String(row.kind) as CityBlockV1["kind"], templateKey: String(row.template_key),
+    templateVersion: Number(row.template_version), variant: String(row.variant), seed: Number(row.seed),
+    origin: { x: Number(row.origin_x), y: Number(row.origin_y) }, width: Number(row.width), height: Number(row.height),
+    parameters: parse(row.parameters_json), summary: parse(row.summary_json) };
+}
+
+/** Project authorized task rows from their canonical active blocks, not a city
+ * snapshot. The query returns each requested block once and never reads roads,
+ * unrelated placements or process caches (including inside a transaction). */
+export async function readTaskBlockGeometry(db: Db, tasks: readonly { id: string; cityId: string }[]): Promise<ReturnType<typeof blockTaskGeometry>> {
+  const result: ReturnType<typeof blockTaskGeometry> = new Map();
+  if (tasks.length === 0) return result;
+  const rows = await db.prepare(`SELECT b.*,
+    jsonb_agg(jsonb_build_object('task_id',p.task_id,'slot_key',p.slot_key)) AS selected_placements
+    FROM tasks_v3 task JOIN cities_v3 city ON city.id=task.city_id
+    JOIN city_layouts_v1 layout ON layout.city_id=city.id AND layout.country_id=city.country_id AND layout.status='ACTIVE'
+    JOIN task_placements_v1 p ON p.task_id=task.id AND p.layout_id=layout.id
+    JOIN city_blocks_v1 b ON b.id=p.block_id AND b.layout_id=layout.id
+    WHERE task.id=ANY(?::text[]) AND task.city_id=ANY(?::text[]) GROUP BY b.id`)
+    .all<Row>([...new Set(tasks.map(task => task.id))], [...new Set(tasks.map(task => task.cityId))]);
+  for (const row of rows) {
+    const slots = new Map(blockSlots(blockFromRow(row)).map(slot => [slot.key, slot]));
+    for (const placement of parse<Array<{ task_id: string; slot_key: string }>>(row.selected_placements)) {
+      const slot = slots.get(placement.slot_key);
+      if (!slot) throw new Error(`Invalid active block slot: ${placement.task_id}`);
+      result.set(placement.task_id, slot);
+    }
+  }
+  return result;
 }
 
 /** Update only changed semantic rows; empty slots stay in the template. */

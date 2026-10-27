@@ -42,7 +42,7 @@ export async function readTaskListPageRows(db: Db, countryId: string, options: T
     }
     else { where.push("t.title ILIKE ? ESCAPE '\\'"); parameters.push(`%${q.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_")}%`); }
   }
-  if (cursor) { where.push("(t.updated_at<?::text::timestamptz OR (t.updated_at=?::text::timestamptz AND t.id<?))"); parameters.push(cursor.key, cursor.key, cursor.id); }
+  if (cursor) { where.push("(t.updated_at,t.id)<(?::text::timestamptz,?::text)"); parameters.push(cursor.key, cursor.id); }
   parameters.push(limit + 1);
   const fetched = await db.prepare(`SELECT t.id,t.task_number,t.title,t.work_item_type,t.estimate,t.priority,t.status,t.progress,t.city_id,t.district_id,
     t.updated_at,t.updated_at::text AS cursor_key,city.name AS city_name,city.center_x AS city_center_x,city.center_y AS city_center_y,

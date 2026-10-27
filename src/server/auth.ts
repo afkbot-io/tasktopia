@@ -268,7 +268,6 @@ export async function authenticateMcpToken(db: Db, header: string | string[] | u
   const owner = row.user_id ? undefined : await db.prepare("SELECT user_id FROM countries WHERE id = ?").get<{ user_id: string }>(String(row.country_id));
   const userId = row.user_id ? String(row.user_id) : String(owner?.user_id);
   if (!userId || userId === "undefined") return null;
-  await db.prepare("UPDATE mcp_tokens SET last_used_at = ? WHERE id = ?").run(now(), String(row.id));
   let storedScopes: McpScope[];
   try {
     const parsed = typeof row.scopes_json === "string" ? JSON.parse(row.scopes_json) as unknown : row.scopes_json;
@@ -279,6 +278,11 @@ export async function authenticateMcpToken(db: Db, header: string | string[] | u
   } catch {
     return null;
   }
+  // Activity is telemetry, not an authorization cache. Concurrent reads still
+  // validate the current token/scopes above; only one row update wins per minute.
+  await db.prepare(`UPDATE mcp_tokens SET last_used_at = now()
+    WHERE id = ? AND (last_used_at IS NULL OR last_used_at < now() - interval '60 seconds')`)
+    .run(String(row.id));
   return { userId, tokenId: String(row.id), scopes: storedScopes };
 }
 

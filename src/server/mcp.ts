@@ -2,6 +2,7 @@ import type { IncomingHttpHeaders } from "node:http";
 import { createMcpHandler, McpServer, ResourceTemplate, type AuthInfo, type McpHttpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { taskCollectionPageSchema, taskListPageSchema } from "./task-read-schemas";
+import { readMcpArchiveRecords, readMcpCities, readMcpCity, readMcpCountries, readMcpCountryCounts, readMcpDistricts } from "./mcp-read-models";
 import { BUILDING_CATALOG } from "../shared/catalog";
 import type { AppService } from "./app-service";
 import { DomainError } from "./app-service";
@@ -10,7 +11,8 @@ import { authenticateMcpToken, countryRole, listAccessibleCountries } from "./au
 import { MCP_READ_SCOPES, type CountryRole, type McpScope, type TaskDto } from "../shared/contracts";
 import { config } from "./config";
 import { APP_VERSION } from "./version";
-import { GenerationPendingError, getWorldGenerationJob } from "./world-generation-jobs";
+import { GenerationPendingError, getWorldGenerationJob, type WorldGenerationJob } from "./world-generation-jobs";
+import { runWithGenerationRequestSignal } from "./generation-request-context";
 
 export type McpIdentity = { userId: string; tokenId: string; scopes: McpScope[] };
 export type McpAuthentication = { identity: McpIdentity; authInfo: AuthInfo };
@@ -21,11 +23,19 @@ function taskUrl(countryId: string, task: Pick<TaskDto, "id" | "taskNumber">): s
 }
 
 function response(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }], structuredContent: { result: data } };
+  return { content: [{ type: "text" as const, text: JSON.stringify(data) }], structuredContent: { result: data } };
+}
+
+function publicGenerationJob(job: WorldGenerationJob) {
+  return { id: job.id, countryId: job.countryId, operation: job.operation, idempotencyKey: job.idempotencyKey,
+    status: job.status, attempts: job.attempts, maxAttempts: job.maxAttempts,
+    ...(job.result === undefined ? {} : { result: job.result }),
+    ...(job.error === undefined ? {} : { error: job.error.code === "GENERATION_FAILED"
+      ? { code: job.error.code, message: "Генерация завершилась с ошибкой" } : job.error }) };
 }
 
 function failure(error: unknown) {
-  if (error instanceof GenerationPendingError) return response({ status: "accepted", job: error.job });
+  if (error instanceof GenerationPendingError) return response({ status: "accepted", job: publicGenerationJob(error.job) });
   const code = error instanceof DomainError ? error.code : "INTERNAL_ERROR";
   const message = error instanceof DomainError ? error.message : "Внутренняя ошибка MCP";
   return { isError: true, content: [{ type: "text" as const, text: JSON.stringify({ code, message }) }] };
@@ -36,6 +46,7 @@ function requireScope(identity: McpIdentity, scope: McpScope): void {
 }
 
 const countryIdSchema = z.string().uuid().describe("Явный ID страны-проекта; не зависит от страны, выбранной в веб-интерфейсе");
+const metadataPage = { view: z.enum(["full", "compact"]).optional(), limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).max(8192).optional() };
 
 async function requireCountryAccess(db: Db, identity: McpIdentity, countryId: string, scope: McpScope): Promise<CountryRole> {
   requireScope(identity, scope);
@@ -70,6 +81,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     instructions: [
       "Tasktopia turns work into a living country: countries contain cities, cities contain districts, and tasks become buildings.",
       "Start with country.list, then pass the chosen countryId to every country-scoped tool. MCP tools never read or change the country selected in the web UI.",
+      "Prefer view=compact for country/city/district/archive metadata lists and country/city/task cards. Continue nextCursor with identical scope/filters; use task.list_page instead of loading the full task catalog. Read only needed task.collection_list pages and task.document_get documents. Use resultMode=compact for comment/progress/status receipts; full remains the compatible legacy response.",
       "Every write requires a stable idempotencyKey. Reuse it only for an identical retry.",
       "District capacitySp is an advisory workload target and never blocks task creation.",
       "Keep project context on the country, epic outcomes on the city, sprint goal and deadline on the district, and executable analysis on the task.",
@@ -110,29 +122,34 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     idempotencyKey: z.string().min(4).max(160),
   });
 
-  server.registerTool("country.get", { title: "Get country", description: "Получить явно указанную страну и состояние квадратного мира.", inputSchema: z.object({ countryId: countryIdSchema }), annotations: { readOnlyHint: true } }, async ({ countryId }) => {
+  server.registerTool("country.get", { title: "Get country", description: "Получить явно указанную страну; view=compact возвращает контекст, архив и число городов без полного списка городов.", inputSchema: z.object({ countryId: countryIdSchema, view: metadataPage.view }), annotations: { readOnlyHint: true } }, async ({ countryId, view }) => {
     try {
       await requireCountryAccess(db, identity, countryId, "country:read");
+      if (view === "compact") return response({ kind: "country.card", version: 1, countryId,
+        country: await service.getCountry(countryId), archive: await service.getArchive(countryId), counts: await readMcpCountryCounts(db, countryId) });
       return response({ country: await service.getCountry(countryId), archive: await service.getArchive(countryId), cities: await service.listCities(countryId) });
     } catch (error) { return failure(error); }
   });
 
   server.registerTool("world_generation.get", {
-    description: "Получить состояние принятой фоновой операции генерации по jobId.",
-    inputSchema: z.object({ countryId: countryIdSchema, jobId: z.string().uuid() }),
+    description: "Получить состояние принятой фоновой операции по jobId. view=compact сокращает результат task.create/task.set_status/task.transfer до task.command-result без истории; full сохраняет прежний результат.",
+    inputSchema: z.object({ countryId: countryIdSchema, jobId: z.string().uuid(), view: metadataPage.view }),
     annotations: { readOnlyHint: true },
-  }, async ({ countryId, jobId }) => {
+  }, async ({ countryId, jobId, view }) => {
     try {
-      await requireCountryAccess(db, identity, countryId, "country:read");
+      await requireCountryAccess(db, identity, countryId, identity.scopes.includes("country:read") ? "country:read" : "tasks:read");
       const job = await getWorldGenerationJob(db, jobId);
       if (!job || job.countryId !== countryId) throw new DomainError("NOT_FOUND", "Операция генерации не найдена");
-      return response(job.status === "COMPLETED" ? { ...job, result: await service.rehydrateGenerationResult(countryId, job.operation, job.result) } : job);
+      requireScope(identity, job.operation.startsWith("task.") ? "tasks:read" : "country:read");
+      const publicJob = publicGenerationJob(job);
+      return response(job.status === "COMPLETED" ? { ...publicJob, result: await service.rehydrateGenerationResult(countryId, job.operation, job.result, view ?? "full") } : publicJob);
     } catch (error) { return failure(error); }
   });
 
-  server.registerTool("country.list", { title: "List countries", description: "Получить все страны, доступные этому аккаунту.", inputSchema: z.object({}), annotations: { readOnlyHint: true } }, async () => {
+  server.registerTool("country.list", { title: "List countries", description: "Страны аккаунта; view=compact возвращает ограниченную страницу метаданных без длинного контекста, full сохраняет прежний список.", inputSchema: z.object(metadataPage), annotations: { readOnlyHint: true } }, async (input) => {
     try {
       requireScope(identity, "country:read");
+      if (input.view === "compact") return response(await readMcpCountries(db, identity.userId, input));
       return response(await Promise.all((await listAccessibleCountries(db, identity.userId)).map(async (access) => ({
                                                 ...await service.getCountry(access.id), role: access.role, memberCount: access.memberCount,
                                               }))));
@@ -154,24 +171,25 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     } catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.list", { description: "Получить города указанной страны.", inputSchema: z.object({ countryId: countryIdSchema }), annotations: { readOnlyHint: true } }, async ({ countryId }) => {
-    try { await requireCountryAccess(db, identity, countryId, "country:read"); return response(await service.listCities(countryId)); }
+  server.registerTool("city.list", { description: "Города страны; view=compact возвращает страницу метаданных и счётчиков без полных описаний.", inputSchema: z.object({ countryId: countryIdSchema, ...metadataPage }), annotations: { readOnlyHint: true } }, async (input) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "country:read"); return response(input.view === "compact" ? await readMcpCities(db, input.countryId, input) : await service.listCities(input.countryId)); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.get", { description: "Получить город, районы и задачи.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid() }), annotations: { readOnlyHint: true } }, async ({ countryId, cityId }) => {
+  server.registerTool("city.get", { description: "Город; view=compact возвращает метаданные и счётчики без геометрии районов и задач. Full сохраняет прежнюю форму и требует tasks:read.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid(), view: metadataPage.view }), annotations: { readOnlyHint: true } }, async ({ countryId, cityId, view }) => {
     try {
       await requireCountryAccess(db, identity, countryId, "country:read");
+      if (view === "compact") return response(await readMcpCity(db, countryId, cityId));
       await requireCountryAccess(db, identity, countryId, "tasks:read");
       const city = (await service.listCities(countryId)).find((item) => item.id === cityId);
       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
       const districts = await service.listDistricts(countryId, cityId);
-      return response({ city, districts: await Promise.all(districts.map(async (district) => ({ ...district, workload: await service.getDistrictWorkload(countryId, district.id) }))), tasks: (await service.listTasks(countryId)).filter((task) => task.cityId === cityId) });
+      return response({ city, districts: await Promise.all(districts.map(async (district) => ({ ...district, workload: await service.getDistrictWorkload(countryId, district.id) }))), tasks: await service.listTasks(countryId, undefined, cityId) });
     } catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.create", { description: "Создать город, его территорию, улицы и соединение с дорожной сетью страны.", inputSchema: cityCreateSchema, annotations: { idempotentHint: true } }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "cities:write"); return response(await service.createCity(input.countryId, input)); }
+  server.registerTool("city.create", { description: "Создать город, его территорию, улицы и соединение с дорожной сетью страны.", inputSchema: cityCreateSchema, annotations: { idempotentHint: true } }, async (input, ctx) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "cities:write"); return response(await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.createCity(input.countryId, input))); }
     catch (error) { return failure(error); }
   });
 
@@ -193,22 +211,24 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("city.delete", { description: "Безвозвратно удалить город, районы и задачи; постоянная история занятых участков остаётся в стране. Для защиты передайте точное текущее название.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "cities:write"); return response(await service.deleteCity(input.countryId, input)); }
+  server.registerTool("city.delete", { description: "Безвозвратно удалить город, районы и задачи; постоянная история занятых участков остаётся в стране. Для защиты передайте точное текущее название.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input, ctx) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "cities:write"); return response(await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.deleteCity(input.countryId, input))); }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.list", { description: "Получить районы, при необходимости только одного города.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid().optional() }), annotations: { readOnlyHint: true } }, async ({ countryId, cityId }) => {
+  server.registerTool("district.list", { description: "Районы страны/города; view=compact возвращает страницу метаданных и workload без cells/lots. Full сохраняет прежнюю геометрию.", inputSchema: z.object({ countryId: countryIdSchema, cityId: z.string().uuid().optional(), ...metadataPage }), annotations: { readOnlyHint: true } }, async (input) => {
     try {
+      const { countryId, cityId } = input;
       await requireCountryAccess(db, identity, countryId, "country:read");
+      if (input.view === "compact") return response(await readMcpDistricts(db, countryId, cityId, input));
       const districts = await service.listDistricts(countryId, cityId);
       return response(await Promise.all(districts.map(async (district) => ({ ...district, workload: await service.getDistrictWorkload(countryId, district.id) }))));
     }
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.create", { description: "Создать расширяемый район с улицами, тротуарами и архетипом застройки. Если archetype не передан, сервер выберет его по цели района и характеру города.", inputSchema: districtCreateSchema, annotations: { idempotentHint: true } }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "districts:write"); return response(await service.createDistrict(input.countryId, input)); }
+  server.registerTool("district.create", { description: "Создать расширяемый район с улицами, тротуарами и архетипом застройки. Если archetype не передан, сервер выберет его по цели района и характеру города.", inputSchema: districtCreateSchema, annotations: { idempotentHint: true } }, async (input, ctx) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "districts:write"); return response(await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.createDistrict(input.countryId, input))); }
     catch (error) { return failure(error); }
   });
 
@@ -230,8 +250,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.delete", { description: "Безвозвратно удалить район и все его задачи, сохранив постоянные руины на прежних участках. Для защиты передайте точное текущее название; если район был активным, сервер активирует следующий плановый.", inputSchema: z.object({ countryId: countryIdSchema, districtId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "districts:write"); return response(await service.deleteDistrict(input.countryId, input)); }
+  server.registerTool("district.delete", { description: "Безвозвратно удалить район и все его задачи, сохранив постоянные руины на прежних участках. Для защиты передайте точное текущее название; если район был активным, сервер активирует следующий плановый.", inputSchema: z.object({ countryId: countryIdSchema, districtId: z.string().uuid(), confirmName: z.string().min(2).max(100), idempotencyKey: z.string().min(4).max(160) }), annotations: { destructiveHint: true, idempotentHint: true } }, async (input, ctx) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "districts:write"); return response(await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.deleteDistrict(input.countryId, input))); }
     catch (error) { return failure(error); }
   });
 
@@ -240,8 +260,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     catch (error) { return failure(error); }
   });
 
-  server.registerTool("district.complete", { description: "Закрыть район, когда все его задачи завершены; после этого район больше не расширяется.", inputSchema: z.object({ countryId: countryIdSchema, districtId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async ({ countryId, districtId, idempotencyKey }) => {
-    try { await requireCountryAccess(db, identity, countryId, "districts:write"); return response(await service.completeDistrict(countryId, districtId, idempotencyKey)); }
+  server.registerTool("district.complete", { description: "Закрыть район, когда все его задачи завершены; после этого район больше не расширяется.", inputSchema: z.object({ countryId: countryIdSchema, districtId: z.string().uuid(), idempotencyKey: z.string().min(4).max(160) }), annotations: { idempotentHint: true } }, async ({ countryId, districtId, idempotencyKey }, ctx) => {
+    try { await requireCountryAccess(db, identity, countryId, "districts:write"); return response(await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.completeDistrict(countryId, districtId, idempotencyKey))); }
     catch (error) { return failure(error); }
   });
 
@@ -294,17 +314,17 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       idempotencyKey: z.string().min(4).max(160),
     }).strict(),
     annotations: { idempotentHint: true },
-  }, async (input) => {
+  }, async (input, ctx) => {
     try {
       await requireCountryAccess(db, identity, input.countryId, "tasks:write");
-      const task = await service.createTask(input.countryId, {
+      const task = await runWithGenerationRequestSignal(ctx.mcpReq.signal, async () => service.createTask(input.countryId, {
                                                 cityId: input.cityId, districtId: input.districtId, title: input.title, description: input.description,
                                                 workItemType: input.workItemType, acceptanceCriteria: input.acceptanceCriteria, systemAnalysis: input.systemAnalysis,
                                                 architecture: input.architecture, designSystem: input.designSystem, implementationPlan: input.implementationPlan,
                                                 estimate: input.estimate, priority: input.priority, dueAt: input.dueAt,
                                                 creatorUserId: identity.userId, assigneeUserId: await resolveMember(input.countryId, input.assigneeEmail), assigneeRole: input.assigneeRole,
                                                 forUserId: await resolveMember(input.countryId, input.forUserEmail), idempotencyKey: input.idempotencyKey,
-                                              });
+                                              }));
       return response({ ...task, url: taskUrl(input.countryId, task), workload: await service.getDistrictWorkload(input.countryId, task.districtId) });
     } catch (error) { return failure(error); }
   });
@@ -319,15 +339,15 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("task.transfer", {
-    description: "Перенести существующую задачу в другой спринт того же города. ID, номер, стадия и история сохраняются; прежний участок навсегда остаётся занят маркером со ссылкой на текущую задачу.",
+    description: "Перенести существующую задачу в другой спринт того же города. ID, номер, стадия и история сохраняются; прежний участок освобождается, новый выбирается автоматически. resultMode=compact возвращает короткий receipt без истории.",
     inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), targetDistrictId: z.string().uuid(),
-      comment: z.string().trim().max(4000).optional(), idempotencyKey: z.string().min(4).max(160) }).strict(),
+      comment: z.string().trim().max(4000).optional(), idempotencyKey: z.string().min(4).max(160), resultMode: metadataPage.view }).strict(),
     annotations: { idempotentHint: true, destructiveHint: true },
-  }, async (input) => {
+  }, async (input, ctx) => {
     try {
       await requireCountryAccess(db, identity, input.countryId, "tasks:write");
-      const { countryId, ...command } = input;
-      const task = await service.transferTask(countryId, { ...command, actor: actorName, actorUserId: identity.userId });
+      const { countryId, resultMode, ...command } = input;
+      const task = await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.transferTask(countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode));
       return response({ ...task, url: taskUrl(input.countryId, task) });
     } catch (error) { return failure(error); }
   });
@@ -388,10 +408,10 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     description: "Безвозвратно удалить задачу, сохранив постоянные руины и краткую историю на её участке. Участок никогда не используется повторно. Для защиты передайте точный текущий заголовок.",
     inputSchema: z.object({ countryId: countryIdSchema, taskId: z.string().uuid(), confirmTitle: z.string().min(2).max(160), idempotencyKey: z.string().min(4).max(160) }),
     annotations: { destructiveHint: true, idempotentHint: true },
-  }, async (input) => {
+  }, async (input, ctx) => {
     try {
       await requireCountryAccess(db, identity, input.countryId, "tasks:write");
-      const deleted = await service.deleteTask(input.countryId, input);
+      const deleted = await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.deleteTask(input.countryId, input));
       return response({ ...deleted, workload: await service.getDistrictWorkload(input.countryId, deleted.districtId) });
     }
     catch (error) { return failure(error); }
@@ -402,8 +422,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     progress: z.number().int().min(0).max(100).optional(), comment: z.string().max(8000).optional(), idempotencyKey: z.string().min(4).max(160),
     resultMode: z.enum(["full", "compact"]).optional(),
   };
-  server.registerTool("task.set_status", { description: "Перевести задачу на следующую строительную стадию.", inputSchema: z.object(statusInput), annotations: { idempotentHint: true } }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); const { resultMode, ...command } = input; return response(await service.updateTaskStatus(input.countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode)); }
+  server.registerTool("task.set_status", { description: "Перевести задачу на следующую строительную стадию.", inputSchema: z.object(statusInput), annotations: { idempotentHint: true } }, async (input, ctx) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); const { resultMode, ...command } = input; return response(await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.updateTaskStatus(input.countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode))); }
     catch (error) { return failure(error); }
   });
 
@@ -411,8 +431,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
     description: "Обновить процент и статус задачи с обязательным комментарием.",
     inputSchema: z.object({ ...statusInput, progress: z.number().int().min(0).max(100), comment: z.string().min(1).max(8000) }),
     annotations: { idempotentHint: true },
-  }, async (input) => {
-    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); const { resultMode, ...command } = input; return response(await service.updateTaskStatus(input.countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode)); }
+  }, async (input, ctx) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); const { resultMode, ...command } = input; return response(await runWithGenerationRequestSignal(ctx.mcpReq.signal, () => service.updateTaskStatus(input.countryId, { ...command, actor: actorName, actorUserId: identity.userId }, resultMode))); }
     catch (error) { return failure(error); }
   });
 
@@ -618,10 +638,18 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("archive.record_list", {
-    description: "Получить компактные устойчивые справки проекта из Государственного архива.",
-    inputSchema: z.object({ countryId: countryIdSchema }), annotations: { readOnlyHint: true },
-  }, async ({ countryId }) => {
-    try { await requireCountryAccess(db, identity, countryId, "tasks:read"); return response(await service.listArchiveRecords(countryId)); }
+    description: "Справки архива; view=compact возвращает страницу метаданных без body. Полный текст одной записи читает archive.record_get; full сохраняет прежний список.",
+    inputSchema: z.object({ countryId: countryIdSchema, ...metadataPage }), annotations: { readOnlyHint: true },
+  }, async (input) => {
+    try { await requireCountryAccess(db, identity, input.countryId, "tasks:read"); return response(input.view === "compact" ? await readMcpArchiveRecords(db, input.countryId, input) : await service.listArchiveRecords(input.countryId)); }
+    catch (error) { return failure(error); }
+  });
+
+  server.registerTool("archive.record_get", {
+    description: "Прочитать одну полную запись архива после ограниченного metadata list.",
+    inputSchema: z.object({ countryId: countryIdSchema, recordId: z.string().uuid() }).strict(), annotations: { readOnlyHint: true },
+  }, async ({ countryId, recordId }) => {
+    try { await requireCountryAccess(db, identity, countryId, "tasks:read"); return response(await service.getArchiveRecord(countryId, recordId)); }
     catch (error) { return failure(error); }
   });
 
@@ -665,11 +693,13 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerResource("country", new ResourceTemplate("tasktopia://countries/{countryId}", { list: undefined }), { mimeType: "application/json" }, async (uri, variables) => {
-    const countryId = String(variables.countryId);
-    await requireCountryAccess(db, identity, countryId, "country:read");
-    return {
-      contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ country: await service.getCountry(countryId), archive: await service.getArchive(countryId), cities: await service.listCities(countryId) }, null, 2) }],
-    };
+    try {
+      const countryId = String(variables.countryId);
+      await requireCountryAccess(db, identity, countryId, "country:read");
+      return {
+        contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ country: await service.getCountry(countryId), archive: await service.getArchive(countryId), cities: await service.listCities(countryId) }) }],
+      };
+    } catch (error) { if (error instanceof DomainError) throw error; throw new Error("Внутренняя ошибка MCP", { cause: error }); }
   });
   server.registerResource("building-catalog", "tasktopia://catalog/buildings", { mimeType: "application/json" }, (uri) => {
     requireScope(identity, "country:read");

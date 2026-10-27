@@ -2,7 +2,6 @@ import type { Cell, ChunkPayloadDto, ChunkTaskDto, CityDto } from "./contracts";
 import type { IntercityRoadRoute } from "./intercity-roads";
 
 export const CITY_SCENE_SCHEMA_VERSION = 5 as const;
-export const CITY_AIRPORT_CONNECTION_LIMIT = 8;
 
 export type CityAirportEndpointDto = { taskId: string; cityId: string; point: Cell };
 export type CityAirportConnectionDto = {

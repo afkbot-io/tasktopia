@@ -1,13 +1,5 @@
 export type WorldLightPhase = "DAY" | "DAWN" | "DUSK" | "NIGHT";
 const wrap = (hour: number) => ((hour % 24) + 24) % 24;
-const moscowClock = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Europe/Moscow", hourCycle: "h23", hour: "2-digit", minute: "2-digit", second: "2-digit",
-});
-export function moscowHour(timestamp: number): number {
-  const parts = moscowClock.formatToParts(timestamp);
-  const value = (type: string) => Number(parts.find(part => part.type === type)!.value);
-  return value("hour") + value("minute") / 60 + value("second") / 3600;
-}
 const stops = [
   { hour: 0, rgb: [130, 148, 192], lamps: 1 },
   { hour: 6, rgb: [130, 148, 192], lamps: 1 },
@@ -33,8 +25,4 @@ export function lightingAtHour(value: number) {
     brightness: (rgb[0]! + rgb[1]! + rgb[2]!) / (3 * 255),
     shadowAlpha: daylight * .14, shadowOffsetX: -Math.cos((hour - 6) / 12 * Math.PI) * 3,
     lamps: from.lamps + (to.lamps - from.lamps) * eased };
-}
-
-export function worldLighting(timestamp: number) {
-  return lightingAtHour(moscowHour(timestamp));
 }

@@ -101,7 +101,7 @@ stale-while-revalidate=600`. Комментарии и невизуальные 
 - `country:read` — страны, города, районы и MCP resources; полный `city.get` дополнительно требует `tasks:read` из-за списка задач;
 - `cities:write` — профиль страны и Государственный архив, создание, обновление, переименование и безопасное удаление городов;
 - `districts:write` — создание, обновление, переименование, смена состояния и безопасное удаление районов;
-- `tasks:read` — чтение задач;
+- `tasks:read` — чтение задач, записей архива и состояния фоновых операций `task.*`;
 - `tasks:write` — создание/уточнение задач и связанных дефектов, перенос между спринтами одного города, назначение, смена стадии и безопасное удаление задач;
 - `comments:write` — добавление комментариев.
 
@@ -110,7 +110,7 @@ stale-while-revalidate=600`. Комментарии и невизуальные 
 ## Основные инструменты
 
 - `country.get`, `country.list`, `country.update_profile`
-- `archive.get`, `archive.record_list`, `archive.record_create`, `archive.record_update`, `archive.record_delete`
+- `archive.get`, `archive.record_list`, `archive.record_get`, `archive.record_create`, `archive.record_update`, `archive.record_delete`
 - `city.list`, `city.get`, `city.create`, `city.update`, `city.rename`, `city.delete`
 - `district.list`, `district.create`, `district.update`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
 - `task.list`, `task.list_page`, `task.collection_list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.transfer`, `task.delete`
@@ -120,6 +120,35 @@ stale-while-revalidate=600`. Комментарии и невизуальные 
 - `task.document_list`, `task.document_get`, `task.document_upsert`, `task.document_delete`
 - `task.checklist_replace`, `task.checklist_item_update`
 - `task.activity`, `task.dependency_add`, `task.dependency_remove`, `task.link_add`, `task.link_remove`, `task.attachment_add`, `task.attachment_list`
+
+## Ограниченные чтения структуры
+
+Для навигации используйте `view: "compact"` у `country.list`, `city.list`,
+`district.list` и `archive.record_list`. Ответ содержит `kind`, `version: 1`,
+`items`, `nextCursor` и, кроме списка стран, `countryId`. Соответствующие `kind`:
+`country.list-page`, `city.list-page`, `district.list-page`, `archive.record-page`.
+`limit` по умолчанию 50, допустим от 1 до 100; `cursor` и `limit` применяются
+только в compact-режиме. Продолжайте до `nextCursor: null` с прежним контекстом.
+Порядок — `createdAt ASC, id ASC`; cursor сохраняет точность PostgreSQL timestamp
+и связан с видом списка, аккаунтом для стран, страной и необязательным `cityId`
+для районов. Чужой или несовместимый cursor отклоняется.
+
+Метаданные стран не включают длинный паспорт проекта; города содержат счётчики
+районов и задач, районы — агрегированный `workload` без `cells`/`lots`, архив —
+`bodyLength` без `body`. Полный текст одной записи читает
+`archive.record_get(countryId, recordId)` с `tasks:read`.
+
+`country.get` с `view: "compact"` возвращает `kind: "country.card", version: 1`:
+полный паспорт страны, архив и `counts.cities`, без списка городов.
+`city.get` с этим режимом возвращает `kind: "city.card", version: 1` с метаданными
+и счётчиками города, без задач и геометрии районов; достаточно `country:read`.
+Полный `city.get` требует также `tasks:read`. Отсутствие `view` или `view: "full"`
+сохраняет прежние полные формы и массивы без усечения.
+
+Обычный путь агента: выбрать страну через compact-список, прочитать её compact-карточку,
+найти город/район страницами, затем использовать `task.list_page`, compact-карточку
+задачи и только нужные коллекции/документы. Инструменты возвращают JSON без декоративных
+отступов; `structuredContent` сохраняет те же данные.
 
 ## Ограниченные чтения задач
 
@@ -156,7 +185,7 @@ Cursor нельзя использовать с другим набором фи
 | `GET /api/tasks/:taskId/documents/:documentId` | Один полный `TaskDocumentDto` |
 | `GET /api/tasks/list-page` | `TaskListPageDto`, те же фильтры и cursor |
 
-У `task.add_comment`, `task.set_status` и `task.report_progress` необязательный
+У `task.add_comment`, `task.set_status`, `task.report_progress` и `task.transfer` необязательный
 `resultMode: "compact"` возвращает отдельный `kind: "task.command-result", version: 1`
 с номером, заголовком, статусом, прогрессом и короткими полями задачи. Режим по
 умолчанию `full` сохраняет прежний ответ. Compact comment/progress не собирают
@@ -164,9 +193,14 @@ Cursor нельзя использовать с другим набором фи
 владельцу токена остаются обязательными. `resultMode` — только выбор представления,
 он не входит в command payload/hash. Retry с другим режимом не создаёт новую команду.
 
-## Фоновая генерация
+## Фоновые пространственные команды
 
-`city.create`, `district.create`, `task.create` и `country.regenerate` сначала сохраняют durable job с уникальным `(country, operation, idempotencyKey)`. MCP ограниченно ждёт результат. Если геометрия успела построиться, контракт не меняется; если ожидание превысило `GENERATION_WAIT_MS`, вызов остаётся успешным и возвращает:
+`city.create`, `district.create`, `task.create`, `country.regenerate`,
+`task.set_status` (также `task.report_progress`), `task.transfer`, `task.delete`,
+`city.delete`, `district.delete` и `district.complete` сначала сохраняют durable job
+с уникальным `(country, operation, idempotencyKey)`. MCP ограниченно ждёт результат.
+Если worker успел завершить команду, возвращается прежний результат в выбранном
+режиме; если ожидание превысило `GENERATION_WAIT_MS`, вызов остаётся успешным и возвращает:
 
 ```json
 {
@@ -175,9 +209,40 @@ Cursor нельзя использовать с другим набором фи
 }
 ```
 
-Внутри страны очередь сохраняет порядок `createdAt, id`: следующая команда не обгоняет уже выполняющуюся. Между странами учитывается время последнего обслуживания, поэтому большой backlog одной страны не занимает все последовательные ходы. Истёкшая последняя попытка проверяет уже committed receipt: подтверждённый результат восстанавливается, иначе job становится FAILED. Ожидания coalesce по job, получают PostgreSQL notification и используют ограниченный SQL fallback.
+Актуальный worker сохраняет внутри страны порядок `createdAt, id`: следующая команда не обгоняет уже выполняющуюся. Между странами учитывается время последнего обслуживания, поэтому большой backlog одной страны не занимает все последовательные ходы. Истёкшая последняя попытка проверяет уже committed receipt: подтверждённый результат восстанавливается, иначе job становится FAILED. Ожидания coalesce по job, получают PostgreSQL notification и используют ограниченный SQL fallback.
+
+Migration `0046` добавляет внутренние состояния `QUEUED`/`EXECUTING` для шести новых
+операций; публично они остаются `PENDING`/`RUNNING`. Старый worker их не захватывает
+и не выполняет как другую команду. При смешанной версии или откате новые команды
+ждут актуальный worker; строгий общий FIFO при старом worker не гарантируется.
+Данные и durable jobs при таком откате сохраняются.
+Migration `0047` сохраняет исходную сериализацию новых команд до JSONB-проекции,
+чтобы retry прежних синхронных receipts не менял hash из-за порядка ключей.
+Исторические receipts и их hashes не переписываются.
 
 Это не ошибка и не повод повторять write с новым ключом. Опрашивайте `world_generation.get` с тем же `job.id`; `COMPLETED` содержит `result`, окончательный `FAILED` — безопасные `error.code/message`. Повтор исходной команды с тем же idempotency key и тем же payload возвращает тот же job/result; другой payload даёт `CONFLICT`.
+
+Polling проверяет актуальное членство и право чтения самой операции: `task.*`
+требует `tasks:read`, операции страны/города/района — `country:read`. Право записи
+само по себе не даёт права polling. Публичные accepted/polling-ответы не содержат
+входной `payload`. Для `GENERATION_FAILED`, включая исторические записи, сообщение
+фиксировано: «Генерация завершилась с ошибкой». Неожиданные ошибки MCP resources
+также не раскрывают внутренние сообщения сервера.
+
+У `world_generation.get` необязательный `view: "compact"` возвращает для завершённых
+`task.create`/`task.set_status`/`task.transfer` короткий `task.command-result`
+без комментариев, документов и истории.
+Другие результаты сохраняют форму. По умолчанию polling возвращает полный результат;
+изменение `view` или `resultMode` на retry не меняет payload и не повторяет команду.
+Accepted подтверждает постановку в очередь: проверки текущего состояния объекта и
+точного подтверждения удаления выполняет worker; их отказ становится `FAILED`
+без частичной мутации.
+
+Закрытие HTTP-соединения ожидающего клиента снимает только его ожидание и observer,
+если других ожидающих нет. Уже сохранённая команда остаётся в очереди и может
+завершиться после отключения; используйте прежний ключ или polling. Сигнал отмены
+не сохраняется в payload и не отменяет SQL-транзакцию worker.
+Если сигнал уже отменён до enqueue, возвращается `CANCELLED` без нового job.
 
 Перед записью и сравнением payload приводится к JSON-совместимой форме: необязательные object-поля со значением `undefined` считаются отсутствующими, а явный `null` остаётся значимым значением. Поэтому обычный `task.create` без `dueAt`, назначения или park-полей не отличается от сохранённого JSONB и не вызывает ложный `CONFLICT`.
 

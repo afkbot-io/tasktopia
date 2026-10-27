@@ -15,12 +15,7 @@ import { greenAreaPathCells } from "../../shared/green-area";
 import { cellKey, contains, neighbors4 } from "./grid";
 
 export { ROAD_WIDTH } from "../../shared/road-surfaces";
-const MORPHOLOGIES: CityMorphology[] = ["BALANCED", "DENSE_CORE", "GARDEN_CITY", "POLYCENTRIC"];
 const ARCHETYPES: DistrictArchetype[] = ["NEW_BUILD", "PRIVATE", "MIXED_URBAN", "COMMERCIAL", "CIVIC"];
-
-export function cityMorphology(seedValue: number): CityMorphology {
-  return MORPHOLOGIES[Math.abs(Math.floor(seedValue * 10_000)) % MORPHOLOGIES.length]!;
-}
 
 function explicitArchetype(value: string): DistrictArchetype | undefined {
   const text = value.toLocaleLowerCase("ru");
