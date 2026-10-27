@@ -145,6 +145,9 @@ const SPATIAL_RESULT_KINDS = new Map<string, "city" | "district" | "task">([
 
 type Row = Record<string, unknown>;
 type GrowthDirection = DistrictDto["growthDirection"];
+type DistrictWorkload = {
+  districtId: string; targetSp: number; plannedSp: number; openSp: number; taskCount: number; overTargetBySp: number;
+};
 
 export class DomainError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -1501,23 +1504,26 @@ export class AppService {
     return this.projectTasks(rows as Row[]);
   }
 
-  async getDistrictWorkload(countryId: string, districtId: string): Promise<{
-    districtId: string; targetSp: number; plannedSp: number; openSp: number; taskCount: number; overTargetBySp: number;
-  }> {
-    const row = await this.db.prepare(`SELECT d.id, d.capacity_sp,
+  async getDistrictWorkload(countryId: string, districtId: string): Promise<DistrictWorkload> {
+    return (await this.getDistrictWorkloads(countryId, [districtId])).get(districtId)!;
+  }
+
+  async getDistrictWorkloads(countryId: string, districtIds: readonly string[]): Promise<Map<string, DistrictWorkload>> {
+    const ids = [...new Set(districtIds)];
+    if (!ids.length) return new Map();
+    const rows = await this.db.prepare(`SELECT d.id, d.capacity_sp,
       COUNT(t.id)::integer AS task_count,
       COALESCE(SUM(t.estimate), 0)::integer AS planned_sp,
       COALESCE(SUM(CASE WHEN t.status <> 'COMPLETED' THEN t.estimate ELSE 0 END), 0)::integer AS open_sp
       FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
       LEFT JOIN tasks_v3 t ON t.district_id = d.id
-      WHERE d.id = ? AND c.country_id = ? GROUP BY d.id, d.capacity_sp`).get(districtId, countryId) as Row | undefined;
-    if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
-    const targetSp = Number(row.capacity_sp);
-    const plannedSp = Number(row.planned_sp);
-    return {
-      districtId, targetSp, plannedSp, openSp: Number(row.open_sp), taskCount: Number(row.task_count),
-      overTargetBySp: Math.max(0, plannedSp - targetSp),
-    };
+      WHERE c.country_id = ? AND d.id = ANY(?::text[]) GROUP BY d.id, d.capacity_sp`).all<Row>(countryId, ids);
+    if (rows.length !== ids.length) throw new DomainError("NOT_FOUND", "Район не найден");
+    return new Map(rows.map(row => {
+      const targetSp = Number(row.capacity_sp), plannedSp = Number(row.planned_sp);
+      return [String(row.id), { districtId: String(row.id), targetSp, plannedSp, openSp: Number(row.open_sp),
+        taskCount: Number(row.task_count), overTargetBySp: Math.max(0, plannedSp - targetSp) }];
+    }));
   }
 
   async listPlanCities(countryId: string): Promise<PlanCityDto[]> {

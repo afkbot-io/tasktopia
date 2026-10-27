@@ -44,6 +44,7 @@ describe("PostgreSQL migrations", () => {
       "0038_reusable_relocated_sites.sql", "0039_country_invitations.sql",
       "0040_transport_network_snapshots.sql", "0041_city_airport_sites.sql", "0042_personal_transport_render_snapshots.sql",
       "0043_task_numbers_queue_and_read_indexes.sql", "0044_personal_news_kinds.sql",
+      "0045_task_page_indexes.sql", "0046_async_spatial_commands.sql", "0047_generation_command_serialization.sql",
     ]);
     expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.checksum))).toBe(true);
   });

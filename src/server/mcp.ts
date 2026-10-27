@@ -184,7 +184,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       const city = (await service.listCities(countryId)).find((item) => item.id === cityId);
       if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
       const districts = await service.listDistricts(countryId, cityId);
-      return response({ city, districts: await Promise.all(districts.map(async (district) => ({ ...district, workload: await service.getDistrictWorkload(countryId, district.id) }))), tasks: await service.listTasks(countryId, undefined, cityId) });
+      const workloads = await service.getDistrictWorkloads(countryId, districts.map(district => district.id));
+      return response({ city, districts: districts.map(district => ({ ...district, workload: workloads.get(district.id)! })), tasks: await service.listTasks(countryId, undefined, cityId) });
     } catch (error) { return failure(error); }
   });
 
@@ -222,7 +223,8 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       await requireCountryAccess(db, identity, countryId, "country:read");
       if (input.view === "compact") return response(await readMcpDistricts(db, countryId, cityId, input));
       const districts = await service.listDistricts(countryId, cityId);
-      return response(await Promise.all(districts.map(async (district) => ({ ...district, workload: await service.getDistrictWorkload(countryId, district.id) }))));
+      const workloads = await service.getDistrictWorkloads(countryId, districts.map(district => district.id));
+      return response(districts.map(district => ({ ...district, workload: workloads.get(district.id)! })));
     }
     catch (error) { return failure(error); }
   });
