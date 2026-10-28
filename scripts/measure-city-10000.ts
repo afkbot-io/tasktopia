@@ -11,6 +11,7 @@ import { decodeCitySceneWire, CITY_SCENE_COMPACT_ACCEPT } from "../src/shared/ci
 import { CITY_SCENE_DATA_BUDGET, estimateCitySceneDataWeight } from "../src/shared/city-scene-weight";
 import { CITY_SCALE_COLD_OBSERVER_SCRIPT, CITY_SCALE_MEASUREMENT_CONTRACT,
   calculateColdCityMetric, type ColdCityCaptureApi } from "./city-scale-cold-metric";
+import { City10000RequestCancellation } from "./city-10000-request-cancellation";
 import { assertCity10000Scene, city10000Budgets, city10000GeometryHash, city10000Metric,
   CITY_10000_PROFILES, type City10000Fixture, type City10000Profile, type City10000Target } from "./city-10000-contract";
 
@@ -80,7 +81,7 @@ async function main() {
   const build = resolve(process.env.CITY_10000_BUILD_ROOT), runId = process.env.CITY_10000_RUN_ID ?? "browser-first";
   assert.match(runId, /^[a-z0-9-]+$/);
   const output = `.builder/city-10000-20261028/${runId}`; process.umask(0o077); await mkdir(output, { mode: 0o700 });
-  const sourcePaths = ["scripts/measure-city-10000.ts", "scripts/city-10000-contract.ts", "scripts/city-scale-cold-metric.ts", "src/shared/city-scene-weight.ts", "src/shared/city-scene-wire.ts"];
+  const sourcePaths = ["scripts/measure-city-10000.ts", "scripts/city-10000-contract.ts", "scripts/city-scale-cold-metric.ts", "scripts/city-10000-request-cancellation.ts", "src/shared/city-scene-weight.ts", "src/shared/city-scene-wire.ts"];
   const sourceHashes = Object.fromEntries(await Promise.all(sourcePaths.map(async path => [path, digest(await readFile(path))])));
   const serverHash = digest(await readFile(join(build, "dist/server.mjs"))), htmlHash = digest(await readFile(join(build, "dist/public/index.html")));
   const client = createHash("sha256");
@@ -96,6 +97,7 @@ async function main() {
       const profile = CITY_10000_PROFILES[name], budgets = city10000Budgets(name), context = await browser.newContext({
         baseURL: base.origin, viewport: profile.viewport, deviceScaleFactor: profile.dpr, hasTouch: profile.touch, isMobile: profile.touch, serviceWorkers: "block" });
       const paths: string[] = [], origins = new Set<string>(), errors: string[] = [], warnings: string[] = [], requestFailures: Record<string, unknown>[] = [];
+      const requestCancellations = new City10000RequestCancellation<object>(`${base.origin}/api/plan/cities/${fixture.cityId}/districts`);
       const evidence: Record<string, unknown> = { profile: name };
       let phase = "login", truncated = false, diagnosticPage: Page | undefined;
       const recordError = (value: string) => { if (errors.length < 128) errors.push(value.slice(0, 1500)); else truncated = true; };
@@ -107,8 +109,10 @@ async function main() {
           else if (message.type() === "warning") { if (warnings.length < 128) warnings.push(message.text().slice(0, 1500)); else truncated = true; } });
         page.on("response", response => { if (response.status() >= 400) recordError(`HTTP${response.status()}:${new URL(response.url()).pathname}`); });
         page.on("requestfailed", request => { const row = { phase, path: new URL(request.url()).pathname, error: request.failure()?.errorText ?? "unknown" };
-          if (requestFailures.length < 128) requestFailures.push(row); else truncated = true; recordError(`requestfailed:${row.phase}:${row.path}:${row.error}`); });
+          if (requestFailures.length < 128) requestFailures.push(row); else truncated = true; requestCancellations.failed(request, row); });
+        page.on("requestfinished", request => requestCancellations.finished(request));
         page.on("request", request => { const url = new URL(request.url()); origins.add(url.origin);
+          requestCancellations.started(request, { url: request.url(), method: request.method(), resourceType: request.resourceType() });
           if (url.origin !== base.origin && url.origin !== "null" && !(url.protocol === "ws:" && url.host === base.host)) recordError(`unexpected-external-origin:${url.origin}`);
           if (paths.length < 20_000) paths.push(url.pathname); else truncated = true; });
         const initialize = () => {
@@ -135,8 +139,16 @@ async function main() {
         await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true", { timeout: 90_000 });
         const openCity = async () => { const target = page.locator(`.planet-city-targets [data-city-id="${fixture.cityId}"]`);
           await target.focus(); await page.keyboard.press("Enter"); await ready(page); };
-        const planet = async () => { await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Планета", exact: true }).click();
-          await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true"); };
+        const planet = async () => { const exit = requestCancellations.beginExit(phase);
+          await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Планета", exact: true }).click();
+          await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready", "true");
+          await expect(host(page)).toHaveAttribute("data-map-active", "false");
+          await expect(page.getByRole("navigation", { name: "Уровень карты" })).toHaveCount(0);
+          requestCancellations.confirmExit(exit, {
+            planetReady: await page.locator(".planet-atlas").getAttribute("data-planet-ready") === "true",
+            ownerInactive: await host(page).getAttribute("data-map-active") === "false",
+            navigationAbsent: await page.getByRole("navigation", { name: "Уровень карты" }).count() === 0,
+          }); };
         phase = "cold-city";
         const response = page.waitForResponse(r => r.url() === base.origin + scenePath, { timeout: 90_000 });
         const started = performance.now(), start = await page.evaluate(({ token, cityId }) =>
@@ -260,9 +272,13 @@ async function main() {
         const afterPan = await pose(page); assert.ok(Math.abs(afterPan.x - beforePan.x) > 64, "Real long pan must cross a chunk boundary");
         await zoom(page, cdp, profile.touch, 4); await zoom(page, cdp, profile.touch, .8);
         const retainedPose = await pose(page), heapBefore = await heap(cdp);
+        Object.assign(evidence, { beforePan, afterPan, panTimingsMs, retainedPose, heapBefore });
         phase = "retained-churn";
         for (let n = 0; n < 10; n++) { await planet(); await openCity(); assert.equal(await canvas.evaluate(el => el === document.querySelector(".world-canvas canvas")), true); }
         assert.deepEqual(await pose(page), retainedPose); const heapAfter = await heap(cdp), growth = heapAfter.usedSize - heapBefore.usedSize;
+        const residentHeapTarget = { usedBytes: heapAfter.usedSize, targetBytes: budgets.residentHeapTargetBytes,
+          withinTarget: heapAfter.usedSize <= budgets.residentHeapTargetBytes, status: "MEASURED_TARGET_REQUIRES_ROOT_REVIEW" };
+        Object.assign(evidence, { heapAfter, heapGrowthBytes: growth, residentHeapTarget });
         if (growth > budgets.retainedHeapBytes) violations.push(`${name}:retained heap growth`);
         const resources = await page.evaluate(() => performance.getEntriesByType("resource").map(entry => entry.toJSON()));
         const finalTelemetry = await telemetry(page), noExtraSceneReads = paths.slice(afterColdReads).filter(path => /\/scene$|\/world\/viewport|\/chunks\//.test(path));
@@ -271,6 +287,7 @@ async function main() {
         assert.ok(Number.isFinite(residentChunks) && residentChunks > 0 && Number.isFinite(residentBudget) && residentBudget > 0 && residentChunks <= residentBudget);
         assert.ok(Number(finalTelemetry.taskBuildingViews) > 0 && Number(finalTelemetry.taskBuildingViews) < 10000, "Only resident building views should be materialized");
         const scenes = paths.filter(path => path.endsWith("/scene")), legacy = paths.filter(path => /\/world\/viewport|\/chunks\//.test(path));
+        Object.assign(evidence, { browserSceneRequests: scenes.length, noExtraSceneReads, legacy });
         if (scenes.length !== 1 || noExtraSceneReads.length || legacy.length) violations.push(`${name}:one-full-scene network budget`);
         phase = "auxiliary-scene-validation-after-timed-phases";
         const auxiliary = await context.request.get(scenePath, { headers: { accept: CITY_SCENE_COMPACT_ACCEPT }, timeout: 90_000, maxRedirects: 0, maxRetries: 0 });
@@ -293,7 +310,13 @@ async function main() {
         await expect(page.getByLabel("Email", { exact: true })).toBeVisible(); await expect(host(page)).toHaveCount(0);
         await expect.poll(() => released.evaluate(el => (el as HTMLElement).dataset.assetLease)).toBe("released");
         assert.equal(await released.evaluate(el => (el as HTMLElement).dataset.leasedAssets), "0"); await released.dispose();
-        const heapAfterLogout = await heap(cdp); await cdp.detach(); assert.deepEqual(errors, []); assert.equal(truncated, false);
+        const teardown = { hostRemoved: true, assetLeaseReleased: true, activeLeases: 0 };
+        evidence.teardown = teardown;
+        const heapAfterLogout = await heap(cdp); evidence.heapAfterLogout = heapAfterLogout; await cdp.detach();
+        const requestCancellationEvidence = requestCancellations.snapshot(); evidence.requestCancellationEvidence = requestCancellationEvidence;
+        truncated ||= requestCancellationEvidence.truncated;
+        const finalErrors = [...errors, ...requestCancellationEvidence.unexpectedFailures.map(row => `requestfailed:${row.phase}:${row.path}:${row.error}`)];
+        assert.deepEqual(finalErrors, []); assert.equal(truncated, false);
         results.push({ profile: name, parameters: profile, budgets, cold, coldInput, coldTelemetry, rawSceneBytes: body.length,
           gzipSceneBytes: fixture.gzipSceneBytes, legacyRawSceneBytes: fixture.legacyRawSceneBytes,
           legacyGzipSceneBytes: fixture.legacyGzipSceneBytes, compactAccept: CITY_SCENE_COMPACT_ACCEPT, sceneResponse: evidence.sceneResponse,
@@ -304,18 +327,20 @@ async function main() {
           cachePolicy: { estimatedWeightBytes: cacheWeight, retainedHeuristicBudgetBytes: CITY_SCENE_DATA_BUDGET,
             predictedBypass: cacheWeight > CITY_SCENE_DATA_BUDGET, directAdmissionTelemetry: false },
           windows, cards, beforePan, afterPan, panTimingsMs, retainedPose, heapBefore, heapAfter, heapGrowthBytes: growth, heapAfterLogout,
-          residentHeapTarget: { usedBytes: heapAfter.usedSize, targetBytes: budgets.residentHeapTargetBytes,
-            withinTarget: heapAfter.usedSize <= budgets.residentHeapTargetBytes, status: "MEASURED_TARGET_REQUIRES_ROOT_REVIEW" },
+          residentHeapTarget,
           browserSceneRequests: scenes.length, auxiliarySceneValidation, panReference: { source: "observed-initial-focus", ...initialFocus },
-          noExtraSceneReads, legacy, origins: [...origins], finalTelemetry, resources, errors, warnings, requestFailures, truncated,
-          teardown: { hostRemoved: true, assetLeaseReleased: true, activeLeases: 0 } });
+          noExtraSceneReads, legacy, origins: [...origins], finalTelemetry, resources, errors: finalErrors, warnings, requestFailures, requestCancellationEvidence, truncated,
+          teardown });
       } catch (error) {
         let current: unknown = null, timer: ReturnType<typeof setTimeout> | undefined;
         try { current = diagnosticPage ? await Promise.race([telemetry(diagnosticPage), new Promise(resolveCapture => {
           timer = setTimeout(() => resolveCapture({ coverage: "unavailable", reason: "3s failure read deadline" }), 3000);
         })]) : null; } catch { current = { coverage: "unavailable", reason: "Page closed or detached" }; }
         finally { clearTimeout(timer); }
-        failures.push({ profile: name, phase, evidence, error: error instanceof Error ? error.message : String(error), current, errors, warnings, requestFailures, truncated, paths });
+        const requestCancellationEvidence = requestCancellations.snapshot(); evidence.requestCancellationEvidence = requestCancellationEvidence;
+        truncated ||= requestCancellationEvidence.truncated;
+        const finalErrors = [...errors, ...requestCancellationEvidence.unexpectedFailures.map(row => `requestfailed:${row.phase}:${row.path}:${row.error}`)];
+        failures.push({ profile: name, phase, evidence, error: error instanceof Error ? error.message : String(error), current, errors: finalErrors, warnings, requestFailures, requestCancellationEvidence, truncated, paths });
         throw error;
       } finally { await context.close(); }
     }
