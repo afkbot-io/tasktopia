@@ -1,6 +1,6 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 
 for (const stage of [1, 2, 3, 4, 5]) test(`port terminal stage ${stage} retains its native parcel and image`, async ({ page }, info) => {
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL ?? ""), "Local renderer fixture only");
@@ -11,7 +11,7 @@ for (const stage of [1, 2, 3, 4, 5]) test(`port terminal stage ${stage} retains 
   page.on("response", response => { if (response.ok() && response.url().includes("/compact-port-v1/")) images.push(response.url()); });
   // A renderer-only fixture. No port is granted and no coastal proof is fabricated in storage.
   await page.route("**/api/countries/*/cities/*/scene", async route => {
-    const response = await route.fetch(), scene = await response.json() as CitySceneDto;
+    const response = await route.fetch(), scene = decodeCitySceneWire(await response.json());
     const tasks = [...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)];
     const target = tasks.find(task => task.id === selectedId) ?? tasks.find(task => task.footprint.length === 24
       && Math.max(...task.footprint.map(p => p.x)) - Math.min(...task.footprint.map(p => p.x)) === 5

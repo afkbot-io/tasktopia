@@ -142,13 +142,24 @@ export function buildSurfaceMap(input: {
   features: WorldFeatureDto[];
   isSurfaceTerrain: (cell: Cell) => boolean;
 }): Map<string, SurfaceCellDto> {
+  // One page can ask about the same curb/apron coordinate several times.
+  // Keep both verdicts only for this build, with a finite fallback for callers
+  // that supply a larger area. This never retains a city-wide terrain raster.
+  const terrainMemo = new Map<string, boolean>();
+  const isSurfaceTerrain = (cell: Cell): boolean => {
+    const key = cellKey(cell), known = terrainMemo.get(key);
+    if (known !== undefined) return known;
+    const result = input.isSurfaceTerrain(cell);
+    if (terrainMemo.size < 8192) terrainMemo.set(key, result);
+    return result;
+  };
   const activeFeatures = input.features.filter((feature) => feature.kind !== "RUIN");
   const blocked = new Set([
     ...input.tasks.flatMap((task) => task.footprint).map(cellKey),
     ...activeFeatures.flatMap((feature) => feature.footprint).map(cellKey),
   ]);
   const surfaces = buildRoadSurfaces({ roads: input.roads, blocked,
-    isSurfaceTerrain: input.isSurfaceTerrain,
+    isSurfaceTerrain,
     isInsideCity: cell => input.cities.some(city => contains(city.bounds, cell)),
   });
 
@@ -160,7 +171,7 @@ export function buildSurfaceMap(input: {
       if (!lot.taskId) continue;
       for (const cell of lot.sharedAccess ?? []) {
         const key = cellKey(cell);
-        if (!input.roads.has(key) && !blocked.has(key) && input.isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
+        if (!input.roads.has(key) && !blocked.has(key) && isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
           surfaces.set(key, { ...cell, kind: "PATH", finish });
         }
       }
@@ -173,7 +184,7 @@ export function buildSurfaceMap(input: {
   // reaches the street edge.
   for (const cell of buildingGapPaths(input.districts, input.tasks)) {
     const key = cellKey(cell);
-    if (!input.roads.has(key) && !blocked.has(key) && input.isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
+    if (!input.roads.has(key) && !blocked.has(key) && isSurfaceTerrain(cell) && surfaces.get(key)?.kind !== "SIDEWALK") {
       surfaces.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
     }
   }
@@ -181,7 +192,7 @@ export function buildSurfaceMap(input: {
   // New facades sit on the same small-scale paving language as the surrounding
   // sidewalk instead of ending abruptly against grass. Street sidewalk and
   // access cells retain priority over this decorative apron.
-  for (const cell of buildingApronCells({ tasks: input.tasks, roads: input.roads, blocked, isSurfaceTerrain: input.isSurfaceTerrain })) {
+  for (const cell of buildingApronCells({ tasks: input.tasks, roads: input.roads, blocked, isSurfaceTerrain })) {
     const key = cellKey(cell);
     if (surfaces.get(key)?.kind !== "SIDEWALK") surfaces.set(key, { ...cell, kind: "PATH", finish: "PAVERS" });
   }

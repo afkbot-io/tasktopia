@@ -21,7 +21,8 @@ test("map navigation, labels and task controls follow the revised visual contrac
   await expect(page.getByRole("button", { name: "Границы", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Районы", exact: true }).click();
   await expect(page.getByRole("button", { name: "Районы", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await openMapCity(page);
+  // Exercise the actual city tab: ensuring an existing CITY does not reset its layers.
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await expect(page.getByRole("button", { name: "Районы", exact: true })).toHaveAttribute("aria-pressed", "false");
   const initialX = await city.getAttribute("data-camera-world-x");
   const box = (await city.boundingBox())!;

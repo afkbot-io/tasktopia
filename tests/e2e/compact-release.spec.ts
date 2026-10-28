@@ -1,7 +1,7 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { ChunkTaskDto } from "../../src/shared/contracts";
 
 test.skip(process.env.E2E_COMPACT_RELEASE_FIXTURE !== "true", "Explicit480task/20sprint isolated release fixture only");
@@ -48,7 +48,7 @@ test("480real tasks across20sprints keep compact art, one resident scene and acc
   expect(login.status()).toBe(200);
   const loaded = page.waitForResponse(r => /\/cities\/[^/]+\/scene$/.test(new URL(r.url()).pathname));
   const started = Date.now(); await page.goto("/");
-  const response = await loaded; const scene = await response.json() as CitySceneDto;
+  const response = await loaded; const scene = decodeCitySceneWire(await response.json());
   expect(scene.city.name).toBe("Город двадцати спринтов"); await ready(page);
   const firstReadyMs = Date.now() - started;
   const tasks = [...new Map([...scene.chunks.flatMap(c => c.tasks), ...scene.completedDistrictSnapshots.flatMap(s => s.tasks)].map(t => [t.id, t])).values()];
@@ -105,7 +105,7 @@ test("six newly authored service families render and open their actual tasks", a
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
   const loaded = page.waitForResponse(r => /\/cities\/[^/]+\/scene$/.test(new URL(r.url()).pathname));
   await page.goto("/");
-  const scene = await (await loaded).json() as CitySceneDto;
+  const scene = decodeCitySceneWire(await (await loaded).json());
   await ready(page);
   const tasks = [...new Map([...scene.chunks.flatMap(c => c.tasks), ...scene.completedDistrictSnapshots.flatMap(s => s.tasks)].map(t => [t.id, t])).values()];
   await page.locator("canvas[aria-label='Интерактивная карта города']").hover(); await page.mouse.wheel(0, -600);
@@ -134,7 +134,7 @@ test("whole20sprint city fits one review capture without changing its geography"
   await page.setViewportSize({ width: 3000, height: 2700 });
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
   const loaded = page.waitForResponse(r => /\/cities\/[^/]+\/scene$/.test(new URL(r.url()).pathname));
-  await page.goto("/"); const scene = await (await loaded).json() as CitySceneDto; await ready(page);
+  await page.goto("/"); const scene = decodeCitySceneWire(await (await loaded).json()); await ready(page);
   expect(scene.city.name).toBe("Город двадцати спринтов");
   const host = page.locator(".world-canvas");
   const minimum = Number(await host.getAttribute("data-minimum-render-scale"));

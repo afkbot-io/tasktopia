@@ -1,6 +1,6 @@
 {
   "name": "tasktopia",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -20,6 +20,7 @@
     "countryRoadSnapshotTables": [
       "country_road_snapshots_v1"
     ],
+    "citySceneMaxChunks": 4096,
     "blockStructuralShapes": {
       "compact-apartment-v1": {
         "width": 6,

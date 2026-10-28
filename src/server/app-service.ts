@@ -1,4 +1,7 @@
 import type { AppServiceRuntimeStats, CacheCounters } from "./runtime-stat-contracts";
+import { setImmediate as yieldToEventLoop } from "node:timers/promises";
+import { createSceneSpatialIndex, type ViewportSpatialSnapshot } from "./world/scene-spatial-index";
+import { CITY_SCENE_MAX_CHUNKS, citySceneChunkRange } from "../shared/city-capacity";
 import { capturesCityMilestone, milestoneCityBefore, readCityDevelopmentFacts } from "./city-album-read";
 import { taskScalarChanges } from "../shared/task-scalar-history";
 import { readPersonalTransportRenderSnapshot } from "./world/personal-transport-render-snapshot";
@@ -381,14 +384,6 @@ function unionRect(a: Rect, b: Rect): Rect {
 }
 
 type ChunkDefectSummary = NonNullable<ChunkTaskDto["defectSummary"]>;
-type ViewportSpatialSnapshot = {
-  roads: RoadCellDto[];
-  districts: DistrictDto[];
-  cities: CityDto[];
-  tasks: TaskDto[];
-  features: WorldFeatureDto[];
-  defectSummaryByTask: Map<string, ChunkDefectSummary>;
-};
 
 export interface WorldGenerationDispatcher {
   execute<T>(
@@ -1103,10 +1098,17 @@ export class AppService {
   }
 
   async listDistricts(countryId: string, cityId?: string, bounds?: Rect): Promise<DistrictDto[]> {
+    return this.readDistricts(countryId, cityId, bounds);
+  }
+
+  private async readDistricts(countryId: string, cityId?: string, bounds?: Rect, ownedLayout?: CompiledBlockLayoutV1): Promise<DistrictDto[]> {
+    if (ownedLayout && (ownedLayout.countryId !== countryId || ownedLayout.cityId !== cityId)) {
+      throw new DomainError("WORLD_REGENERATION_REQUIRED", "Геометрия города не соответствует текущей сцене");
+    }
     const rows=cityId?await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id=d.city_id WHERE c.country_id=? AND c.id=? ORDER BY d.created_at,d.id").all<Row>(countryId,cityId):await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id=d.city_id WHERE c.country_id=? ORDER BY d.created_at,d.id").all<Row>(countryId);
     const result=rows.map(districtDto);
     for(const currentCity of new Set(result.map(d=>d.cityId))) {
-      const layout=await this.activeLayout(currentCity);
+      const layout=ownedLayout ?? await this.activeLayout(currentCity);
       if(!layout) continue;
       const taskBySlot=new Map(layout.placements.map(p=>[p.blockId+":"+p.slotKey,p.taskId]));
       const markers=new Set(layout.siteMarkers.map(p=>p.blockId+":"+p.slotKey));
@@ -1405,12 +1407,8 @@ export class AppService {
       minX: Math.min(bounds.minX, p.x - 2), minY: Math.min(bounds.minY, p.y - 2),
       maxX: Math.max(bounds.maxX, p.x + 2), maxY: Math.max(bounds.maxY, p.y + 2),
     }), { ...city.bounds });
-    const minChunkX = Math.floor(sceneBounds.minX / CHUNK_SIZE);
-    const minChunkY = Math.floor(sceneBounds.minY / CHUNK_SIZE);
-    const maxChunkX = Math.floor(sceneBounds.maxX / CHUNK_SIZE);
-    const maxChunkY = Math.floor(sceneBounds.maxY / CHUNK_SIZE);
-    const chunkCount = (maxChunkX - minChunkX + 1) * (maxChunkY - minChunkY + 1);
-    if (chunkCount > 256) throw new DomainError("INVALID_INPUT", "Город превышает лимит единой сцены");
+    const { minChunkX, minChunkY, maxChunkX, maxChunkY, count: chunkCount } = citySceneChunkRange(sceneBounds, CHUNK_SIZE);
+    if (chunkCount > CITY_SCENE_MAX_CHUNKS) throw new DomainError("CAPACITY_EXCEEDED", "Город превышает лимит единой сцены");
     // A country chunk can intersect several cities. Scope the source snapshot
     // before generating surfaces, props and roads; filtering task sprites later
     // leaves another city's streets and historical sites in this scene.
@@ -1419,16 +1417,23 @@ export class AppService {
     const roadContext = { schemaVersion: 1 as const, nodes: [], segments: layout.roadNetwork.segments };
     const scopedSnapshot = await this.loadViewportSpatialSnapshot(countryId, viewportBounds, "DETAIL", {
       city,
+      layout,
       roads: rasterizeBlockRoads({ schemaVersion: 1, nodes: [], segments: [
         ...roadContext.segments,
         ...intercityRoadRasterNetwork(citySceneIntercityRoads(groundRoadSnapshot?.plan.routes ?? [], cityId, viewportBounds)).segments,
       ] }, expandRect(viewportBounds, 4)),
     });
     // Scene payloads never enter the country-wide chunk cache.
+    const spatialIndex = createSceneSpatialIndex(scopedSnapshot, { minChunkX, minChunkY, maxChunkX, maxChunkY }, CHUNK_SIZE);
     const chunks: ChunkPayloadDto[] = [];
+    let lastYield = performance.now();
     for (let y = minChunkY; y <= maxChunkY; y++) for (let x = minChunkX; x <= maxChunkX; x++) {
       chunks.push(await this.buildChunkPayload(countryId, x, y, "DETAIL", country,
-        `${countryId}:${cityId}:${x}:${y}:DETAIL`, Number(country.world_version), false, scopedSnapshot));
+        `${countryId}:${cityId}:${x}:${y}:DETAIL`, Number(country.world_version), false, spatialIndex.forChunk(x, y)));
+      if (performance.now() - lastYield >= 8) {
+        await yieldToEventLoop();
+        lastYield = performance.now();
+      }
     }
     const completedDistrictIds = new Set(chunks.flatMap((chunk) => chunk.districts
       .filter((district) => district.status === "COMPLETED")
@@ -1444,7 +1449,10 @@ export class AppService {
       const tasks = [...completedTasksByDistrict.get(districtId)?.values() ?? []].sort((left, right) => left.taskNumber - right.taskNumber);
       return { districtId, revision: stableHash({ districtId, tasks }), tasks };
     });
-    const sceneChunks: ChunkPayloadDto[] = chunks.map((chunk) => {
+    // Builder hashes already describe these exact pages when no district has
+    // moved its tasks into a completed snapshot. Avoid copying and rehashing
+    // the entire city for that common case.
+    const sceneChunks: ChunkPayloadDto[] = completedDistrictIds.size === 0 ? chunks : chunks.map((chunk) => {
       const { contentHash, ...content } = chunk;
       void contentHash;
       const compactContent = {
@@ -1490,7 +1498,15 @@ export class AppService {
     };
     onTransactionCommit(()=>{
       this.citySceneCache.set(cacheKey, scene);
-      while (this.citySceneCache.size > 8) this.citySceneCache.delete(this.citySceneCache.keys().next().value!);
+      // Entry count alone allowed eight complete megacities to accumulate.
+      // Keep one oversized current scene warm, or at most1024 compact pages
+      // across the LRU. Raster terrain is never retained by this server cache.
+      let retainedChunks = [...this.citySceneCache.values()].reduce((n, value) => n + value.chunks.length, 0);
+      while (this.citySceneCache.size > 8 || this.citySceneCache.size > 1 && retainedChunks > 1024) {
+        const oldest = this.citySceneCache.keys().next().value!;
+        retainedChunks -= this.citySceneCache.get(oldest)!.chunks.length;
+        this.citySceneCache.delete(oldest);
+      }
     });
     return scene;
   }
@@ -2730,12 +2746,14 @@ export class AppService {
     countryId: string,
     viewportBounds: Rect,
     lod: ChunkLod,
-    scope?: { city: CityDto; roads: RoadCellDto[] },
+    scope?: { city: CityDto; roads: RoadCellDto[]; layout: CompiledBlockLayoutV1 },
   ): Promise<ViewportSpatialSnapshot> {
     const surfaceScope = lod === "DETAIL" ? expandRect(viewportBounds, 4) : viewportBounds;
     const [roadRows, districts, cities, tasks, features] = await Promise.all([
       scope ? Promise.resolve(scope.roads) : this.roadsInBounds(countryId, surfaceScope),
-      scope ? this.listDistricts(countryId, scope.city.id, surfaceScope) : this.districtsInBounds(countryId, surfaceScope),
+      // This layout belongs to the same whole-city read/MVCC snapshot. Reuse
+      // it locally; activeLayout's transaction cache bypass stays unchanged.
+      scope ? this.readDistricts(countryId, scope.city.id, surfaceScope, scope.layout) : this.districtsInBounds(countryId, surfaceScope),
       scope ? Promise.resolve([scope.city]) : lod === "DETAIL" ? this.citiesInBounds(countryId, expandRect(viewportBounds, 96)) : Promise.resolve([]),
       this.tasksInBounds(countryId, surfaceScope, lod === "DETAIL", scope?.city.id),
       readPermanentSiteFeatures(this.db, countryId, surfaceScope, scope?.city.id),

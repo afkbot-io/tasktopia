@@ -17,6 +17,54 @@ async function menu(page: Page, name: string) {
   await page.getByRole("button", { name, exact: true }).click();
 }
 
+type BuildingOpeningCapture = {
+  startedAt: number | null;
+  readyAt: number | null;
+  error: string | null;
+  cleanup: () => void;
+};
+type BuildingOpeningWindow = Window & { __buildingOpening?: BuildingOpeningCapture };
+
+async function captureBuildingOpening(page: Page, title: string) {
+  await page.evaluate(expectedTitle => {
+    const scope = window as BuildingOpeningWindow;
+    scope.__buildingOpening?.cleanup();
+    if (document.querySelector("#task-title")) throw new Error("The previous task heading must be closed before measuring");
+    const canvas = document.querySelector(".world-canvas canvas");
+    if (!canvas) throw new Error("The city canvas must be ready before measuring");
+    const capture: BuildingOpeningCapture = { startedAt: null, readyAt: null, error: null, cleanup: () => undefined };
+    const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
+    const observer = new MutationObserver(checkHeading);
+    const deadline = window.setTimeout(() => {
+      capture.error = "No trusted canvas input and fresh visible exact heading within 15 seconds";
+      capture.cleanup();
+    }, 15_000);
+    function checkHeading() {
+      if (capture.startedAt === null) return;
+      const heading = document.querySelector<HTMLElement>("#task-title");
+      if (!heading || normalize(heading.textContent ?? "") !== normalize(expectedTitle)
+        || getComputedStyle(heading).visibility !== "visible") return;
+      const rect = heading.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      capture.readyAt = performance.now();
+      capture.cleanup();
+    }
+    function start(event: PointerEvent) {
+      if (!event.isTrusted || !event.composedPath().includes(canvas!) || capture.startedAt !== null) return;
+      if (document.querySelector("#task-title")) capture.error = "A stale task heading was present before input";
+      const at = event.timeStamp > 1e12 ? event.timeStamp - performance.timeOrigin : event.timeStamp;
+      if (!Number.isFinite(at) || at < 0 || at > performance.now()) capture.error = "Invalid monotonic input timestamp";
+      if (capture.error) { capture.cleanup(); return; }
+      capture.startedAt = at;
+    }
+    capture.cleanup = () => { observer.disconnect(); document.removeEventListener("pointerdown", start, true); clearTimeout(deadline); };
+    scope.__buildingOpening = capture;
+    observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true,
+      attributeFilter: ["class", "style", "hidden", "aria-hidden"] });
+    document.addEventListener("pointerdown", start, true);
+  }, title);
+}
+
 test("паспорт страны возвращает клавиатурный фокус к выбору страны", async ({ page }) => {
   await login(page);
   const trigger = page.locator(".country-title-button");
@@ -204,29 +252,49 @@ test("здание открывает свою карточку на карте 
     y: (Math.min(...task.footprint.map(c => c.y)) + Math.max(...task.footprint.map(c => c.y)) + 1) / 2,
   };
   const openings: number[] = [];
-  for (const width of [320, 1440]) {
-    await page.setViewportSize({ width, height: 844 });
-    await page.goto("/task/1");
-    await expect(page.locator("#task-title")).toHaveText(task.title);
-    await page.getByRole("button", { name: "Закрыть", exact: true }).click();
-    const world = page.locator(".world-canvas");
-    await expect(world).toHaveAttribute("data-city-scene-commit", "atomic");
-    await expect(page.locator(".map-level-transition")).toHaveCount(0);
-    const box = (await page.getByLabel("Интерактивная карта города", { exact: true }).boundingBox())!;
-    const scale = Number(await world.getAttribute("data-render-scale"));
-    const cameraX = Number(await world.getAttribute("data-camera-world-x")), cameraY = Number(await world.getAttribute("data-camera-world-y"));
-    const start = Date.now();
-    await page.mouse.click(box.x + box.width / 2 + (target.x - cameraX) * 8 * scale, box.y + box.height / 2 + (target.y - cameraY) * 8 * scale);
-    await expect(page.locator("#task-title")).toHaveText(task.title);
-    openings.push(Date.now() - start);
-    expect(openings.at(-1)).toBeLessThan(1_500);
-    await page.keyboard.press("Escape");
-    await expect(page.locator(".task-modal")).toHaveCount(0);
-    expect(await world.evaluate(el => Boolean(el.closest("[inert]")))).toBe(false);
+  const openingMeasurements: { width: number; domReadyMs: number; runnerObservationMs: number }[] = [];
+  try {
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/task/1");
+      await expect(page.locator("#task-title")).toHaveText(task.title);
+      await page.getByRole("button", { name: "Закрыть", exact: true }).click();
+      const world = page.locator(".world-canvas");
+      await expect(world).toHaveAttribute("data-city-scene-commit", "atomic");
+      await expect(page.locator(".map-level-transition")).toHaveCount(0);
+      const box = (await page.getByLabel("Интерактивная карта города", { exact: true }).boundingBox())!;
+      const scale = Number(await world.getAttribute("data-render-scale"));
+      const cameraX = Number(await world.getAttribute("data-camera-world-x")), cameraY = Number(await world.getAttribute("data-camera-world-y"));
+      await expect(page.locator("#task-title")).toHaveCount(0);
+      await captureBuildingOpening(page, task.title);
+      const start = Date.now();
+      try {
+        await page.mouse.click(box.x + box.width / 2 + (target.x - cameraX) * 8 * scale, box.y + box.height / 2 + (target.y - cameraY) * 8 * scale);
+        await expect(page.locator("#task-title")).toHaveText(task.title);
+        const runnerObservationMs = Date.now() - start;
+        await page.waitForFunction(() => { const capture = (window as BuildingOpeningWindow).__buildingOpening;
+          return capture && (capture.readyAt !== null || capture.error !== null); });
+        const capture = await page.evaluate(() => { const state = (window as BuildingOpeningWindow).__buildingOpening!;
+          return { startedAt: state.startedAt, readyAt: state.readyAt, error: state.error }; });
+        if (capture.error || capture.startedAt === null || capture.readyAt === null) throw new Error(capture.error ?? "Incomplete building opening measurement");
+        const domReadyMs = capture.readyAt - capture.startedAt;
+        openings.push(domReadyMs);
+        openingMeasurements.push({ width, domReadyMs, runnerObservationMs });
+      } finally {
+        await page.evaluate(() => { const scope = window as BuildingOpeningWindow;
+          scope.__buildingOpening?.cleanup(); delete scope.__buildingOpening; });
+      }
+      expect(openings.at(-1)).toBeLessThan(1_500);
+      await page.keyboard.press("Escape");
+      await expect(page.locator(".task-modal")).toHaveCount(0);
+      expect(await world.evaluate(el => Boolean(el.closest("[inert]")))).toBe(false);
+    }
+  } finally {
+    const evidence = JSON.stringify({ widths: [320, 1440], openings, openingMeasurements,
+      measurementContract: "Trusted canvas pointerdown to fresh exact visible heading; monotonic DOM-ready proxy, not compositor paint. Runner/protocol upper bound is reported separately." }, null, 2);
+    await writeFile(info.outputPath("building-task-opening.json"), evidence);
+    await info.attach("building-task-opening", { body: evidence, contentType: "application/json" });
   }
-  const evidence = JSON.stringify({ widths: [320, 1440], openings }, null, 2);
-  await writeFile(info.outputPath("building-task-opening.json"), evidence);
-  await info.attach("building-task-opening", { body: evidence, contentType: "application/json" });
 });
 
 test("длинное название и материалы не вытесняют содержимое карточки на телефоне", async ({ page }, info) => {

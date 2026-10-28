@@ -7,6 +7,8 @@ export function rasterizeBlockRoads(network: SemanticRoadNetwork, bounds?: Rect)
   const rank = { LOCAL: 0, COLLECTOR: 1, ARTERIAL: 2, HIGHWAY: 3 };
   for (const segment of network.segments) {
     let { x, y } = segment.geometry.start; const radius = Math.floor(segment.widthCells / 2);
+    const roadClass = segment.roadClass === "SERVICE" ? "LOCAL" : segment.roadClass;
+    const bridge = segment.structure === "BRIDGE";
     for (const run of segment.geometry.runs) {
       const dx = run.direction === "E" ? 1 : run.direction === "W" ? -1 : 0;
       const dy = run.direction === "S" ? 1 : run.direction === "N" ? -1 : 0;
@@ -19,16 +21,18 @@ export function rasterizeBlockRoads(network: SemanticRoadNetwork, bounds?: Rect)
       const cross = horizontal ? y : x;
       const crossMin = bounds ? (horizontal ? bounds.minY : bounds.minX) - radius - 1 : -Infinity;
       const crossMax = bounds ? (horizontal ? bounds.maxY : bounds.maxX) + radius + 1 : Infinity;
-      if (cross >= crossMin && cross <= crossMax) for (let step = first; step <= last; step += 1) {
-        // Full square node caps prevent inside-corner holes at T/X junctions.
-        for (let oy = -radius; oy <= radius; oy += 1) for (let ox = -radius; ox <= radius; ox += 1) {
-          const px = x + dx * step + ox; const py = y + dy * step + oy;
-          if (bounds && (px < bounds.minX - 1 || px > bounds.maxX + 1 || py < bounds.minY - 1 || py > bounds.maxY + 1)) continue;
-          const roadClass = segment.roadClass === "SERVICE" ? "LOCAL" : segment.roadClass;
+      if (cross >= crossMin && cross <= crossMax && first <= last) {
+        // The union of full square caps along an axial run is one rectangle.
+        // Keep its one-cell exterior halo for the final neighbour mask pass.
+        const minX = Math.max(Math.min(x + dx * first, x + dx * last) - radius, bounds ? bounds.minX - 1 : -Infinity);
+        const maxX = Math.min(Math.max(x + dx * first, x + dx * last) + radius, bounds ? bounds.maxX + 1 : Infinity);
+        const minY = Math.max(Math.min(y + dy * first, y + dy * last) - radius, bounds ? bounds.minY - 1 : -Infinity);
+        const maxY = Math.min(Math.max(y + dy * first, y + dy * last) + radius, bounds ? bounds.maxY + 1 : Infinity);
+        for (let py = minY; py <= maxY; py += 1) for (let px = minX; px <= maxX; px += 1) {
           const previous = cells.get(`${px}:${py}`);
-          if (!previous || rank[roadClass] > rank[previous.roadClass] || segment.structure === "BRIDGE" && previous.structure !== "BRIDGE") {
+          if (!previous || rank[roadClass] > rank[previous.roadClass] || bridge && previous.structure !== "BRIDGE") {
             cells.set(`${px}:${py}`, {x:px,y:py,mask:0,
-              structure:previous?.structure === "BRIDGE" || segment.structure === "BRIDGE" ? "BRIDGE" : "ROAD",
+              structure:previous?.structure === "BRIDGE" || bridge ? "BRIDGE" : "ROAD",
               roadClass:previous && rank[previous.roadClass] > rank[roadClass] ? previous.roadClass : roadClass});
           }
         }

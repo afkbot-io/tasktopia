@@ -49,8 +49,10 @@ export class AppNavigation {
     if (direct) this.history.replaceState(next, '', url); else this.history.pushState(next, '', url);
   }
   task(view: NavigationView, task: { id: string; taskNumber: number }, standalone: boolean, replace = false) {
-    const current = this.current(), direct = !current && /^\/task\//.test(this.url());
+    const current = this.current(), direct = !current && /^\/task(?:\/|\?)/.test(this.url());
     const sameTask = current?.task?.id === task.id && current.view.countryId === view.countryId;
+    // A restored card may become ready after Back or a newer task took ownership.
+    if (replace && !sameTask && !direct) return;
     const next: NavigationState = { kind: 'tasktopia.navigation', version: 1, view, task: { ...task, standalone },
       taskDepth: sameTask || replace ? current?.taskDepth ?? 0 : direct ? 0 : Math.min(500, (current?.taskDepth ?? 0) + 1) };
     if (direct || sameTask || replace) this.history.replaceState(next, '', taskLink(view.countryId, task));

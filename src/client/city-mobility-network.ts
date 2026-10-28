@@ -146,6 +146,15 @@ export function* buildMobilityNetworkSteps(input: MobilityNetworkInput): Generat
   for (const [id, cell] of orderedRoads) { roles.set(id, roadBandRole(orderedRoads, cell)); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   const carEdges = new Map<string, Cell[]>();
   const neighbors = (cell: Cell) => MOBILITY_DIRECTIONS.map(delta => ({ x: cell.x + delta.x, y: cell.y + delta.y }));
+  // Generated adjacency targets are immutable plain coordinates. Share each
+  // retained point across incoming edges without aliasing authored DTOs or
+  // retaining a second coordinate index in the completed network.
+  const adjacencyPoints = new Map<string, Cell>();
+  const shareNeighbor = (cell: Cell): Cell => {
+    const id = mobilityCellKey(cell), existing = adjacencyPoints.get(id);
+    if (existing) return existing;
+    adjacencyPoints.set(id, cell); return cell;
+  };
   for (const [key, cell] of orderedRoads) {
     if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
     const role = roles.get(key)!;
@@ -156,7 +165,7 @@ export function* buildMobilityNetworkSteps(input: MobilityNetworkInput): Generat
       const dx = next.x - cell.x, dy = next.y - cell.y;
       return (role.kind === "JUNCTION" || role.dx === dx && role.dy === dy)
         && (nextRole.kind === "JUNCTION" || nextRole.dx === dx && nextRole.dy === dy);
-    }));
+    }).map(shareNeighbor));
   }
   const carCells = new Map<string, Cell>();
   for (const [id, cell] of orderedRoads) { carCells.set(id, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
@@ -203,7 +212,8 @@ export function* buildMobilityNetworkSteps(input: MobilityNetworkInput): Generat
   if (work) { work = 0; yield; }
   const walkers = yield* buildWalkingSpineSteps({ ...input, walkGraph: walkingInput });
   const walkerEdges = new Map<string, Cell[]>();
-  for (const [id, cell] of walkers) { walkerEdges.set(id, neighbors(cell).filter(next => walkers.has(mobilityCellKey(next)))); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  for (const [id, cell] of walkers) { walkerEdges.set(id, neighbors(cell).filter(next => walkers.has(mobilityCellKey(next))).map(shareNeighbor)); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  adjacencyPoints.clear();
   const buildingEntrances = new Set<string>(), transferCells = new Set<string>();
   for (const id of input.buildingEntrances ?? []) { if (walkers.has(id) && !input.roads.has(id) && !input.crosswalks.has(id)) buildingEntrances.add(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   for (const id of input.transferCells ?? []) { if (walkers.has(id) && !input.roads.has(id) && !input.crosswalks.has(id)) transferCells.add(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }

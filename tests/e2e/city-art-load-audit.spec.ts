@@ -1,6 +1,6 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { mkdir, writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import { getBuilding } from "../../src/shared/catalog";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 
@@ -42,7 +42,7 @@ for (const viewport of [{ width: 1440, height: 1100 }, { width: 390, height: 844
     expect((await page.request.post("/api/auth/login", { data: { email: process.env.E2E_CITY_EMAIL??"demo@tasktopia.local", password: process.env.E2E_CITY_PASSWORD??"tasktopia-demo" } })).ok()).toBe(true);
     const response = page.waitForResponse(response => new URL(response.url()).pathname.endsWith("/scene"));
     await page.goto("/"); await openMapCity(page);
-    const scene = await (await response).json() as CitySceneDto;
+    const scene = decodeCitySceneWire(await (await response).json());
     const host = page.locator(".world-canvas"), canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     await expect(host).toHaveAttribute("data-ground-bake-queue", "0", { timeout: 45_000 });

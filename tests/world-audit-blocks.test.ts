@@ -33,6 +33,15 @@ describe("canonical block-world audit", () => {
     expect(auditBlockLayout(compile(), source, () => true)).toEqual([]);
   });
 
+  it("uses the expanded finite scene budget without rejecting a valid envelope above legacy 256", () => {
+    const layout = compile();
+    // Policy seam only: extending the envelope does not manufacture a 10k city.
+    layout.bounds = { minX: -64, minY: -64, maxX: 1023, maxY: 959 };
+    expect(auditBlockLayout(layout, source)).toEqual([]);
+    layout.bounds.maxX = 4096 * 64;
+    expect(auditBlockLayout(layout, source).map(violation => violation.code)).toContain("CITY_SCENE_LIMIT_EXCEEDED");
+  });
+
   it("detects missing task conservation and stale construction stage", () => {
     const missing = compile(); missing.placements = [];
     expect(auditBlockLayout(missing, source).map((v) => v.code)).toContain("TASK_PLACEMENT_MISSING");

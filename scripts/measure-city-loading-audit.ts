@@ -1,3 +1,4 @@
+import { decodeCitySceneWire } from "../src/shared/city-scene-wire";
 /** Local, read-only browser benchmark. Login is the only application write. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -5,7 +6,6 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { cpus, platform } from "node:os";
 import { chromium, expect } from "@playwright/test";
 import { openMapCity, openMapPlanet } from "../tests/e2e/map-navigation";
-import type { CitySceneDto } from "../src/shared/city-scene-contract";
 
 const url = process.env.AUDIT_URL ?? "http://127.0.0.1:5186";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(url).hostname));
@@ -90,7 +90,7 @@ try {
         const state = (window as typeof window & { __cityAuditLongTasks: Array<{ startTime: number; duration: number }> }).__cityAuditLongTasks;
         return state.filter(entry => entry.startTime >= start && entry.startTime <= end);
       }, { start: cityEntryStart, end: cityEntryEnd });
-      const scene = await (await response).json() as CitySceneDto;
+      const scene = decodeCitySceneWire(await (await response).json());
       const tasks = [...new Map([...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)]
         .map(task => [task.id, task])).values()].sort((a, b) => a.id.localeCompare(b.id));
       const geometryHash = createHash("sha256").update(JSON.stringify({ city: scene.city, roads: scene.roadContext,

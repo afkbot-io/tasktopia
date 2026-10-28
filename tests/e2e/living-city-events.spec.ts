@@ -1,7 +1,7 @@
-import { observeCinematics } from './city-cinematic-observer';
+import { observeCinematics, type CineSample } from './city-cinematic-observer';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
 import { sceneClockStepTowardStart } from '../scene-clock-step';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { AppService } from '../../src/server/app-service';
@@ -49,6 +49,21 @@ async function fixture(page:Page, comments=false){
  const focus=async(t:TaskDto)=>{await page.goto(taskLink(user.countryId,t));await expect(page.locator('#task-title')).toContainText(t.title);await page.getByRole('button',{name:'Закрыть',exact:true}).click();await expect(host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30000});await expect(host).toHaveAttribute('data-mobility-ready','true',{timeout:30000});};
  const cleanup=async()=>{await page.close();await client.close();await db.prepare('DELETE FROM countries WHERE id=?').run(user.countryId);await db.prepare('DELETE FROM users WHERE id=?').run(user.id);await db.close();};
  return {db,service,user,city,task,tasks,call,host,focus,cleanup};
+}
+
+async function attachCinematicCapture(host:Locator,info:TestInfo,name:string,frames:()=>Promise<CineSample[]>){
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{
+  const read=Promise.all([frames(),host.evaluate(el=>{
+   const d=(el as HTMLElement).dataset;
+   const keys=['loading','canonicalSnapshotPending','movementPreparing','cameraPresentationPending','mapActive','animationActive',
+    'citySceneCommit','worldQuality','cinematicLastDecision','citySceneRevision','cityCinematics','cinematicWorkers','cinematicPhases','cityFirstFrameRendered'];
+   return {performanceNowMs:performance.now(),publicHost:Object.fromEntries(keys.map(key=>[key,d[key]?.slice(0,512)??null]))};
+  })]).then(([published,current])=>({coverage:'observed',frames:published,current})).catch(()=>({coverage:'unavailable',reason:'public-read-failed'}));
+  const capture=await Promise.race([read,new Promise(resolve=>{timer=setTimeout(()=>resolve({coverage:'unavailable',reason:'public-read-exceeded1000ms'}),1000);})]);
+  await info.attach(name,{body:JSON.stringify(capture),contentType:'application/json'});
+ }catch{/* Diagnostic reads/attachments must preserve the original assertion failure. */}
+ finally{if(timer)clearTimeout(timer);}
 }
 
 test('реальные MCP комментарии и документы оживляют вход без чтения сцены, серия объединяется, стадия сохраняет дымок', async ({ page }, info) => {
@@ -173,9 +188,9 @@ test('MCP/WebSocket keeps the old building through all stages, delivers a helico
  const f=await fixture(page);
  try{
   await f.focus(f.task);
-  // This case verifies the complete six-worker presentation. AUTO can
-  // intentionally cancel it when a software GPU downgrades to ECONOMY;
-  // the separate economy/cancellation journey covers that policy.
+  // This case verifies the complete six-worker presentation. AUTO may trim
+  // the crew on an ECONOMY downgrade while retaining the current reveal owner;
+  // the separate economy journey covers the bounded crew policy.
   await page.locator('.world-menu > summary').click();
   const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();
   await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
@@ -198,14 +213,21 @@ test('MCP/WebSocket keeps the old building through all stages, delivers a helico
   await f.call('task.set_status',{taskId:current.id,status:'COMPLETED'},key);
   await expect(f.host).toHaveAttribute('data-city-cinematics','0');
   const destination=(await f.service.listDistricts(f.user.countryId,f.city.id)).find(d=>d.id!==current.districtId&&d.status!=='COMPLETED')!;
-  const before={...current.origin};
-  current=await f.call('task.transfer',{taskId:current.id,targetDistrictId:destination.id});
-  expect(current.origin).not.toEqual(before);
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${current.id}:TRANSFER:CARRY`),{timeout:9000});
-  const flying=JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0];
-  expect(flying).toMatchObject({kind:'TRANSFER',oldVisible:true,targetVisible:false,aircraftVisible:true});
-  await page.screenshot({path:info.outputPath('transfer-carry.png')});
-  await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:10000});
+  const before={...current.origin},transferFromStage=current.stage;
+  await observed.clear();
+  try{
+   current=await f.call('task.transfer',{taskId:current.id,targetDistrictId:destination.id});
+   expect(current.origin).not.toEqual(before);
+   let flying:CineSample['states'][number]|undefined;
+   await expect.poll(async()=>{
+    flying=(await observed.frames()).flatMap(frame=>frame.states).find(state=>state.taskId===current.id&&state.kind==='TRANSFER'&&state.phase==='CARRY'
+     &&state.fromStage===transferFromStage&&state.oldVisible&&!state.targetVisible&&state.aircraftVisible);
+    return !!flying;
+   },{timeout:9000}).toBe(true);
+   expect(flying).toMatchObject({taskId:current.id,kind:'TRANSFER',phase:'CARRY',fromStage:transferFromStage,oldVisible:true,targetVisible:false,aircraftVisible:true});
+   await page.screenshot({path:info.outputPath('transfer-carry.png')});
+   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:10000});
+  }finally{await attachCinematicCapture(f.host,info,'transfer-published-phases',observed.frames);}
   await f.focus(current);
   const demolition=await observeCinematics(f.host);
   await f.call('task.delete',{taskId:current.id,confirmTitle:current.title});
@@ -395,11 +417,24 @@ test('park ground changes and demolition overriding unfinished work settle to au
  try{
   const park=f.tasks.find(task=>task.visualKind==='PARK'&&task.stage===1)!;expect(park).toBeTruthy();
   await f.service.activateDistrict(f.user.countryId,park.districtId,crypto.randomUUID());await f.focus(park);
-  await f.call('task.set_status',{taskId:park.id,status:'STARTED'});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
-  const changed=await f.call('task.set_status',{taskId:park.id,status:'IN_PROGRESS',progress:60});
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${park.id}:CONSTRUCT:WORK`)).catch(async error=>{await info.attach('park-diagnostics',{body:JSON.stringify({park,changed,dataset:await f.host.evaluate(el=>({...((el as HTMLElement).dataset)}))},null,2),contentType:'application/json'});throw error;});
-  expect(JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0]).toMatchObject({fromStage:2,toStage:changed.stage,oldVisible:true,targetVisible:false});
-  await page.screenshot({path:info.outputPath('park-old-ground-work.png')});await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  const parkObserved=await observeCinematics(f.host);
+  try{
+   await parkObserved.clear();
+   await f.call('task.set_status',{taskId:park.id,status:'STARTED'});
+   await expect.poll(async()=> (await parkObserved.frames()).some(frame=>frame.states.some(state=>state.taskId===park.id&&state.kind==='CONSTRUCT'&&state.phase==='WORK'
+    &&state.fromStage===1&&state.toStage===2&&state.oldVisible&&!state.targetVisible))).toBe(true);
+   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+   await parkObserved.clear();
+   const changed=await f.call('task.set_status',{taskId:park.id,status:'IN_PROGRESS',progress:60});
+   let work:CineSample['states'][number]|undefined;
+   await expect.poll(async()=>{
+    work=(await parkObserved.frames()).flatMap(frame=>frame.states).find(state=>state.taskId===park.id&&state.kind==='CONSTRUCT'&&state.phase==='WORK'
+     &&state.fromStage===2&&state.toStage===changed.stage&&state.oldVisible&&!state.targetVisible);
+    return !!work;
+   }).toBe(true);
+   expect(work).toMatchObject({taskId:park.id,kind:'CONSTRUCT',phase:'WORK',fromStage:2,toStage:changed.stage,oldVisible:true,targetVisible:false});
+   await page.screenshot({path:info.outputPath('park-old-ground-work.png')});await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  }finally{await attachCinematicCapture(f.host,info,'park-published-phases',parkObserved.frames);}
   await f.service.activateDistrict(f.user.countryId,f.task.districtId,crypto.randomUUID());
   await f.focus(f.task);const demolition=await observeCinematics(f.host);
   try{

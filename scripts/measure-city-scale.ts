@@ -1,3 +1,4 @@
+import { decodeCitySceneWire } from "../src/shared/city-scene-wire";
 /** Paired, local-only performance evidence for one frozen 200/1000-task city.
  * Browser/device emulation is explicit; unsupported engine metrics remain null. */
 import assert from "node:assert/strict";
@@ -7,7 +8,6 @@ import { cpus, platform } from "node:os";
 import { join } from "node:path";
 import { chromium, firefox, webkit, expect, type CDPSession, type Page } from "@playwright/test";
 import type { Application, Container, Texture } from "pixi.js";
-import type { CitySceneDto } from "../src/shared/city-scene-contract";
 import { CITY_SCALE_COLD_OBSERVER_SCRIPT, CITY_SCALE_MEASUREMENT_CONTRACT, calculateColdCityMetric,
   type ColdCityCaptureApi } from "./city-scale-cold-metric";
 import { CITY_SCALE_PROFILES, cityScaleBudgets, distribution, localCityScaleUrl, type CityScaleFixture, type CityScaleProfile } from "./city-scale-benchmark-contract";
@@ -157,7 +157,7 @@ try {
         nodeEndedMs: cityStarted + legacyColdCityMs, start: coldClockStart, end: coldClockEnd };
       const coldMetric = calculateColdCityMetric(coldMetricInput), coldCityMs = coldMetric.upperBoundMs;
       Object.assign(evidence, { lastCompletedStage: "city-first-atomic", coldMetricInput, coldMetric });
-      const scene = await (await sceneResponse).json() as CitySceneDto;
+      const scene = decodeCitySceneWire(await (await sceneResponse).json());
       const canonicalTasks = [...new Map([...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)]
         .map(task => [task.id, task])).values()].sort((a, b) => a.taskNumber - b.taskNumber);
       assert.equal(canonicalTasks.length, fixture.tasks, "Every canonical task remains available despite viewport residency");

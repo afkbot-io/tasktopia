@@ -1,6 +1,6 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { expect, test } from "@playwright/test";
 import { openMapCity, openMapPlanet } from "./map-navigation";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 
 test.skip(process.env.E2E_CITY_200 !== "true", "Requires the owned 200-task loading fixture");
 const fixtureEmail=process.env.E2E_CITY_EMAIL??"demo@tasktopia.local",fixturePassword=process.env.E2E_CITY_PASSWORD??"tasktopia-demo";
@@ -29,7 +29,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1440, height: 11
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
     await expect(page.locator(".map-level-transition")).toHaveCount(0);
-    const scene = await (await sceneResponse).json() as CitySceneDto;
+    const scene = decodeCitySceneWire(await (await sceneResponse).json());
     const taskIds = new Set([...scene.chunks.flatMap(c => c.tasks), ...scene.completedDistrictSnapshots.flatMap(s => s.tasks)].map(t => t.id));
     expect(taskIds.size).toBe(200); await expect(host).toHaveAttribute("data-canonical-task-count", "200");
     const residentViews=Number(await host.getAttribute("data-task-building-views"));

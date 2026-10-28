@@ -3,13 +3,20 @@ import type { Cell, CellRunDto, RoadCellDto, RoadRunDto, SurfaceCellDto, Surface
 type RunValue<T extends Cell> = Omit<T, "x" | "y">;
 
 function compactRuns<T extends Cell>(cells: readonly T[], signature: (cell: T) => string): Array<{ start: Cell; end: Cell; value: RunValue<T> }> {
-  const ordered = [...cells].sort((a, b) => a.y - b.y || a.x - b.x);
+  let ordered = cells;
+  for (let index = 1; index < cells.length; index++) {
+    const previous = cells[index - 1]!, cell = cells[index]!;
+    if ((cell.y - previous.y || cell.x - previous.x) < 0) {
+      ordered = [...cells].sort((a, b) => a.y - b.y || a.x - b.x);
+      break;
+    }
+  }
   const horizontal: Array<{ start: Cell; end: Cell; value: RunValue<T>; signature: string }> = [];
   for (const cell of ordered) {
     const cellSignature = signature(cell);
     const previous = horizontal.at(-1);
     if (previous && previous.signature === cellSignature && previous.end.y === cell.y && previous.end.x + 1 === cell.x) {
-      previous.end = { x: cell.x, y: cell.y };
+      previous.end.x = cell.x; previous.end.y = cell.y;
       continue;
     }
     const { x: _x, y: _y, ...value } = cell;
@@ -35,7 +42,7 @@ function compactRuns<T extends Cell>(cells: readonly T[], signature: (cell: T) =
       const previous = result.at(-1);
       if (previous && previous.start.x === previous.end.x
         && previous.signature === run.signature && previous.end.x === run.start.x && previous.end.y + 1 === run.start.y) {
-        previous.end = { ...run.end };
+        previous.end.x = run.end.x; previous.end.y = run.end.y;
       } else {
         result.push({ ...run, start: { ...run.start }, end: { ...run.end } });
       }

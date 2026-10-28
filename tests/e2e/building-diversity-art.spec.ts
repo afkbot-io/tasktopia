@@ -1,7 +1,7 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir, writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { ChunkTaskDto } from "../../src/shared/contracts";
 import { getBuilding } from "../../src/shared/catalog";
 import { buildingEntranceCell, ENTRANCE_NORMAL } from "../../src/shared/building-access";
@@ -65,7 +65,7 @@ test("city architecture renders all five real construction stages and opens its 
   const pending = page.waitForResponse(response => /\/cities\/[^/]+\/scene$/.test(new URL(response.url()).pathname));
   await page.goto("/");
   await openMapCity(page);
-  const scene = await (await pending).json() as CitySceneDto;
+  const scene = decodeCitySceneWire(await (await pending).json());
   expect(scene.city.name).toBe("Новые дома — все стадии");
   const host = page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");

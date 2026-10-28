@@ -18,3 +18,13 @@ it("keeps buildings crossing a page boundary and excludes distant completed snap
   expect(taskIntersectsResidentBounds({footprint:[{x:130,y:100}]},bounds)).toBe(true);
   expect(taskIntersectsResidentBounds({footprint:[{x:300,y:75}]},bounds)).toBe(false);
 });
+
+it("reuses the immutable coordinate index rather than rescanning a whole city on each pan", () => {
+  let reads=0;
+  const city=Array.from({length:10000},(_,i)=>({get chunkX(){reads++;return i%100;},get chunkY(){reads++;return Math.floor(i/100);}}));
+  planCityResidency(city,{minChunkX:0,maxChunkX:1,minChunkY:0,maxChunkY:1},64);
+  reads=0;
+  const plan=planCityResidency(city,{minChunkX:50,maxChunkX:51,minChunkY:50,maxChunkY:51},64);
+  expect(plan.wanted).toHaveLength(16);
+  expect(reads).toBeLessThan(100);
+});

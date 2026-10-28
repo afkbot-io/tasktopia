@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import type { Cell, RoadCellDto } from "../src/shared/contracts";
 import { createCityMobility, mobilityPassageExitIndex } from "../src/client/city-mobility";
 import { buildMobilityNetwork, searchMobilityRoutes } from "../src/client/city-mobility-network";
@@ -119,6 +120,38 @@ describe("deterministic joint city mobility", () => {
     city.advance(13);
     expect(city.agents).not.toBe(snapshot);
     expect(city.metrics.fixedSteps).toBe(1);
+  });
+
+  it("retains the immutable signal snapshot across physics steps with unchanged lights", () => {
+    const input = { ...mobilityGrid(), carLimit: 0, walkerLimit: 0 }, city = createCityMobility(input), before = city.signals;
+    expect(before.length).toBeGreaterThan(0);
+    city.advance(250);
+    expect(city.metrics.fixedSteps).toBe(5);
+    expect(city.signals).toBe(before);
+    const roads = new Map(input.roads); roads.delete("0,-1");
+    city.updateNetwork({ ...input, roads });
+    expect(city.signals).not.toBe(before); // Fresh topology owns its bounds/posts even when all lights are red.
+  });
+
+  it("changes only affected signal entries and preserves the recorded real-city reservation trace", () => {
+    const input = { ...realCity, roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),
+      walkGraph: new Map(realCity.walkGraph.map(cell => [key(cell), cell])), crosswalks: new Set(realCity.crosswalks), activityCells: new Set(realCity.activityCells) };
+    const city = createCityMobility(input), digest = createHash("sha256"); let transitions = 0;
+    for (let step = 0; step < 200; step++) {
+      const before = city.signals, previousValue = JSON.stringify(before);
+      city.advance(50); const after = city.signals;
+      expect(JSON.stringify(before)).toBe(previousValue); // A retained observer never sees a later light mutation.
+      if (previousValue !== JSON.stringify(after)) transitions++;
+      for (let i = 0; i < before.length; i++) {
+        const old = before[i]!, current = after[i]!;
+        if (old.horizontal === current.horizontal && old.vertical === current.vertical && old.pedestrians === current.pedestrians)
+          expect(current).toBe(old);
+      }
+      digest.update(JSON.stringify(after));
+    }
+    expect(transitions).toBe(90);
+    // Frozen from the original publish() before removing full-zone copies.
+    expect(digest.digest("hex")).toBe("2b9ec948f46d480960f73c49bafa2ac9dbc808614f93dbd8f2278f53e39ce3ba");
   });
 
   it("grows population without rebuilding unchanged topology or moving existing actors", () => {

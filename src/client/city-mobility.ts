@@ -363,6 +363,9 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
     while (frameCount > 1 && frameElapsedTotal > 2000) forgetFrame();
   };
   let agentsSnapshot: readonly CityMobilityAgent[] = [], signalSnapshot: readonly CityMobilitySignal[] = [];
+  let signalZones: MobilityNetwork["zones"] | undefined;
+  const signalIndices = new Map<string, number>();
+  let signalAxes = new Map<string, Reservation["axis"]>();
   const random = () => { const result = nextSeededRandom(rng); rng = result.state; return result.value; };
   const graph = (kind: Agent["kind"]) => kind === "CAR" ? network.cars : network.walkers;
   const edges = (kind: Agent["kind"]) => kind === "CAR" ? network.carEdges : network.walkerEdges;
@@ -563,11 +566,39 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
 
   const publish = () => {
     agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response, visit, carrier, age }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response, visit: visit && { ...visit }, carrier, age }));
-    signalSnapshot = network.zones.map(zone => {
-      const reservation = reservations.get(zone.id);
-      return { id: zone.id, bounds: zone.bounds, signalPosts: zone.signalPosts,
-        horizontal: reservation?.axis === "H" ? "GREEN" : "RED", vertical: reservation?.axis === "V" ? "GREEN" : "RED", pedestrians: reservation?.axis === "P" ? "GREEN" : "RED" };
+    const signal = (zone: MobilityZone, axis: Reservation["axis"] | undefined): CityMobilitySignal => ({
+      id: zone.id, bounds: zone.bounds, signalPosts: zone.signalPosts,
+      horizontal: axis === "H" ? "GREEN" : "RED", vertical: axis === "V" ? "GREEN" : "RED", pedestrians: axis === "P" ? "GREEN" : "RED",
     });
+    if (signalZones !== network.zones) {
+      signalZones = network.zones; signalIndices.clear(); signalAxes.clear();
+      signalSnapshot = network.zones.map((zone, index) => {
+        signalIndices.set(zone.id, index);
+        const axis = reservations.get(zone.id)?.axis;
+        if (axis) signalAxes.set(zone.id, axis);
+        return signal(zone, axis);
+      });
+      return;
+    }
+    // Most of a large city has no active reservation. Physics steps need not
+    // clone every red light; prior observers retain an immutable snapshot.
+    let changed = reservations.size !== signalAxes.size;
+    if (!changed) for (const [id, reservation] of reservations) {
+      if (signalAxes.get(id) !== reservation.axis) { changed = true; break; }
+    }
+    if (!changed) return;
+    const next = [...signalSnapshot], nextAxes = new Map<string, Reservation["axis"]>();
+    for (const id of signalAxes.keys()) if (!reservations.has(id)) {
+      const index = signalIndices.get(id);
+      if (index !== undefined) next[index] = signal(network.zones[index]!, undefined);
+    }
+    for (const [id, reservation] of reservations) {
+      nextAxes.set(id, reservation.axis);
+      if (signalAxes.get(id) === reservation.axis) continue;
+      const index = signalIndices.get(id);
+      if (index !== undefined) next[index] = signal(network.zones[index]!, reservation.axis);
+    }
+    signalAxes = nextAxes; signalSnapshot = next;
   };
 
   const recordMetrics = () => {

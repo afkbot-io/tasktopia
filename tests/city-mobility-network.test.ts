@@ -1,9 +1,46 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import type { Cell, RoadCellDto } from "../src/shared/contracts";
 import { buildMobilityNetwork, buildWalkingSpine, type MobilityNetworkInput } from "../src/client/city-mobility-network";
+import realCity from "./fixtures/city-mobility-real-city.json";
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 const adjacent = (cell: Cell) => [{ x: cell.x - 1, y: cell.y }, { x: cell.x + 1, y: cell.y }, { x: cell.x, y: cell.y - 1 }, { x: cell.x, y: cell.y + 1 }];
+const realCityInput = (): MobilityNetworkInput => ({
+  roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),
+  walkGraph: new Map(realCity.walkGraph.map(cell => [key(cell), cell])),
+  crosswalks: new Set(realCity.crosswalks), activityCells: new Set(realCity.activityCells),
+});
+
+describe("retained adjacency coordinates", () => {
+  it("shares one plain coordinate per generated target without borrowing mutable input metadata", () => {
+    const input = realCityInput(), before = structuredClone(input), network = buildMobilityNetwork(input);
+    const generatedEdges = [...network.carEdges.values(), ...network.walkerEdges.values()].flat();
+    const distinctCoordinates = new Set(generatedEdges.map(key));
+    expect(generatedEdges.length).toBeGreaterThan(distinctCoordinates.size);
+    expect(new Set(generatedEdges).size).toBe(distinctCoordinates.size);
+    for (const cell of generatedEdges) {
+      expect(Object.keys(cell).sort()).toEqual(["x", "y"]);
+      expect(cell).not.toBe(input.roads.get(key(cell)));
+      expect(cell).not.toBe(input.walkGraph.get(key(cell)));
+    }
+    expect(input).toEqual(before);
+  });
+
+  it("preserves all original graph values, edge order, zones and signal approaches", () => {
+    const network = buildMobilityNetwork(realCityInput());
+    const topology = { signature: network.signature, roads: [...network.roads], cars: [...network.cars], walkers: [...network.walkers],
+      carEdges: [...network.carEdges], walkerEdges: [...network.walkerEdges],
+      zones: network.zones.map(zone => ({ ...zone, cells: [...zone.cells] })),
+      zoneByCell: [...network.zoneByCell].map(([id, zone]) => [id, zone.id]),
+      activityCells: [...network.activityCells], buildingEntrances: [...network.buildingEntrances],
+      transferCells: [...network.transferCells], parkingBays: [...network.parkingBays] };
+    // Recorded from the original builder before coordinate interning. Includes
+    // authored insertion/edge order and complete DTO metadata, not just counts.
+    expect(createHash("sha256").update(JSON.stringify(topology)).digest("hex"))
+      .toBe("8f7c214d18f0a2e8d5662cf09baf7d3b3787fb2fd06d02b532ea3b3bf930e951");
+  });
+});
 const reachable = (graph: ReadonlyMap<string, Cell>, start: Cell) => {
   const visited = new Set([key(start)]), queue = [start];
   for (let i = 0; i < queue.length; i++) for (const next of adjacent(queue[i]!)) {

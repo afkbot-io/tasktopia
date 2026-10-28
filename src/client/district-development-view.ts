@@ -1,6 +1,7 @@
 import { Container, Graphics, Rectangle, Sprite, type Texture } from "pixi.js";
 import type { Cell } from "../shared/contracts";
 import type { DistrictDevelopmentPlan, DistrictDevelopmentState } from "./district-development";
+import type { DistrictOutlineSegment } from "./district-development-geometry";
 
 export function drawDistrictDevelopment(plan: DistrictDevelopmentPlan, state: DistrictDevelopmentState, cellSize: number, textureFor: (kind: string) => Texture | undefined, onSelect?: () => void): Container {
   const group = new Container({ label: `district-development:${state}`, eventMode: "passive" });
@@ -48,5 +49,13 @@ export function drawDevelopmentEmphasis(cells: readonly Cell[], cellSize: number
     if (!owned.has(`${c.x}:${c.y + 1}`)) graphic.moveTo(x, y + cellSize).lineTo(x + cellSize, y + cellSize);
     if (!owned.has(`${c.x - 1}:${c.y}`)) graphic.moveTo(x, y).lineTo(x, y + cellSize);
   }
+  return graphic.stroke({ color: 0xe4c86d, width: 1.5, alpha: .85 });
+}
+
+/** Same grid edges and stroke; contiguous collinear edges share one command. */
+export function drawDevelopmentOutline(segments: readonly DistrictOutlineSegment[], cellSize: number): Graphics {
+  const graphic = new Graphics({ label: "development-emphasis", eventMode: "none" });
+  for (const { from, to } of segments)
+    graphic.moveTo(from.x * cellSize, from.y * cellSize).lineTo(to.x * cellSize, to.y * cellSize);
   return graphic.stroke({ color: 0xe4c86d, width: 1.5, alpha: .85 });
 }

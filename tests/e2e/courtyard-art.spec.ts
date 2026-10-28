@@ -1,3 +1,4 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -6,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { Cell, ChunkTaskDto } from "../../src/shared/contracts";
 import type { TaskCardDto } from "../../src/shared/task-read-contracts";
 import { ASSET_REVISION, getBuilding } from "../../src/shared/catalog";
-import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../../src/shared/city-scene-contract";
+import { CITY_SCENE_SCHEMA_VERSION } from "../../src/shared/city-scene-contract";
 import { COURTYARD_FURNITURE } from "../../src/shared/courtyard-furniture";
 import { materializeChunkPayload } from "../../src/shared/world-chunk-payload";
 import { taskParkDecorLayout } from "../../src/shared/task-park";
@@ -136,7 +137,7 @@ test("published developed families and completed courtyard furniture render thro
   await openMapCity(page);
   const response = await scenePending;
   expect(response.status(), await response.text()).toBe(200);
-  const scene = await response.json() as CitySceneDto;
+  const scene = decodeCitySceneWire(await response.json());
   expect(scene.schemaVersion).toBe(CITY_SCENE_SCHEMA_VERSION);
   expect(scene.city).toMatchObject({ id: fixture.cityId, name: COURTYARD_ART_CITY });
   const tasks = new Map([...scene.chunks.flatMap(c => c.tasks),
@@ -153,7 +154,7 @@ test("published developed families and completed courtyard furniture render thro
   expect(Number(await page.locator(".world-canvas").getAttribute("data-district-boundary-cells"))).toBeGreaterThan(0);
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await captureMap(page, join(output, "districts.png"));
-  await openMapCity(page);
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-district-boundary-visible", "false");
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await canvas.hover(); await page.mouse.wheel(0, -1600);

@@ -50,6 +50,27 @@ describe("compiled mobility routing", () => {
     const edges = new Map([[key(start), [target]]]);
     expect(createMobilityRouteSearch(graph, edges)(start, undefined, target, 2).routeTo(target)).toEqual([start, target]);
   });
+  it("keeps authored wide-edge order, reentrant searches and snapshotted physical endpoints", () => {
+    const start = { x: 0, y: 0 }, north = { x: 0, y: -1 }, east = { x: 1, y: 0, name: "road metadata" };
+    const farEast = { x: 2, y: 0 }, south = { x: 0, y: 1 }, west = { x: -1, y: 0 }, farNorth = { x: 0, y: -2 };
+    const graph = new Map([start, north, east, farEast, south, west, farNorth].map(cell => [key(cell), cell]));
+    const edges = new Map([[key(start), [north, east, farEast, south, west, farNorth, { x: 900, y: 900 }]]]);
+    const search = createMobilityRouteSearch(graph, edges), previous = { x: -1, y: 0 };
+    const pending = search.steps(start, previous);
+    expect(pending.next().done).toBe(false); // Wide custom graphs retain their per-state checkpoint.
+    expect(search(south).cells).toEqual([south]);
+    let next = pending.next();
+    while (!next.done) next = pending.next();
+    const result = next.value;
+    expect(result.cells).toEqual([start, east, farEast, north, south, farNorth]);
+    expect(result.cells[1]).toBe(east);
+    east.x = 99; // Borrowed graph metadata cannot change compiled physical route coordinates.
+    expect(result.routeTo({ x: 1, y: 0 })).toEqual([start, { x: 1, y: 0 }]);
+    expect(result.routeTo({ x: 1, y: 0 })[0]).toBe(start);
+    search.setBlocked(new Set(["1,0"]));
+    expect(search(start, previous, { x: 1, y: 0 }, 2).routeTo({ x: 1, y: 0 })).toEqual([]);
+    expect(result.routeTo({ x: 1, y: 0 })).toEqual([start, { x: 1, y: 0 }]);
+  });
   it("keeps the reviewed directed route and heading when the target requires a detour", () => {
     const { graph, edges } = loop();
     const plan = createMobilityRouteSearch(graph, edges), target = { x: 0, y: 0 };

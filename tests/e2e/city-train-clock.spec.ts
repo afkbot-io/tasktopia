@@ -1,7 +1,7 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity } from "./map-navigation";
 import { transportSchedule,TRANSPORT_EPOCH } from "../../src/shared/transport-schedule";
 import { test, expect } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import { planCityRailway } from "../../src/client/city-railway";
 test("server time preserves a platform stop across remount despite a wrong device clock",async({page})=>{
   test.skip(!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.E2E_BASE_URL ?? ""),"Local scene fixture only");
@@ -12,7 +12,7 @@ test("server time preserves a platform stop across remount despite a wrong devic
     const response = await route.fetch();
     const headers = {...response.headers()}; delete headers["x-tasktopia-server-time"];
     if (!/\/cities\/[^/]+\/scene(?:\?|$)/.test(route.request().url())) { await route.fulfill({response,headers}); return; }
-    const scene = await response.json() as CitySceneDto;
+    const scene = decodeCitySceneWire(await response.json());
     const all = [...scene.chunks.flatMap(c=>c.tasks),...scene.completedDistrictSnapshots.flatMap(s=>s.tasks)];
     const stationId = (all.find(t=>t.serviceRole==="RAILWAY") ?? all[0])!.id;
     for(const task of all) if(task.id===stationId) { task.serviceRole="RAILWAY"; task.stage=5; task.status="COMPLETED"; }

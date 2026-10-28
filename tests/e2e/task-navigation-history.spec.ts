@@ -4,6 +4,11 @@ import type { BootstrapDto } from '../../src/shared/contracts';
 import type { TaskCardDto, TaskListPageDto } from '../../src/shared/task-read-contracts';
 import { openMapCity } from './map-navigation';
 
+// Keep calls and sources; disabling snapshots also omits Playwright's network
+// capture. Scene requests are counted explicitly, and camera failures retain a
+// bounded structured readback below. Automatic WebGL snapshots add render work.
+test.use({ trace: { mode: 'retain-on-failure', snapshots: false, screenshots: false, sources: true } });
+
 async function fixture(page: Page) {
   expect((await page.request.post('/api/auth/login', { data: { email: process.env.E2E_CITY_EMAIL ?? 'demo@tasktopia.local', password: process.env.E2E_CITY_PASSWORD ?? 'tasktopia-demo' } })).status()).toBe(200);
   const bootstrap = await (await page.request.get('/api/bootstrap')).json() as BootstrapDto;
@@ -18,29 +23,91 @@ async function fixture(page: Page) {
   return { bootstrap, a, b };
 }
 
+test('an existing city shows the actual task card before focusing its distant building', async ({ page }, info) => {
+  expect((await page.request.post('/api/auth/login', { data: { email: process.env.E2E_CITY_EMAIL ?? 'demo@tasktopia.local', password: process.env.E2E_CITY_PASSWORD ?? 'tasktopia-demo' } })).status()).toBe(200);
+  const bootstrap = await (await page.request.get('/api/bootstrap')).json() as BootstrapDto;
+  const list = await (await page.request.get(`/api/tasks/list-page?countryId=${bootstrap.country.id}&limit=100`)).json() as TaskListPageDto;
+  await page.goto('/'); await openMapCity(page);
+  const world = page.locator('.world-canvas');
+  await expect(world).toHaveAttribute('data-city-scene-commit', 'atomic');
+  await expect(world).toHaveAttribute('data-loading', 'false');
+  await expect(world).toHaveAttribute('data-camera-presentation-pending', 'false');
+  const pose = () => world.evaluate(node => {
+    const d = (node as HTMLElement).dataset;
+    return { x: d.cameraWorldX, y: d.cameraWorldY, scale: d.renderScale, focusX: d.focusX, focusY: d.focusY };
+  });
+  const before = await pose();
+  const target = list.items.filter(task => task.cityId === bootstrap.initialCity?.id).sort((a, b) =>
+    Math.hypot(b.origin.x - Number(before.x), b.origin.y - Number(before.y)) - Math.hypot(a.origin.x - Number(before.x), a.origin.y - Number(before.y)))[0]!;
+  expect(target).toBeDefined(); expect(Math.hypot(target.origin.x - Number(before.focusX), target.origin.y - Number(before.focusY))).toBeGreaterThan(1);
+  let release!: () => void, started = false;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route(`**/api/tasks/${target.id}/card?*`, async route => { started = true; await gate; await route.continue().catch(() => undefined); });
+  try {
+    const search = page.getByRole('combobox', { name: 'Поиск здания по номеру или названию' });
+    await search.fill(`#${target.taskNumber}`); await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(1); await search.press('Enter');
+    await expect.poll(() => started).toBe(true); await expect(page.locator('#task-title')).toHaveCount(0);
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    expect(await pose(), 'Map focus must wait for the actual task heading, not the loading dialog').toEqual(before);
+    release(); await expect(page.locator('#task-title')).toHaveText(target.title);
+    await expect.poll(() => world.getAttribute('data-focus-x')).toBe(String(target.origin.x));
+    await expect.poll(() => world.getAttribute('data-focus-y')).toBe(String(target.origin.y));
+    await info.attach('card-before-focus', { body: JSON.stringify({ taskNumber: target.taskNumber, before, after: await pose() }), contentType: 'application/json' });
+  } finally { release(); }
+});
+
 test('task A → dependency B → browser Back/Forward restores the city camera without rereading geography', async ({ page }, info) => {
   const { a, b } = await fixture(page), errors: string[] = [], sceneReads: string[] = [];
   page.on('pageerror', error => errors.push(error.message)); page.on('request', request => { if (/\/scene(?:\?|$)/.test(request.url())) sceneReads.push(request.url()); });
-  await page.goto('/'); await openMapCity(page);
-  const world = page.locator('.world-canvas'); await expect(world).toHaveAttribute('data-city-scene-commit', 'atomic');
-  await world.locator('canvas').focus(); await page.keyboard.press('ArrowRight');
-  await expect.poll(() => page.evaluate(() => history.state?.view?.cityView?.center?.x)).toBeTruthy();
-  const pose = await page.evaluate(() => history.state.view.cityView) as { center: { x: number; y: number }; scale: number };
-  const search = page.getByRole('combobox', { name: 'Поиск здания по номеру или названию' });
-  await search.fill(`#${a.taskNumber}`); await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(1); await search.press('Enter');
-  await expect(page.locator('#task-title')).toHaveText(a.title); await expect(page).toHaveURL(new RegExp(`/task/${a.taskNumber}\\?`));
-  await page.getByRole('link', { name: `#${b.taskNumber} · ${b.title}`, exact: true }).click();
-  await expect(page.locator('#task-title')).toHaveText(b.title); await expect(page).toHaveURL(new RegExp(`/task/${b.taskNumber}\\?`));
-  await page.goBack(); await expect(page.locator('#task-title')).toHaveText(a.title);
-  await page.goBack(); await expect(page.locator('.task-modal')).toHaveCount(0);
-  await expect.poll(async () => {
-    const x = Number(await world.getAttribute('data-camera-world-x')), y = Number(await world.getAttribute('data-camera-world-y'));
-    return Math.abs(x - pose.center.x) < .3 && Math.abs(y - pose.center.y) < .3;
-  }).toBe(true);
-  await page.goForward(); await expect(page.locator('#task-title')).toHaveText(a.title);
-  await page.goForward(); await expect(page.locator('#task-title')).toHaveText(b.title);
-  expect(sceneReads).toHaveLength(1); expect(errors).toEqual([]);
-  await info.attach('navigation', { body: Buffer.from(JSON.stringify({ pose, sceneReads, errors })), contentType: 'application/json' });
+  await observeNavigation(page);
+  let completed = false, expectedPose: unknown;
+  try {
+    await page.goto('/'); await openMapCity(page);
+    const world = page.locator('.world-canvas'); await expect(world).toHaveAttribute('data-city-scene-commit', 'atomic');
+    await world.locator('canvas').focus(); await page.keyboard.press('ArrowRight');
+    await expect.poll(() => page.evaluate(() => history.state?.view?.cityView?.center?.x)).toBeTruthy();
+    const pose = await page.evaluate(() => history.state.view.cityView) as { center: { x: number; y: number }; scale: number };
+    expectedPose = pose;
+    const search = page.getByRole('combobox', { name: 'Поиск здания по номеру или названию' });
+    await search.fill(`#${a.taskNumber}`); await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(1); await search.press('Enter');
+    await expect(page.locator('#task-title')).toHaveText(a.title); await expect(page).toHaveURL(new RegExp(`/task/${a.taskNumber}\\?`));
+    await page.getByRole('link', { name: `#${b.taskNumber} · ${b.title}`, exact: true }).click();
+    await expect(page.locator('#task-title')).toHaveText(b.title); await expect(page).toHaveURL(new RegExp(`/task/${b.taskNumber}\\?`));
+    await page.goBack(); await expect(page.locator('#task-title')).toHaveText(a.title);
+    await page.goBack(); await expect(page.locator('.task-modal')).toHaveCount(0);
+    await expect.poll(async () => {
+      const x = Number(await world.getAttribute('data-camera-world-x')), y = Number(await world.getAttribute('data-camera-world-y'));
+      return Math.abs(x - pose.center.x) < .3 && Math.abs(y - pose.center.y) < .3;
+    }).toBe(true);
+    await page.goForward(); await expect(page.locator('#task-title')).toHaveText(a.title);
+    await page.goForward(); await expect(page.locator('#task-title')).toHaveText(b.title);
+    expect(sceneReads).toHaveLength(1); expect(errors).toEqual([]);
+    await info.attach('navigation', { body: Buffer.from(JSON.stringify({ pose, sceneReads, errors })), contentType: 'application/json' });
+    completed = true;
+  } finally {
+    if (!completed) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const read = page.evaluate(() => {
+          const d = document.querySelector<HTMLElement>('.world-canvas')?.dataset;
+          const keys = ['cameraWorldX', 'cameraWorldY', 'renderScale', 'cameraPresentationPending', 'loading', 'loadError',
+            'citySceneCommit', 'citySceneRequests', 'panNetworkRequests', 'groundBakeQueue', 'groundBakeFrameMaxMs',
+            'interactiveGroundBakeFrames', 'cameraPaddingChunks', 'cameraPaddingTerrainPending', 'cameraPaddingTerrainViews',
+            'cameraPaddingTargetUnbaked', 'cameraPaddingVisibleUnbaked', 'cameraPaddingTreePending',
+            'cameraPaddingSampleMaxMs', 'cameraPaddingBakeMaxMs', 'cameraPaddingTreeSampleMaxMs', 'cameraPaddingTreeCreateMaxMs'];
+          const trace = (window as unknown as { qaNavigationTrace?: () => unknown[] }).qaNavigationTrace?.() ?? [];
+          return { coverage: 'observed', at: performance.now(), url: location.href, state: history.state,
+            world: Object.fromEntries(keys.map(key => [key, d?.[key] ?? null])),
+            trace: trace.slice(-40), retainedTraceEntries: trace.length, traceTruncated: trace.length > 40 };
+        }).catch(() => ({ coverage: 'unavailable', reason: 'page-closed-or-unresponsive' }));
+        const readback = await Promise.race([read, new Promise(resolve => {
+          timer = setTimeout(() => resolve({ coverage: 'unavailable', reason: 'diagnostic-read-timeout' }), 1000);
+        })]);
+        await info.attach('navigation-failure', { body: Buffer.from(JSON.stringify({ expectedPose, sceneReads, errors, readback })), contentType: 'application/json' });
+      } catch { /* Diagnostic failure must preserve the primary test failure. */ }
+      finally { if (timer) clearTimeout(timer); }
+    }
+  }
 });
 
 test('Back cancels a pending dependency card and its late response cannot reopen it', async ({ page }) => {

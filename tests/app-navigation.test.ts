@@ -44,3 +44,64 @@ it('records a waiting card before its response, upgrades that same history entry
   expect(taskResolutionQuery(new URL('https://tasktopia.online/task/0'))).toBeNull();
   expect(taskResolutionQuery(new URL('https://tasktopia.online/task?taskId=untrusted'))).toBeNull();
 });
+
+it('keeps the map entry when a restored task becomes ready after browser Back', () => {
+  const f = historyFixture(), nav = new AppNavigation(f.history, f.url), task = { id: 'a', taskNumber: 40 };
+  nav.view(city);
+  const mapUrl = f.url();
+  nav.pending(city, task.id, false);
+  nav.close(city);
+  f.history.go(1);
+  expect(nav.current()?.task?.pending).toBe(true);
+  f.history.go(-1);
+  const mapState = nav.current();
+
+  nav.task(city, task, false, true);
+  expect(f.url()).toBe(mapUrl);
+  expect(nav.current()).toEqual(mapState);
+  expect(f.entries).toHaveLength(2);
+
+  // The pending Forward entry remains usable and can be canonicalized in place.
+  f.history.go(1);
+  nav.task(city, task, false, true);
+  expect(f.url()).toBe(taskLink(city.countryId, task));
+  expect(nav.current()?.task?.pending).toBeUndefined();
+  expect(nav.current()?.taskDepth).toBe(1);
+  expect(f.entries).toHaveLength(2);
+  nav.close(city);
+  expect(f.url()).toBe(mapUrl);
+  expect(nav.current()?.task).toBeUndefined();
+});
+
+it('keeps a newer task entry when an older restore reports readiness', () => {
+  const f = historyFixture(), nav = new AppNavigation(f.history, f.url);
+  nav.view(city);
+  nav.pending(city, 'a', false);
+  f.history.go(-1);
+  nav.pending(city, 'b', false);
+  const pendingB = nav.current(), pendingUrl = f.url();
+
+  nav.task(city, { id: 'a', taskNumber: 40 }, false, true);
+  expect(nav.current()).toEqual(pendingB);
+  expect(f.url()).toBe(pendingUrl);
+  expect(f.entries).toHaveLength(2);
+
+  nav.task(city, { id: 'b', taskNumber: 41 }, false, true);
+  expect(nav.current()?.task?.id).toBe('b');
+  expect(nav.current()?.taskDepth).toBe(1);
+  expect(f.url()).toBe(taskLink(city.countryId, { id: 'b', taskNumber: 41 }));
+});
+
+it.each(['number', 'UUID'])('canonicalizes an unowned direct %s task entry without adding history', kind => {
+  const f = historyFixture(), id = '12345678-1234-1234-1234-123456789abc', task = { id, taskNumber: 42 };
+  const directUrl = kind === 'number' ? `/task/42?countryId=country-a&taskId=${id}` : `/task?countryId=country-a&taskId=${id}`;
+  f.history.replaceState(null, '', directUrl);
+  const nav = new AppNavigation(f.history, f.url);
+
+  nav.task(city, task, true, true);
+  expect(f.entries).toHaveLength(1);
+  expect(f.url()).toBe(taskLink(city.countryId, task));
+  expect(nav.current()?.task?.id).toBe(id);
+  expect(nav.current()?.task?.standalone).toBe(true);
+  expect(nav.current()?.taskDepth).toBe(0);
+});

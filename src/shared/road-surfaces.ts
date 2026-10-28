@@ -23,9 +23,12 @@ export function buildRoadSurfaces(input: {
       if (x === 0 && y === 0) continue;
       const cell = { x: road.x + x, y: road.y + y };
       const key = cellKey(cell);
-      if (input.roads.has(key) || input.blocked.has(key) || !input.isSurfaceTerrain(cell)) continue;
-      const kind: SurfaceCellDto["kind"] = road.roadClass === "HIGHWAY" && !input.isInsideCity(cell) ? "SHOULDER" : "SIDEWALK";
+      if (input.roads.has(key) || input.blocked.has(key)) continue;
       const existing = surfaces.get(key);
+      // A published sidewalk already has the highest paving priority. A
+      // shoulder also proved its terrain buildable, but may still be upgraded.
+      if (existing?.kind === "SIDEWALK" || !existing && !input.isSurfaceTerrain(cell)) continue;
+      const kind: SurfaceCellDto["kind"] = road.roadClass === "HIGHWAY" && !input.isInsideCity(cell) ? "SHOULDER" : "SIDEWALK";
       if (!existing || existing.kind === "SHOULDER" && kind === "SIDEWALK") surfaces.set(key, { ...cell, kind });
     }
   }

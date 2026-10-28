@@ -13,6 +13,7 @@ export function patchChunkTaskStatuses(
   chunk: ChunkDto,
   patches: ReadonlyMap<string, ChunkTaskStatusPatch>,
 ): ChunkDto {
+  if(patches.size===0)return chunk;
   let changed = false;
   let worldVersion = chunk.worldVersion;
   const tasks = chunk.tasks.map((task) => {
@@ -36,6 +37,7 @@ export function patchChunkPayloadTaskStatuses(
   payload: ChunkPayloadDto,
   patches: ReadonlyMap<string, ChunkTaskStatusPatch>,
 ): ChunkPayloadDto {
+  if(patches.size===0)return payload;
   let changed = false;
   let publishedVersion = payload.publishedVersion;
   const tasks = payload.tasks.map((task) => {

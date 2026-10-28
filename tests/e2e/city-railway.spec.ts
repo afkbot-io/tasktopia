@@ -1,7 +1,7 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { transportSchedule,TRANSPORT_EPOCH } from "../../src/shared/transport-schedule";
 import { planCityRailway } from "../../src/client/city-railway";
 import { expect, test } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 
 for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage} renders without a premature train`, async ({ page }, info) => {
   test.skip(process.env.E2E_MAP_LOADING_FIXTURE !== "true", "Local transport scene fixture");
@@ -10,7 +10,7 @@ for (const stage of [1, 2, 3, 4, 5]) test(`transport construction stage ${stage}
   // Vary the DTO at the browser boundary; never mutate the fixture's database.
   await page.route("**/api/countries/*/cities/*/scene", async route => {
     const response = await route.fetch();
-    const scene = await response.json() as CitySceneDto;
+    const scene = decodeCitySceneWire(await response.json());
     for (const task of [...scene.chunks.flatMap(chunk => chunk.tasks), ...scene.completedDistrictSnapshots.flatMap(snapshot => snapshot.tasks)]) {
       if (task.serviceRole !== "AIRPORT" && task.serviceRole !== "RAILWAY") continue;
       task.stage = stage;
@@ -50,7 +50,7 @@ test("completed city station has a moving locomotive and five coupled wagons", a
     const headers = { ...response.headers() };
     delete headers["x-tasktopia-server-time"];
     if (/\/cities\/[^/]+\/scene(?:\?|$)/.test(route.request().url())) {
-      const scene = await response.json() as CitySceneDto;
+      const scene = decodeCitySceneWire(await response.json());
       const tasks = [...new Map([...scene.chunks.flatMap(c => c.tasks), ...scene.completedDistrictSnapshots.flatMap(s => s.tasks)].map(t => [t.id,t])).values()];
       const sites = [...new Map(scene.chunks.flatMap(c => c.plannedSites ?? []).map(s => [s.id,s])).values()];
       const roads = scene.chunks.flatMap(c => c.roadRuns.map(r => ({minX:Math.min(r.start.x,r.end.x),maxX:Math.max(r.start.x,r.end.x),minY:Math.min(r.start.y,r.end.y),maxY:Math.max(r.start.y,r.end.y)})));

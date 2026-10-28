@@ -108,7 +108,14 @@ test("a delayed first connection preserves the initial scene through first-frame
     expect(Number(await host.getAttribute("data-transport-only-refreshes") ?? 0)).toBe(0);
     expect(scenes).toBe(1);
     expect(await host.getAttribute("data-ground-rebuilds")).toBe(await host.getAttribute("data-resident-chunks"));
-    expect(await host.getAttribute("data-canonical-decoded-chunks")).toBe(await host.getAttribute("data-city-scene-chunks"));
+    // The first visible frame does not wait for offscreen physical preparation.
+    // Its complete canonical snapshot must still publish without a scene reread.
+    const sceneChunks = await host.getAttribute("data-city-scene-chunks");
+    expect(sceneChunks).toMatch(/^[1-9]\d*$/);
+    await expect(host).toHaveAttribute("data-canonical-decoded-chunks", sceneChunks!);
+    await expect(host).toHaveAttribute("data-canonical-snapshot-pending", "false");
+    expect(scenes).toBe(1);
+    expect(Number(await host.getAttribute("data-transport-only-refreshes") ?? 0)).toBe(0);
   } finally { rendererStarted(); release(); }
 });
 
@@ -120,12 +127,29 @@ test("walking routes wait for resident sprites without holding the first city fr
   const residents = new Promise<void>(resolve => { release = resolve; });
   await page.route("**/micro-ambient/*.png", async route => { await residents; await route.continue(); });
   try {
+    await page.addInitScript(() => {
+      let first: { entityRebuilds: string | null } | undefined;
+      const observer = new MutationObserver(() => {
+        if (first) return;
+        const host = document.querySelector<HTMLElement>('.world-canvas[data-city-scene-commit="atomic"]');
+        if (!host) return;
+        first = { entityRebuilds: host.getAttribute("data-entity-rebuilds") };
+        observer.disconnect();
+      });
+      observer.observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-city-scene-commit"] });
+      Object.assign(window, { qaWalkingFirstAtomic: () => first });
+    });
     await page.goto("/");
     await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
     expect(Number(await host.getAttribute("data-walk-network-builds") ?? 0)).toBe(0);
-    expect(Number(await host.getAttribute("data-entity-rebuilds"))).toBe(1);
+    // Canonical preparation may legitimately reconcile again after this frame,
+    // before a later Playwright attribute read reaches the browser.
+    const first = await page.evaluate(() => (window as unknown as {
+      qaWalkingFirstAtomic(): { entityRebuilds: string | null } | undefined;
+    }).qaWalkingFirstAtomic());
+    expect(Number(first?.entityRebuilds)).toBe(1);
     release();
     await expect(host).toHaveAttribute("data-ambient-assets", "ready");
     await expect.poll(async () => Number(await host.getAttribute("data-walk-network-builds") ?? 0)).toBeGreaterThan(0);
