@@ -8,7 +8,7 @@ import type { MapDependencySelection } from "./map-dependencies";
 import { MapAttention, type MapAttentionSelection } from "./components/MapAttention";
 import { MapLegend } from "./components/MapLegend";
 import { DistrictPlans } from "./components/DistrictPlans";
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto, TaskResolutionDto, WorldFeatureDto } from "../shared/contracts";
 import type { PlanetViewState } from "./components/PlanetAtlasCanvas";
 import type { CitySceneDto } from "../shared/city-scene-contract";
@@ -46,14 +46,14 @@ import type { TaskCardDto } from '../shared/task-read-contracts';
 import { RealtimeReplay } from './realtime-replay';
 import { matchesRealtimeScope } from './realtime-scope';
 import { TaskCardFocus, type TaskCardFocusScope } from './task-card-focus';
+import { createPreloadedComponent } from './preloaded-component';
 
-const loadWorldRenderer = () => import("./components/WorldCanvas").then(module => ({ default: module.WorldCanvas }));
-const WorldCanvas = lazy(loadWorldRenderer);
+const { Component: WorldCanvas, preload: loadWorldRenderer } = createPreloadedComponent<ComponentProps<typeof import("./components/WorldCanvas").WorldCanvas>>(() => import("./components/WorldCanvas").then(module => ({ default: module.WorldCanvas })));
 const PlanetAtlasCanvas = lazy(() => import("./components/PlanetAtlasCanvas").then((module) => ({ default: module.PlanetAtlasCanvas })));
 const CityDocuments = lazy(() => import("./components/CityDocuments").then(module => ({ default: module.CityDocuments })));
 const CityDevelopmentPanel = lazy(() => import("./components/CityDevelopmentPanel").then(module => ({ default: module.CityDevelopmentPanel })));
 const CityAlbum = lazy(() => import('./components/CityAlbum').then(module => ({ default: module.CityAlbum })));
-const TaskModal = lazy(() => import("./components/TaskModal").then((module) => ({ default: module.TaskModal })));
+const { Component: TaskModal, preload: loadTaskModal } = createPreloadedComponent<ComponentProps<typeof import("./components/TaskModal").TaskModal>>(() => import("./components/TaskModal").then(module => ({ default: module.TaskModal })));
 const ArchiveRecordModal = lazy(() => import("./components/ArchiveRecordModal").then((module) => ({ default: module.ArchiveRecordModal })));
 const TokenPanel = lazy(() => import("./components/TokenPanel").then((module) => ({ default: module.TokenPanel })));
 
@@ -513,7 +513,7 @@ export function App() {
 
   useEffect(() => { void load().catch(() => undefined); }, [load]);
   useEffect(() => {
-    if (countryId || taskEntry) void import("./components/TaskModal");
+    if (countryId || taskEntry) void loadTaskModal().catch(() => undefined);
     if (countryId && !taskEntry) void import("./components/PlanetAtlasCanvas");
   }, [countryId, taskEntry]);
   const cityPrefetchPendingRef=useRef(false);
