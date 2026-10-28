@@ -127,12 +127,29 @@ test("walking routes wait for resident sprites without holding the first city fr
   const residents = new Promise<void>(resolve => { release = resolve; });
   await page.route("**/micro-ambient/*.png", async route => { await residents; await route.continue(); });
   try {
+    await page.addInitScript(() => {
+      let first: { entityRebuilds: string | null } | undefined;
+      const observer = new MutationObserver(() => {
+        if (first) return;
+        const host = document.querySelector<HTMLElement>('.world-canvas[data-city-scene-commit="atomic"]');
+        if (!host) return;
+        first = { entityRebuilds: host.getAttribute("data-entity-rebuilds") };
+        observer.disconnect();
+      });
+      observer.observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-city-scene-commit"] });
+      Object.assign(window, { qaWalkingFirstAtomic: () => first });
+    });
     await page.goto("/");
     await openMapCity(page);
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic", { timeout: 30_000 });
     expect(Number(await host.getAttribute("data-walk-network-builds") ?? 0)).toBe(0);
-    expect(Number(await host.getAttribute("data-entity-rebuilds"))).toBe(1);
+    // Canonical preparation may legitimately reconcile again after this frame,
+    // before a later Playwright attribute read reaches the browser.
+    const first = await page.evaluate(() => (window as unknown as {
+      qaWalkingFirstAtomic(): { entityRebuilds: string | null } | undefined;
+    }).qaWalkingFirstAtomic());
+    expect(Number(first?.entityRebuilds)).toBe(1);
     release();
     await expect(host).toHaveAttribute("data-ambient-assets", "ready");
     await expect.poll(async () => Number(await host.getAttribute("data-walk-network-builds") ?? 0)).toBeGreaterThan(0);
