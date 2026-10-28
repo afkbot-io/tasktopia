@@ -154,7 +154,7 @@ test("published developed families and completed courtyard furniture render thro
   expect(Number(await page.locator(".world-canvas").getAttribute("data-district-boundary-cells"))).toBeGreaterThan(0);
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await captureMap(page, join(output, "districts.png"));
-  await openMapCity(page);
+  await page.getByRole("navigation", { name: "Уровень карты" }).getByRole("button", { name: "Город", exact: true }).click();
   await expect(page.locator(".world-canvas")).toHaveAttribute("data-district-boundary-visible", "false");
   const canvas = page.locator("canvas[aria-label='Интерактивная карта города']");
   await canvas.hover(); await page.mouse.wheel(0, -1600);
