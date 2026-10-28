@@ -1,7 +1,7 @@
 import type { Locator } from '@playwright/test';
 
 type CineObservation = { performanceNowMs: number; dateNowMs: number; publicHost: Record<string, string | null> };
-export type CineSample = { firstObserved: CineObservation; lastObserved: CineObservation; states: { taskId: string; kind: string; phase: string; fromStage: number; toStage: number; oldVisible: boolean; targetVisible: boolean; aircraftVisible: boolean }[];
+export type CineSample = { firstObserved: CineObservation; lastObserved: CineObservation; states: { taskId: string; kind: string; phase: string; fromStage: number; toStage?: number; oldVisible: boolean; targetVisible: boolean; aircraftVisible: boolean }[];
   workers: number; ghosts: number; cpuP95: number; cpuMax: number };
 type CineNode = HTMLElement & { __qaCinematics?: { records: CineSample[]; observer: MutationObserver } };
 
