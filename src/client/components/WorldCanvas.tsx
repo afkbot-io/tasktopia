@@ -17,7 +17,7 @@ import { createRequiredEntityAssets } from "../city-entity-assets";
 import { createCityMovementDependencies,needsMovementPreparation } from "../city-movement-dependencies";
 import { CanonicalCityProjection } from "../canonical-city-projection";
 import { planCityResidency, taskIntersectsResidentBounds } from "../city-residency";
-import { cityGroundRangeForViewport, planCityGroundReadiness } from "../city-ground-readiness";
+import { cityGroundRangeForViewport, planCityGroundReadiness, cityResidentGroundReady } from "../city-ground-readiness";
 import { CityCameraPresentation, type CityCameraPose } from "../city-camera-presentation";
 import { CityWorldObservation } from "./CityWorldObservation";
 import { CityWorldInspection,type InspectionSnapshot,type WorldInspection,type InspectionTarget } from "../city-world-inspection";
@@ -3011,7 +3011,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         if (!cityScene || !paintedFrame) return true;
         const range = cityGroundRangeForViewport(pose,pose.scale,app.screen,cityScene.city.bounds,CELL_SIZE,chunkSize);
         const pages = planCityResidency(cityScene.chunks,range,chunkSize).visibleKeys;
-        if ([...pages].some(id=>!groundContainers.get(id)?.overlayView || !groundContainers.get(id)?.terrainView || entityChunkLods.get(id)!=="DETAIL" || dirtyEntityKeys.has(id))) return false;
+        if ([...pages].some(id=>!cityResidentGroundReady(groundContainers.get(id),chunkLods.get(id),entityChunkLods.get(id),
+          invalidatedGroundKeys.has(id),dirtyEntityKeys.has(id)))) return false;
         return cameraTerrainPadding(pose,pose.scale,app.screen,cameraBounds(),CELL_SIZE,chunkSize)
           .filter(([x,y])=>!residentTerrainKeys.has(chunkKey(x,y)))
           .every(coordinate=>{const record=paddingTerrain.get(chunkKey(...coordinate));return visibleMapPaddingReady(record);});
@@ -4427,7 +4428,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         lod: MapLod,
         valid: () => boolean,
         rebuildMovement: boolean,
-      ): Promise<void> => {
+      ): Promise<boolean> => {
         let candidates = new Map([...sources].map(([cacheKey, chunk]) => [
           cacheKey,
           patchChunkTaskStatuses(chunk, latestTaskStatusPatches),
@@ -4439,7 +4440,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           if(!firstCityAtomicPresented)host!.dataset.cityEntityAssetsMs=String(Number(host!.dataset.cityEntityAssetsMs??0)+performance.now()-assetsStarted);
           host!.dataset.sceneAssets = String(assetLease.size);
           host!.dataset.leasedAssets = String(leasedAssetCount());
-          if (!valid()) return;
+          if (!valid()) return false;
           const latest = new Map([...candidates].map(([cacheKey, chunk]) => [
             cacheKey,
             patchChunkTaskStatuses(chunk, latestTaskStatusPatches),
@@ -4456,8 +4457,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           if(!firstCityAtomicPresented)host!.dataset.cityEntityRenderMs=(performance.now()-renderStarted).toFixed(3);
           host!.dataset.citySceneEntityChunks = String(latest.size);
           host!.dataset.citySceneEntityCommits = String(Number(host!.dataset.citySceneEntityCommits ?? 0) + 1);
-          return;
+          return true;
         }
+        return false;
       };
       const preloadAmbientAssets = (): void => {
         if (ambientAssetsReady || ambientAssetsPromise) return;
@@ -4597,10 +4599,15 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             const rebuildMovement = pendingMovementRebuild;
             const lodTransition = lod !== currentLod;
             const initialGroundSplit = Boolean(cityScene && !paintedFrame);
+            const cinematicRefresh = Boolean(cityScene && paintedFrame && cinematicEvents.size
+              && !cityCamera.pending && !lodTransition);
+            const splitGround = initialGroundSplit || cinematicRefresh;
             const initialCamera = cityCamera.pending ?? {x:world.x,y:world.y,scale:world.scale.x};
-            const groundPlan = initialGroundSplit
+            const groundPlan = splitGround
               ? planCityGroundReadiness(wanted,cityGroundRangeForViewport(initialCamera,initialCamera.scale,app.screen,cityScene!.city.bounds,CELL_SIZE,chunkSize))
               : {critical:wanted,halo:[]};
+            const cinematicCriticalKeys = cinematicRefresh
+              ? new Set(groundPlan.critical.map(coordinate => chunkKey(...coordinate))) : undefined;
             let iterationActive = true;
             const iterationCurrent = () => iterationActive && !disposed && generation === loadGeneration && desiredLod === lod;
             const residentCurrent = (cacheKey: string) => iterationCurrent() && desiredKeys.has(cacheKey);
@@ -4682,6 +4689,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                       terrainView: ground?.lod === lod ? undefined : createTerrainView(chunk, lod),
                       overlayView: createInfrastructureOverlayView(chunk, lod),
                     }),
+                    cinematicCriticalKeys?.has(cacheKey) ? () => -1 : undefined,
                   );
                   if (!prepared) return;
                   if (!residentCurrent(cacheKey)) {
@@ -4716,9 +4724,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 if(initialGroundSplit&&iterationCurrent())host!.dataset.cityVisibleGroundMs=(performance.now()-iterationStartedAt).toFixed(3);
               });
               // Keep every halo entity source and its authored overhang ready;
-              // only invisible ground textures wait until the first paint.
-              const residentDataWork=initialGroundSplit?Promise.all(wanted.map(([x,y])=>readData(x,y,lod))).then(()=>{
-                if(iterationCurrent())host!.dataset.cityVisualSourcesMs=(performance.now()-iterationStartedAt).toFixed(3);
+              // only invisible ground waits beyond foreground publication.
+              const residentDataWork=splitGround?Promise.all(wanted.map(([x,y])=>readData(x,y,lod))).then(()=>{
+                if(initialGroundSplit&&iterationCurrent())host!.dataset.cityVisualSourcesMs=(performance.now()-iterationStartedAt).toFixed(3);
               }):undefined;
               // Only visible/halo visual pages belong to this commit. Complete
               // physical topology is prepared and published by its own owner.
@@ -4763,19 +4771,31 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 }
                 if (!iterationCurrent()) continue;
               }
+              let cinematicHaloPrepared = false;
               if (cityScene) {
                 const sources = new Map<string, ChunkDto>();
                 for (const [chunkX, chunkY] of wanted) {
                   const cacheKey = chunkKey(chunkX, chunkY);
-                  const chunk = fetched.get(cacheKey) ?? (initialGroundSplit?cachedChunkData(cacheKey,lod):undefined) ?? chunks.get(cacheKey);
+                  const chunk = fetched.get(cacheKey) ?? (splitGround?cachedChunkData(cacheKey,lod):undefined) ?? chunks.get(cacheKey);
                   if (chunk && desiredKeys.has(cacheKey)) sources.set(cacheKey, chunk);
                 }
-                await publishCitySceneEntities(
+                // A live reveal needs real destination assets and fresh entity
+                // data, but invisible ground can warm after that publication.
+                // A camera change falls back to the complete resident barrier.
+                const cinematicPoseCurrent = () => iterationCurrent() && !cityCamera.pending
+                  && world.x === initialCamera.x && world.y === initialCamera.y && world.scale.x === initialCamera.scale;
+                let published = await publishCitySceneEntities(
                   sources,
                   lod,
-                  iterationCurrent,
+                  cinematicRefresh ? cinematicPoseCurrent : iterationCurrent,
                   rebuildMovement || lodTransition,
                 );
+                if (!published && cinematicRefresh && iterationCurrent()) {
+                  await Promise.all(groundPlan.halo.map(prepareResident));
+                  cinematicHaloPrepared = true;
+                  if (iterationCurrent()) published = await publishCitySceneEntities(sources, lod, iterationCurrent, rebuildMovement);
+                }
+                if (!published) { discardPreparedGrounds(); continue; }
               }
               if (initialGroundSplit) {
                 host!.dataset.cityCriticalGroundCount = String(groundPlan.critical.length);
@@ -4814,6 +4834,17 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                   preparedGrounds.delete(cacheKey);
                 }
                 host!.dataset.cityHaloGroundPending = "0";
+              }
+              if (cinematicRefresh) {
+                if (!cinematicHaloPrepared) await Promise.all(groundPlan.halo.map(prepareResident));
+                if (!iterationCurrent()) { discardPreparedGrounds(); continue; }
+                // Early entity readiness never acknowledges the whole refresh.
+                // Finish resident ground and visible exterior before settling.
+                if (!await waitForCityPadding(iterationCurrent)) {
+                  discardPreparedGrounds();
+                  if (!iterationCurrent()) continue;
+                  break;
+                }
               }
               discardPreparedGrounds();
             } catch (error) {

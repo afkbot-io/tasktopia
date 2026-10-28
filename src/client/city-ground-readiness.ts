@@ -6,6 +6,18 @@ export type CityGroundReadinessPlan = {
   halo: Array<[number, number]>;
 };
 
+/** A moved camera needs committed resident ground and its published entities. */
+export function cityResidentGroundReady(
+  ground: { terrainView?: unknown; overlayView?: unknown } | undefined,
+  materializedLod: "DETAIL" | "OVERVIEW" | undefined,
+  entityLod: "DETAIL" | "OVERVIEW" | undefined,
+  invalidated: boolean,
+  entityDirty: boolean,
+): boolean {
+  return !!ground?.terrainView && !!ground.overlayView && materializedLod === "DETAIL"
+    && entityLod === "DETAIL" && !invalidated && !entityDirty;
+}
+
 /** Continuous visible city ground, including a fractional strip at an edge. */
 export function cityGroundRangeForViewport(
   position: CameraPosition,
