@@ -1,5 +1,5 @@
 import { api, ApiError } from "./api";
-import type { MapAttentionPage, MapAttentionTask } from "../shared/map-attention";
+import { MAP_ATTENTION_MAX_PAGE_SIZE, type MapAttentionPage, type MapAttentionTask } from "../shared/map-attention";
 /** Publish only a complete revision. One restart absorbs a concurrent edit;
  * continuous edits remain a recoverable error rather than an endless loop. */
 export async function loadMapAttention(countryId: string, cityId: string, signal: AbortSignal,
@@ -12,7 +12,7 @@ export async function loadMapAttention(countryId: string, cityId: string, signal
       let after: string | null = null, snapshot: number | undefined;
       do {
         signal.throwIfAborted();
-        const query = new URLSearchParams({ countryId, cityId });
+        const query = new URLSearchParams({ countryId, cityId, limit: String(MAP_ATTENTION_MAX_PAGE_SIZE) });
         if (after) query.set("after", after);
         if (snapshot !== undefined) query.set("revision", String(snapshot));
         const page = await read(`/api/map-attention?${query}`, signal);

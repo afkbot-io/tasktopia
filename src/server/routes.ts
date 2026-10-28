@@ -8,6 +8,7 @@ import { readCityNews, readNewsCards } from "./city-news-read";
 import { readWorldDigest } from "./world-digest-read";
 import { registerTaskShareRoutes } from "./task-share-routes";
 import { readMapAttention } from "./map-attention-read";
+import { MAP_ATTENTION_DEFAULT_PAGE_SIZE, MAP_ATTENTION_MAX_PAGE_SIZE } from "../shared/map-attention";
 import type { FastifyInstance } from "fastify";
 import { createReadStream } from "node:fs";
 import type { AppService } from "./app-service";
@@ -354,8 +355,9 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
     if (!user) return reply;
     const query = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid(),
       after: z.string().uuid().optional(), revision: z.coerce.number().int().nonnegative().optional(),
+      limit: z.coerce.number().int().min(1).max(MAP_ATTENTION_MAX_PAGE_SIZE).default(MAP_ATTENTION_DEFAULT_PAGE_SIZE),
     }).strict(), request.query);
-    const page = await readMapAttention(db, user.id, query.countryId, query.cityId, query.after ?? null);
+    const page = await readMapAttention(db, user.id, query.countryId, query.cityId, query.after ?? null, query.limit);
     reply.header("Cache-Control", "private, no-store");
     if (!page) return reply.code(403).send({ error: "FORBIDDEN", message: "Нет доступа к городу" });
     if (query.revision !== undefined && query.revision !== page.revision)
