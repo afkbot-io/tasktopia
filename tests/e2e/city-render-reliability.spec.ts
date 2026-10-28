@@ -431,6 +431,13 @@ test("focused keyboard camera controls preserve canonical data and ignore task d
  const search=page.getByLabel("Поиск здания по номеру или названию");await search.fill(String(searchable!.taskNumber));await page.keyboard.press("ArrowRight");
  const stationary=await host.getAttribute("data-camera-world-x");await page.keyboard.press("Home");expect(await host.getAttribute("data-camera-world-x")).toBe(stationary);
  await page.locator(".task-search-results").getByRole("option").first().click();await expect(page.locator("#task-title")).toBeVisible();
+ await expect(page.locator("#task-title")).toHaveText(searchable!.title);
+ // Card-first navigation focuses the map after the actual heading has painted.
+ // Complete that owned focus before testing that dialog keys cannot move it.
+ await expect(host).toHaveAttribute("data-focus-x",String(searchable!.origin.x));
+ await expect(host).toHaveAttribute("data-focus-y",String(searchable!.origin.y));
+ await expect(host).toHaveAttribute("data-camera-presentation-pending","false");
+ await expect(host).toHaveAttribute("data-loading","false");
  const inDialog=await host.getAttribute("data-camera-world-x");await page.keyboard.press("ArrowLeft");await page.keyboard.press("Home");
  expect(await host.getAttribute("data-camera-world-x")).toBe(inDialog);
 });
