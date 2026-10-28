@@ -81,21 +81,42 @@ export function packCitySceneTransfer(scene: CitySceneDto): CitySceneTransfer {
   const metadata: RunMetadata[] = [], metadataIds = new Map<string, number>(); let index = 0;
   const fieldKey = (value: object, order: string[], skipped: readonly string[]) => order.map(key =>
     `${JSON.stringify(key)}:${skipped.includes(key) ? "@coordinate" : signature((value as Fields)[key])}`).join(",");
-  for (const runs of sources) for (const run of runs) {
+  const sameFields=(value:object,order:string[],expected:string[],fields:Fields,first:string,second:string)=>{
+    if(order.length!==expected.length)return false;
+    for(let index=0;index<order.length;index++){
+      const key=order[index]!;
+      if(key!==expected[index]||key!==first&&key!==second&&!Object.is((value as Fields)[key],fields[key]))return false;
+    }
+    return true;
+  };
+  for (const runs of sources) {
+    let previousId:number|undefined;
+    for (const run of runs) {
     const x1=run.start.x,y1=run.start.y,x2=run.end.x,y2=run.end.y;
     if (!Number.isFinite(x1)||!Number.isFinite(y1)||!Number.isFinite(x2)||!Number.isFinite(y2)) throw new Error("Invalid city run coordinates");
     const offset=index*4;coordinates[offset]=x1;coordinates[offset+1]=y1;coordinates[offset+2]=x2;coordinates[offset+3]=y2;
     const order=Object.keys(run),startOrder=Object.keys(run.start),endOrder=Object.keys(run.end);
-    const key=`r[${fieldKey(run,order,["start","end"])}]s[${fieldKey(run.start,startOrder,["x","y"])}]e[${fieldKey(run.end,endOrder,["x","y"])}]`;
-    let id=metadataIds.get(key);
-    if (id === undefined) {
-      id=metadata.length;
-      metadata.push({fields:omit(run,["start","end"]),start:omit(run.start,["x","y"]),end:omit(run.end,["x","y"]),
-        order,startOrder,endOrder,canonicalOrder:order[0]==="start"&&order[1]==="end"
-          &&startOrder[0]==="x"&&startOrder[1]==="y"&&endOrder[0]==="x"&&endOrder[1]==="y"});
-      metadataIds.set(key,id);
+    const previous=previousId===undefined?undefined:metadata[previousId];
+    let id:number|undefined;
+    // Homogeneous runs share metadata while their coordinates vary. Exact
+    // own-key order and Object.is preserve missing/undefined and signed zero.
+    // New nested objects deliberately use the full signature fallback.
+    if(previous&&sameFields(run,order,previous.order,previous.fields,"start","end")
+      &&sameFields(run.start,startOrder,previous.startOrder,previous.start,"x","y")
+      &&sameFields(run.end,endOrder,previous.endOrder,previous.end,"x","y"))id=previousId;
+    else{
+      const key=`r[${fieldKey(run,order,["start","end"])}]s[${fieldKey(run.start,startOrder,["x","y"])}]e[${fieldKey(run.end,endOrder,["x","y"])}]`;
+      id=metadataIds.get(key);
+      if (id === undefined) {
+        id=metadata.length;
+        metadata.push({fields:omit(run,["start","end"]),start:omit(run.start,["x","y"]),end:omit(run.end,["x","y"]),
+          order,startOrder,endOrder,canonicalOrder:order[0]==="start"&&order[1]==="end"
+            &&startOrder[0]==="x"&&startOrder[1]==="y"&&endOrder[0]==="x"&&endOrder[1]==="y"});
+        metadataIds.set(key,id);
+      }
     }
-    metadataIndices[index++]=id;
+    metadataIndices[index++]=id!;previousId=id;
+    }
   }
   return { kind: KIND, version: 1, scene: skeleton, coordinates, metadataIndices, arrays, metadata };
 }

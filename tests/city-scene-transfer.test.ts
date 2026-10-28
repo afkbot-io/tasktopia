@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { CitySceneDto } from "../src/shared/city-scene-contract";
 import { packCitySceneTransfer, hydrateCitySceneTransfer } from "../src/client/city-scene-transfer";
 
@@ -82,4 +82,32 @@ it("retains legacy own-key order as well as canonical JSON and never changes the
   expect(restored).toEqual(input);expect(JSON.stringify(restored)).toBe(JSON.stringify(input));
   expect(Object.keys(restored.chunks[0]!.roadRuns[0]!)).toEqual(Object.keys(road));
   expect(Object.keys(restored.chunks[0]!.roadRuns[0]!.start)).toEqual(Object.keys(start));
+});
+
+
+it("bounds repeated primitive metadata serialization while transferring5000 uniform coordinate runs",async()=>{
+  const input=scene(5_000);let primitiveSerializations=0;
+  const original=JSON.stringify;
+  const serialize=vi.spyOn(JSON,"stringify").mockImplementation((...args:Parameters<typeof JSON.stringify>)=>{
+    if(args[0]==="vertical")primitiveSerializations++;
+    return original(...args);
+  });
+  let packed;
+  try{packed=packCitySceneTransfer(input);}finally{serialize.mockRestore();}
+  expect(primitiveSerializations).toBeLessThanOrEqual(2);
+  expect(await hydrateCitySceneTransfer(packed)).toEqual(input);
+});
+
+it("does not miss changed or nested extras, key additions, undefined, signed zero or legacy key order",async()=>{
+  const input=scene(0);
+  const point=(x:number)=>({x,y:0,note:"same"});
+  const run=(x:number,extra:unknown)=>({start:point(x),end:point(x+1),extra});
+  const runs=[run(0,1),run(1,1),run(2,2),run(3,-0),run(4,0),run(5,{nested:[1,undefined]}),run(6,{nested:[1,undefined]}),
+    {...run(7,undefined),newKey:"added"},{...run(8,undefined),otherKey:"renamed"},
+    {extra:undefined,end:point(10),start:{note:"legacy",y:-0,x:9}}];
+  input.chunks[0]!.roadRuns=runs as unknown as typeof input.chunks[0]["roadRuns"];
+  const restored=await hydrateCitySceneTransfer(packCitySceneTransfer(input));
+  expect(restored).toEqual(input);expect(JSON.stringify(restored)).toBe(JSON.stringify(input));
+  expect(Object.is((restored.chunks[0]!.roadRuns[3] as unknown as {extra:number}).extra,-0)).toBe(true);
+  expect(restored.chunks[0]!.roadRuns).toHaveLength(runs.length);
 });
