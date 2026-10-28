@@ -99,6 +99,7 @@ import { buildingNumberLabel, retainBuildingNumberFont } from "../building-numbe
 import { advanceCityMobilityFrame,createCityMobility,createCityMobilityAsync,prepareCityMobilityNetworkAsync,readPreparedCityMobilityGeometry,type PreparedCityMobilityGeometry } from "../city-mobility";
 import { CITY_MOBILITY_SIGNAL_STATE_ENCODING,encodeCityMobilitySignalState } from "../city-mobility-signal-telemetry";
 import { CityMovementPreparation,prepareLatestCityLife } from "../city-movement-preparation";
+import { cityMovementTimeoutMs } from "../city-movement-deadline";
 import { yieldPreparationTask } from "../cooperative-preparation";
 import { buildCityWalkNetworkAsync } from "../city-walk-network";
 import { placeCityMobilitySignalPosts } from "../city-mobility-signal-posts";
@@ -3988,7 +3989,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           host!.dataset.movementCommitMs=(performance.now()-commitStarted).toFixed(3);
           host!.dataset.movementPreparationCommits=String(Number(host!.dataset.movementPreparationCommits??0)+1);
           if(cityScene)scheduleEntityReconcile(false);
-          },valid).catch(error=>{
+          },valid,scene?{timeoutMs:cityMovementTimeoutMs(sceneTasks.size,scene.chunks.length)}:undefined).catch(error=>{
             if(disposed||!activeRef.current||latestMovement.geometry!==movement.geometry)return;
             movementPreparationFailed=true;
             setMapLoadError("Не удалось подготовить движение в городе. Повторите загрузку.");

@@ -1,13 +1,21 @@
+import { CITY_MOVEMENT_DEFAULT_TIMEOUT_MS, CITY_MOVEMENT_MAX_TIMEOUT_MS } from "./city-movement-deadline";
+
+export type CityMovementPreparationOptions = { timeoutMs?: number };
+
 /** One immutable canonical preparation at a time. Old work cannot publish into
  * a newer topology, hidden owner or disposed canvas, even if it ignores abort. */
 export class CityMovementPreparation {
   private pending:{key:string;controller:AbortController;promise:Promise<boolean>}|undefined;
   private disposed=false;
-  constructor(private readonly timeoutMs=20_000){}
+  constructor(private readonly timeoutMs=CITY_MOVEMENT_DEFAULT_TIMEOUT_MS){}
   get busy():boolean{return !!this.pending;}
 
-  request<T>(key:string,work:(signal:AbortSignal)=>Promise<T>,commit:(value:T)=>void,valid:()=>boolean=()=>true):Promise<boolean>{
+  request<T>(key:string,work:(signal:AbortSignal)=>Promise<T>,commit:(value:T)=>void,valid:()=>boolean=()=>true,
+    options:CityMovementPreparationOptions={}):Promise<boolean>{
     if(this.disposed)return Promise.resolve(false);
+    const timeoutMs=options.timeoutMs;
+    if(timeoutMs!==undefined&&(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>CITY_MOVEMENT_MAX_TIMEOUT_MS))
+      throw new RangeError("Invalid movement preparation timeout");
     if(this.pending?.key===key)return this.pending.promise;
     this.cancel();
     const controller=new AbortController(),run={key,controller,promise:Promise.resolve(false)};
@@ -19,7 +27,7 @@ export class CityMovementPreparation {
         const value=await new Promise<T>((resolve,reject)=>{
           aborted=()=>reject(controller.signal.reason??new DOMException("Movement preparation cancelled","AbortError"));
           controller.signal.addEventListener("abort",aborted,{once:true});
-          timer=setTimeout(()=>controller.abort(new Error("Подготовка движения занимает слишком долго. Повторите загрузку города.")),this.timeoutMs);
+          timer=setTimeout(()=>controller.abort(new Error("Подготовка движения занимает слишком долго. Повторите загрузку города.")),timeoutMs??this.timeoutMs);
           Promise.resolve().then(()=>{
             controller.signal.throwIfAborted();return work(controller.signal);
           }).then(resolve,reject);
