@@ -8,7 +8,7 @@ import type { MapDependencySelection } from "./map-dependencies";
 import { MapAttention, type MapAttentionSelection } from "./components/MapAttention";
 import { MapLegend } from "./components/MapLegend";
 import { DistrictPlans } from "./components/DistrictPlans";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSearchResultDto, TaskResolutionDto, WorldFeatureDto } from "../shared/contracts";
 import type { PlanetViewState } from "./components/PlanetAtlasCanvas";
 import type { CitySceneDto } from "../shared/city-scene-contract";
@@ -45,6 +45,7 @@ import { acceptsCityNavigationPose } from './city-navigation-pose';
 import type { TaskCardDto } from '../shared/task-read-contracts';
 import { RealtimeReplay } from './realtime-replay';
 import { matchesRealtimeScope } from './realtime-scope';
+import { TaskCardFocus, type TaskCardFocusScope } from './task-card-focus';
 
 const loadWorldRenderer = () => import("./components/WorldCanvas").then(module => ({ default: module.WorldCanvas }));
 const WorldCanvas = lazy(loadWorldRenderer);
@@ -129,6 +130,7 @@ export function App() {
   const [planetViewMemory] = useState(() => new Map<string, PlanetViewState>());
   const rememberPlanetView = useCallback((view: PlanetViewState) => { planetViewMemory.set("last", view); }, [planetViewMemory]);
   const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
+  const [taskCardFocus] = useState(() => new TaskCardFocus());
   const deepLinkHandledRef = useRef(false);
   // Decide before the first bootstrap render: no map module, asset or scene
   // competes with an incoming task card for network or the main thread.
@@ -160,11 +162,25 @@ export function App() {
   const [pushOfferDismissed, setPushOfferDismissed] = useState(() => localStorage.getItem("tasktopia:push-offer-dismissed") === "1");
   const cityReadyResolverRef = useRef<(() => void) | null>(null);
   const countryId = bootstrap?.country.id;
+  const taskFocusViewRef = useRef({ countryId, cityId: focusCity?.id, taskId: selectedTask, mapMode, sessionState });
+  useLayoutEffect(() => {
+    taskFocusViewRef.current = { countryId, cityId: focusCity?.id, taskId: selectedTask, mapMode, sessionState };
+  }, [countryId, focusCity?.id, selectedTask, mapMode, sessionState]);
+  const readTaskFocusScope = useCallback((): TaskCardFocusScope | undefined => {
+    const view = taskFocusViewRef.current;
+    if (!view.countryId || !view.cityId || !view.taskId || view.mapMode !== 'CITY' || view.sessionState !== 'AUTHENTICATED'
+      || eventCountryRef.current !== view.countryId) return;
+    return { countryId: view.countryId, cityId: view.cityId, taskId: view.taskId,
+      authenticationEpoch: authenticationEpochRef.current, sessionGeneration: sessionGenerationRef.current,
+      navigationRequest: navigationRequestRef.current };
+  }, []);
+  useEffect(() => { taskCardFocus.cancelIfStale(); }, [taskCardFocus, countryId, focusCity?.id, mapMode, selectedTask, sessionState, renderedAuthenticationEpoch]);
   const cancelPendingNavigation = useCallback(() => {
+    taskCardFocus.cancel();
     navigationRequestRef.current++; navigationRestoreEpochRef.current++; taskEntryRequestRef.current++;
     navigationRestoringRef.current = false; restoredTaskRef.current = null;
     taskNavigationAbortRef.current?.abort();
-  }, []);
+  }, [taskCardFocus]);
   const navigationView = useCallback((): NavigationView | null => {
     if (!countryId) return null;
     const city = mapMode === 'CITY' ? focusCity ?? bootstrap?.initialCity : null;
@@ -193,8 +209,9 @@ export function App() {
     if (view && task.id === selectedTask && task.countryId === countryId && eventCountryRef.current === countryId && renderedAuthenticationEpoch === authenticationEpochRef.current) {
       navigation.task(view, task, Boolean(taskEntry), navigationRestoringRef.current || restoredTaskRef.current === task.id);
       if (restoredTaskRef.current === task.id) restoredTaskRef.current = null;
+      taskCardFocus.ready(task);
     }
-  }, [navigation, navigationView, selectedTask, countryId, taskEntry, renderedAuthenticationEpoch]);
+  }, [navigation, navigationView, selectedTask, countryId, taskEntry, renderedAuthenticationEpoch, taskCardFocus]);
   useEffect(() => {
     const view = navigationView();
     if (view && selectedTask && restoredTaskRef.current !== selectedTask && !navigationRestoringRef.current) navigation.pending(view, selectedTask, Boolean(taskEntry));
@@ -203,6 +220,7 @@ export function App() {
   useEffect(() => { setSelectedSite(null); setDirectoryFocus(undefined); setAlbumOpen(false); }, [countryId, sessionState]);
   const closeSite = useCallback(() => setSelectedSite(null), []);
   const closeTask = useCallback(() => {
+    taskCardFocus.cancel();
     restoredTaskRef.current = null;
     taskEntryRequestRef.current++; navigationRequestRef.current++; navigationRestoreEpochRef.current++;
     taskNavigationAbortRef.current?.abort(); mapTransitionAbortRef.current?.abort(); setMapTransition(null);
@@ -213,7 +231,7 @@ export function App() {
     const wentBack = destination ? navigation.close(destination) : false;
     setSelectedTask(null); setTaskEntry(null); setMapTransitionError('');
     if (!wentBack) { navigationRestoringRef.current = false; if (destination) setMapMode(destination.mode); else window.history.replaceState(null, '', '/'); }
-  }, [taskEntry, selectedTask, focusCity, countryId, navigationView, navigation, cityViewMemory]);
+  }, [taskEntry, selectedTask, focusCity, countryId, navigationView, navigation, cityViewMemory, taskCardFocus]);
   const selectVisibleTask = useCallback((id: string) => {
     cancelPendingNavigation(); setTaskEntry(null); setSelectedTask(id);
   }, [cancelPendingNavigation]);
@@ -228,6 +246,7 @@ export function App() {
     setDirectoryOpen(true);
   }, []);
   const clearPrivateSessionUi = useCallback(() => {
+    taskCardFocus.cancel();
     sessionGenerationRef.current++; navigationRequestRef.current++; navigationRestoreEpochRef.current++;
     navigationRestoringRef.current = false; restoredTaskRef.current = null;
     deepLinkHandledRef.current = false;
@@ -242,7 +261,7 @@ export function App() {
     eventCountryRef.current = undefined; lastWorldEventIdRef.current = 0;
     clearMapSceneCaches(); clearTaskDetailCache(); clearPlanetAtlasCache(); silenceCityAudio();
     cityViewMemory.clear(); cityRestoreTokensRef.current.clear(); planetViewMemory.clear();
-  }, [cityViewMemory, planetViewMemory]);
+  }, [cityViewMemory, planetViewMemory, taskCardFocus]);
   const transitionMap = useCallback(async (
     to: MapLevel,
     focus: { x: number; y: number },
@@ -317,6 +336,7 @@ export function App() {
   }, [clearPrivateSessionUi]);
 
   const applyBootstrap = useCallback((next: BootstrapDto, requestedMode?: MapLevel, preserveTransition = false) => {
+    taskCardFocus.cancel();
     sessionGenerationRef.current += 1;
     if (!preserveTransition) { mapTransitionAbortRef.current?.abort(); setMapTransition(null); }
     setPlanetRevision(value => value + 1);
@@ -342,7 +362,7 @@ export function App() {
     setDirectoryFocus(undefined);
     setDocumentsOpen(false);
     setDevelopmentOpen(false);
-  }, []);
+  }, [taskCardFocus]);
 
   const load = useCallback(() => bootstrapLoadRef.current.request(async () => {
     if (logoutEpochRef.current === authenticationEpochRef.current) return;
@@ -400,6 +420,7 @@ export function App() {
   }), [clearPrivateSessionUi]);
 
   const openBuilding = useCallback((target: BuildingNavigationTarget, session = bootstrap, keepCamera = false, fromResolver = false) => {
+    taskCardFocus.cancel();
     if (!fromResolver) {
       restoredTaskRef.current = null;
       taskNavigationAbortRef.current?.abort(); navigationRequestRef.current++; navigationRestoreEpochRef.current++;
@@ -409,13 +430,19 @@ export function App() {
       navigation.view({ countryId: session.country.id, cityId: target.city.id, mode: 'CITY',
         cityView: cityViewMemory.get(session.country.id + ':' + target.city.id), planetView: planetViewMemory.get('last') });
     }
-    const focus = () => {
+    const sameCity = session?.country.id === countryId && mapMode === "CITY" && focusCity?.id === target.city.id;
+    if (sameCity && !keepCamera && retainedCityKey === `${countryId}:${target.city.id}`) {
+      const origin = { ...target.origin };
+      setFocusTask(null);
+      taskCardFocus.queue({ countryId: countryId!, cityId: target.city.id, taskId: target.id,
+        authenticationEpoch: authenticationEpochRef.current, sessionGeneration: sessionGenerationRef.current,
+        navigationRequest: navigationRequestRef.current }, () => setFocusTask({ origin, token: Date.now() }), readTaskFocusScope);
+    } else {
       setFocusTask(keepCamera ? null : { origin: target.origin, token: Date.now() });
-      setSelectedTask(target.id);
-    };
+    }
     // The card is independent of terrain preparation, even on direct links.
-    focus();
-    if (session?.country.id === countryId && mapMode === "CITY" && focusCity?.id === target.city.id) return;
+    setSelectedTask(target.id);
+    if (sameCity) return;
     void transitionMap("CITY", { x: .5, y: .5 }, async (signal) => {
       if (!session) throw new Error("Страна не выбрана");
       const scene = await loadCityScene(session.country.id, target.city.id, session.country.worldVersion);
@@ -427,7 +454,7 @@ export function App() {
       await Promise.race([ready, new Promise<void>((resolve) => window.setTimeout(resolve, 12_000))]);
       cityReadyResolverRef.current = null;
     }, undefined, true);
-  }, [bootstrap, countryId, focusCity?.id, mapMode, transitionMap, navigation, cityViewMemory, planetViewMemory]);
+  }, [bootstrap, countryId, focusCity?.id, mapMode, transitionMap, navigation, cityViewMemory, planetViewMemory, retainedCityKey, taskCardFocus, readTaskFocusScope]);
 
   const openTaskFromSearch = useCallback((result: TaskSearchResultDto) => {
     openBuilding({
@@ -527,14 +554,16 @@ export function App() {
     }, cityName);
   }, [bootstrap,applyBootstrap,transitionMap]);
   useEffect(() => () => {
+    taskCardFocus.cancel();
     sessionGenerationRef.current++;
     mapTransitionAbortRef.current?.abort();
     bootstrapAbortRef.current?.abort();
     taskNavigationAbortRef.current?.abort();
-  }, []);
+  }, [taskCardFocus]);
   useEffect(() => {
     const restore = async (event: PopStateEvent) => {
       if (!bootstrap || sessionState !== 'AUTHENTICATED') return;
+      taskCardFocus.cancel();
       const state = readNavigationState(event.state), query = taskResolutionQuery(new URL(location.href));
       restoredTaskRef.current = state?.task?.id ?? null;
       const request = ++navigationRequestRef.current, restoreEpoch = ++navigationRestoreEpochRef.current, epoch = authenticationEpochRef.current;
@@ -580,7 +609,7 @@ export function App() {
     };
     const listener = (event: PopStateEvent) => { void restore(event); };
     window.addEventListener('popstate', listener); return () => window.removeEventListener('popstate', listener);
-  }, [bootstrap, sessionState, applyBootstrap, cityViewMemory, planetViewMemory, openCanonicalTask, load]);
+  }, [bootstrap, sessionState, applyBootstrap, cityViewMemory, planetViewMemory, openCanonicalTask, load, taskCardFocus]);
   useEffect(() => {
     document.title = bootstrap ? `Tasktopia — ${bootstrap.country.name}` : "Tasktopia — цифровая страна";
   }, [bootstrap]);

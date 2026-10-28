@@ -221,7 +221,7 @@ async function main() {
         const search = page.getByRole("combobox", { name: "Поиск здания по номеру или названию" });
         const last = fixture.targets.at(-1)!;
         const targets = [...new Map([fixture.farTarget, last, ...fixture.targets].map(target => [target.id, target])).values()].slice(0, 20);
-        const cards: Array<{ taskNumber: number; searchMs: number; cardMs: number }> = [];
+        const cards: Array<{ taskNumber: number; searchMs: number; cardMs: number; mapFocusReadyMs: number }> = [];
         evidence.cards = cards;
         const card = async (target: City10000Target) => {
           const searchStarted = performance.now(); await search.fill(String(target.taskNumber));
@@ -230,8 +230,13 @@ async function main() {
           const cardStarted = performance.now(); if (profile.touch) await option.tap(); else await option.click();
           await expect(page.getByRole("dialog").getByRole("heading", { name: target.title, exact: true })).toBeVisible();
           const cardMs = performance.now() - cardStarted; if (cardMs > budgets.cardMs) violations.push(`${name}:card#${target.taskNumber}`);
+          // The card may paint before its background camera work. Verify that
+          // actual far-task focus completes before closing can cancel it.
+          await expect(host(page)).toHaveAttribute("data-focus-x", String(target.origin.x));
+          await expect(host(page)).toHaveAttribute("data-focus-y", String(target.origin.y));
+          await presented(page); const mapFocusReadyMs = performance.now() - cardStarted;
           await page.getByRole("button", { name: "Закрыть", exact: true }).click(); await presented(page);
-          cards.push({ taskNumber: target.taskNumber, searchMs, cardMs });
+          cards.push({ taskNumber: target.taskNumber, searchMs, cardMs, mapFocusReadyMs });
         };
         for (const target of targets) await card(target); assert.equal(cards.length, 20);
         phase = "filters"; const beforeFilter = await pose(page), rebakes = (await telemetry(page)).groundRebuilds;
