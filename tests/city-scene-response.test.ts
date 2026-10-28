@@ -1,4 +1,5 @@
 import {expect,it,vi} from "vitest";
+import {packCitySceneTransfer} from "../src/client/city-scene-transfer";
 import type {CitySceneDto} from "../src/shared/city-scene-contract";
 import {citySceneResponseMetrics,loadCitySceneResponse,type SceneResponseMessage,type SceneResponseRequest,type SceneResponseWorker} from "../src/client/city-scene-response";
 import {loadMapWithTimeout} from "../src/client/map-load-timeout";
@@ -124,4 +125,26 @@ it("reuses the worker's retained-data estimate without walking a large scene aga
   worker.message!({data:{scene,metrics:{decodedBytes:100,requestMs:1,parseMs:1,decodeMs:1,headersAtEpoch:0,retainedWeight:12345}}} as MessageEvent<SceneResponseMessage>);
   expect(citySceneDataWeight(await pending)).toBe(12345);
   expect(traversed).toBe(0);
+});
+
+
+it("terminates the response worker before cooperative rehydration, cancels that owner, and retries normally",async()=>{
+  const makeScene=()=>({schemaVersion:5,city:{id:"a"},lod:"DETAIL",chunks:[{roadRuns:Array.from({length:50_000},(_,x)=>({start:{x,y:0},end:{x,y:1}})),
+    surfaceRuns:[],districts:[],decorationContext:{surfaceHaloRuns:[],blockedCellRuns:[],districts:[]}}]}) as unknown as CitySceneDto;
+  const worker=new Worker(),controller=new AbortController();let ticks=0;
+  const now=vi.spyOn(performance,"now").mockImplementation(()=>ticks++);
+  try{
+    const outcome=loadCitySceneResponse("/api/countries/c/cities/a/scene",controller.signal,()=>worker,async()=>new Response("{}")).catch(error=>error as Error);
+    await vi.waitFor(()=>expect(worker.posted).toHaveLength(1));
+    worker.message!({data:{transfer:packCitySceneTransfer(makeScene())}} as unknown as MessageEvent<SceneResponseMessage>);
+    expect(worker.terminated).toBe(1);expect(worker.listeners).toBe(0);
+    controller.abort();expect((await outcome as Error).name).toBe("AbortError");
+    expect(worker.terminated).toBe(1);
+    const retryWorker=new Worker(),retry=loadCitySceneResponse("/api/countries/c/cities/a/scene",new AbortController().signal,()=>retryWorker,async()=>new Response("{}"));
+    await vi.waitFor(()=>expect(retryWorker.posted).toHaveLength(1));
+    const scene=makeScene();scene.chunks[0]!.roadRuns=[];
+    retryWorker.message!({data:{transfer:packCitySceneTransfer(scene),metrics:{decodedBytes:2,requestMs:1,parseMs:1,decodeMs:1,headersAtEpoch:0,packMs:2}}} as unknown as MessageEvent<SceneResponseMessage>);
+    expect(await retry).toEqual(scene);expect(citySceneResponseMetrics(await retry)!.mainRehydrateMs).toBeGreaterThanOrEqual(0);
+    expect(citySceneResponseMetrics(await retry)!.packMs).toBe(2);expect(retryWorker.terminated).toBe(1);
+  }finally{now.mockRestore();}
 });

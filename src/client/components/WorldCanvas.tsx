@@ -97,6 +97,7 @@ import { nextSeededRandom, nextWithoutUTurn } from "../agent-routing";
 import { createAgentRoutePlanner,createAgentRoutePlannerAsync } from "../agent-route-planner";
 import { buildingNumberLabel, retainBuildingNumberFont } from "../building-number-label";
 import { advanceCityMobilityFrame,createCityMobility,createCityMobilityAsync,prepareCityMobilityNetworkAsync,readPreparedCityMobilityGeometry,type PreparedCityMobilityGeometry } from "../city-mobility";
+import { CITY_MOBILITY_SIGNAL_STATE_ENCODING,encodeCityMobilitySignalState } from "../city-mobility-signal-telemetry";
 import { CityMovementPreparation,prepareLatestCityLife } from "../city-movement-preparation";
 import { yieldPreparationTask } from "../cooperative-preparation";
 import { buildCityWalkNetworkAsync } from "../city-walk-network";
@@ -1171,7 +1172,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       host.dataset.citySceneParseMs=metrics.parseMs.toFixed(3);
       host.dataset.citySceneDecodeMs=metrics.decodeMs.toFixed(3);
       if(metrics.weightMs!==undefined)host.dataset.citySceneWeightMs=metrics.weightMs.toFixed(3);
-      for(const phase of ["textMs","fetchHeadersMs","bodyReadMs","workerRoundTripMs","ownerMs"] as const){
+      for(const phase of ["textMs","fetchHeadersMs","bodyReadMs","workerRoundTripMs","packMs","mainRehydrateMs","ownerMs"] as const){
         const value=metrics[phase];if(value!==undefined)host.dataset[`cityScene${phase[0]!.toUpperCase()}${phase.slice(1)}`]=value.toFixed(3);
       }
       host.dataset.citySceneParseOwner="worker";
@@ -2292,6 +2293,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           lastRoadSiren = siren; playCitySound("siren");
         }
       };
+      let reportedMobilitySignals:ReturnType<typeof createCityMobility>["signals"]|undefined;
       const reportMobility = (): void => {
         if (!mobility) return;
         const agents = mobility.agents;
@@ -2328,7 +2330,12 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         host.dataset.trafficJunctions = String(mobility.signals.length);
         host.dataset.trafficSignals = String(trafficSignalViews.size);
         host.dataset.canonicalTrafficSignals = String(signalPresentation.total);
-        host.dataset.mobilitySignalState = mobility.signals.map(signal => `${signal.id}:${signal.horizontal[0]}${signal.vertical[0]}${signal.pedestrians[0]}`).join(";");
+        const signals=mobility.signals;
+        if(reportedMobilitySignals!==signals){
+          host.dataset.mobilitySignalState=encodeCityMobilitySignalState(signals);
+          host.dataset.mobilitySignalStateEncoding=CITY_MOBILITY_SIGNAL_STATE_ENCODING;
+          reportedMobilitySignals=signals;
+        }
         host.dataset.wrongWayCars = String(cars.filter(agent => {
           const dx = agent.next.x - agent.current.x, dy = agent.next.y - agent.current.y;
           if (dx === 0 && dy === 0) return false;
@@ -4263,7 +4270,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         // This flag belongs only to the real CITY atomic app.render below.
         // Seed/placeholder paints and a forced retry must not compete with it.
         if(!firstCityAtomicPresented){host!.dataset.canonicalStartDeferred="true";return;}
-        if(!force&&canonicalRequestedScene===scene)return;
+        if(!force&&(canonicalRequestedScene===scene
+          ||canonicalReadyScene===scene&&!canonicalCityData.pending&&!canonicalProjectionFailed))return;
         canonicalRequestedScene=scene;
         const started=performance.now();
         host!.dataset.canonicalStartedAfterAtomic="true";

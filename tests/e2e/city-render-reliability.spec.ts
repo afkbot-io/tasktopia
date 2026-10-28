@@ -4,7 +4,7 @@ import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { CITY_SCENE_LOAD_TIMEOUT_MS } from "../../src/client/city-scene-deadline";
 import type { BootstrapDto,RealtimeEvent } from "../../src/shared/contracts";
 import { chunkPayloadContentHash } from "../../src/server/world/chunk-payload-hash";
-import { openMapCity } from "./map-navigation";
+import { openMapCity, openMapPlanet } from "./map-navigation";
 import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
 import { installCooperativeYieldGate, type CooperativeYieldGateWindow } from './cooperative-yield-gate';
 import { pauseInstalledClock } from './city-clock-control';
@@ -319,6 +319,33 @@ test("authoritative resync keeps a ready CITY canvas and reuses identical physic
   expect(failedHistory).toBe(3);expect(await canvas!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
   expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);
   expect(await host.getAttribute("data-everyday-compiles")).toBe(life);
+});
+
+test("returning to an unchanged ready CITY retains its complete physical snapshot",async({page})=>{
+  test.setTimeout(90_000);
+  const scenes:string[]=[],errors:string[]=[];
+  page.on("request",request=>{if(new URL(request.url()).pathname.endsWith("/scene"))scenes.push(request.url());});
+  page.on("pageerror",error=>errors.push(error.message));
+  const host=await enterCity(page);
+  await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false");
+  await expect(host).toHaveAttribute("data-mobility-ready","true");
+  const state=()=>host.evaluate(node=>{
+    const d=(node as HTMLElement).dataset;
+    return {started:d.canonicalStartSinceBootstrapMs,prepare:d.canonicalPrepareMs,
+      chunks:d.canonicalDecodedChunks,walk:d.walkNetworkBuilds,life:d.everydayCompiles};
+  });
+  const before=await state(),canvas=await host.locator("canvas").elementHandle();
+  expect(before.started).toMatch(/^\d+(\.\d+)?$/);expect(Number(before.chunks)).toBeGreaterThan(0);
+  for(let cycle=0;cycle<3;cycle++){
+    await openMapPlanet(page);await expect(page.locator(".planet-atlas")).toHaveAttribute("data-planet-ready","true");
+    await openMapCity(page);await expect(host).toHaveAttribute("data-city-scene-commit","atomic");
+    await expect(host).toHaveAttribute("data-loading","false");
+    await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false");
+    await expect(host).toHaveAttribute("data-mobility-ready","true");
+    expect(await canvas!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
+    expect(await state()).toEqual(before);
+  }
+  expect(scenes).toHaveLength(1);expect(errors).toEqual([]);await canvas!.dispose();
 });
 
 test("an offscreen frontage update replaces compact physics without retaining offscreen visual terrain",async({page})=>{

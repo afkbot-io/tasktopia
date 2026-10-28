@@ -62,3 +62,20 @@ it("reuses immutable physical content while applying fresh task metadata and rem
   expect(projection.current.chunks[0]!.tasks[0]!.title).toBe("renamed");
   expect(projection.current.chunks[0]!.roads).toBe(roads);
 });
+
+it("retains a ready suspended snapshot but keeps an interrupted same-scene patch pending for retry",async()=>{
+  const projection=new CanonicalCityProjection();
+  await projection.prepare("scene:1",[payload(0)],[],async()=>chunk(0));
+  const previous=projection.current;
+  projection.cancel();expect(projection.current).toBe(previous);expect(projection.pending).toBe(false);
+  const patched={...payload(0),tasks:[{id:"task",stage:4}]} as ChunkPayloadDto;
+  let release!:()=>void;
+  const pending=projection.prepare("scene:2",[patched],[],async()=>{
+    await new Promise<void>(resolve=>{release=resolve;});return chunk(0);
+  });
+  projection.cancel();release();expect(await pending).toBe(false);
+  expect(projection.current).toBe(previous);expect(projection.pending).toBe(true);
+  expect(await projection.prepare("scene:3",[patched],[],async()=>chunk(0))).toBe(true);
+  expect(projection.current).not.toBe(previous);expect(projection.pending).toBe(false);
+  expect(projection.current.chunks[0]!.tasks).toBe(patched.tasks);
+});
