@@ -1,8 +1,8 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity } from "./map-navigation";
 import { expect, test } from "@playwright/test";
 import { AppService } from "../../src/server/app-service";
 import { createDb } from "../../src/server/db";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import { expandCellRuns } from "../../src/shared/world-cell-runs";
 import { districtDevelopmentSummary } from "../../src/client/district-development";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
@@ -102,7 +102,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1440, height: 110
     await page.goto("/");
     const response = page.waitForResponse(response => new URL(response.url()).pathname.endsWith("/scene"));
     await openMapCity(page);
-    const scene = await (await response).json() as CitySceneDto;
+    const scene = decodeCitySceneWire(await (await response).json());
     const host = page.locator(".world-canvas");
     await expect(host).toHaveAttribute("data-city-scene-commit", "atomic");
     await expect.poll(async () => JSON.parse(await host.getAttribute("data-development-markers") ?? "[]").length).toBeGreaterThan(0);

@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
+import { CITY_SCENE_MAX_CHUNKS } from "../src/shared/city-capacity";
+import { CITY_SCENE_COMPACT_ACCEPT, decodeCitySceneWire } from "../src/shared/city-scene-wire";
 
 describe("whole-city scene HTTP boundary", () => {
   let db: Db;
@@ -65,7 +67,18 @@ describe("whole-city scene HTTP boundary", () => {
     const expectedChunks = (Math.floor(bounds.maxX / 64) - Math.floor(bounds.minX / 64) + 1)
       * (Math.floor(bounds.maxY / 64) - Math.floor(bounds.minY / 64) + 1);
     expect(scene.chunks).toHaveLength(expectedChunks);
-    expect(scene.chunks.length).toBeLessThanOrEqual(256);
+    expect(scene.chunks.length).toBeLessThanOrEqual(CITY_SCENE_MAX_CHUNKS);
+    const packed = await app.inject({ method: "GET", url: `/api/cities/${cityId}/scene`, headers: { cookie, accept: CITY_SCENE_COMPACT_ACCEPT } });
+    expect(packed.statusCode).toBe(200);
+    expect(packed.headers.vary).toBe("Accept");
+    expect(packed.headers["content-type"]).toContain("application/vnd.tasktopia.city-scene+json");
+    expect(packed.headers.etag).toMatch(/-city-scene-5-compact1"$/);
+    expect(decodeCitySceneWire(packed.json())).toEqual(scene);
+    // An ETag from one negotiated representation cannot validate the other.
+    expect((await app.inject({ method: "GET", url: `/api/cities/${cityId}/scene`,
+      headers: { cookie, accept: CITY_SCENE_COMPACT_ACCEPT, "if-none-match": response.headers.etag! } })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: `/api/cities/${cityId}/scene`,
+      headers: { cookie, accept: CITY_SCENE_COMPACT_ACCEPT, "if-none-match": packed.headers.etag! } })).statusCode).toBe(304);
     const legacy = await app.inject({
       method: "GET",
       url: `/api/cities/${cityId}/scene`,
@@ -79,6 +92,19 @@ describe("whole-city scene HTTP boundary", () => {
       url: `/api/cities/${cityId}/scene`,
       headers: { cookie, "if-none-match": response.headers.etag! },
     })).statusCode).toBe(304);
+
+    // This isolates the reader contract from allocation: even a sparse city's
+    // full envelope can exceed the former16x16-page guard. Native10k packing
+    // is separately exercised by the scale fixture, without fabricated lots.
+    const minX = Math.floor(bounds.minX / 64) * 64, minY = Math.floor(bounds.minY / 64) * 64;
+    await db.prepare("UPDATE cities_v3 SET bounds_json=?::jsonb WHERE id=?").run(
+      JSON.stringify({ minX, minY, maxX: minX + 17 * 64 - 1, maxY: minY + 17 * 64 - 1 }), cityId);
+    await db.prepare("UPDATE countries SET world_version=world_version+1 WHERE id=?").run(bootstrap.country.id);
+    const expanded = await app.inject({ method: "GET", url: `/api/cities/${cityId}/scene`, headers: { cookie } });
+    expect(expanded.statusCode).toBe(200);
+    expect(expanded.json().chunks).toHaveLength(289);
+    expect(new Set(expanded.json().chunks.map((chunk: { chunkX: number; chunkY: number }) => `${chunk.chunkX},${chunk.chunkY}`)).size).toBe(289);
+    expect(batch).not.toHaveBeenCalled();
   }, 90_000);
 
   it("does not expose a city outside the authenticated country", async () => {

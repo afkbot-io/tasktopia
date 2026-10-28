@@ -238,6 +238,83 @@ refresh_self_host_nginx_static_config() {
   return 1
 }
 
+verify_rollback_writers_stopped() {
+  local service container_id running
+  for service in app mcp world; do
+    if ! container_id="$(docker compose ps --all -q "$service")" || [[ -z "$container_id" ]] \
+      || ! running="$(docker inspect --format '{{.State.Running}}' "$container_id")" \
+      || [[ "$running" != false ]]; then
+      echo "Unable to confirm stopped writer role: $service" >&2
+      return 1
+    fi
+  done
+}
+
+wait_for_rollback_database_drain() {
+  local attempt remaining
+  for (( attempt = 0; attempt < 20; attempt += 1 )); do
+    if ! remaining="$(compact_release_other_clients)" || [[ ! "$remaining" =~ ^[0-9]+$ ]]; then
+      echo "Unable to read PostgreSQL client drain state" >&2
+      return 1
+    fi
+    [[ "$remaining" == 0 ]] && return 0
+    (( attempt == 19 )) || sleep 0.1
+  done
+  # A read-only observer can also hold a connection. Refuse the downgrade
+  # honestly rather than terminate sessions or assume pending commits finished.
+  echo "PostgreSQL clients did not drain; previous image activation is unsafe" >&2
+  return 1
+}
+
+resume_compatible_candidate() {
+  local service container_id image_state image_id
+  # app_image_id was resolved from the completed build before role replacement;
+  # do not trust a mutable tag after a failed attempt to restore the old image.
+  if ! image_id="$(docker image inspect --format '{{.Id}}' "$app_image_id")" \
+    || [[ "$image_id" != "$app_image_id" ]] \
+    || ! docker tag "$app_image_id" "$app_image_ref" \
+    || ! image_id="$(docker image inspect --format '{{.Id}}' "$app_image_ref")" \
+    || [[ "$image_id" != "$app_image_id" ]] \
+    || ! docker compose up -d --remove-orphans --force-recreate app mcp world \
+    || ! wait_for_app_health; then
+    echo "Candidate resumption failed; preserve recovery evidence and inspect role state" >&2
+    return 1
+  fi
+  for service in app mcp world; do
+    if ! container_id="$(docker compose ps -q "$service")" || [[ -z "$container_id" ]] \
+      || ! image_state="$(docker inspect --format '{{.Image}} {{.State.Running}}' "$container_id")" \
+      || [[ "$image_state" != "$app_image_id true" ]]; then
+      echo "Candidate resumption image/running state mismatch for $service" >&2
+      return 1
+    fi
+  done
+  echo "Compatible candidate resumed after blocked image rollback" >&2
+}
+
+restore_previous_image() {
+  local candidate_image_id
+  # Reject an already incompatible downgrade without interrupting the candidate.
+  check_compact_rollback_image && check_previous_image_ref "$rollback_image_ref" \
+    && candidate_image_id="$(docker image inspect --format '{{.Id}}' "$app_image_ref")" \
+    && [[ "$candidate_image_id" == "$app_image_id" ]] || return 1
+  # The release flock excludes another updater, not MCP/world commands. Stop
+  # every writer and confirm it exited before taking the authoritative extent
+  # snapshot; no city can grow between this check and old-image activation.
+  if ! docker compose stop app mcp world || ! verify_rollback_writers_stopped \
+    || ! wait_for_rollback_database_drain; then
+    resume_compatible_candidate
+    return 1
+  fi
+  if ! check_compact_rollback_image || ! check_previous_image_ref "$rollback_image_ref" \
+    || ! docker tag "$rollback_image_ref" "$app_image_ref" \
+    || ! check_previous_image_ref "$app_image_ref"; then
+    resume_compatible_candidate
+    return 1
+  fi
+  docker compose up -d --remove-orphans --force-recreate app mcp world \
+    && wait_for_app_health && verify_previous_role_images
+}
+
 cleanup_deployment() {
   exit_code=$?
   trap - EXIT
@@ -249,11 +326,7 @@ cleanup_deployment() {
     if [[ "$app_replaced" == "true" && "$app_was_running" == "true" \
       && -n "$previous_app_image_id" ]]; then
       echo "Deployment failed; restoring previous app image $previous_app_image_id" >&2
-      if check_previous_image_ref "$rollback_image_ref" \
-        && docker tag "$rollback_image_ref" "$app_image_ref" \
-        && check_previous_image_ref "$app_image_ref" \
-        && docker compose up -d --remove-orphans --force-recreate app mcp world \
-        && wait_for_app_health && verify_previous_role_images; then
+      if restore_previous_image; then
         echo "Rollback restored and verified previous image for app/mcp/world" >&2
       else
         echo "Rollback failed: previous image restoration was not verified" >&2

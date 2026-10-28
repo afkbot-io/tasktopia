@@ -1,4 +1,5 @@
 import { readCityAlbum } from "./city-album-read";
+import { acceptsCompactCityScene, encodeCitySceneWire } from "../shared/city-scene-wire";
 import { issueRecoveryCodes, recoverAccount } from "./account-recovery";
 import { createCountryInvitation, acceptCountryInvitation } from "./country-invitations";
 import { readCityReport } from "./city-report-read";
@@ -406,12 +407,15 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             if (!user) return reply;
             const cityId = parse(z.string().uuid(), (request.params as { cityId: string }).cityId);
             const scene = await service.getCitySceneForUser(user.id, user.countryId, cityId);
-            const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
+            const compact = acceptsCompactCityScene(request.headers.accept);
+            const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}${compact ? "-compact1" : ""}"`;
+            reply.header("Vary", "Accept");
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
               .header("Cache-Control", "private, no-cache, must-revalidate")
               .header("X-World-Version", String(Math.max(0, ...scene.chunks.map((chunk) => chunk.publishedVersion))))
-              .send(scene);
+              .header("Content-Type", compact ? "application/vnd.tasktopia.city-scene+json; charset=utf-8" : "application/json; charset=utf-8")
+              .send(compact ? encodeCitySceneWire(scene) : scene);
           });
 
   app.get("/api/countries/:countryId/cities/:cityId/scene", {
@@ -422,13 +426,16 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
             const params = parse(z.object({ countryId: z.string().uuid(), cityId: z.string().uuid() }).strict(), request.params);
             if (!await countryRole(db, user.id, params.countryId)) throw new DomainError("FORBIDDEN", "У вас нет доступа к этой стране");
             const scene = await service.getCitySceneForUser(user.id, params.countryId, params.cityId);
-            const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}"`;
+            const compact = acceptsCompactCityScene(request.headers.accept);
+            const etag = `"${scene.sceneRevision}-city-scene-${scene.schemaVersion}${compact ? "-compact1" : ""}"`;
+            reply.header("Vary", "Accept");
             if (request.headers["if-none-match"] === etag) return reply.code(304).send();
             return reply.header("ETag", etag)
               .header("Cache-Control", "private, no-cache, must-revalidate")
               .header("X-Country-Id", params.countryId)
               .header("X-World-Version", String(Math.max(0, ...scene.chunks.map((chunk) => chunk.publishedVersion))))
-              .send(scene);
+              .header("Content-Type", compact ? "application/vnd.tasktopia.city-scene+json; charset=utf-8" : "application/json; charset=utf-8")
+              .send(compact ? encodeCitySceneWire(scene) : scene);
           });
 
   app.get("/api/planet-atlas", async (request, reply) => {

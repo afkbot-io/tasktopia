@@ -1,5 +1,5 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import {expect,test} from "@playwright/test";
-import type {CitySceneDto} from "../../src/shared/city-scene-contract";
 
 test("recorded bridge and its road approaches render outside resident city chunks", async ({page},info) => {
   test.skip(process.env.E2E_MAP_LOADING_FIXTURE !== "true", "Local map fixture");
@@ -8,7 +8,7 @@ test("recorded bridge and its road approaches render outside resident city chunk
   page.on("pageerror",error=>errors.push(error.message));
   await page.route("**/api/countries/*/cities/*/scene",async route=>{
     const response=await route.fetch();
-    const scene=await response.json() as CitySceneDto;
+    const scene=decodeCitySceneWire(await response.json());
     target={x:(Math.max(...scene.chunks.map(c=>c.chunkX))+1)*scene.chunkSize+24,y:scene.city.bounds.maxY-24};
     scene.intercityRoads=[{id:"qa-bridge",fromCityId:scene.city.id,toCityId:"qa-neighbor",fromNodeId:"a",toNodeId:"b",widthCells:3,
       geometry:{start:{x:target.x-88,y:target.y},runs:[{direction:"E",length:160}]},

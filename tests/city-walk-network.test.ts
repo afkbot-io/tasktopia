@@ -12,6 +12,18 @@ function fixture(): CityWalkInput {
 }
 
 describe("city pedestrian ground contract", () => {
+  it("samples only short walk gaps when canonical terrain is compact and keeps animal ground resident", () => {
+    const input = fixture();
+    input.terrain = [{x: 9,y: 9,terrain: "MEADOW"}];
+    input.surfaces = [{x: 0,y: 0,kind: "PATH"},{x: 3,y: 0,kind: "PATH"}];
+    const read = {...input,sampleTerrain: () => "GRASS" as const};
+    const result = buildCityWalkNetwork(read);
+    expect([...result.walkGraph.keys()]).toEqual(["0,0","3,0","1,0","2,0"]);
+    expect([...result.animalGraph.keys()]).toEqual(["9,9"]);
+    expect(buildCityWalkNetwork({...read,sampleTerrain: () => "DEEP_WATER" as const}).walkGraph.has("1,0")).toBe(false);
+    expect(buildCityWalkNetwork({...read,roads: new Map([["1,0",{x:1,y:0}]])}).walkGraph.has("1,0")).toBe(false);
+    expect(buildCityWalkNetwork({...read,decorations: [{id:"bench",kind:"bench-horizontal",origin:{x:1,y:0}}]}).walkGraph.has("1,0")).toBe(false);
+  });
   it("keeps a neighbouring walkway open while a narrow infill park is under construction", () => {
     const input = fixture();
     input.tasks = [{ taskNumber: 3, visualKind: "PARK", stage: 3, visualAssetKey: "urban-park",

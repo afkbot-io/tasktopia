@@ -16,6 +16,7 @@ import { overlapsDistrictSeparator, readDistrictSeparators } from "../../shared/
 import { countryRoadTopologyHash, readCountryRoads } from "./intercity-road-store";
 import { planIntercityRoads } from "./intercity-road-planner";
 import { permanentSiteBounds } from "./permanent-task-sites";
+import { CITY_SCENE_MAX_CHUNKS, citySceneChunkRange } from "../../shared/city-capacity";
 
 export type WorldAuditViolation = { code: string; message: string };
 export type WorldAuditMetrics = {
@@ -144,9 +145,10 @@ export function auditBlockLayout(layout: CompiledBlockLayoutV1, tasks?: readonly
     // A relocated marker may outlive its removed target; the DB nulls its FK.
     if (marker.kind === "RELOCATED" && marker.targetTaskId && tasks && !expected.has(marker.targetTaskId)) fail("RELOCATION_TARGET_MISSING", marker.id);
   }
-  const chunks = (Math.floor(layout.bounds.maxX / 64) - Math.floor(layout.bounds.minX / 64) + 1)
-    * (Math.floor(layout.bounds.maxY / 64) - Math.floor(layout.bounds.minY / 64) + 1);
-  if (chunks > 256) fail("CITY_SCENE_LIMIT_EXCEEDED", `${layout.cityId}: ${chunks} chunks`);
+  try {
+    const chunks = citySceneChunkRange(layout.bounds).count;
+    if (chunks > CITY_SCENE_MAX_CHUNKS) fail("CITY_SCENE_LIMIT_EXCEEDED", `${layout.cityId}: ${chunks} chunks`);
+  } catch { fail("CITY_SCENE_BOUNDS_INVALID", `${layout.cityId}: unsafe scene extent`); }
   return violations;
 }
 

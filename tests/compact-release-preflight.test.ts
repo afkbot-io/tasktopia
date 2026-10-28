@@ -9,6 +9,7 @@ import { BLOCK_TEMPLATE_VERSION } from "../src/shared/block-templates";
 import { CITY_SCENE_SCHEMA_VERSION } from "../src/shared/city-scene-contract";
 import { COUNTRY_OVERVIEW_SCHEMA_VERSION } from "../src/shared/country-overview-contract";
 import { COMPACT_BUILDING_SHAPES } from "../src/shared/compact-building-families";
+import { CITY_SCENE_MAX_CHUNKS } from "../src/shared/city-capacity";
 
 const script = new URL("../deploy/compact-release-preflight.sh", import.meta.url).pathname;
 const migrations = ["0023_compact_block_cutover.sql", "0024_dense_slot_planning.sql", "0029_country_road_snapshots.sql"];
@@ -17,11 +18,13 @@ const currentCapabilities = {
   citySceneSchemaVersions: [4,CITY_SCENE_SCHEMA_VERSION],
   countryOverviewSchemaVersions: [7,COUNTRY_OVERVIEW_SCHEMA_VERSION],
   countryRoadSnapshotTables: ["country_road_snapshots_v1"],
+  citySceneMaxChunks: CITY_SCENE_MAX_CHUNKS,
   blockStructuralShapes: COMPACT_BUILDING_SHAPES,
 };
 const publicManifest = JSON.parse(readFileSync(new URL("../public/game-assets/v5/manifest.json", import.meta.url), "utf8"));
 const buildingFields = ["footprintCells", "spriteSize", "anchorPx", "entrances", "stages"];
 const candidateDescriptor = {
+  citySceneMaxChunks: CITY_SCENE_MAX_CHUNKS,
   blockStructuralShapes: COMPACT_BUILDING_SHAPES,
   buildings: Object.fromEntries(Object.entries(publicManifest.buildings).map(([key, entry]) => [key,
     Object.fromEntries(buildingFields.map(field => [field, (entry as Record<string, unknown>)[field]]))])),
@@ -29,6 +32,7 @@ const candidateDescriptor = {
 
 function inspectPrevious(capability: unknown, options: {
   manifest?: typeof publicManifest; candidate?: typeof candidateDescriptor; missingManifest?: boolean; missingStage?: boolean;
+  requiredChunks?: unknown;
 } = {}) {
   const program = readFileSync(script, "utf8").match(/--entrypoint node "\$previous_app_image_id" -e '([\s\S]*?)\n {2}'/)![1]!;
   const hash = createHash("sha256").update("migration").digest("hex");
@@ -46,7 +50,7 @@ function inspectPrevious(capability: unknown, options: {
       },
       existsSync: (path: string) => !options.missingStage && path.startsWith("/app/dist/public/game-assets/v5/buildings/"),
     } : { createHash },
-    process: { argv: ["node", hash, hash, hash, JSON.stringify(options.candidate ?? candidateDescriptor)],
+    process: { argv: ["node", hash, hash, hash, JSON.stringify(options.candidate ?? candidateDescriptor), String(options.requiredChunks ?? 1)],
       stdout: { write: (value: string) => { output += value; } } },
   });
   return output;
@@ -73,6 +77,10 @@ set -eu
 printf '%s\\n' "$*" >> "$FAKE_CALLS"
 if [[ "$1" == run ]]; then printf '%s' "$FAKE_COMPATIBLE"; exit 0; fi
 case "$*" in
+  *city_scene_layouts*)
+    [[ "$FAKE_MODE" != unavailable_scene_extent ]] || exit 8
+    [[ "$FAKE_MODE" != invalid_scene_extent ]] || { printf invalid; exit 0; }
+    printf 1 ;;
   *0023_compact_block_cutover.sql*)
     [[ "$FAKE_MODE" != unavailable ]] || exit 8
     [[ "$FAKE_MODE" != pending ]] || exit 0
@@ -105,6 +113,26 @@ esac
 }
 
 describe("compact release preflight", () => {
+  it.each(["unavailable_scene_extent", "invalid_scene_extent"])("rejects unknown actual extent before inspecting an old image (%s)", mode => {
+    const result = runPreflight(mode, true);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("actual city scene extent is unreadable or invalid");
+    expect(result.calls).not.toContain("--entrypoint node");
+  });
+  it("allows the first bridge rollout based on actual extents rather than candidate's potential capacity", () => {
+    const legacy: Partial<typeof currentCapabilities> = { ...currentCapabilities };
+    delete legacy.citySceneMaxChunks;
+    expect(inspectPrevious(legacy, { requiredChunks: 256 })).toBe("compatible");
+    expect(inspectPrevious(legacy, { requiredChunks: 257 })).toBe("incompatible");
+    expect(inspectPrevious(currentCapabilities, { requiredChunks: 257 })).toBe("compatible");
+    expect(inspectPrevious(currentCapabilities, { requiredChunks: CITY_SCENE_MAX_CHUNKS + 1 })).toBe("incompatible");
+  });
+  it.each([0, -1, 1.5, "unknown", Number.MAX_SAFE_INTEGER + 1])("rejects invalid actual scene extent %s", requiredChunks => {
+    expect(inspectPrevious(currentCapabilities, { requiredChunks })).toBe("incompatible");
+  });
+  it.each([null, 0, 1.5, "4096"])('rejects invalid declared reader capacity %s', citySceneMaxChunks => {
+    expect(inspectPrevious({ ...currentCapabilities, citySceneMaxChunks })).toBe("incompatible");
+  });
   it("pins package capabilities to the actual block, city and country readers", () => {
     const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
     expect(manifest.tasktopiaRuntime).toEqual(currentCapabilities);

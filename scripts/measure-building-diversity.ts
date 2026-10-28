@@ -1,3 +1,4 @@
+import { decodeCitySceneWire } from "../src/shared/city-scene-wire";
 /** Bounded paired browser measurement against one saved local city. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -33,7 +34,7 @@ try {
       await expect(host).toHaveAttribute("data-ground-bake-queue", "0");
       await expect(host).toHaveAttribute("data-mobility-ready", "true");
       const loadMs = performance.now() - start;
-      const scene = await (await response).json();
+      const scene = decodeCitySceneWire(await (await response).json());
       const tasks = [...new Map(scene.chunks.flatMap((chunk: { tasks: Array<{ id: string }> }) => chunk.tasks).map((task: { id: string }) => [task.id, task])).values()];
       const geometryHash = createHash("sha256").update(JSON.stringify(tasks)).digest("hex");
       await page.waitForTimeout(3000); // Declared warmup; excluded from samples.

@@ -10,7 +10,7 @@ export type CityMobilitySignalPost = {
 type CellMembership = Pick<ReadonlySet<string>, "has">;
 export type CityMobilitySignalPostInput<T extends CityMobilitySignalPost = CityMobilitySignalPost> = {
   posts: readonly T[];
-  terrain: ReadonlyMap<string, { terrain: TerrainKind }>;
+  terrain: Pick<ReadonlyMap<string, { terrain: TerrainKind }>, "get">;
   roads: CellMembership;
   walkGraph: CellMembership;
   /** Includes building/prop footprints, construction clearance and drawn water. */

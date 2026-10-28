@@ -21,28 +21,35 @@ export function createMobilityRouteSearchAsync(graph: ReadonlyMap<string, Cell>,
   return prepareCooperatively(createMobilityRouteSearchSteps(graph, edges), options);
 }
 export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>): Generator<void, MobilityRouteSearch, void> {
-  const cells: Cell[] = [], routeCells: Cell[] = [], indices = new Map<string, number>();
-  // Preserve physical coordinates, metadata on result.cells and graph order.
+  const cells: Cell[] = [], indices = new Map<string, number>();
+  const coordinates = new Float64Array(graph.size * 2);
+  let edgeCapacity = 0;
+  // Keep original metadata/iteration order, but snapshot route coordinates in
+  // numeric storage instead of allocating a second city-sized Cell graph.
   for (const cell of graph.values()) {
-    indices.set(key(cell), cells.length); cells.push(cell);
-    routeCells.push({ x: cell.x || 0, y: cell.y || 0 }); yield;
+    const id = key(cell), index = cells.length;
+    indices.set(id, index); cells.push(cell);
+    coordinates[index * 2] = cell.x || 0; coordinates[index * 2 + 1] = cell.y || 0;
+    edgeCapacity += edges.get(id)?.length ?? 0; yield;
   }
-  let hasNonlocalEdges = false;
-  let boundedDegree = true;
-  const outgoing: Array<Array<{ index: number; direction: number }>> = [];
-  for (const cell of cells) {
-    const nextEdges: Array<{ index: number; direction: number }> = [];
+  let hasNonlocalEdges = false, boundedDegree = true, edgeCount = 0;
+  // CSR preserves every authored edge and its stable order, including custom
+  // nonlocal/wide graphs. No per-node arrays or per-edge objects stay live.
+  const offsets = new Uint32Array(cells.length + 1), targets = new Uint32Array(edgeCapacity), headings = new Uint8Array(edgeCapacity);
+  for (let current = 0; current < cells.length; current++) {
+    const cell = cells[current]!; offsets[current] = edgeCount;
     for (const next of edges.get(key(cell)) ?? []) {
       const index = indices.get(key(next));
       if (index !== undefined) {
         if (Math.abs(next.x - cell.x) + Math.abs(next.y - cell.y) > 1) hasNonlocalEdges = true;
-        nextEdges.push({ index, direction: heading(cell, next) });
+        targets[edgeCount] = index; headings[edgeCount++] = heading(cell, next);
       }
       yield;
     }
-    if (nextEdges.length > 4) boundedDegree = false;
-    outgoing.push(nextEdges); yield;
+    if (edgeCount - offsets[current]! > 4) boundedDegree = false;
+    offsets[current + 1] = edgeCount; yield;
   }
+  const routeCell = (index: number): Cell => ({ x: coordinates[index * 2]!, y: coordinates[index * 2 + 1]! });
   const root = cells.length * 4;
   const blocked = new Uint8Array(cells.length);
   let blockedIndices: number[] = [];
@@ -74,15 +81,16 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
         const state = queue[cursor]!;
         if (lengths[cursor]! >= maxCells) continue;
         const index = state === root ? startIndex : Math.floor(state / 4), direction = state === root ? -1 : state % 4;
-        for (let pass = direction < 0 ? 1 : 0; pass < 2; pass++) for (const next of outgoing[index]!) {
-          if (blocked[next.index] || (next.direction === direction) !== (pass === 0)
-            || direction >= 0 && next.direction === (direction + 2) % 4) continue;
-          const nextState = next.index * 4 + next.direction;
+        for (let pass = direction < 0 ? 1 : 0; pass < 2; pass++) for (let edge = offsets[index]!; edge < offsets[index + 1]!; edge++) {
+          const nextIndex = targets[edge]!, nextDirection = headings[edge]!;
+          if (blocked[nextIndex] || (nextDirection === direction) !== (pass === 0)
+            || direction >= 0 && nextDirection === (direction + 2) % 4) continue;
+          const nextState = nextIndex * 4 + nextDirection;
           if (parents.has(nextState)) continue;
           parents.set(nextState, state);
-          if (!reached.has(next.index)) { reached.set(next.index, nextState); order.push(next.index); }
+          if (!reached.has(nextIndex)) { reached.set(nextIndex, nextState); order.push(nextIndex); }
           queue.push(nextState); lengths.push(lengths[cursor]! + 1);
-          if (next.index === targetIndex) break search;
+          if (nextIndex === targetIndex) break search;
         }
       }
       const reachableCells: Cell[] = [];
@@ -98,7 +106,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
           const route: Cell[] = [];
           while (state >= 0) {
             const parent: number = parents.get(state)!;
-            route.push(parent === -1 ? start : routeCells[Math.floor(state / 4)]!);
+            route.push(parent === -1 ? start : routeCell(Math.floor(state / 4)));
             state = parent;
           }
           return route.reverse();
@@ -117,13 +125,14 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
       const direction = state === root ? -1 : state % 4;
       // Same stable order as sorting straight first, without allocating an
       // array or comparator for each state. Initial heading has no straight.
-      for (let pass = direction < 0 ? 1 : 0; pass < 2; pass++) for (const next of outgoing[index]!) {
-        if (blocked[next.index] || (next.direction === direction) !== (pass === 0)
-          || direction >= 0 && next.direction === (direction + 2) % 4) continue;
-        const nextState = next.index * 4 + next.direction;
+      for (let pass = direction < 0 ? 1 : 0; pass < 2; pass++) for (let edge = offsets[index]!; edge < offsets[index + 1]!; edge++) {
+        const nextIndex = targets[edge]!, nextDirection = headings[edge]!;
+        if (blocked[nextIndex] || (nextDirection === direction) !== (pass === 0)
+          || direction >= 0 && nextDirection === (direction + 2) % 4) continue;
+        const nextState = nextIndex * 4 + nextDirection;
         if (visited[nextState]) continue;
         visited[nextState] = 1; parents[nextState] = state;
-        if (reached[next.index] === -1) { reached[next.index] = nextState; order.push(next.index); }
+        if (reached[nextIndex] === -1) { reached[nextIndex] = nextState; order.push(nextIndex); }
         queue.push(nextState);
       }
     }
@@ -137,7 +146,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
         if (targetIndex === undefined || reached[targetIndex] === -1) return [];
         const route: Cell[] = [];
         for (let state = reached[targetIndex]!; state >= 0; state = parents[state]!) {
-          route.push(parents[state] === -1 ? start : routeCells[Math.floor(state / 4)]!);
+          route.push(parents[state] === -1 ? start : routeCell(Math.floor(state / 4)));
         }
         return route.reverse();
       },

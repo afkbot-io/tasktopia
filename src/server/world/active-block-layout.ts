@@ -15,6 +15,7 @@ import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 import { freezePermanentSiteGeometry, permanentSiteBounds } from "./permanent-task-sites";
 import { readCountryRoads, synchronizeCountryRoads } from "./intercity-road-store";
 import { intercityRoadCorridors } from "../../shared/intercity-roads";
+import { CITY_SCENE_MAX_CHUNKS, citySceneChunkRange } from "../../shared/city-capacity";
 
 type Row = Record<string, unknown>;
 export class CitySceneCapacityError extends Error {}
@@ -233,9 +234,7 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
       })),
     };
     const layout = compileBlockLayout(input);
-    const chunkColumns=Math.floor(layout.bounds.maxX/64)-Math.floor(layout.bounds.minX/64)+1;
-    const chunkRows=Math.floor(layout.bounds.maxY/64)-Math.floor(layout.bounds.minY/64)+1;
-    if(chunkColumns*chunkRows>256) throw new CitySceneCapacityError("City scene capacity exceeded; create a new city before adding another block");
+    if (citySceneChunkRange(layout.bounds).count > CITY_SCENE_MAX_CHUNKS) throw new CitySceneCapacityError("City scene exceeds the finite chunk budget");
     // Breaking regeneration replaces only derived geometry inside this same
     // transaction. Product/task rows and their dependent records are untouched.
     if (reset && !previous) await db.prepare("DELETE FROM city_layouts_v1 WHERE city_id=?").run(cityId);

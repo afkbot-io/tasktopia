@@ -1,6 +1,6 @@
+import { decodeCitySceneWire } from '../../src/shared/city-scene-wire';
 import { expect, test } from '@playwright/test';
 import { openMapCity } from './map-navigation';
-import type { CitySceneDto } from '../../src/shared/city-scene-contract';
 
 for (const uniform of [true, false]) test(`трава на границе города: ${uniform ? 'проверка цвета' : 'родные текстуры'}`,  async ({ page }, info) => {
   // A uniform authored material isolates compositing from texture variation.
@@ -21,7 +21,7 @@ for (const uniform of [true, false]) test(`трава на границе гор
   const loaded = page.waitForResponse(response => response.url().endsWith('/scene') && response.ok());
   await page.goto('/');
   await openMapCity(page);
-  const scene = await (await loaded).json() as CitySceneDto;
+  const scene = decodeCitySceneWire(await (await loaded).json());
   const host = page.locator('.world-canvas');
   await expect(host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
   await expect(page.locator('.map-level-transition')).toHaveCount(0);

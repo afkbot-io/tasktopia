@@ -1,3 +1,4 @@
+import { decodeCitySceneWire } from '../../src/shared/city-scene-wire';
 import {expect,test,type Page} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 import {openMapPlanet} from './map-navigation';
@@ -50,7 +51,7 @@ for(const stage of [1,2,3,4,5] as const)test(`native terminal render boundary re
  test.setTimeout(90000);const loaded=new Set<string>();let airportNumber=0;
  page.on('response',response=>{if(response.ok())loaded.add(new URL(response.url()).pathname);});
  await page.route('**/api/countries/*/cities/*/scene',async route=>{
-  const response=await route.fetch(),scene=await response.json() as CitySceneDto;
+  const response=await route.fetch(),scene=decodeCitySceneWire(await response.json());
   for(const task of [...scene.chunks.flatMap(chunk=>chunk.tasks),...scene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)])if(['AIRPORT','RAILWAY','PORT'].includes(task.serviceRole??'')){task.stage=stage;task.status=stage===5?'COMPLETED':'IN_PROGRESS';if(task.serviceRole==='AIRPORT')airportNumber=task.taskNumber;}
   if(scene.railway)scene.railway={...scene.railway,stage,running:stage===5};scene.airports=scene.airports?.map(site=>({...site,stage}));scene.ports=scene.ports?.map(port=>({...port,stage}));
   await route.fulfill({response,json:scene});
@@ -180,7 +181,7 @@ test('two live clients receive MCP rework completion deletion and idempotent tra
  const errors:string[]=[];for(const p of [page,second])p.on('pageerror',e=>errors.push(e.message));
  const sceneRequests=[0,0];[page,second].forEach((p,i)=>p.on('request',r=>{if(r.url().includes('/cities/')&&r.url().includes('/scene'))sceneRequests[i]!++;}));
  const lastScenes:Array<CitySceneDto|undefined>=[];
- [page,second].forEach((p,i)=>p.on('response',async response=>{if(response.ok()&&new URL(response.url()).pathname.endsWith(`/cities/${f.sites[0]!.city.id}/scene`))lastScenes[i]=await response.json() as CitySceneDto;}));
+ [page,second].forEach((p,i)=>p.on('response',async response=>{if(response.ok()&&new URL(response.url()).pathname.endsWith(`/cities/${f.sites[0]!.city.id}/scene`))lastScenes[i]=decodeCitySceneWire(await response.json());}));
  const client=new Client({name:'transport-rework-local-qa',version:'1.0.0'});let token:{id:string;token:string}|undefined;
  try{
   await entry(page);await entry(second);

@@ -1,4 +1,4 @@
-import type { Cell, ChunkDto, ChunkTaskDto, WorldFeatureDto, SurfaceCellDto } from "../shared/contracts";
+import type { Cell, ChunkDto, ChunkTaskDto, WorldFeatureDto, SurfaceCellDto, TerrainKind } from "../shared/contracts";
 import { PROP_CATALOG } from "../shared/catalog";
 import { taskParkDecorLayout } from "../shared/task-park";
 import { greenAreaSurfaceLayout } from "../shared/green-area";
@@ -11,6 +11,8 @@ export type CityWalkInput = {
   tasks: Array<Pick<ChunkTaskDto, "taskNumber" | "stage" | "visualKind" | "visualAssetKey" | "footprint" | "accessPath">>;
   features: Array<Pick<WorldFeatureDto, "assetKind" | "assetKey" | "developmentStage" | "footprint" | "accessPath" | "kind">>;
   decorations: ChunkDto["decorations"];
+  /** Canonical seed/profile lookup; dense terrain remains viewport-owned. */
+  sampleTerrain?: (cell: Cell) => TerrainKind | undefined;
 };
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 
@@ -86,7 +88,14 @@ function* buildCityWalkNetworkSteps(input: CityWalkInput) {
         if (!base.has(key(target))) continue;
         const intermediate: Cell[] = [];
         for (let step = 1; step <= gap; step++) intermediate.push({ x: origin.x + direction.x * step, y: origin.y + direction.y * step });
-        if (intermediate.every(cell => safeGround.has(key(cell)))) for (const cell of intermediate) walkGraph.set(key(cell), safeGround.get(key(cell))!);
+        const safe = intermediate.every(cell => {
+          const id=key(cell);
+          if(safeGround.has(id))return true;
+          if(blocked.has(id)||input.roads.has(id))return false;
+          const terrain=input.sampleTerrain?.(cell);
+          return terrain!==undefined&&["GRASS","MEADOW","DIRT"].includes(terrain);
+        });
+        if (safe) for (const cell of intermediate) walkGraph.set(key(cell), safeGround.get(key(cell)) ?? cell);
         break;
       }
     }

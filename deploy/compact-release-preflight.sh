@@ -12,6 +12,55 @@ compact_release_query() {
     psql -X -At -U tasktopia -d tasktopia -v ON_ERROR_STOP=1 -c "$1"
 }
 
+# Container exit closes clients, but a backend may still be completing COMMIT.
+# Unknown backend types count as clients so limited stats visibility fails safe.
+compact_release_other_clients() {
+  compact_release_query "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database()
+    AND pid<>pg_backend_pid() AND COALESCE(backend_type,'client backend')='client backend';"
+}
+
+# Same source envelope as getCityScene: canonical city bounds plus the
+# approach/pier/water path/berth of occupied port slots, including two cells.
+# No terrain rasterization, generation, repair or candidate-capacity shortcut.
+compact_release_scene_max_chunks() {
+  compact_release_query "WITH city_scene_layouts AS (
+    SELECT c.id AS city_id,l.id AS layout_id,c.bounds_json
+    FROM cities_v3 c JOIN city_layouts_v1 l ON l.city_id=c.id AND l.country_id=c.country_id AND l.status='ACTIVE'
+  ), city_scene_ports AS (
+    SELECT l.city_id,b.parameters_json->'slotPortPlans'->p.slot_key AS plan
+    FROM city_scene_layouts l JOIN task_placements_v1 p ON p.layout_id=l.layout_id
+    JOIN city_blocks_v1 b ON b.id=p.block_id AND b.layout_id=l.layout_id
+    WHERE b.parameters_json->'slotRoles'->>p.slot_key='PORT'
+      AND b.parameters_json->'slotPortPlans'->p.slot_key IS NOT NULL
+  ), city_scene_port_shapes AS (
+    SELECT *,COALESCE(jsonb_typeof(plan)='object' AND jsonb_typeof(plan->'approach')='array'
+      AND jsonb_typeof(plan->'pier')='array' AND jsonb_typeof(plan->'waterPath')='array'
+      AND jsonb_typeof(plan->'berth')='object',false) AS valid FROM city_scene_ports
+  ), city_scene_points AS (
+    SELECT city_id,point,0 AS padding FROM city_scene_layouts CROSS JOIN LATERAL (VALUES
+      (jsonb_build_object('x',bounds_json->'minX','y',bounds_json->'minY')),
+      (jsonb_build_object('x',bounds_json->'maxX','y',bounds_json->'maxY'))) corner(point)
+    UNION ALL
+    SELECT city_id,point,2 AS padding FROM city_scene_port_shapes CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN valid THEN (plan->'approach')||(plan->'pier')||(plan->'waterPath')||jsonb_build_array(plan->'berth')
+      ELSE '[]'::jsonb END) coordinate(point)
+  ), city_scene_coordinates AS (
+    SELECT city_id,padding,
+      CASE WHEN jsonb_typeof(point->'x')='number' AND point->>'x' ~ '^(-[0-9]+|[0-9]+)$' THEN (point->>'x')::numeric END AS x,
+      CASE WHEN jsonb_typeof(point->'y')='number' AND point->>'y' ~ '^(-[0-9]+|[0-9]+)$' THEN (point->>'y')::numeric END AS y
+    FROM city_scene_points
+  ), city_scene_extents AS (
+    SELECT city_id,MIN(x-padding) AS min_x,MIN(y-padding) AS min_y,MAX(x+padding) AS max_x,MAX(y+padding) AS max_y
+    FROM city_scene_coordinates GROUP BY city_id
+  ), city_scene_counts AS (
+    SELECT (floor(max_x/64)-floor(min_x/64)+1)*(floor(max_y/64)-floor(min_y/64)+1) AS chunks FROM city_scene_extents
+  ) SELECT CASE WHEN EXISTS(SELECT 1 FROM city_scene_coordinates WHERE x IS NULL OR y IS NULL
+      OR abs(x)+padding>9007199254740991 OR abs(y)+padding>9007199254740991)
+    OR EXISTS(SELECT 1 FROM city_scene_port_shapes WHERE NOT valid)
+    OR EXISTS(SELECT 1 FROM city_scene_layouts WHERE bounds_json->'minX'>bounds_json->'maxX' OR bounds_json->'minY'>bounds_json->'maxY')
+    OR COALESCE(MAX(chunks),1)>9007199254740991 THEN 'invalid' ELSE COALESCE(MAX(chunks),1)::text END FROM city_scene_counts;"
+}
+
 check_compact_release_database() {
   local migration expected actual missing
   for migration in 0023_compact_block_cutover.sql 0024_dense_slot_planning.sql 0029_country_road_snapshots.sql; do
@@ -139,11 +188,14 @@ def read_json(path, limit):
 package = read_json(sys.argv[1], 65536)
 manifest = read_json(sys.argv[2], 4 * 1024 * 1024)
 shapes = package["tasktopiaRuntime"]["blockStructuralShapes"]
+capacity = package["tasktopiaRuntime"]["citySceneMaxChunks"]
+if type(capacity) is not int or not 1 <= capacity <= 9007199254740991:
+    raise ValueError("Missing or invalid city scene reader capacity")
 buildings = manifest["buildings"]
 if not isinstance(shapes, dict) or not 1 <= len(shapes) <= 128 or not isinstance(buildings, dict) or not 1 <= len(buildings) <= 128:
     raise ValueError("Missing or oversized candidate geometry registry")
 fields = ("footprintCells", "spriteSize", "anchorPx", "entrances", "stages")
-descriptor = json.dumps({"blockStructuralShapes": shapes,
+descriptor = json.dumps({"citySceneMaxChunks": capacity, "blockStructuralShapes": shapes,
     "buildings": {key: {field: entry[field] for field in fields} for key, entry in buildings.items()}},
     ensure_ascii=True, separators=(",", ":"))
 if len(descriptor.encode("utf-8")) > 65536:
@@ -154,9 +206,14 @@ PY
 
 check_compact_rollback_image() {
   [[ "$app_was_running" == true && -n "$previous_app_image_id" ]] || return 0
-  local compatible descriptor
+  local compatible descriptor required_chunks
   if ! descriptor="$(compact_release_descriptor)"; then
     echo "Compact cutover: candidate geometry descriptor is missing/invalid; automatic image rollback cannot be proven safe." >&2
+    return 1
+  fi
+  if ! required_chunks="$(compact_release_scene_max_chunks)" \
+    || [[ ! "$required_chunks" =~ ^[1-9][0-9]*$ || ${#required_chunks} -gt 16 ]]; then
+    echo "Compact cutover: actual city scene extent is unreadable or invalid; previous reader compatibility is unknown." >&2
     return 1
   fi
   # Inspect image files in an isolated container: no DB/network, mounts or
@@ -169,9 +226,16 @@ check_compact_rollback_image() {
       try { return crypto.createHash("sha256").update(fs.readFileSync("/app/migrations/postgres/" + name)).digest("hex") === process.argv[i + 1]; }
       catch { return false; }
     });
-    let supportsReaders = false, supportsGeometry = false;
+    let supportsReaders = false, supportsGeometry = false, supportsCapacity = false;
     try {
       const capability = JSON.parse(fs.readFileSync("/app/package.json", "utf8")).tasktopiaRuntime;
+      const requiredChunks = Number(process.argv[5]);
+      // Missing capacity is the explicitly known legacy1.26 reader limit.
+      // A malformed declared value never falls back to that legacy default.
+      const previousCapacity = Object.prototype.hasOwnProperty.call(capability ?? {}, "citySceneMaxChunks")
+        ? capability.citySceneMaxChunks : 256;
+      supportsCapacity = Number.isSafeInteger(previousCapacity) && previousCapacity > 0
+        && Number.isSafeInteger(requiredChunks) && requiredChunks > 0 && previousCapacity >= requiredChunks;
       const includes = (key, values) => Array.isArray(capability?.[key]) && values.every(value => capability[key].includes(value));
       supportsReaders = includes("blockTemplateVersions", [2, 3])
         && includes("citySceneSchemaVersions", [4])
@@ -202,12 +266,12 @@ check_compact_rollback_image() {
           && fields.every(field => equal(entry[field], manifest.buildings[key][field]))
           && entry.stages.every(stage => fs.existsSync("/app/dist/public/game-assets/v5/" + stage)));
     } catch { /* Missing capability is not evidence of a compatible reader. */ }
-    process.stdout.write(ok && supportsReaders && supportsGeometry ? "compatible" : "incompatible");
+    process.stdout.write(ok && supportsReaders && supportsGeometry && supportsCapacity ? "compatible" : "incompatible");
   ' "$(compact_migration_checksum 0023_compact_block_cutover.sql)" \
     "$(compact_migration_checksum 0024_dense_slot_planning.sql)" \
-    "$(compact_migration_checksum 0029_country_road_snapshots.sql)" "$descriptor")" \
+    "$(compact_migration_checksum 0029_country_road_snapshots.sql)" "$descriptor" "$required_chunks")" \
     || [[ "$compatible" != compatible ]]; then
-    echo "Compact cutover: previous running image cannot read this schema, template-v3 plans, geometry/family registry or CITY4/COUNTRY7 canonical roads; automatic image rollback is unsafe. Use the authorized maintenance cutover, never restart old code against the new database." >&2
+    echo "Compact cutover: previous running image cannot read this schema, geometry or actual city scene extent ($required_chunks chunks); automatic image rollback is unsafe. Preserve the current runtime for a compatible forward fix; never restart unsupported old code against expanded cities." >&2
     return 1
   fi
 }

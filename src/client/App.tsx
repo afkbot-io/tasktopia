@@ -31,7 +31,7 @@ import { clearPushSubscriptionForLogout } from "./push-notifications";
 import { PushNotificationCard } from "./components/PushNotificationCard";
 import { SiteHistoryModal } from "./components/SiteHistoryModal";
 import { DialogLoadState, PanelLoadState, UiLoadBoundary } from "./components/UiLoadState";
-import { advanceMapSceneCaches, clearMapSceneCaches, invalidateTransportSceneCaches, loadCityScene, rememberCountryRevision } from "./map-scene-cache";
+import { advanceMapSceneCaches, clearMapSceneCaches, invalidateTransportSceneCaches, loadCityScene, rememberCountryRevision, retainCityScene } from "./map-scene-cache";
 import { clearTaskDetailCache, invalidateTaskDetails, taskEventRefreshesDependencies } from "./task-detail-cache";
 import { taskResolutionQuery } from "./task-navigation";
 import { clearPlanetAtlasCache } from "./planet-atlas-cache";
@@ -124,6 +124,7 @@ export function App() {
   const mapTransitionAbortRef = useRef<AbortController | null>(null);
   const [focusCity, setFocusCity] = useState<CityFocus | null>(null);
   const [preparedCityScene, setPreparedCityScene] = useState<CitySceneDto | null>(null);
+  useEffect(() => preparedCityScene ? retainCityScene(preparedCityScene) : undefined, [preparedCityScene]);
   const [planetEntryCountryId, setPlanetEntryCountryId] = useState<string | null>(null);
   const [planetViewMemory] = useState(() => new Map<string, PlanetViewState>());
   const rememberPlanetView = useCallback((view: PlanetViewState) => { planetViewMemory.set("last", view); }, [planetViewMemory]);
@@ -359,6 +360,7 @@ export function App() {
         clearTaskDetailCache();
         setMapInvalidations([]);
         setFocusTask(null);
+        setPreparedCityScene(null); setRetainedCityKey(null);
         eventCountryRef.current = next.country.id;
         lastWorldEventIdRef.current = next.eventCursor;
           setNotices([]);
@@ -806,6 +808,10 @@ export function App() {
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
                   performance.mark("tasktopia:city-first-frame");
+                }} onCitySceneCommitted={(scope, scene) => {
+                  const currentScope = () => matchesRealtimeScope(scope, renderedAuthenticationEpoch, eventCountryRef.current, authenticationEpochRef.current);
+                  if (!currentScope()) return;
+                  setPreparedCityScene(current => currentScope() && current?.city.id === scene.city.id ? scene : current);
                 }} wheelNavigation={wheelNavigation} onFatalError={(message) => {
                   if (!preparedCityScene) return;
                   mapTransitionAbortRef.current?.abort();

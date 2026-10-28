@@ -1,7 +1,7 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { ChunkTaskDto } from "../../src/shared/contracts";
 import type { TaskCardDto } from "../../src/shared/task-read-contracts";
 import { TASK_PARK_VARIANTS } from "../../src/shared/task-park-catalog";
@@ -87,7 +87,7 @@ test("real generated compact public spaces preserve stages, object selection and
   await page.goto("/");
   const response = await initialScene;
   expect(response.status(), await response.text()).toBe(200);
-  const scene = await response.json() as CitySceneDto;
+  const scene = decodeCitySceneWire(await response.json());
   expect(scene.city.name).toBe(PUBLIC_SPACES_CITY_NAME);
   await ready(page);
   const tasks = [...new Map([...scene.chunks.flatMap(chunk => chunk.tasks),

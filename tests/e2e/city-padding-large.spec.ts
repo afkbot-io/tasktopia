@@ -1,7 +1,7 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir, writeFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { BootstrapDto, Cell } from "../../src/shared/contracts";
 import { cameraTerrainPadding } from "../../src/client/camera-terrain-padding";
 import { atlasTerrainConnectionMask, atlasTerrainKindFromWorld, atlasTerrainTile } from "../../src/shared/atlas-scene";
@@ -64,7 +64,7 @@ test("20 sprint city: bounded exterior materials during a real >64-cell jump and
   const loaded = page.waitForResponse(response => new URL(response.url()).pathname.endsWith("/scene") && response.ok());
   const bootstrapLoaded = page.waitForResponse(response => new URL(response.url()).pathname === "/api/bootstrap" && response.ok());
   const started = performance.now();
-  await page.goto("/"); const scene = await (await loaded).json() as CitySceneDto; await ready(page);
+  await page.goto("/"); const scene = decodeCitySceneWire(await (await loaded).json()); await ready(page);
   const bootstrap = await (await bootstrapLoaded).json() as BootstrapDto;
   const coldMs = performance.now() - started;
   await sampleMemory("initial-1000-task-city");

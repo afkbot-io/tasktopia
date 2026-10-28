@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ChunkMaterializer, recommendedChunkWorkerCount, type ChunkWorker } from "../src/client/chunk-materializer";
+import { ChunkMaterializer, recommendedChunkWorkerCount, chunkMaterializationMetrics, type ChunkWorker } from "../src/client/chunk-materializer";
 import type { ChunkDto, ChunkPayloadDto } from "../src/shared/contracts";
 import { materializeChunkPayload } from "../src/shared/world-chunk-payload";
 
@@ -24,28 +24,47 @@ function payload(chunkX: number): ChunkPayloadDto {
 }
 
 class FakeChunkWorker implements ChunkWorker {
-  readonly posted: Array<{ id: number; payload: ChunkPayloadDto }> = [];
+  readonly posted: Array<{ id: number; payload: ChunkPayloadDto; physicalOnly?:boolean }> = [];
   terminated = false;
-  private messageListener?: (event: MessageEvent<{ id: number; chunk?: ChunkDto; error?: string }>) => void;
+  private messageListener?: (event: MessageEvent<{ id: number; chunk?: ChunkDto; error?: string; computeMs?:number }>) => void;
   private errorListener?: (event: ErrorEvent) => void;
 
-  addEventListener(type: "message" | "error", listener: ((event: MessageEvent<{ id: number; chunk?: ChunkDto; error?: string }>) => void) | ((event: ErrorEvent) => void)): void {
-    if (type === "message") this.messageListener = listener as (event: MessageEvent<{ id: number; chunk?: ChunkDto; error?: string }>) => void;
+  addEventListener(type: "message" | "error", listener: ((event: MessageEvent<{ id: number; chunk?: ChunkDto; error?: string; computeMs?:number }>) => void) | ((event: ErrorEvent) => void)): void {
+    if (type === "message") this.messageListener = listener as (event: MessageEvent<{ id: number; chunk?: ChunkDto; error?: string; computeMs?:number }>) => void;
     else this.errorListener = listener as (event: ErrorEvent) => void;
   }
 
-  postMessage(message: { id: number; payload: ChunkPayloadDto }): void { this.posted.push(message); }
+  postMessage(message: { id: number; payload: ChunkPayloadDto;physicalOnly?:boolean }): void { this.posted.push(message); }
   terminate(): void { this.terminated = true; }
 
-  respond(index = 0): void {
+  respond(index = 0,computeMs?:number): void {
     const request = this.posted[index]!;
-    this.messageListener?.({ data: { id: request.id, chunk: materializeChunkPayload(request.payload) } } as MessageEvent);
+    this.messageListener?.({ data: { id: request.id, chunk: materializeChunkPayload(request.payload,undefined,request.physicalOnly),computeMs } } as MessageEvent);
   }
 
   fail(message: string): void { this.errorListener?.({ message } as ErrorEvent); }
 }
 
 describe("ChunkMaterializer", () => {
+  it("separates queue and worker compute time from the owner round trip", async () => {
+    let now=0;const clock=vi.spyOn(performance,"now").mockImplementation(()=>now);
+    const worker=new FakeChunkWorker(),materializer=new ChunkMaterializer(1,()=>worker);
+    try{
+      const first=materializer.materialize(payload(4));now=10;
+      const queued=materializer.materialize(payload(5));now=30;worker.respond(0,5);
+      expect(chunkMaterializationMetrics(await first)).toEqual({queueMs:0,roundTripMs:30,computeMs:5});
+      now=50;worker.respond(1,7);
+      expect(chunkMaterializationMetrics(await queued)).toEqual({queueMs:20,roundTripMs:20,computeMs:7});
+    }finally{materializer.destroy();clock.mockRestore();}
+  });
+  it("transports sparse physical pages separately from visual rasters", async () => {
+    const worker=new FakeChunkWorker(),materializer=new ChunkMaterializer(1,()=>worker);
+    try{
+      const result=materializer.materialize(payload(4),undefined,undefined,true);
+      expect(worker.posted[0]!.physicalOnly).toBe(true);
+      worker.respond();expect((await result).terrain).toEqual([]);
+    }finally{materializer.destroy();}
+  });
   it("loads its worker from the app origin even when the client uses a CDN", () => {
     const urls: URL[] = [];
     class BrowserWorker extends FakeChunkWorker {

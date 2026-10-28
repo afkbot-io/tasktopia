@@ -1,7 +1,7 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import type { ChunkTaskDto } from "../../src/shared/contracts";
 
 test.skip(process.env.E2E_BLOCK_INFILL_FIXTURE !== "true", "Isolated block_infill_20260906 fixture only");
@@ -53,7 +53,7 @@ test("infill tasks, block plaques and district boundaries survive a map round tr
   expect((await page.request.post("/api/auth/login", { data: { email: "demo@tasktopia.local", password: "tasktopia-demo" } })).status()).toBe(200);
   const loaded = page.waitForResponse(r => /\/cities\/[^/]+\/scene$/.test(new URL(r.url()).pathname));
   await page.goto("/");
-  const scene = await (await loaded).json() as CitySceneDto;
+  const scene = decodeCitySceneWire(await (await loaded).json());
   expect(scene.city.name).toBe("Разнообразные кварталы"); await ready(page);
   const tasks = [...new Map(scene.chunks.flatMap(c => c.tasks).map(t => [t.id, t])).values()];
   expect(tasks).toHaveLength(96); expect(new Set(tasks.map(t => t.districtId)).size).toBe(3);

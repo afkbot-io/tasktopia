@@ -15,7 +15,7 @@ import { planCityParking } from "../city-parking";
 import { createCityEntityCollector } from "../city-entity-collector";
 import { createRequiredEntityAssets } from "../city-entity-assets";
 import { createCityMovementDependencies,needsMovementPreparation } from "../city-movement-dependencies";
-import { CanonicalCityData } from "../canonical-city-data";
+import { CanonicalCityProjection } from "../canonical-city-projection";
 import { planCityResidency, taskIntersectsResidentBounds } from "../city-residency";
 import { cityGroundRangeForViewport, planCityGroundReadiness } from "../city-ground-readiness";
 import { CityCameraPresentation, type CityCameraPose } from "../city-camera-presentation";
@@ -69,16 +69,17 @@ import {
 import type { BootstrapDto, Cell, ChunkDistrictDto, ChunkDto, ChunkPayloadDto, ChunkTaskDto, PlannedSiteDto, Rect, RoadCellDto, SurfaceCellDto, ViewportPayloadDto, WorldFeatureDto, WorldManifestDto } from "../../shared/contracts";
 import { CITY_SCENE_SCHEMA_VERSION, type CitySceneDto } from "../../shared/city-scene-contract";
 import { loadCityScene } from "../map-scene-cache";
+import { citySceneResponseMetrics } from "../city-scene-response";
 import { isBuildableTerrain, isWater, terrainAt } from "../../shared/world-terrain";
 import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 import { encodeTerrainSample } from "../../shared/world-chunk-payload";
-import { apiWithMetrics, type ApiResult } from "../api";
-import { ChunkMaterializer } from "../chunk-materializer";
+import { apiWithMetrics } from "../api";
+import { ChunkMaterializer, chunkMaterializationMetrics } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
 import { loadGameAssets } from "../game-asset-loader";
 import { AssetLease, leasedAssetCount } from "../asset-lease-registry";
 import { mapInvalidationAffectsCity, mapInvalidationImpact, type MapInvalidation } from "../map-invalidation";
-import { BoundedMapRefresh } from "../bounded-map-refresh";
+import { RetainedCitySceneRefresh } from "../retained-city-scene-refresh";
 import { cityRetryPlan } from "../city-retry-plan";
 import { drainGroundBakeFrame, INITIAL_GROUND_BAKE_BUDGET_MS, type GroundBakeWork } from "../ground-bake-budget";
 import { createGroundTerrainSampler } from "../ground-terrain-sampler";
@@ -90,7 +91,7 @@ import { retryFailedPadding } from "../padding-retry";
 import { IMMEDIATE_PADDING_CELL_LIMIT, planImmediatePadding } from "../immediate-padding-plan";
 import { createDistrictTerritory } from "../district-territory";
 import { districtDevelopmentState, planDistrictDevelopment, createDistrictDevelopmentGeometry } from "../district-development";
-import { drawDistrictDevelopment, drawDevelopmentEmphasis } from "../district-development-view";
+import { drawDistrictDevelopment, drawDevelopmentEmphasis, drawDevelopmentOutline } from "../district-development-view";
 import { RollingPerformanceMetric } from "../rolling-performance-metric";
 import { nextSeededRandom, nextWithoutUTurn } from "../agent-routing";
 import { createAgentRoutePlanner,createAgentRoutePlannerAsync } from "../agent-route-planner";
@@ -921,7 +922,7 @@ function ambientDetailAssets(): string[] {
   return microAmbientAssetUrls();
 }
 
-export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTransportRoute,transportRevision = 0, dependencies, attentionIds, countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, startAtMinimumScale = false, active = true, focusTask, invalidations, onInvalidationsProcessed, showDistricts, onTaskSelect, onInspectTask, onDistrictSelect, onArchiveSelect, onSiteSelect, onReady, onFatalError, onZoomOutToPlanet, wheelNavigation }: {
+export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTransportRoute,transportRevision = 0, dependencies, attentionIds, countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, onCitySceneCommitted, startAtMinimumScale = false, active = true, focusTask, invalidations, onInvalidationsProcessed, showDistricts, onTaskSelect, onInspectTask, onDistrictSelect, onArchiveSelect, onSiteSelect, onReady, onFatalError, onZoomOutToPlanet, wheelNavigation }: {
   initialView?:CityViewState;restoreView?:CityViewRestoreRequest;onViewChange?:(view:CityViewState,meta?:CityViewChangeMeta)=>void;
   transportRevision?: number;selectedTransportRoute?:string;
   dependencies?: MapDependencySelection;
@@ -932,6 +933,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   viewBounds: Rect;
   focusCity?: Pick<NonNullable<BootstrapDto["initialCity"]>, "id" | "name" | "center" | "bounds"> | null;
   initialCityScene?: CitySceneDto;
+  onCitySceneCommitted?: (countryId: string, scene: CitySceneDto) => void;
   startAtMinimumScale?: boolean;
   active?: boolean;
   focusTask?: { origin: Cell; token: number } | null;
@@ -1009,6 +1011,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin) : focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
   const initialCitySceneRef = useRef(initialCityScene);
+  const onCitySceneCommittedRef = useRef(onCitySceneCommitted);
+  useLayoutEffect(() => { onCitySceneCommittedRef.current = onCitySceneCommitted; }, [onCitySceneCommitted]);
   const initialMinimumScaleRef = useRef(startAtMinimumScale);
   const initialWorldRevisionRef = useRef(worldManifest.worldRevision);
 
@@ -1090,6 +1094,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    const cityBootstrapStartedAt = performance.now();
     setInspection(undefined);setTour(undefined);
     setFirstFrameReady(false);
     setMapLoadError(undefined);
@@ -1097,6 +1102,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     delete host.dataset.chunkRange;
     let disposed = false;
     let paintedFrame = false;
+    let firstCityAtomicPresented = false;
     let streamingTimer = 0;
     let suppressSelectionUntil = 0;
     const selectTask = (taskId: string) => {
@@ -1141,8 +1147,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     };
     const chunks = new Map<string, ChunkDto>();
     const entityChunks = new Map<string, ChunkDto>();
-    // CITY uses the separate complete canonical terrain for walking/physics.
-    // The resident visual projection never reads another terrain index.
+    // Physical city topology and bounded visual terrain have separate owners.
     const collectCityEntities = createCityEntityCollector({ includeTerrain: !focusCityId });
     const collectCanonicalCityEntities = createCityEntityCollector();
     const requiredEntityAssets = createRequiredEntityAssets();
@@ -1154,15 +1159,39 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     const chunkDataCache = new Map<string, ChunkDto>();
     const chunkPayloadCache = new Map<string, ChunkPayloadDto>();
     let cityScene: CitySceneDto | undefined;
+    const sceneRefresh = new RetainedCitySceneRefresh(countryId, focusCityId ?? "", initialWorldRevisionRef.current, scene => {
+      initialCitySceneRef.current = undefined;
+      onCitySceneCommittedRef.current?.(countryId, scene);
+    });
+    startupDisposers.push(() => sceneRefresh.dispose());
+    const exposeSceneResponse=(scene:CitySceneDto)=>{
+      const metrics=citySceneResponseMetrics(scene);if(!metrics)return;
+      host.dataset.citySceneDecodedBytes=String(metrics.decodedBytes);
+      host.dataset.citySceneRequestMs=metrics.requestMs.toFixed(3);
+      host.dataset.citySceneParseMs=metrics.parseMs.toFixed(3);
+      host.dataset.citySceneDecodeMs=metrics.decodeMs.toFixed(3);
+      if(metrics.weightMs!==undefined)host.dataset.citySceneWeightMs=metrics.weightMs.toFixed(3);
+      for(const phase of ["textMs","fetchHeadersMs","bodyReadMs","workerRoundTripMs","ownerMs"] as const){
+        const value=metrics[phase];if(value!==undefined)host.dataset[`cityScene${phase[0]!.toUpperCase()}${phase.slice(1)}`]=value.toFixed(3);
+      }
+      host.dataset.citySceneParseOwner="worker";
+    };
     let cityResidentBounds: Rect | undefined;
     let presentedCityBounds: Rect | undefined;
     let presentedCityKeys = new Set<string>();
     let citySceneChunkCount = 0;
     const completedSnapshotTasks = new Map<string, ChunkTaskDto>();
+    const sceneTasks = new Map<string,ChunkTaskDto>();
+    const sceneDistricts = new Map<string,ChunkPayloadDto["districts"][number]>();
     const installCompletedSnapshotTasks = (scene: CitySceneDto): void => {
       completedSnapshotTasks.clear();
+      sceneTasks.clear();sceneDistricts.clear();
+      for(const payload of scene.chunks){
+        for(const task of payload.tasks)sceneTasks.set(task.id,task);
+        for(const district of payload.districts)sceneDistricts.set(district.id,district);
+      }
       for (const snapshot of scene.completedDistrictSnapshots) {
-        for (const task of snapshot.tasks) completedSnapshotTasks.set(task.id, task);
+        for (const task of snapshot.tasks) {completedSnapshotTasks.set(task.id, task);sceneTasks.set(task.id,task);}
       }
     };
     const residentCompletedTasks = () => [...completedSnapshotTasks.values()].filter(task =>
@@ -1177,6 +1206,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
     startupDisposers.push(() => chunkMaterializer.destroy());
+    // One background physical worker cannot consume the visual worker queue
+    // or make a pan wait behind every offscreen city page.
+    const canonicalMaterializer = new ChunkMaterializer(1);
+    startupDisposers.push(() => canonicalMaterializer.destroy());
     const assetLease = new AssetLease();
     startupDisposers.push(() => {
       assetLease.dispose();
@@ -1187,6 +1220,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     const chunkRequestMetric = new RollingPerformanceMetric();
     const chunkParseMetric = new RollingPerformanceMetric();
     const chunkMaterializeMetric = new RollingPerformanceMetric();
+    const chunkPhaseMetrics = new Map<string, RollingPerformanceMetric>();
     const groundBakeMetric = new RollingPerformanceMetric();
     const latestTaskStatusPatches = new Map<string, ChunkTaskStatusPatch>();
     const invalidatedGroundKeys = new Set<string>();
@@ -1644,13 +1678,27 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         renderTransportSelection();
       };
       const movementDependencies = createCityMovementDependencies();
-      const canonicalCityData = new CanonicalCityData();
+      const canonicalCityData = new CanonicalCityProjection();
+      let canonicalRequestedScene:CitySceneDto|undefined,canonicalReadyScene:CitySceneDto|undefined;
+      let canonicalRequestVersion=0;
+      let canonicalProjectionFailed=false;
+      let canonicalTerrainPages=new Map<string,ChunkPayloadDto>();
+      const canonicalTerrain={get:(id:string)=>{
+        const [x,y]=id.split(",").map(Number);
+        if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y))return undefined;
+        const payload=canonicalTerrainPages.get(chunkKey(Math.floor(x!/chunkSize),Math.floor(y!/chunkSize)));
+        return payload?terrainAt(payload.terrainSeed,x!,y!,payload.terrainProfile):undefined;
+      }};
+      let cachedMovementSnapshot:typeof canonicalCityData.current|undefined,cachedMovementScene:CitySceneDto|undefined;
+      let cachedMovement={geometry:0,life:0};
+      startupDisposers.push(()=>canonicalCityData.dispose());
       let movementGeometry = -1, movementLife = -1;
       const movementPreparation=new CityMovementPreparation();
       const lifePreparation=new CityMovementPreparation();
+      const animalPreparation=new CityMovementPreparation();
       let latestMovement={geometry:0,life:0},latestCanonicalTasks:ReadonlyMap<string,ChunkTaskDto>=new Map();
       let movementPreparationFailed=false;
-      startupDisposers.push(()=>{movementPreparation.dispose();lifePreparation.dispose();});
+      startupDisposers.push(()=>{movementPreparation.dispose();lifePreparation.dispose();animalPreparation.dispose();});
       type LifeGeometry=Pick<PreparedCityMobilityGeometry,"walkingCells"|"visitTargets"|"canDrive">;
       type PreparedLife={revision:number;value:{tasks:ReadonlyMap<string,ChunkTaskDto>;everyday:PreparedEveryday;sites:CityLifeSite[];candidates:string[];planningMs:number}};
       let prepareLifeSites: ((signal:AbortSignal,geometry:LifeGeometry)=>Promise<PreparedLife>) | undefined;
@@ -1665,6 +1713,16 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       const sessionSeed = crypto.getRandomValues(new Uint32Array(1))[0] || 0x6d2b79f5;
       let spawnState = sessionSeed;
       let nextAgentId = 1;
+      let residentAnimalGraph=new Map<string,Cell>(),animalCandidates:Cell[]=[],animalSources:readonly ChunkDto[]=[];
+      let animalRevision=0;
+      const adoptAnimalGround=(graph:Map<string,Cell>,routes:ReturnType<typeof createAgentRoutePlanner>)=>{
+        residentAnimalGraph=graph;animalCandidates=[...graph.values()];animalRoutes=routes;
+        animals=animals.filter(agent=>{
+          if(!graph.has(key(agent.current))||!graph.has(key(agent.next))){destroyAnimal(agent);return false;}
+          agent.graph=graph;agent.route=[agent.current,agent.next];agent.routeIndex=1;return true;
+        });
+        host!.dataset.residentAnimalGroundCells=String(graph.size);
+      };
       let simulationTimeMs = 0;
       const constructionWorkers = new Map<string, { worker: ConstructionLifeSite["workers"][number]; view: Sprite }>();
       const constructionMaterials = new Map<string, Sprite>();
@@ -3294,16 +3352,21 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const sourceChunks = [...entityChunks].filter(([id]) => entityChunkLods.get(id) === currentLod).map(([, chunk]) => chunk);
         const completedTasks = residentCompletedTasks();
         const collected = collectCityEntities(sourceChunks,completedTasks,currentLod === "DETAIL");
-        const canonicalSnapshot = cityScene ? canonicalCityData.resolve(cityScene.chunks,
-          (x,y)=>chunkDataCache.get(`${chunkKey(x,y)}:DETAIL`),[...completedSnapshotTasks.values()]) : undefined;
+        const canonicalSnapshot = cityScene ? canonicalCityData.current : undefined;
         const canonicalChunks = canonicalSnapshot?.chunks ?? sourceChunks;
         const canonicalCompleted = canonicalSnapshot?.completed ?? [...completedSnapshotTasks.values()];
         const canonical = cityScene ? collectCanonicalCityEntities(canonicalChunks,canonicalCompleted,true) : collected;
-        const movement = movementDependencies(canonicalChunks,canonicalCompleted,cityScene);
+        if(!cityScene||cachedMovementSnapshot!==canonicalSnapshot||cachedMovementScene!==canonicalReadyScene){
+          cachedMovement=movementDependencies(canonicalChunks,canonicalCompleted,canonicalReadyScene??cityScene);
+          cachedMovementSnapshot=canonicalSnapshot;cachedMovementScene=canonicalReadyScene;
+        }
+        const movement = cachedMovement;
         latestMovement=movement;latestCanonicalTasks=canonical.tasks;
         if(cityScene&&canonicalCityData.pending){movementPreparation.cancel();lifePreparation.cancel();}
-        host!.dataset.canonicalTaskCount = String(canonical.tasks.size);
+        host!.dataset.canonicalTaskCount = String(cityScene?sceneTasks.size:canonical.tasks.size);
         host!.dataset.canonicalDecodedChunks = String(canonicalChunks.length);
+        host!.dataset.canonicalProjectionMode = cityScene?"sparse-physical":"visual";
+        host!.dataset.canonicalTerrainCells = String(canonical.terrain.size);
         host!.dataset.canonicalSnapshotPending = String(Boolean(cityScene&&canonicalCityData.pending));
         const { districts, tasks, roads, surfaces, features, plannedSites, blockPlaques } = collected;
         // Transport exclusions are local to this render; never mutate the
@@ -3493,11 +3556,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const developmentStarted = performance.now();
         if (cityScene && developmentScene !== cityScene) {
           developmentScene = cityScene;
+          const geometryStarted=performance.now();
           developmentGeometry = createDistrictDevelopmentGeometry(cityScene);
+          host!.dataset.developmentGeometryBuildMs=(performance.now()-geometryStarted).toFixed(3);
         }
         const developmentTasks = developmentGeometry?.tasks ?? tasks;
-        attentionTasks = canonical.tasks;
-        focusDistrictIds = new Set([...canonical.districts.values()].filter(district => district.status === "ACTIVE").map(district => district.id));
+        attentionTasks = cityScene?sceneTasks:canonical.tasks;
+        focusDistrictIds = new Set([...(cityScene?sceneDistricts:canonical.districts).values()].filter(district => district.status === "ACTIVE").map(district => district.id));
         const developmentDistricts = developmentGeometry?.districts ?? districts;
         const districtStatuses = new Map<string, ChunkTaskDto["status"][]>();
         for (const task of developmentTasks.values()) {
@@ -3505,10 +3570,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           statuses.push(latestTaskStatusPatches.get(task.id)?.status ?? task.status);
           districtStatuses.set(task.districtId, statuses);
         }
+        const developmentBounds=cityResidentBounds?{minX:cityResidentBounds.minX-16,minY:cityResidentBounds.minY-16,
+          maxX:cityResidentBounds.maxX+16,maxY:cityResidentBounds.maxY+16}:undefined;
         const activity = [...developmentDistricts.values()].map(district => ({ district,
           state: districtDevelopmentState(district.status, districtStatuses.get(district.id) ?? []),
-        })).filter(item => item.state !== "HIDDEN" && item.state !== "FINISHED" && item.district.cells.length
-          && (!cityResidentBounds || taskIntersectsResidentBounds({footprint:item.district.cells},cityResidentBounds)));
+        })).filter(item => item.state !== "HIDDEN" && item.state !== "FINISHED" && (developmentGeometry
+          ? developmentGeometry.hasCells(item.district.id)&&(!developmentBounds||developmentGeometry.intersects(item.district.id,developmentBounds))
+          : item.district.cells.length&&(!cityResidentBounds||taskIntersectsResidentBounds({footprint:item.district.cells},cityResidentBounds))));
         if (activity.length && !developmentAssetsRequested) {
           developmentAssetsRequested = true;
           // The ordinary scene asset batch now owns the same prop atlas.
@@ -3543,9 +3611,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           let fenceCount = 0;
           const markers: { districtId: string; x: number; y: number; width: number; height: number }[] = [];
           for (const { district, state } of activity) {
-            for (const cell of district.cells) if (railwayIntersectsRect(railway, cell, 1, 1)) blocked.add(key(cell));
+            if(!developmentGeometry)for (const cell of district.cells) if (railwayIntersectsRect(railway, cell, 1, 1)) blocked.add(key(cell));
             const canonical = developmentGeometry?.plan(district.id, state) ?? planDistrictDevelopment(district.cells, blocked, state);
-            const safe = (prop: (typeof canonical.fences)[number]) => prop.cells.every(cell => !blocked.has(key(cell)));
+            const safe = (prop: (typeof canonical.fences)[number]) => prop.cells.every(cell => !blocked.has(key(cell))&&!railwayIntersectsRect(railway,cell,1,1));
             const plan = { fences: canonical.fences.filter(safe), marker: canonical.marker && safe(canonical.marker) ? canonical.marker : null };
             // A city-wide ceiling, independent of the number of districts.
             plan.fences = plan.fences.slice(0, Math.max(0, 48 - fenceCount));
@@ -3559,7 +3627,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             if (marker) markers.push({ districtId: district.id, x: marker.x, y: marker.y, width: marker.width, height: marker.height });
             const remaining = (developmentEmphasis.get(district.id)?.until ?? 0) - performance.now();
             if (district.status === "ACTIVE" && remaining > 0) {
-              const emphasis = drawDevelopmentEmphasis(district.cells, CELL_SIZE);
+              const emphasis = developmentGeometry?drawDevelopmentOutline(developmentGeometry.outline(district.id),CELL_SIZE)
+                :drawDevelopmentEmphasis(district.cells, CELL_SIZE);
               view.addChildAt(emphasis, 0);
               const timer = window.setTimeout(() => {
                 if (!emphasis.destroyed) emphasis.visible = false;
@@ -3775,6 +3844,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           let preparedLifeRevision=-1;
           const valid=()=>!disposed&&activeRef.current&&!document.hidden
             &&latestMovement.geometry===movement.geometry&&(!cityScene||!canonicalCityData.pending)&&mobility===existing
+            &&(!cityScene||canonicalCityData.current===canonicalSnapshot)
             &&(preparedLifeRevision<0||latestMovement.life===preparedLifeRevision);
           let preparationStarted=0;
           // Quality changes population limits, not physical geometry. Retain
@@ -3782,9 +3852,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           void movementPreparation.request(String(movement.geometry),async signal=>{
             preparationStarted=performance.now();
             host!.dataset.movementPreparing="true";
-            const {roads,surfaces,terrain,tasks,features}=canonical;
-            const decorations=excludeTransportDecorations(canonical.decorations,canonical.tasks);
-            const walk=await buildCityWalkNetworkAsync({roads,terrain:[...terrain.values()],surfaces:[...surfaces.values()],
+            const {roads,surfaces,tasks,features}=canonical;
+            const terrain=scene?canonicalTerrain:canonical.terrain;
+            const decorations=excludeTransportDecorations(scene?new Map([...canonical.decorations,...collected.decorations]):canonical.decorations,canonical.tasks);
+            const walk=await buildCityWalkNetworkAsync({roads,terrain:scene?sourceChunks.flatMap(chunk=>chunk.terrain):[...canonical.terrain.values()],surfaces:[...surfaces.values()],
+              sampleTerrain:scene?cell=>terrain.get(key(cell))?.terrain:undefined,
               tasks:[...tasks.values()],features:[...features.values()],decorations:[...decorations.values()]},{signal});
             const existingCrosswalks=new Set(walk.crosswalks);
             addTransportWalkways(scene,roads,walk.walkGraph,walk.crosswalks,walk.activityCells,walk.blockedCells);
@@ -3860,7 +3932,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           host!.dataset.parkingLots=String(parking.length);
           movementInput=latestInput;
           syncTransportPassengers();
-          mobilityPostOrigins=postOrigins;signalPresentation=signalPlan;animalRoutes=routes;
+          mobilityPostOrigins=postOrigins;signalPresentation=signalPlan;
           host!.dataset.mobilityPostPathConflicts = String([...mobilityPostOrigins.values()]
             .filter(origin => roads.has(key(origin)) || blockedCells.has(key(origin))).length);
           mobilityRoads = roads;
@@ -3870,22 +3942,15 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           // The owner validated both revisions immediately before this atomic
           // turn; adoption and life publication cannot interleave with an event.
           commitLifeSites(life,()=>!disposed&&latestMovement.geometry===movement.geometry);
-          animals = animals.filter(agent => {
-            if (animalGraph.has(key(agent.current)) && animalGraph.has(key(agent.next))) {
-              agent.graph = animalGraph;
-              return true;
-            }
-            destroyAnimal(agent);
-            return false;
-          });
-          const candidates = [...animalGraph.values()];
+          animalPreparation.cancel();animalSources=sourceChunks;
+          adoptAnimalGround(animalGraph,routes);
           resizeAnimals = () => {
             const occupied = new Set(animals.map(agent => key(agent.current)));
-            const limit = Math.min(worldDetailProfile(economy).animals, Math.floor(animalGraph.size / 1400));
+            const limit = Math.min(worldDetailProfile(economy).animals, Math.floor(residentAnimalGraph.size / 1400));
             for (const animal of animals.splice(limit)) destroyAnimal(animal);
-            for (let attempt = 0; animals.length < limit && attempt < Math.min(64, candidates.length); attempt++) {
+            for (let attempt = 0; animals.length < limit && attempt < Math.min(64, animalCandidates.length); attempt++) {
               const picked = nextSeededRandom(spawnState); spawnState = picked.state;
-              const current = candidates[Math.floor(picked.value * candidates.length)]!;
+              const current = animalCandidates[Math.floor(picked.value * animalCandidates.length)]!;
               if (occupied.has(key(current))) continue;
               const planned = animalRoutes(current, spawnState, 9);
               spawnState = planned.randomState;
@@ -3896,7 +3961,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
               const view = sprite(microAmbientSprite("animal", variant, microDirection(current, next)).url, position.x, position.y);
               view.anchor.set(0.5);
               worldObjectLayer.addChild(registerWorldObject(view, "AGENT"));
-              animals.push({ id: `animal-${nextAgentId++}`, view, graph: animalGraph, current, next,
+              animals.push({ id: `animal-${nextAgentId++}`, view, graph: residentAnimalGraph, current, next,
                 progress: 0, speed: 0.00065 + (attempt % 3) * 0.00008, variant, steps: 0,
                 randomState: planned.randomState, route: planned.route, routeIndex: 1 });
               occupied.add(key(current));
@@ -3915,6 +3980,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           host!.dataset.movementPrepareMs=(performance.now()-preparationStarted).toFixed(3);
           host!.dataset.movementCommitMs=(performance.now()-commitStarted).toFixed(3);
           host!.dataset.movementPreparationCommits=String(Number(host!.dataset.movementPreparationCommits??0)+1);
+          if(cityScene)scheduleEntityReconcile(false);
           },valid).catch(error=>{
             if(disposed||!activeRef.current||latestMovement.geometry!==movement.geometry)return;
             movementPreparationFailed=true;
@@ -3936,7 +4002,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           if ((!cityScene||!canonicalCityData.pending)&&movementLife!==movement.life&&prepareLifeSites&&mobility) {
             const currentMobility=mobility,geometry=movementGeometry,prepare=prepareLifeSites;
             const valid=()=>!disposed&&activeRef.current&&!document.hidden&&!movementPreparation.busy
-              &&mobility===currentMobility&&latestMovement.geometry===geometry&&(!cityScene||!canonicalCityData.pending);
+              &&mobility===currentMobility&&latestMovement.geometry===geometry&&(!cityScene||!canonicalCityData.pending)
+              &&(!cityScene||canonicalCityData.current===canonicalSnapshot);
             let revision=-1;
             host!.dataset.lifePreparing="true";
             void lifePreparation.request(`${geometry}:${movement.life}`,async signal=>{
@@ -3956,6 +4023,21 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           for (const entry of trafficSignalViews.values()) entry.view.visible = false;
         }
         for (const animal of animals) animal.view.visible = agentsVisible;
+        if(cityScene&&agentsVisible&&mobility&&!movementPreparation.busy&&!canonicalCityData.pending
+          &&(animalSources.length!==sourceChunks.length||sourceChunks.some((chunk,index)=>animalSources[index]!==chunk))){
+          animalSources=sourceChunks;
+          const revision=++animalRevision;
+          void animalPreparation.request(String(revision),async signal=>{
+            const local=await buildCityWalkNetworkAsync({terrain:sourceChunks.flatMap(chunk=>chunk.terrain),roads:collected.roads,
+              surfaces:[...collected.surfaces.values()],tasks:[...collected.tasks.values()],features:[...collected.features.values()],
+              decorations:[...excludeTransportDecorations(collected.decorations,collected.tasks).values()]},{signal});
+            return {graph:local.animalGraph,routes:await createAgentRoutePlannerAsync(local.animalGraph,{signal})};
+          },({graph,routes})=>{adoptAnimalGround(graph,routes);resizeAnimals?.();sortWorldObjects();},
+          ()=>!disposed&&activeRef.current&&!document.hidden&&revision===animalRevision&&!movementPreparation.busy
+            &&canonicalCityData.current===canonicalSnapshot).catch(error=>{
+            if(!disposed&&revision===animalRevision){animalSources=[];console.error("Resident animal preparation failed",error);}
+          });
+        }
         reportMobility();
         sortWorldObjects();
         if (rebuildMovement) host!.dataset.movementRebuilds = String(Number(host!.dataset.movementRebuilds ?? 0) + 1);
@@ -3976,7 +4058,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const key = dataKey(cacheKey, lod);
         chunkDataCache.delete(key);
         chunkDataCache.set(key, chunk);
-        while (chunkDataCache.size > Math.max(CHUNK_DATA_CACHE_LIMIT, citySceneChunkCount)) {
+        while (chunkDataCache.size > Math.max(CHUNK_DATA_CACHE_LIMIT, desiredKeys.size)) {
           const oldest = chunkDataCache.keys().next().value as string | undefined;
           if (!oldest) break;
           chunkDataCache.delete(oldest);
@@ -4009,6 +4091,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         return cached;
       };
       if (focusCityId) {
+        host.dataset.cityBootstrapMs = (performance.now() - cityBootstrapStartedAt).toFixed(3);
         const scene = rendererAttempt === 0 && initialCitySceneRef.current?.city.id === focusCityId
           ? initialCitySceneRef.current
           : await loadCityScene(countryId, focusCityId, initialWorldRevisionRef.current, rendererAttempt > 0);
@@ -4016,6 +4099,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           throw new Error("Сервер вернул несовместимую сцену города");
         }
         cityScene = scene;
+        exposeSceneResponse(scene);
         if(initialViewRef.current){const pose=initialViewRef.current;
           world.scale.set(pose.scale);cameraTargetScale=pose.scale;cameraZoomAnchor=undefined;
           world.position.set(app.screen.width/2-pose.center.x*CELL_SIZE*pose.scale,app.screen.height/2-pose.center.y*CELL_SIZE*pose.scale);
@@ -4043,6 +4127,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         host.dataset.cameraPaddingAtlasPreloadMs = (performance.now() - preloadStarted).toFixed(2);
         host.dataset.cameraPaddingAtlasFamilies = String(cityTerrainKinds.length);
         if (disposed) return;
+        const installStarted = performance.now();
         installCityRoadPadding(cityScene);
         installCompletedSnapshotTasks(cityScene);
         citySceneChunkCount = cityScene.chunks.length;
@@ -4051,9 +4136,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         host!.dataset.citySceneRevision = cityScene.sceneRevision;
         host!.dataset.citySceneChunks = String(citySceneChunkCount);
         host!.dataset.panNetworkRequests = "0";
+        host.dataset.citySceneInstallMs = (performance.now() - installStarted).toFixed(3);
+        host.dataset.citySceneInstalledAtMs = (performance.now() - cityBootstrapStartedAt).toFixed(3);
+        sceneRefresh.commit(cityScene);
       }
-      const sceneRefresh = new BoundedMapRefresh();
-      startupDisposers.push(() => sceneRefresh.dispose());
       let sceneDirty = false;
       let sceneDirtyMovement = false;
       let sceneRenderRequest = 0;
@@ -4061,20 +4147,12 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       const sceneChangedKeys = new Set<string>();
       const refreshCityScene = (): Promise<void> => {
         if (!focusCityId) return Promise.resolve();
-        return sceneRefresh.request(async (signal) => {
-          if (disposed) return;
-          const response: ApiResult<CitySceneDto> = await apiWithMetrics<CitySceneDto>(`/api/countries/${countryId}/cities/${focusCityId}/scene`, {
-            signal,
-            cache: "no-cache",
-            headers: { accept: `application/vnd.tasktopia.city-scene+json; version=${CITY_SCENE_SCHEMA_VERSION}` },
-          });
-          if (disposed || signal.aborted) return;
-          if (response.data.schemaVersion !== CITY_SCENE_SCHEMA_VERSION || response.data.city.id !== focusCityId || response.data.lod !== "DETAIL") {
-            throw new Error("Сервер вернул несовместимую сцену города");
-          }
+        return sceneRefresh.request((scene) => {
+          if (disposed) return false;
           const previousScene = cityScene;
-          const changes = previousScene ? citySceneChanges(previousScene,response.data) : undefined;
-          cityScene = response.data;
+          const changes = previousScene ? citySceneChanges(previousScene,scene) : undefined;
+          cityScene = scene;
+          exposeSceneResponse(scene);
           if (!changes || changes.paddingChanged) installCityRoadPadding(cityScene);
           syncCityAirServices();
           installCompletedSnapshotTasks(cityScene);
@@ -4148,13 +4226,20 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           return previousStage !== undefined && (previousStage >= 3) !== (task.stage >= 3);
         });
       };
-      const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal, terrainSamples?: Uint8Array): Promise<ChunkDto> => {
+      const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal, terrainSamples?: Uint8Array,physicalOnly=false): Promise<ChunkDto> => {
         const materializeStartedAt = performance.now();
         let candidate = patchChunkPayloadTaskStatuses(payload, latestTaskStatusPatches);
         let realtimeDecorationsRematerialized = crossesDecorationStage(payload, candidate);
         let materialized: ChunkDto;
         while (true) {
-          materialized = await chunkMaterializer.materialize(candidate, signal, terrainSamples);
+          materialized = await (physicalOnly?canonicalMaterializer:chunkMaterializer).materialize(candidate, signal, terrainSamples,physicalOnly);
+          const timing=chunkMaterializationMetrics(materialized),prefix=physicalOnly?"physical":"visual";
+          for(const [name,value] of [["WorkerQueue",timing?.queueMs],["WorkerRoundTrip",timing?.roundTripMs],["WorkerCompute",timing?.computeMs]] as const){
+            if(value===undefined)continue;
+            const id=`${prefix}${name}`;let metric=chunkPhaseMetrics.get(id);
+            if(!metric){metric=new RollingPerformanceMetric();chunkPhaseMetrics.set(id,metric);}
+            exposeRollingMetric(host!,id,metric,value);
+          }
           const latest = patchChunkPayloadTaskStatuses(candidate, latestTaskStatusPatches);
           if (latest === candidate) break;
           // A status event can cross the stage-3 frontage-decoration threshold
@@ -4167,7 +4252,44 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         if (realtimeDecorationsRematerialized) host!.dataset.realtimeDecorations = "rematerialized";
         const duration = performance.now() - materializeStartedAt;
         exposeRollingMetric(host!, "chunkMaterialize", chunkMaterializeMetric, duration);
+        const phase=physicalOnly?"physicalMaterialize":"visualMaterialize";
+        let metric=chunkPhaseMetrics.get(phase);if(!metric){metric=new RollingPerformanceMetric();chunkPhaseMetrics.set(phase,metric);}
+        exposeRollingMetric(host!,phase,metric,duration);
         return materialized;
+      };
+      const prepareCanonicalCity=(force=false):void=>{
+        const scene=cityScene;
+        if(!scene||disposed||!activeRef.current||document.hidden)return;
+        // This flag belongs only to the real CITY atomic app.render below.
+        // Seed/placeholder paints and a forced retry must not compete with it.
+        if(!firstCityAtomicPresented){host!.dataset.canonicalStartDeferred="true";return;}
+        if(!force&&canonicalRequestedScene===scene)return;
+        canonicalRequestedScene=scene;
+        const started=performance.now();
+        host!.dataset.canonicalStartedAfterAtomic="true";
+        host!.dataset.canonicalStartSinceBootstrapMs=(started-cityBootstrapStartedAt).toFixed(3);
+        let projected=0;
+        const request=++canonicalRequestVersion;
+        const payloads=scene.chunks.map(payload=>
+          chunkPayloadCache.get(dataKey(chunkKey(payload.chunkX,payload.chunkY),"DETAIL"))??payload);
+        host!.dataset.canonicalSnapshotPending="true";
+        void canonicalCityData.prepare(`${scene.sceneRevision}:${request}`,payloads,[...completedSnapshotTasks.values()],
+          (payload,signal)=>{projected++;return materializePayload(payload,signal,undefined,true);}).then(committed=>{
+          if(!committed||disposed||cityScene!==scene||request!==canonicalRequestVersion)return;
+          canonicalReadyScene=scene;
+          canonicalTerrainPages=new Map(payloads.map(payload=>[chunkKey(payload.chunkX,payload.chunkY),payload]));
+          host!.dataset.canonicalPrepareMs=(performance.now()-started).toFixed(3);
+          if(force&&projected)host!.dataset.realtimeDecorations="rematerialized";
+          if(canonicalProjectionFailed){canonicalProjectionFailed=false;movementPreparationFailed=false;delete host!.dataset.loadError;setMapLoadError(undefined);}
+          scheduleEntityReconcile(false);
+        }).catch(error=>{
+          if(disposed||cityScene!==scene||request!==canonicalRequestVersion)return;
+          // Keep this failed request sticky. Camera/asset reconciliation must
+          // not turn an unavailable worker into an unbounded implicit retry.
+          canonicalRequestedScene=scene;canonicalProjectionFailed=true;movementPreparationFailed=true;host!.dataset.loadError="true";
+          setMapLoadError("Не удалось подготовить движение в городе. Повторите загрузку.");
+          console.error("City physical projection failed",error);
+        });
       };
       const fetchChunkData = async (chunkX: number, chunkY: number, lod: MapLod): Promise<ChunkDto> => {
         const cacheKey = chunkKey(chunkX, chunkY);
@@ -4303,7 +4425,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         ]));
         while (valid()) {
           const loadedAssets = requiredEntityAssets(candidates.values(), lod, residentCompletedTasks()).sort();
+          const assetsStarted=performance.now();
           await assetLease.load(loadedAssets, loadTextureAssets);
+          if(!firstCityAtomicPresented)host!.dataset.cityEntityAssetsMs=String(Number(host!.dataset.cityEntityAssetsMs??0)+performance.now()-assetsStarted);
           host!.dataset.sceneAssets = String(assetLease.size);
           host!.dataset.leasedAssets = String(leasedAssetCount());
           if (!valid()) return;
@@ -4317,8 +4441,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             candidates = latest;
             continue;
           }
+          const renderStarted=performance.now();
           for (const [cacheKey, chunk] of latest) publishEntityChunk(cacheKey, chunk, lod);
           flushEntityReconcile(rebuildMovement);
+          if(!firstCityAtomicPresented)host!.dataset.cityEntityRenderMs=(performance.now()-renderStarted).toFixed(3);
           host!.dataset.citySceneEntityChunks = String(latest.size);
           host!.dataset.citySceneEntityCommits = String(Number(host!.dataset.citySceneEntityCommits ?? 0) + 1);
           return;
@@ -4431,7 +4557,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           world.position.set(pose.x,pose.y);world.scale.set(pose.scale);clampCamera();
           host!.dataset.cameraPresentationCommits=String(Number(host!.dataset.cameraPresentationCommits??0)+1);
         }
+        const atomicRenderStarted=performance.now();
         app.render();
+        firstCityAtomicPresented=true;
+        host!.dataset.cityAtomicRenderMs=(performance.now()-atomicRenderStarted).toFixed(3);
+        host!.dataset.cityAtomicSinceBootstrapMs=(performance.now()-cityBootstrapStartedAt).toFixed(3);
         host!.dataset.cameraPaddingInitialChunks = String(paddingTerrain.size);
         paintedFrame = true;
         host!.dataset.citySceneCommit = "atomic";
@@ -4439,17 +4569,18 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         setFirstFrameReady(true);
         updateAnimation();
         preloadAmbientAssets();
+        prepareCanonicalCity();
         paddingPrewarmFrame = requestAnimationFrame(() => {
           paddingPrewarmFrame = 0;
           if (!disposed && activeRef.current) refreshCameraPadding();
         });
       };
-      let decodedCityRevision: string | undefined;
       const drainVisibleLoads = async (): Promise<void> => {
         if (loadRunning || !activeRef.current) return;
         loadRunning = true;
         try {
           while (!disposed && activeRef.current) {
+            const iterationStartedAt=performance.now();
             const generation = loadGeneration;
             const lod = desiredLod;
             const wanted = [...desiredWanted];
@@ -4489,7 +4620,6 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 }
                 return pending;
               };
-              const canonicalScene=cityScene&&decodedCityRevision!==cityScene.sceneRevision?cityScene:undefined;
               // The center-first plan now flows through fetch -> worker decode
               // -> assets -> paint independently. One slow background response
               // can no longer hold the first visible chunk behind a viewport
@@ -4573,22 +4703,17 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                   }
                 }
               };
-              const residentWork=Promise.all(groundPlan.critical.map(prepareResident));
+              const residentWork=Promise.all(groundPlan.critical.map(prepareResident)).then(()=>{
+                if(initialGroundSplit&&iterationCurrent())host!.dataset.cityVisibleGroundMs=(performance.now()-iterationStartedAt).toFixed(3);
+              });
               // Keep every halo entity source and its authored overhang ready;
               // only invisible ground textures wait until the first paint.
-              const residentDataWork=initialGroundSplit?Promise.all(wanted.map(([x,y])=>readData(x,y,lod))):undefined;
-              // Give the resident pipeline the first worker slots and overlap
-              // its assets/bakes with the remaining canonical pages. Both are
-              // still required before the coherent entity/first-frame commit.
-              // Share each data job and worker slot with resident consumers;
-              // graphics remain owned by this iteration even if data outlives it.
-              const canonicalWork=canonicalScene?Promise.all(canonicalScene.chunks.map(payload=>
-                readData(payload.chunkX,payload.chunkY,"DETAIL"))):undefined;
-              await Promise.all([residentWork,residentDataWork,canonicalWork]);
-              if(canonicalScene){
-                if(!iterationCurrent()||canonicalScene!==cityScene){discardPreparedGrounds();continue;}
-                decodedCityRevision=canonicalScene.sceneRevision;
-              }
+              const residentDataWork=initialGroundSplit?Promise.all(wanted.map(([x,y])=>readData(x,y,lod))).then(()=>{
+                if(iterationCurrent())host!.dataset.cityVisualSourcesMs=(performance.now()-iterationStartedAt).toFixed(3);
+              }):undefined;
+              // Only visible/halo visual pages belong to this commit. Complete
+              // physical topology is prepared and published by its own owner.
+              await Promise.all([residentWork,residentDataWork]);
 
               if (!iterationCurrent()) {
                 discardPreparedGrounds();
@@ -4668,7 +4793,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 presentedCityKeys = new Set(active);
                 presentFirstCityFrame();
                 // This is the existing bounded queue, started after the exact
-                // visible frame. Canonical data and all halo entities are whole.
+                // visible frame. All halo entity sources are whole.
                 await Promise.all(groundPlan.halo.map(prepareResident));
                 if (!iterationCurrent()) {discardPreparedGrounds();continue;}
                 if (lodTransition) for (const coordinate of groundPlan.halo) {
@@ -4757,6 +4882,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
             host!.dataset.residentChunks = String(chunks.size);
             host!.dataset.groundCache = String(groundContainers.size);
             host!.dataset.chunkDataCache = String(chunkDataCache.size);
+            host!.dataset.materializedResidentChunks = String(chunkDataCache.size);
             host!.dataset.chunkPayloadCache = String(chunkPayloadCache.size);
             host!.dataset.chunkRange = renderedRange;
             host!.dataset.mapLod = currentLod.toLowerCase();
@@ -4782,6 +4908,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         // Camera gestures must not dismiss a failed authoritative update by
         // treating the old in-memory scene as a successful reload.
         if (cityScene && sceneDirty) return;
+        prepareCanonicalCity();
         if (!options.isRetry) {
           window.clearTimeout(loadRetryTimer);
           loadRetryAttempt = 0;
@@ -4847,7 +4974,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           const separator = key.lastIndexOf(":");
           const cacheKey = key.slice(0, separator);
           const lod = key.slice(separator + 1) as MapLod;
-          if (lod === nextLod && (cityScene || activeKeys.has(cacheKey))) continue;
+          if (lod === nextLod && activeKeys.has(cacheKey)) continue;
           pending.controller.abort();
           pendingChunks.delete(key);
         }
@@ -4872,6 +4999,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           if (disposed || !cityScene || request !== sceneRenderRequest) return;
           sceneDirty = false;
           if (allowTransportReuse && previousScene && sameCitySceneContent(previousScene,cityScene)) {
+            prepareCanonicalCity();
             sceneDirtyMovement = false;
             host.dataset.transportOnlyRefreshes = String(Number(host.dataset.transportOnlyRefreshes ?? 0) + 1);
             return;
@@ -4898,6 +5026,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           updateAnimation();
           if (value) {
             applyPreferences();
+            prepareCanonicalCity();
             if (cityScene && sceneDirty) {
               // First-frame activation can run in the same React effect pass
               // as transport invalidation. Preserve the in-flight request's
@@ -4911,6 +5040,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           } else {
             if(movementPreparation.busy){movementPreparation.cancel();reconcilePending=true;host.dataset.movementPreparing="false";}
             if(lifePreparation.busy){lifePreparation.cancel();reconcilePending=true;host.dataset.lifePreparing="false";}
+            animalPreparation.cancel();animalSources=[];
+            canonicalCityData.cancel();canonicalRequestedScene=undefined;
             stopFollowing();flushCityView();
             sceneRenderRequest++;
             sceneRefreshPending = false;
@@ -5004,6 +5135,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 stage: event.stage,
                 worldVersion: event.worldVersion,
               });
+              const task=sceneTasks.get(event.taskId);
+              if(task)sceneTasks.set(event.taskId,{...task,status:event.status as ChunkTaskDto["status"],progress:event.progress,stage:event.stage});
             }
             while (latestTaskStatusPatches.size > TASK_STATUS_PATCH_LIMIT) {
               const oldest = latestTaskStatusPatches.keys().next().value as string | undefined;
@@ -5028,10 +5161,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
               const separator = payloadKey.lastIndexOf(":");
               const cacheKey = payloadKey.slice(0, separator);
               const lod = payloadKey.slice(separator + 1) as MapLod;
-              // CITY simulation owns every page. Keep the previous decoded
-              // page until its replacement is ready, even outside GPU scope.
-              if(!cityScene)chunkDataCache.delete(payloadKey);
-              if (cityScene || lod === currentLod && chunks.has(cacheKey) && desiredKeys.has(cacheKey)) {
+              chunkDataCache.delete(payloadKey);
+              if (lod === currentLod && chunks.has(cacheKey) && desiredKeys.has(cacheKey)) {
                 decorationRefreshes.set(cacheKey, { payload: next, lod });
               }
             }
@@ -5043,6 +5174,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
               const next = patchChunkTaskStatuses(chunk, latestTaskStatusPatches);
               if (next !== chunk) {chunkDataCache.set(cacheKey, next);patched=true;}
             }
+            if(cityScene)prepareCanonicalCity(true);
             if (patched || decorationRefreshes.size > 0) {
               // A status transition can point at a different authored stage.
               // Use the same entity-only retry path as ordinary streaming so
@@ -5053,8 +5185,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
                 void Promise.all([...decorationRefreshes].map(async([cacheKey,refresh])=>({cacheKey,refresh,
                   chunk:await materializePayload(refresh.payload)}))).then(prepared=>{
                   if(disposed||snapshot!==cityScene)return;
-                  // Publish a complete data batch before reconciling physics;
-                  // only viewport pages may allocate sprite views or assets.
+                  // Only resident visual pages allocate sprites and textures.
+                  // Complete physical projection has a separate atomic owner.
                   for(const {cacheKey,refresh,chunk} of prepared) {
                     const current=chunkDataCache.get(dataKey(cacheKey,refresh.lod));
                     if(current&&current.worldVersion>chunk.worldVersion)continue;
@@ -5163,6 +5295,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           void loadVisible({ forceKeys, rebuildMovement });
         },
         retry() {
+          if(cityScene&&canonicalCityData.pending){
+            movementPreparationFailed=false;setMapLoadError(undefined);prepareCanonicalCity(true);
+          }
           const retry=cityRetryPlan({hasScene:!!cityScene,sceneDirty,sceneDirtyMovement,movementFailed:movementPreparationFailed});
           if(retry.kind==="SCENE"){
             movementPreparationFailed=false;
@@ -5232,11 +5367,14 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         if (document.hidden) {
           if(movementPreparation.busy){movementPreparation.cancel();reconcilePending=true;host.dataset.movementPreparing="false";}
           if(lifePreparation.busy){lifePreparation.cancel();reconcilePending=true;host.dataset.lifePreparing="false";}
+          animalPreparation.cancel();animalSources=[];
+          canonicalCityData.cancel();canonicalRequestedScene=undefined;
           stopFollowing();
           sceneRenderRequest++; sceneRefreshPending = false; sceneRefresh.cancel();
           silenceCityAudio(); clearRoadEvent(); clearEveryday(); clearTaskActivity();
           roadWindow = Math.floor((readServerWorldTime() ?? Date.now()) / 90_000);
         } else {
+          prepareCanonicalCity();
           if (cityScene && sceneDirty && !sceneRefreshPending) refreshSceneAndRender(sceneDirtyMovement);
           updateCinematics();
           if(reconcilePending)scheduleEntityReconcile(false);

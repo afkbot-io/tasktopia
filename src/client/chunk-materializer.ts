@@ -1,12 +1,15 @@
 import type { ChunkDto, ChunkPayloadDto } from "../shared/contracts";
 import workerAssetUrl from "./chunk-materializer-worker.ts?worker&url";
 
-type WorkerResponse = { id: number; chunk?: ChunkDto; error?: string };
+type WorkerResponse = { id: number; chunk?: ChunkDto; error?: string; computeMs?: number };
+export type ChunkMaterializationMetrics = { queueMs: number; roundTripMs: number; computeMs?: number };
+const materializationMetrics = new WeakMap<ChunkDto, ChunkMaterializationMetrics>();
+export const chunkMaterializationMetrics = (chunk: ChunkDto) => materializationMetrics.get(chunk);
 
 export type ChunkWorker = {
   addEventListener(type: "message", listener: (event: MessageEvent<WorkerResponse>) => void): void;
   addEventListener(type: "error", listener: (event: ErrorEvent) => void): void;
-  postMessage(message: { id: number; payload: ChunkPayloadDto; terrainSamples?: Uint8Array }): void;
+  postMessage(message: { id: number; payload: ChunkPayloadDto; terrainSamples?: Uint8Array; physicalOnly?: boolean }): void;
   terminate(): void;
 };
 
@@ -16,11 +19,14 @@ type MaterializationRequest = {
   id: number;
   payload: ChunkPayloadDto;
   terrainSamples?: Uint8Array;
+  physicalOnly?: boolean;
   resolve(chunk: ChunkDto): void;
   reject(error: Error): void;
   signal?: AbortSignal;
   abort?: () => void;
   settled: boolean;
+  createdAt: number;
+  dispatchedAt?: number;
 };
 
 type WorkerSlot = {
@@ -94,7 +100,16 @@ export class ChunkMaterializer {
       slot.active = undefined;
       this.replacementAttempts = 0;
       this.workerFailureCount = 0;
-      if (event.data.chunk) this.finish(request, () => request.resolve(event.data.chunk!));
+      if (event.data.chunk) this.finish(request, () => {
+        const dispatchedAt = request.dispatchedAt ?? request.createdAt;
+        const computeMs = event.data.computeMs;
+        materializationMetrics.set(event.data.chunk!, {
+          queueMs: Math.max(0, dispatchedAt - request.createdAt),
+          roundTripMs: Math.max(0, performance.now() - dispatchedAt),
+          ...(typeof computeMs === "number" && Number.isFinite(computeMs) && computeMs >= 0 ? { computeMs } : {}),
+        });
+        request.resolve(event.data.chunk!);
+      });
       else this.finish(request, () => request.reject(new Error(event.data.error ?? "Chunk materialization failed")));
       this.dispatch();
     });
@@ -137,9 +152,10 @@ export class ChunkMaterializer {
       }
       if (!request) return;
       slot.active = request;
+      request.dispatchedAt = performance.now();
       slot.timeout = setTimeout(() => this.failWorker(slot, new Error("Chunk materialization timed out")), 15_000);
       try {
-        slot.worker.postMessage({ id: request.id, payload: request.payload, terrainSamples: request.terrainSamples });
+        slot.worker.postMessage({ id: request.id, payload: request.payload, terrainSamples: request.terrainSamples, physicalOnly: request.physicalOnly });
       } catch (error) {
         this.failWorker(slot, error instanceof Error ? error : new Error("Chunk materialization worker failed"));
         return;
@@ -156,7 +172,7 @@ export class ChunkMaterializer {
       const active = request;
       this.inlineActive = active;
       void import("../shared/world-chunk-payload")
-        .then(({ materializeChunkPayload }) => materializeChunkPayload(active.payload, active.terrainSamples))
+        .then(({ materializeChunkPayload }) => materializeChunkPayload(active.payload, active.terrainSamples, active.physicalOnly))
         .then(
           (chunk) => this.finish(active, () => active.resolve(chunk)),
           (error: unknown) => this.finish(active, () => active.reject(error instanceof Error ? error : new Error("Chunk materialization failed"))),
@@ -196,12 +212,12 @@ export class ChunkMaterializer {
     else this.replacementTimer = setTimeout(replace, delay);
   }
 
-  materialize(payload: ChunkPayloadDto, signal?: AbortSignal, terrainSamples?: Uint8Array): Promise<ChunkDto> {
+  materialize(payload: ChunkPayloadDto, signal?: AbortSignal, terrainSamples?: Uint8Array, physicalOnly = false): Promise<ChunkDto> {
     if (this.destroyed) return Promise.reject(new DOMException("Chunk materializer disposed", "AbortError"));
     if (signal?.aborted) return Promise.reject(abortError());
     return new Promise((resolve, reject) => {
       const request: MaterializationRequest = {
-        id: this.nextRequestId++, payload, terrainSamples, resolve, reject, signal, settled: false,
+        id: this.nextRequestId++, payload, terrainSamples, physicalOnly, resolve, reject, signal, settled: false, createdAt: performance.now(),
       };
       const abort = () => {
         if (request.settled) return;

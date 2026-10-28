@@ -1,5 +1,7 @@
 import { expect,test,type Page,type Locator,type TestInfo } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
+import { CITY_SCENE_LOAD_TIMEOUT_MS } from "../../src/client/city-scene-deadline";
 import type { BootstrapDto,RealtimeEvent } from "../../src/shared/contracts";
 import { chunkPayloadContentHash } from "../../src/server/world/chunk-payload-hash";
 import { openMapCity } from "./map-navigation";
@@ -101,7 +103,7 @@ test("a hung authoritative refresh expires without destroying the city and a rea
   hold=true;
   await page.evaluate(()=>(window as unknown as {qaDisconnectWorld():void}).qaDisconnectWorld());
   await expect.poll(()=>reads,{timeout:20_000}).toBeGreaterThan(1);
-  await expect(page.getByRole("alert")).toContainText("Не удалось обновить город",{timeout:25_000});
+  await expect(page.getByRole("alert")).toContainText("Не удалось обновить город",{timeout:CITY_SCENE_LOAD_TIMEOUT_MS+5_000});
   expect(await identity!.evaluate(node=>node.isConnected)).toBe(true);
   await expect(host).toHaveAttribute("data-city-scene-commit","atomic");
   hold=false;release();
@@ -197,7 +199,7 @@ test("same render content advances publication fences without decoding, rebaking
   let captured:CitySceneDto|undefined,promote=false;
   await page.route("**/api/countries/*/cities/*/scene",async route=>{
     const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}});
-    const next=await response.json() as CitySceneDto;
+    const next=decodeCitySceneWire(await response.json());
     if(!captured)captured=next;
     if(promote){next.sceneRevision+="-publication-only";next.chunks=next.chunks.map(chunk=>({...chunk,publishedVersion:chunk.publishedVersion+1}));}
     await route.fulfill({response,json:next});
@@ -319,11 +321,11 @@ test("authoritative resync keeps a ready CITY canvas and reuses identical physic
   expect(await host.getAttribute("data-everyday-compiles")).toBe(life);
 });
 
-test("an offscreen frontage stage update preserves every canonical decoded page",async({page})=>{
+test("an offscreen frontage update replaces compact physics without retaining offscreen visual terrain",async({page})=>{
   test.skip(process.env.E2E_CITY_200!=="true","Requires the owned dense-city fixture");
   await page.setViewportSize({width:390,height:844});
   const sceneResponse=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith("/scene"));
-  const host=await enterCity(page),scene=await (await sceneResponse).json() as CitySceneDto;
+  const host=await enterCity(page),scene=decodeCitySceneWire(await (await sceneResponse).json());
   const bootstrap=await (await page.request.get("/api/bootstrap")).json() as BootstrapDto;
   await expect(host).toHaveAttribute("data-mobility-ready","true");
   await expect.poll(()=>page.evaluate(()=>(window as unknown as {qaWorldSockets():number}).qaWorldSockets())).toBeGreaterThan(0);
@@ -344,6 +346,9 @@ test("an offscreen frontage stage update preserves every canonical decoded page"
   await expect(host).toHaveAttribute("data-realtime-decorations","rematerialized");
   await expect.poll(async()=>Number(await host.getAttribute("data-chunk-materialize-samples"))).toBeGreaterThan(decoded);
   await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false");
+  await expect(host).toHaveAttribute("data-canonical-projection-mode","sparse-physical");
+  await expect(host).toHaveAttribute("data-canonical-terrain-cells","0");
+  expect(Number(await host.getAttribute("data-chunk-data-cache"))).toBeLessThan(scene.chunks.length);
   expect(await host.getAttribute("data-ground-rebuilds")).toBe(ground);
 });
 
@@ -381,7 +386,11 @@ test("dense CITY keeps canonical tasks while phone rendering follows viewport an
 
 test("focused keyboard camera controls preserve canonical data and ignore task dialogs",async({page})=>{
  const reads:string[]=[];page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+ const sceneResponse=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith("/scene"));
  const host=await enterCity(page),canvas=host.getByLabel("Интерактивная карта города"),identity=await canvas.elementHandle();
+ const scene=decodeCitySceneWire(await (await sceneResponse).json());
+ const searchable=[...scene.chunks.flatMap(chunk=>chunk.tasks),...scene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)][0];
+ expect(searchable).toBeDefined();
  const canonical=await host.getAttribute("data-canonical-task-count"),before=Number(await host.getAttribute("data-camera-world-x"));
  await canvas.focus();await page.keyboard.press("ArrowRight");
  await expect.poll(async()=>Number(await host.getAttribute("data-camera-world-x"))).toBeGreaterThan(before);
@@ -392,7 +401,7 @@ test("focused keyboard camera controls preserve canonical data and ignore task d
  expect(await host.getAttribute("data-canonical-task-count")).toBe(canonical);
  expect(await identity!.evaluate(node=>node.isConnected)).toBe(true);
  expect(reads.filter(path=>path.endsWith("/scene"))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
- const search=page.getByLabel("Поиск здания по номеру или названию");await search.fill("1");await page.keyboard.press("ArrowRight");
+ const search=page.getByLabel("Поиск здания по номеру или названию");await search.fill(String(searchable!.taskNumber));await page.keyboard.press("ArrowRight");
  const stationary=await host.getAttribute("data-camera-world-x");await page.keyboard.press("Home");expect(await host.getAttribute("data-camera-world-x")).toBe(stationary);
  await page.locator(".task-search-results").getByRole("option").first().click();await expect(page.locator("#task-title")).toBeVisible();
  const inDialog=await host.getAttribute("data-camera-world-x");await page.keyboard.press("ArrowLeft");await page.keyboard.press("Home");
@@ -451,7 +460,7 @@ test("a newer defect summary during held life preparation wins without rebuildin
  let incident:"BASE"|"ACTIVE"|"RESOLVED"="BASE",changedTaskId="",revision=0;
  await page.route("**/api/countries/*/cities/*/scene",async route=>{
    const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}});
-   const next=await response.json() as CitySceneDto;
+   const next=decodeCitySceneWire(await response.json());
    if(incident!=="BASE"){
      const patch=(task:CitySceneDto["chunks"][number]["tasks"][number])=>task.id===changedTaskId?{...task,
        defectSummary:incident==="ACTIVE"?{open:1,inProgress:0,verifying:0,active:1}:{open:0,inProgress:0,verifying:0,active:0}}:task;
@@ -467,7 +476,7 @@ test("a newer defect summary during held life preparation wins without rebuildin
    await route.fulfill({response,json:next});
  });
  const response=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith("/scene"));
- const host=await enterCity(page),scene=await(await response).json() as CitySceneDto;
+ const host=await enterCity(page),scene=decodeCitySceneWire(await(await response).json());
  await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
  await expect.poll(()=>page.evaluate(()=>(window as unknown as {qaWorldSockets():number}).qaWorldSockets())).toBeGreaterThan(0);
  const bootstrap=await(await page.request.get("/api/bootstrap")).json() as BootstrapDto;
@@ -497,6 +506,55 @@ test("a newer defect summary during held life preparation wins without rebuildin
  expect(errors).toEqual([]);
 });
 
+test("a physical worker failure retains the visible city and its native retry publishes complete physics",async({page},info)=>{
+  const errors:string[]=[],reads:string[]=[];
+  page.on("pageerror",error=>errors.push(error.message));
+  page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await page.addInitScript(()=>{
+    const NativeWorker=window.Worker;let failed=false,physicalPosts=0;
+    let firstPhysicalFrame:{commit?:string;rendered?:string}|undefined;
+    window.Worker=class extends NativeWorker{
+      constructor(url:string|URL,options?:WorkerOptions){
+        super(url,options);const post=this.postMessage.bind(this),owned=String(url).includes("chunk-materializer-worker");
+        this.postMessage=((...args:Parameters<Worker["postMessage"]>)=>{
+          const request=args[0] as {physicalOnly?:boolean}|null;
+          if(owned&&request?.physicalOnly){
+            const renderer=document.querySelector<HTMLElement>(".world-canvas");
+            firstPhysicalFrame??={commit:renderer?.dataset.citySceneCommit,rendered:renderer?.dataset.cityFirstFrameRendered};
+            physicalPosts++;
+            if(!failed){failed=true;throw new DOMException("Controlled physical postMessage clone failure","DataCloneError");}
+          }
+          post(...args);
+        }) as Worker["postMessage"];
+      }
+    };
+    Object.assign(window,{qaPhysicalFault:()=>({failed,physicalPosts,firstPhysicalFrame})});
+  });
+  const sceneResponse=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith("/scene"));
+  const host=await enterCity(page),canvas=await host.locator("canvas").elementHandle();
+  expect((await(await sceneResponse).json() as {kind?:string}).kind).toBe("city.scene.compact");
+  await expect(host).toHaveAttribute("data-city-scene-parse-owner","worker");
+  await expect.poll(()=>page.workers().filter(worker=>worker.url().includes("city-scene-response-worker")).length).toBe(0);
+  await expect(page.getByRole("alert").filter({hasText:"Не удалось подготовить движение"})).toBeVisible();
+  await expect(host).toHaveAttribute("data-canonical-snapshot-pending","true");
+  await expect(host).toHaveAttribute("data-canonical-decoded-chunks","0");
+  expect(await page.evaluate(()=>(window as unknown as {qaPhysicalFault():{firstPhysicalFrame:unknown}}).qaPhysicalFault().firstPhysicalFrame))
+    .toEqual({commit:"atomic",rendered:"true"});
+  const ground=await host.getAttribute("data-ground-rebuilds"),sceneReads=reads.filter(path=>path.endsWith("/scene")).length;
+  await page.getByRole("button",{name:"Повторить",exact:true}).click();
+  await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false",{timeout:30_000});
+  await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
+  await expect(host).toHaveAttribute("data-canonical-terrain-cells","0");
+  await expect(page.getByRole("alert").filter({hasText:"Не удалось подготовить движение"})).toHaveCount(0);
+  expect(await canvas!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
+  expect(await host.getAttribute("data-ground-rebuilds")).toBe(ground);
+  expect(reads.filter(path=>path.endsWith("/scene"))).toHaveLength(sceneReads);
+  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+  await info.attach("physical-projection-native-retry",{body:JSON.stringify({fault:await page.evaluate(()=>(window as unknown as {qaPhysicalFault():unknown}).qaPhysicalFault()),
+    renderer:await host.evaluate(node=>({...((node as HTMLElement).dataset)})),errors}),contentType:"application/json"});
+  expect(errors).toEqual([]);
+});
+
 type CanonicalWorkerGateSnapshot={
  targetKey:string;targetHash:string;held:number;released:boolean;forwardedTarget:number;everLoadError:boolean;
  records:Array<{id:number;key:string;hash:string;workerUrl:string}>;
@@ -507,7 +565,7 @@ type CanonicalWorkerGateWindow=Window&{
  qaReleaseCanonicalWorker():void;
 };
 
-test("resident ground starts while a real offscreen canonical worker decode is held",async({page},info)=>{
+test("the atomic visible city is ready while a real offscreen physical projection is held",async({page},info)=>{
  test.skip(process.env.E2E_CITY_200!=="true"||Number(process.env.WORLD_RENDER_TASK_COUNT??200)!==1000,"Requires the owned1000-task dense-city fixture");
  test.setTimeout(90_000);await page.setViewportSize({width:390,height:844});
  const errors:string[]=[],reads:string[]=[];page.on("pageerror",error=>errors.push(error.message));
@@ -526,13 +584,13 @@ test("resident ground starts while a real offscreen canonical worker decode is h
        super(scriptURL,options);
        const workerUrl=String(scriptURL),post=this.postMessage.bind(this);
        this.postMessage=((...args:Parameters<Worker["postMessage"]>)=>{
-         const request=args[0] as {id?:number;payload?:{chunkX?:number;chunkY?:number;contentHash?:string}}|null;
+         const request=args[0] as {id?:number;physicalOnly?:boolean;payload?:{chunkX?:number;chunkY?:number;contentHash?:string}}|null;
          const payload=request?.payload;
          if(!workerUrl.includes("chunk-materializer-worker")||typeof request?.id!=="number"
            ||typeof payload?.chunkX!=="number"||typeof payload.chunkY!=="number"){post(...args);return;}
          const key=`${payload.chunkX},${payload.chunkY}`,hash=String(payload.contentHash??"");
          records.push({id:request.id,key,hash,workerUrl});
-         const target=key===targetKey&&hash===targetHash;
+         const target=request.physicalOnly===true&&key===targetKey&&hash===targetHash;
          const forward=()=>{post(...args);if(target)forwardedTarget++;};
          if(target&&!released)queued.push(forward);else forward();
        }) as Worker["postMessage"];
@@ -548,7 +606,7 @@ test("resident ground starts while a real offscreen canonical worker decode is h
  let scene:CitySceneDto|undefined,bakesAtArm=0;
  let target:{chunkX:number;chunkY:number;hash:string}|undefined;
  await page.route("**/api/countries/*/cities/*/scene",async route=>{
-   const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}}),next=await response.json() as CitySceneDto;
+   const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}}),next=decodeCitySceneWire(await response.json());
    if(!scene){
      scene=next;
      const far=[...next.chunks].sort((a,b)=>Math.hypot((b.chunkX+.5)*next.chunkSize-next.city.center.x,(b.chunkY+.5)*next.chunkSize-next.city.center.y)
@@ -582,8 +640,10 @@ test("resident ground starts while a real offscreen canonical worker decode is h
      ||(target!.chunkY+1)*size<camera.y-halfY-size||target!.chunkY*size>camera.y+halfY+size).toBe(true);
    const canvas=await host.locator("canvas").elementHandle();expect(canvas).not.toBeNull();
    await expect.poll(async()=>Number(await host.getAttribute("data-ground-bake-samples")??0),{timeout:5_000}).toBeGreaterThan(bakesAtArm);
-   await expect(host).not.toHaveAttribute("data-city-scene-commit","atomic");
-   expect(Number(await host.getAttribute("data-ground-rebuilds")??0)).toBe(0);
+   await expect(host).toHaveAttribute("data-city-scene-commit","atomic");
+   await expect(host).toHaveAttribute("data-canonical-snapshot-pending","true");
+   await expect(host).toHaveAttribute("data-canonical-terrain-cells","0");
+   expect(Number(await host.getAttribute("data-chunk-data-cache"))).toBeLessThan(scene!.chunks.length);
    const held=await page.evaluate(()=>(window as unknown as CanonicalWorkerGateWindow).qaCanonicalWorkerGate());
    expect(held.held).toBe(1);expect(held.forwardedTarget).toBe(0);expect(held.everLoadError).toBe(false);
    expect(held.records.filter(record=>record.key===held.targetKey&&record.hash===held.targetHash)).toHaveLength(1);
@@ -621,7 +681,7 @@ type CanonicalFailureGateWindow={
 
 for(const retryWhileResidentHeld of [false,true])test(retryWhileResidentHeld
  ?"a native retry shares a real held resident decode across failed iterations"
- :"a failed canonical decode cannot bake a late resident and its native retry recovers",async({page},info)=>{
+ :"a failed visual decode cannot bake a late resident and its native retry recovers",async({page},info)=>{
  test.skip(process.env.E2E_CITY_200!=="true"||Number(process.env.WORLD_RENDER_TASK_COUNT??200)!==1000,"Requires the owned1000-task dense-city fixture");
  test.setTimeout(90_000);await page.setViewportSize({width:390,height:844});
  const errors:string[]=[],reads:string[]=[];page.on("pageerror",error=>errors.push(error.message));
@@ -635,16 +695,19 @@ for(const retryWhileResidentHeld of [false,true])test(retryWhileResidentHeld
      constructor(scriptURL:string|URL,options?:WorkerOptions){
        super(scriptURL,options);
        const owned=String(scriptURL).includes("chunk-materializer-worker"),post=this.postMessage.bind(this);
+       let physicalWorker=false;
        if(owned){workers++;workerUrls.push(String(scriptURL));}
-       this.addEventListener("message",event=>{if(owned&&(event.data as {id?:number}|null)?.id===residentId)responses++;});
+       this.addEventListener("message",event=>{if(owned&&!physicalWorker&&(event.data as {id?:number}|null)?.id===residentId)responses++;});
        this.postMessage=((...args:Parameters<Worker["postMessage"]>)=>{
-         const request=args[0] as {id?:number;payload?:{chunkX?:number;chunkY?:number;contentHash?:string}}|null,payload=request?.payload;
+         const request=args[0] as {id?:number;physicalOnly?:boolean;payload?:{chunkX?:number;chunkY?:number;contentHash?:string}}|null,payload=request?.payload;
+         if(request?.physicalOnly){physicalWorker=true;post(...args);return;}
          if(!armed||!owned||typeof request?.id!=="number"||typeof payload?.chunkX!=="number"||typeof payload.chunkY!=="number"){post(...args);return;}
          const key=`${payload.chunkX},${payload.chunkY}`,hash=String(payload.contentHash??"");
          if(pages.get(key)!==hash){post(...args);return;}
          if(residentId===null&&key!==farKey&&holdResident){residentId=request.id;residentKey=key;residents.push(()=>post(...args));return;}
-         if(residentId!==null&&key===farKey&&hash===farHash&&!faulted){
-           faulted=true;failedId=request.id;throw new DOMException("Controlled canonical postMessage clone failure","DataCloneError");
+         if(residentId!==null&&key!==residentKey&&!faulted){
+           farKey=key;farHash=hash;
+           faulted=true;failedId=request.id;throw new DOMException("Controlled visual postMessage clone failure","DataCloneError");
          }
          if(faulted&&key===farKey&&hash===farHash)retryFarPosts++;
          post(...args);
@@ -676,7 +739,7 @@ for(const retryWhileResidentHeld of [false,true])test(retryWhileResidentHeld
  });
  let scene:CitySceneDto|undefined;
  await page.route("**/api/countries/*/cities/*/scene",async route=>{
-   const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}}),next=await response.json() as CitySceneDto;
+   const response=await route.fetch({headers:{...route.request().headers(),"accept-encoding":"identity"}}),next=decodeCitySceneWire(await response.json());
    if(!scene){
      scene=next;
      const far=[...next.chunks].sort((a,b)=>Math.hypot((b.chunkX+.5)*next.chunkSize-next.city.center.x,(b.chunkY+.5)*next.chunkSize-next.city.center.y)
@@ -779,7 +842,7 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
    });
  });
  const sceneResponse=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith("/scene"));
- const host=await enterCity(page),scene=await(await sceneResponse).json() as CitySceneDto;
+ const host=await enterCity(page),scene=decodeCitySceneWire(await(await sceneResponse).json());
  const first=await page.evaluate(()=>(window as unknown as FirstAtomicCityWindow).qaFirstAtomicCity());
  expect(first).toBeDefined();
  await info.attach("first-atomic-city",{body:JSON.stringify(first),contentType:"application/json"});

@@ -1,8 +1,8 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect,test } from "@playwright/test";
 import { sampleTransportSchedule,transportSchedule,TRANSPORT_EPOCH } from "../../src/shared/transport-schedule";
 import type { PlanetAtlasDto } from "../../src/shared/planet-atlas-contract";
-import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import { planAirportSite } from "../../src/shared/airport-site";
 import { planCityAirServices, sampleCityAirService, type CityAirServicePlan } from "../../src/shared/city-air-service";
 test("CITY and PLANET resume the same airport pair phase after a reload",async({page})=>{
@@ -18,7 +18,7 @@ test("CITY and PLANET resume the same airport pair phase after a reload",async({
   await page.route("**/api/**",async route=>{
     const response=await route.fetch(),headers={...response.headers(),"cache-control":"private, no-store","x-tasktopia-server-time":String(anchor+performance.now()-started)};
     if(/\/cities\/[^/]+\/scene(?:\?|$)/.test(route.request().url())){
-      const scene=await response.json() as CitySceneDto;
+      const scene=decodeCitySceneWire(await response.json());
       const from={taskId:"qa-air-a",cityId:scene.city.id,point:scene.city.center};
       const to={taskId:"qa-air-b",cityId:"remote",point:{x:scene.city.center.x+30,y:scene.city.center.y+30}};
       scene.airportConnections=[{id:"qa-air-a:qa-air-b",from,to},{id:"qa-air-b:qa-air-a",from:to,to:from}];

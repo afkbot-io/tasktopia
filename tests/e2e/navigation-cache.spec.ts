@@ -1,3 +1,4 @@
+import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { expect, test, type Page } from "@playwright/test";
 import type { BootstrapDto, RealtimeEvent } from "../../src/shared/contracts";
@@ -91,7 +92,7 @@ test("replays both task statuses before renderer readiness, caches task cards, a
       return;
     }
     const response = await route.fetch();
-    const next = await response.json() as CitySceneDto;
+    const next = decodeCitySceneWire(await response.json());
     if (!scene) {
       scene = next;
       sceneCaptured();
