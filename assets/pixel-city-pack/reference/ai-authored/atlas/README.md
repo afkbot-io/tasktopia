@@ -1,11 +1,16 @@
-# Atlas AI-authored sources
+# Исходники атласа
 
-These source sheets were generated for Tasktopia task #2 on 2026-08-25 with OpenAI ImageGen and normalized into the strict V5 runtime contract.
+Изображения созданы для задачи Tasktopia № 2 25 августа 2026 года с помощью
+OpenAI ImageGen и приведены к формату ресурсов V5.
 
-- `aircraft-topdown-models-v1.png`: 8 top-down aircraft, two authored motion frames each.
-- `clouds-planet-v1.png`: 8 top-down planet cloud variants.
-- `clouds-country-v1.png`: 8 frontal-top country cloud variants.
-- `airport-terminals-v1.png`: 5 structurally different terminals.
-- `airport-support-v1.png`: 8 support structures.
+- `aircraft-topdown-models-v1.png` — восемь самолётов, по два кадра движения.
+- `clouds-planet-v1.png` — восемь вариантов облаков для планеты.
+- `clouds-country-v1.png` — восемь вариантов облаков для страны.
+- `airport-terminals-v1.png` — пять типов терминалов.
+- `airport-support-v1.png` — восемь вспомогательных построек.
 
-Runtime derivatives live under `public/game-assets/v5/atlas/`. They use fixed logical canvases, a reduced palette, nearest-neighbour runtime rendering and binary alpha. Run `python3 scripts/verify-atlas-assets.py` after changing them.
+Подготовленные ресурсы находятся в `public/game-assets/v5/atlas/`. Они используют
+фиксированные размеры кадров, ограниченную палитру, отрисовку без сглаживания
+и альфа-канал только с полностью прозрачными или непрозрачными пикселями.
+
+После изменения выполните `python3 scripts/verify-atlas-assets.py` из корня проекта.

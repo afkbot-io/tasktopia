@@ -1,6 +1,15 @@
-# Noto Sans
+# Шрифты
 
-NotoSans-Regular.ttf — статический шрифт с кириллицей для серверной OG-карточки.
-Источник: https://github.com/notofonts/noto-fonts/blob/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf
-Лицензия: SIL Open Font License 1.1, полный текст в OFL.txt. Шрифт не изменён.
-Загружается локально сервером, внешние запросы при генерации не выполняются.
+## Noto Sans
+
+`NotoSans-Regular.ttf` содержит кириллицу и используется сервером для карточек
+ссылок. Файл не изменён и загружается локально, без внешних запросов.
+
+[Исходник Noto Sans](https://github.com/notofonts/noto-fonts/blob/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf).
+Полный текст [SIL Open Font License 1.1](OFL.txt) сохранён рядом со шрифтом.
+
+## Manrope
+
+Шрифт интерфейса хранится в `manrope/`. Его лицензия —
+[SIL Open Font License 1.1](manrope/LICENSE). При распространении шрифтов
+сохраняйте исходные лицензии и авторские уведомления.
