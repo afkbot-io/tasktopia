@@ -17,14 +17,14 @@ openssl rand -hex 32
 Запишите полученный секрет в `POSTGRES_PASSWORD`, затем запустите сервисы:
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build --wait
 docker compose ps
 curl -fsS http://127.0.0.1:3000/health
 curl -fsS http://127.0.0.1:3002/health
 curl -fsS http://127.0.0.1:3003/health
 ```
 
-Redis не обязателен. Для общей versioned cache и distributed cold-build lease задайте `REDIS_URL=redis://redis:6379` и поднимайте профиль `docker compose --profile cache up -d --build`. Без профиля или при недоступном Redis каждый runtime автоматически использует PostgreSQL; Redis не содержит канонических данных и работает без persistence.
+Redis не обязателен. Для общей versioned cache и distributed cold-build lease задайте `REDIS_URL=redis://redis:6379` и поднимайте профиль `docker compose --profile cache up -d --build --wait`. Без профиля или при недоступном Redis каждый runtime автоматически использует PostgreSQL; Redis не содержит канонических данных и работает без persistence.
 
 Публичная регистрация в self-hosted production закрыта по умолчанию. Создайте
 первого владельца после успешного healthcheck:
@@ -57,12 +57,18 @@ npm run dev
 ```
 
 Команда `npm run seed` создаёт компактный development fixture: один город,
-10 районов и 30 задач. Полный демонстрационный мир запускается отдельно через
+3 района и 40 задач. Локальный вход: `demo@tasktopia.local` / `tasktopia-demo`.
+Повторный запуск пересоздаёт города, задачи и историю демо-страны; запускайте
+его только в локальной development-базе. Полный демонстрационный мир запускается отдельно через
 `npm run seed:showcase` и не входит в обычную установочную проверку.
 
-Интеграционные и browser-тесты используют отдельную временную БД:
+Интеграционные и browser-тесты используют отдельную временную БД.
+После `npm ci` один раз установите Python-зависимости и браузеры, затем
+остановите dev-сервер и освободите порт 5173 перед E2E:
 
 ```bash
+npm run assets:setup
+npx playwright install --with-deps chromium firefox webkit
 npm run test:db:start
 npm test
 npm run test:e2e

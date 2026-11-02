@@ -5,6 +5,9 @@
 и [новым art-контрактом](../art/COMPACT-BUILDING-ART-CONTRACT.md). Исторические
 числа и ссылки на удалённые файлы сохранены как свидетельство прежнего состояния.
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Дата исследования: 2026-08-16
 Область: только первичные источники внутри репозитория — документы, каталог,
 пайплайн, тесты и история Git.
@@ -43,7 +46,7 @@ study и отдельные authored PNG стадий 3–5, но строгую
 | [`GENERATION-SPEC.md`](../../assets/pixel-city-pack/docs/GENERATION-SPEC.md) | Обязательный общий контракт геометрии, стиля, пяти стадий и manifest. |
 | [`geometry-contract.md`](../../.agents/skills/tasktopia-building-stage-verifier/references/geometry-contract.md) | Точные измеримые ограничения для canvas, footprint, двери, стадий и construction envelope. |
 | [`tasktopia-building-stage-generator/SKILL.md`](../../.agents/skills/tasktopia-building-stage-generator/SKILL.md) | Канонический производственный порядок `5 → 4 → 3` и правила регенерации. |
-| [`verify_building_stages.py`](../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py) | Реализация автоматического geometry gate и формат `report.json`. |
+| `verify_building_stages.py` (`../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py`) | Реализация автоматического geometry gate и формат `report.json`. |
 | [`catalog/buildings.json`](../../assets/pixel-city-pack/catalog/buildings.json) | Заявленный в ТЗ источник истины для семейств, путей, SHA-256 и runtime-геометрии. |
 | [`building-art-catalog.test.ts`](../../tests/building-art-catalog.test.ts) | Инварианты каталога, manifest, источников и SHA-256. |
 | [`pixel-city-asset-hygiene.test.ts`](../../tests/pixel-city-asset-hygiene.test.ts) | Правило чистоты canonical study directories. |
@@ -97,7 +100,7 @@ Canvas и runtime-размеры кратны 8, anchor — нижний цен�
 Эти размеры закреплены в geometry contract
 ([раздел Projection and depth](../../.agents/skills/tasktopia-building-stage-verifier/references/geometry-contract.md#L24))
 и валидируются кодом
-([verifier, строки 128–147](../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py#L128)).
+(verifier, строки 128–147 (`../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py#L128`)).
 
 ### 3. Художественный контракт
 
@@ -156,7 +159,7 @@ gradient, antialiasing, текста, логотипов и UI
 Пределы стадий закреплены в
 [geometry contract, раздел Stage bounds](../../.agents/skills/tasktopia-building-stage-verifier/references/geometry-contract.md#L76),
 а структура отчёта формируется
-[verifier, строки 648–692](../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py#L648).
+verifier, строки 648–692 (`../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py#L648`).
 
 Автоматический pass недостаточен. Вручную блокируются неверная проекция,
 несогласованные roof/porch/canopy planes, смена идентичности, нечитаемые
@@ -194,7 +197,7 @@ Builder и verifier нельзя запускать параллельно: buil
 - На диске есть 194 study directories и 194 комплекта `geometry.json` /
   `stage-{3,4,5}.png`; дополнительный `highrise-balcony-tower` — тестовый fixture,
   используемый в
-  [`building-stage-verifier.test.ts`](../../tests/building-stage-verifier.test.ts#L7),
+  `building-stage-verifier.test.ts` (`../../tests/building-stage-verifier.test.ts#L7`),
   а не отдельная запись каталога.
 - Текущий worktree содержит большой незакоммиченный пакет замены source PNG,
   geometry, catalog/manifest и verification previews. Эти файлы принадлежат
@@ -203,7 +206,7 @@ Builder и verifier нельзя запускать параллельно: buil
 ### Фактический остаток текущей рабочей копии
 
 Read-only прогон функций текущего
-[`verify_building_stages.py`](../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py)
+`verify_building_stages.py` (`../../.agents/skills/tasktopia-building-stage-verifier/scripts/verify_building_stages.py`)
 по `geometry.json` и трём `stageSources` каждой из 193 записей каталога дал 164
 успешных и 29 неуспешных семейств. У всех 29 одна и та же причина: внешний
 модуль входа объявлен двойным (`doorSizePx: [16,16]`), но размер створок оставлен

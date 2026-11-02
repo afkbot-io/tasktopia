@@ -1,5 +1,8 @@
 # Dense city and multiscale delivery
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Status: implemented and verified locally on 2026-09-05, not released. Extends the
 compact block cutover, without restoring the removed organic planner or realistic catalog.
 
@@ -111,11 +114,11 @@ or duplicate city simulations for COUNTRY and PLANET.
 - Measured warm COUNTRY→CITY return: **371.3 ms**, same canvas retained, just
   **one scene request** across initial load and return. Sampled missing ground:
   **0%** before and after the transition. See
-  [`metrics.json`](../screenshots/dense-city-final/metrics.json).
+  `metrics.json` (`../screenshots/dense-city-final/metrics.json`).
 - Reviewed actual application screenshots:
   [dense city](../screenshots/dense-city-final/city-blocks.png),
-  [ten-city country](../screenshots/dense-atlas-final/country.png),
-  [planet](../screenshots/dense-atlas-final/planet.png), and
+  ten-city country (`../screenshots/dense-atlas-final/country.png`),
+  planet (`../screenshots/dense-atlas-final/planet.png`), and
   [all building stages](../screenshots/compact-building-five-stages.png).
   COUNTRY labels are screen-space packed without moving geographic anchors;
   PLANET labels exclude countries outside the visible globe aperture.

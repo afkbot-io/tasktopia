@@ -1,5 +1,8 @@
 # Compact world — local release candidate, 2026-09-06
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 **Historical baseline:** subsequent local block-infill/forest/public-space changes
 supersede this source fingerprint. This report does not approve the current dirty
 checkout for release. See [the incremental delivery](BLOCK-INFILL-2026-09-06.md)
@@ -104,6 +107,6 @@ No production deployment, provider task update, push/MR or implicit approval
 occurred. External gates cannot be labeled PASS using local synthetic evidence.
 
 Final local source/build/asset/migration fingerprints are recorded in
-[`release-fingerprints.json`](evidence/compact-rc/release-fingerprints.json).
+`release-fingerprints.json` (`evidence/compact-rc/release-fingerprints.json`).
 The code index was force-refreshed from this working tree and RepoWise doctor
-passed. See [scoped code/visual review](evidence/compact-rc/REVIEW.md).
+passed. See scoped code/visual review (`evidence/compact-rc/REVIEW.md`).

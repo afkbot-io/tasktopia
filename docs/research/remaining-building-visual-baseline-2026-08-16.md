@@ -1,5 +1,8 @@
 # Визуальная база для полной регенерации оставшихся зданий
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Дата исследования: 2026-08-16
 Область: первичные файлы репозитория — project skills, спецификации, geometry
 contracts, authored PNG, runtime PNG и verifier reports. Ассеты не изменялись.
@@ -86,10 +89,10 @@ source PNG и geometry previews, а не только на JSON.
 
 Просмотрено:
 
-- [`stage-3.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/sources/stage-3.png)
-- [`stage-4.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/sources/stage-4.png)
-- [`stage-5.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/sources/stage-5.png)
-- [`geometry.json`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/geometry.json)
+- `stage-3.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/sources/stage-3.png`)
+- `stage-4.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/sources/stage-4.png`)
+- `stage-5.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/sources/stage-5.png`)
+- `geometry.json` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-community-center-v5/geometry.json`)
 
 Почему это хороший ориентир: широкий public facade остаётся строго фронтальным;
 центральное остекление, портал, боковые крылья и roof line сохраняют одну
@@ -102,11 +105,11 @@ source PNG и geometry previews, а не только на JSON.
 
 Просмотрено:
 
-- [`stage-3.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/sources/stage-3.png)
-- [`stage-4.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/sources/stage-4.png)
-- [`stage-5.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/sources/stage-5.png)
-- [`stage-5 geometry preview 4x`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/verification/stage-5-geometry-4x.png)
-- [`report.json`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/verification/report.json)
+- `stage-3.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/sources/stage-3.png`)
+- `stage-4.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/sources/stage-4.png`)
+- `stage-5.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/sources/stage-5.png`)
+- `stage-5 geometry preview 4x` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/verification/stage-5-geometry-4x.png`)
+- `report.json` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/commercial-cinema-v5/verification/report.json`)
 
 Canvas `96x72`; stage 5 занимает 88 px по ширине и всю высоту. Двойная дверь
 остаётся полноценным `16x16` модулем и не теряется в декоративном портале.
@@ -118,11 +121,11 @@ Canvas `96x72`; stage 5 занимает 88 px по ширине и всю вы�
 
 Просмотрено:
 
-- [`stage-3.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/sources/stage-3.png)
-- [`stage-4.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/sources/stage-4.png)
-- [`stage-5.png`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/sources/stage-5.png)
-- [`stage-5 geometry preview 4x`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/verification/stage-5-geometry-4x.png)
-- [`geometry.json`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/geometry.json)
+- `stage-3.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/sources/stage-3.png`)
+- `stage-4.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/sources/stage-4.png`)
+- `stage-5.png` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/sources/stage-5.png`)
+- `stage-5 geometry preview 4x` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/verification/stage-5-geometry-4x.png`)
+- `geometry.json` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-hospital-v5/geometry.json`)
 
 Здесь особенно полезны roof plant, центральный glazed bay, боковые объёмы и
 нижние навесы: на всех видны согласованные неглубокие верхние плоскости без
@@ -142,10 +145,10 @@ stage-progression benchmark.
 
 Просмотрено:
 
-- [`source stage 5`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-library-v5/sources/stage-5.png)
-- [`source stage 4`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-library-v5/sources/stage-4.png)
-- [`runtime stages 3-5`](../../assets/pixel-city-pack/runtime/buildings/civic/civic-library/stage-5.png)
-- [`geometry.json`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-library-v5/geometry.json)
+- `source stage 5` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-library-v5/sources/stage-5.png`)
+- `source stage 4` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-library-v5/sources/stage-4.png`)
+- `runtime stages 3-5` (`../../assets/pixel-city-pack/runtime/buildings/civic/civic-library/stage-5.png`)
+- `geometry.json` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-library-v5/geometry.json`)
 
 Наблюдение: source — большой RGB/chroma presentation render около `1161x1355`,
 а не прозрачный native-grid source. После сведения к `96x112` вход становится
@@ -164,11 +167,11 @@ double door, для которой обязательно `[12,14]`. Добав�
 
 Просмотрено:
 
-- [`source stage 5`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-museum-v5/sources/stage-5.png)
-- [`runtime stage 3`](../../assets/pixel-city-pack/runtime/buildings/civic/civic-museum/stage-3.png)
-- [`runtime stage 4`](../../assets/pixel-city-pack/runtime/buildings/civic/civic-museum/stage-4.png)
-- [`runtime stage 5`](../../assets/pixel-city-pack/runtime/buildings/civic/civic-museum/stage-5.png)
-- [`geometry.json`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-museum-v5/geometry.json)
+- `source stage 5` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-museum-v5/sources/stage-5.png`)
+- `runtime stage 3` (`../../assets/pixel-city-pack/runtime/buildings/civic/civic-museum/stage-3.png`)
+- `runtime stage 4` (`../../assets/pixel-city-pack/runtime/buildings/civic/civic-museum/stage-4.png`)
+- `runtime stage 5` (`../../assets/pixel-city-pack/runtime/buildings/civic/civic-museum/stage-5.png`)
+- `geometry.json` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/civic-museum-v5/geometry.json`)
 
 Наблюдение: исходник `1402x1122` перегружен тонкой классической лепниной,
 фризом и множеством оконных экспонатов. При `112x112` эта детализация становится
@@ -182,11 +185,11 @@ compressed-depth языка. Stage ratios (`62%`, `98.7%`, `100%`) и baseline
 
 Просмотрено:
 
-- [`source stage 5`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/landmark-concert-hall-v5/sources/stage-5.png)
-- [`runtime stage 3`](../../assets/pixel-city-pack/runtime/buildings/civic/landmark-concert-hall/stage-3.png)
-- [`runtime stage 4`](../../assets/pixel-city-pack/runtime/buildings/civic/landmark-concert-hall/stage-4.png)
-- [`runtime stage 5`](../../assets/pixel-city-pack/runtime/buildings/civic/landmark-concert-hall/stage-5.png)
-- [`geometry.json`](../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/landmark-concert-hall-v5/geometry.json)
+- `source stage 5` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/landmark-concert-hall-v5/sources/stage-5.png`)
+- `runtime stage 3` (`../../assets/pixel-city-pack/runtime/buildings/civic/landmark-concert-hall/stage-3.png`)
+- `runtime stage 4` (`../../assets/pixel-city-pack/runtime/buildings/civic/landmark-concert-hall/stage-4.png`)
+- `runtime stage 5` (`../../assets/pixel-city-pack/runtime/buildings/civic/landmark-concert-hall/stage-5.png`)
+- `geometry.json` (`../../assets/pixel-city-pack/reference/ai-authored/building-stage-study/landmark-concert-hall-v5/geometry.json`)
 
 Это наиболее очевидный projection/style reject. Боковые крылья уходят назад,
 криволинейная база образует трёхчетвертной/сценический ракурс, верхние объёмы

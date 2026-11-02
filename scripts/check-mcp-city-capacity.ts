@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { CITY_SCENE_MAX_CHUNKS } from "../src/shared/city-capacity";
 import { AppService } from "../src/server/app-service";
 import { registerUser } from "../src/server/auth";
 import { createDb } from "../src/server/db";
@@ -47,7 +48,7 @@ if (process.argv.includes("--worker")) {
       * (Math.floor(actual.bounds.maxY / 64) - Math.floor(actual.bounds.minY / 64) + 1);
     if (status === "PASS") assert.equal(actual.placements.length, 10_000);
     else assert.equal(actual.checksum, previous.checksum, "Failed capacity check must preserve the previous canonical layout");
-    console.log(JSON.stringify({ status, tasksAttempted: count, cityCount: 1, chunkLimit: 256, activeChunksAfter: chunks,
+    console.log(JSON.stringify({ status, tasksAttempted: count, cityCount: 1, chunkLimit: CITY_SCENE_MAX_CHUNKS, activeChunksAfter: chunks,
       previousLayoutPreservedOnRejection: status === "CAPACITY_EXCEEDED" ? actual.checksum === previous.checksum : null,
       realCompilerAndTerrainAllocator: true, elapsedMs: performance.now() - start, heapUsedBytes: process.memoryUsage().heapUsed }));
   } finally { await db.close(); }

@@ -1,5 +1,8 @@
 # Extended compact buildings — integration checkpoint 2026-09-07
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 ## Current state and scope
 
 The local asset build reported by the main agent completed with asset revision `750f26edc463160e`: **35 registered building families / 175 building stages, 106 props and 510 PNGs** across `public/game-assets/v5`, including atlases. This checkpoint covers the **12 newly integrated families below**, not the whole historical catalog. They have approved separate AI-authored sources for stages **5 → 4 → 3** and **five published PNG stages per family** in the runtime and public packs. Their geometry metadata now uses the existing `APPROVED_SEPARATE_STAGES` convention.
@@ -10,8 +13,8 @@ This current integration record supersedes earlier “not published”/“pendin
 
 ## Real-map R3 evidence and visual-review scope
 
-[R3 evidence](../../screenshots/courtyard-art-48-final-r3/evidence.json) and the
-[stage matrix](../../screenshots/courtyard-art-48-final-r3/stage-matrix-evidence.json)
+R3 evidence (`../../screenshots/courtyard-art-48-final-r3/evidence.json`) and the
+stage matrix (`../../screenshots/courtyard-art-48-final-r3/stage-matrix-evidence.json`)
 record48 cases in the isolated66-task fixture:39 building-stage cases and9
 park cases, at asset revision `750f26edc463160e`. The reports contain no errors,
 failed requests or writes. This is the completed local R3 gate, not a claim that
@@ -36,13 +39,13 @@ every frame or a physical frame-rate guarantee.
 The original R3 `planet.png` was **rejected** because the transition overlay
 still covered the view. It remains historical failed evidence, not an approved
 visual. A separate ready-state recapture subsequently passed:
-[overview evidence](../../screenshots/courtyard-art-48-final-r3-overviews/evidence.json)
+overview evidence (`../../screenshots/courtyard-art-48-final-r3-overviews/evidence.json`)
 records zero transition overlays, the retained CITY canvas, exactly one read
 each for CITY/COUNTRY/PLANET, and no errors or failures. The same independent
 reviewer additionally inspected its three new images:
-[PLANET](../../screenshots/courtyard-art-48-final-r3-overviews/planet.png),
-[COUNTRY](../../screenshots/courtyard-art-48-final-r3-overviews/country.png) and
-[night CITY](../../screenshots/courtyard-art-48-final-r3-overviews/city-night-clock-controlled.png).
+PLANET (`../../screenshots/courtyard-art-48-final-r3-overviews/planet.png`),
+COUNTRY (`../../screenshots/courtyard-art-48-final-r3-overviews/country.png`) and
+night CITY (`../../screenshots/courtyard-art-48-final-r3-overviews/city-night-clock-controlled.png`).
 The PLANET transition overlay is gone; its aperture is coherent, the visible
 country matches the COUNTRY geography, and no new actionable visual defect
 was found. This adds three settled images to the earlier21-frame sample;

@@ -1,5 +1,8 @@
 # Unified compact-city mobility
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Status: implemented and verified locally on 2026-09-05, not released. Extends the
 user's compact city request in `codex/task-14-block-runtime-integration`; no
 production changes or new business tasks. Prior uncommitted city/art work is
@@ -167,8 +170,8 @@ implementation without a data migration. Do not restore removed legacy assets.
   the same production build: city navigation, semantic overview, atlas return,
   actual airport routes and bounded renderer reuse. Together with the nine
   CITY/map scenarios above, the final browser suite is **15/15**. The additional
-  [ten-city COUNTRY](../screenshots/city-mobility-final/country-multicity.png) and
-  [PLANET](../screenshots/city-mobility-final/planet-multicity.png) captures belong
+  ten-city COUNTRY (`../screenshots/city-mobility-final/country-multicity.png`) and
+  PLANET (`../screenshots/city-mobility-final/planet-multicity.png`) captures belong
   to that separate test world, not to the single-city Riverside fixture.
 - No page exceptions, unexpected console issues, missing resources or failed
   requests. The report retains the expected anonymous-session 401 and four
@@ -197,11 +200,11 @@ Frozen movement sources:
 - Production CITY bundle: `WorldCanvas-BYTDldyy.js`; art revision: `d816b85d52906ab0`.
 
 Reviewed actual application captures (one 40-task, three-district test world):
-[CITY](../screenshots/city-mobility-final/city.png),
-[district 1](../screenshots/city-mobility-final/district-Квартальный-район-1.png),
-[district 2](../screenshots/city-mobility-final/district-Квартальный-район-2.png),
-[COUNTRY](../screenshots/city-mobility-final/country.png),
-[PLANET](../screenshots/city-mobility-final/planet.png).
+CITY (`../screenshots/city-mobility-final/city.png`),
+district 1 (`../screenshots/city-mobility-final/district-Квартальный-район-1.png`),
+district 2 (`../screenshots/city-mobility-final/district-Квартальный-район-2.png`),
+COUNTRY (`../screenshots/city-mobility-final/country.png`),
+PLANET (`../screenshots/city-mobility-final/planet.png`).
 
 For manual retest, use an isolated preview schema and the existing demo account:
 watch an opposing-lane turn and a painted crossing; verify waiting at the curb,
