@@ -1,5 +1,8 @@
 # CITY frame-pacing diagnosis and PWA release boundary
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Local investigation of the remaining frame-stall observation in
 [WORLD-FINISHING-2026-09-06.md](WORLD-FINISHING-2026-09-06.md). No deployment,
 provider delivery, production mutation, or speculative renderer change.
@@ -76,7 +79,7 @@ long-running application ticker. It does not identify the source of the older
 stacks. No speculative production change was made to hide that uncertainty.
 Hardware-accelerated target-browser/device performance remains a separate gate.
 
-Compact evidence lives in [frame-pacing-20260907](evidence/frame-pacing-20260907/):
+Compact evidence lives in frame-pacing-20260907 (`evidence/frame-pacing-20260907/`):
 `metrics.json`, `trace-summary.json`, `environment.json`, `browser.log` and
 `stream-tests.json`. The387MiB raw trace is deliberately **outside the repo** at
 `/tmp/task14-frame-profile-archive/main-thread-trace-final.json`, SHA256

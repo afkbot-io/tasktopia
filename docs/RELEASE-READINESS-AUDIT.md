@@ -1,5 +1,8 @@
 # Release-readiness audit — 2026-09-05
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Historical checkpoint. For the current implementation and remaining release
 gates use [the September7 completion ledger](RELEASE-COMPLETION-2026-09-07.md).
 The district-growth restriction and earlier catalog counts below are not
@@ -135,7 +138,7 @@ browser/load jobs. This is not mobile-hardware or remote-network certification.
 - Dependency audit: zero known advisories after the targeted patch upgrades.
 - Server SQL workloads D/E passed their declared budgets; detailed evidence,
   source fingerprints, query counts and EXPLAIN plans are in
-  [the SQL report](../screenshots/release-readiness/sql/README.md).
+  the SQL report (`../screenshots/release-readiness/sql/README.md`).
 - Large browser CITY: **1000 actual generated tasks / one district**, mostly
   stage 1, 64 resident chunks; final cold login-to-complete frame **2836.3 ms** against
   an unchanged **3000 ms** budget. Before this optimization: **3301 ms, failed**.
@@ -250,7 +253,7 @@ This does not substitute for an identified production backup, maintenance-window
 approval, target-environment rehearsal, or coordinated image/database rollback.
 
 Independent findings, closed corrections and reviewed fingerprints:
-[review record](../screenshots/release-readiness/independent-review.md).
+review record (`../screenshots/release-readiness/independent-review.md`).
 
 ## Dependency security review
 
@@ -292,13 +295,13 @@ district share the 40-task compact fixture; the following COUNTRY/PLANET pair
 uses the separate ten-city/three-country atlas fixture. They are not presented
 as one continuous camera journey between different fixture countries.
 
-- [City, mixed construction stages](../screenshots/release-readiness/mobility/city.png)
-- [District close-up](../screenshots/release-readiness/mobility/district-Квартальный-район-1.png)
-- [Country, ten cities](../screenshots/release-readiness/atlas-final/country.png)
-- [Planet](../screenshots/release-readiness/atlas-final/planet.png)
-- [Country, 100 cities](../screenshots/release-readiness/density/country-100-cities.png)
-- [Mobile searchable directory](../screenshots/release-readiness/density/country-100-cities-mobile-directory.png)
-- [Scale CITY, 1000 task sites](../screenshots/release-readiness/scale-final/city-1000.png)
+- City, mixed construction stages (`../screenshots/release-readiness/mobility/city.png`)
+- District close-up (`../screenshots/release-readiness/mobility/district-Квартальный-район-1.png`)
+- Country, ten cities (`../screenshots/release-readiness/atlas-final/country.png`)
+- Planet (`../screenshots/release-readiness/atlas-final/planet.png`)
+- Country, 100 cities (`../screenshots/release-readiness/density/country-100-cities.png`)
+- Mobile searchable directory (`../screenshots/release-readiness/density/country-100-cities-mobile-directory.png`)
+- Scale CITY, 1000 task sites (`../screenshots/release-readiness/scale-final/city-1000.png`)
 
 ## Reproduction boundaries
 

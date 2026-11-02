@@ -1,5 +1,8 @@
 # Public spaces and sprint growth — local verification
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Scope: append-only sprint overflow, stable task-owned park variants, compact
 fountain/monument stages and their city integration. Branch
 `codex/task-14-block-runtime-integration`, base `b42fe594`, dirty integration
@@ -51,8 +54,8 @@ canonical task responses, including invalid input and idempotent retry.
 
 ## Scale evidence
 
-See [pure compiler report](evidence/sprint-growth/pure.json) and
-[AppService report](evidence/sprint-growth/runtime-240.json).
+See pure compiler report (`evidence/sprint-growth/pure.json`) and
+AppService report (`evidence/sprint-growth/runtime-240.json`).
 
 - Pure compiler: 1,000 tasks / 20 sprints, including the previously blocked
   frontier; separate ten-city country workload. These are not 1,000 DB commands.
@@ -71,7 +74,7 @@ not by manual sprite placement. Screenshots live in
 `screenshots/compact-public-spaces/`: city, both centerpiece stage sequences,
 large park, country and planet.
 
-[Browser report](evidence/public-spaces/browser.json): desktop checks passed
+Browser report (`evidence/public-spaces/browser.json`): desktop checks passed
 task clicks and canonical responses, one scene, one country overview, one
 planet atlas and no viewport/chunk fetches while panning or returning from the
 overview. The 390×844 responsive pass selects actual country/city cards, opens

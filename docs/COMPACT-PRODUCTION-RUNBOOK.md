@@ -1,12 +1,17 @@
 # Compact world: production cutover plan
 
+Исторический план cutover сентября 2026 года. Для текущей установки и обновления
+используйте [DEPLOYMENT.md](DEPLOYMENT.md). Указанные ниже ревизии и результаты
+относятся только к прежним кандидатам.
+
 Status: preparation, not deployment authorization. Do not execute this plan
 against production until the exact revision and environment have an approved
 release receipt. The working checkout is not itself an immutable release.
 
 Current acceptance state: [completion ledger](RELEASE-COMPLETION-2026-09-07.md).
 The [September6 RC matrix](COMPACT-RC-2026-09-06.md) and its
-[fingerprints](evidence/compact-rc/release-fingerprints.json) are historical,
+fingerprint file (`evidence/compact-rc/release-fingerprints.json`, absent from this
+repository) are historical,
 not hashes of the35-family candidate. Record fresh source, built entrypoint,
 published asset and migration hashes after final verification; replace the
 dirty-worktree identity with the reviewed immutable commit/image before release.

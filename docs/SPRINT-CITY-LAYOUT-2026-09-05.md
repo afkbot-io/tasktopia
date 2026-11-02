@@ -1,5 +1,8 @@
 # Sprint-owned tasks and physical city layout — 2026-09-05
 
+Пути к отсутствующим материалам этого исторического среза оставлены текстом.
+Они недоступны в текущем репозитории; их наличие и проверенность здесь не подтверждаются.
+
 Status: the user explicitly approved separate physical groups of blocks owned
 by the same sprint. Append-only allocator implementation is in the working
 branch. No production deployment or spatial reset has been performed.
@@ -200,7 +203,7 @@ database throughput claims. The final five-file pure gate, including park-size
 and family-registration regressions, passed 48/48
 (`/tmp/task14-sprint-park-pure-final.json`). The independent read-only review of
 the two-stage frontier and persisted kind overrides found no blocker.
-The final report is retained in [evidence/sprint-growth/pure.json](evidence/sprint-growth/pure.json).
+The final report is retained in evidence/sprint-growth/pure.json (`evidence/sprint-growth/pure.json`).
 
 ### Isolated AppService/storage replay
 
@@ -227,7 +230,7 @@ The new instance has an empty instance scene cache; database/OS caches were not
 purged. This is a bounded, mostly-PLANNING service workload, not proof of 1,000
 database tasks or browser performance. `/tmp/task14-sprint-runtime-growth.json`
 records all twenty timing samples, scene bounds/revision and four source hashes.
-Its durable copy is [evidence/sprint-growth/runtime-240.json](evidence/sprint-growth/runtime-240.json).
+Its durable copy is evidence/sprint-growth/runtime-240.json (`evidence/sprint-growth/runtime-240.json`).
 The temporary database schema is cleaned up by the standard fixture lifecycle.
 
 Verified allocation source checkpoint:
