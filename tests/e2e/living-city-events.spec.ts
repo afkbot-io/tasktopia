@@ -154,8 +154,16 @@ test('реальные MCP комментарии и документы ожив
   await page.screenshot({path:info.outputPath('status-work-smoke.png')});
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:10000});
   for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total','data-wrong-way-cars','data-walker-off-path'])await expect(f.host).toHaveAttribute(metric,'0');
-  const cpu=await f.host.evaluate(el=>({p95:Number((el as HTMLElement).dataset.livingWorldFrameCpuP95Ms),max:Number((el as HTMLElement).dataset.livingWorldFrameCpuMaxMs)}));
-  expect(cpu.p95).toBeLessThanOrEqual(8);await info.attach('feedback-frame-cpu',{body:JSON.stringify(cpu),contentType:'application/json'});
+  const cpu=await f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return {
+   p95:Number(d.livingWorldFrameCpuP95Ms),max:Number(d.livingWorldFrameCpuMaxMs),samples:Number(d.livingWorldFrameSamples),
+   quality:d.worldQuality,frameLimit:d.frameLimit,pixelRatio:d.worldPixelRatio,paddingViews:d.cameraPaddingTerrainViews,
+   paddingTrees:d.cameraPaddingTrees,paddingTerrainPending:d.cameraPaddingTerrainPending,paddingTreePending:d.cameraPaddingTreePending,
+   paddingTargetUnbaked:d.cameraPaddingTargetUnbaked,everydayEvent:d.everydayEvent,
+   roadEventPhase:d.roadEventPhase,canonicalSnapshotPending:d.canonicalSnapshotPending,movementPreparing:d.movementPreparing,
+  };});
+  // Preserve the actual measured workload even when the unchanged budget fails.
+  await info.attach('feedback-frame-cpu',{body:JSON.stringify({...cpu,activityBranch:admissionEvidence.branch}),contentType:'application/json'});
+  expect(cpu.p95).toBeLessThanOrEqual(8);
   expect(errors).toEqual([]);
  } finally {
   let timer:ReturnType<typeof setTimeout>|undefined;

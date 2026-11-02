@@ -9,6 +9,8 @@ import { rainPose } from '../../src/client/city-everyday-life';
 import { openMapCity } from './map-navigation';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
 import { sceneClockStepTowardStart } from '../scene-clock-step';
+import { isSchoolBusAttemptTerminal } from '../school-bus-attempt';
+import { isEverydayAttemptExpiredWithoutArrival } from '../everyday-attempt';
 
 // Long fixed-step journeys already save native checkpoints and telemetry.
 // Repeated automatic DOM/canvas snapshots produced a 306 MiB failure artifact
@@ -75,8 +77,9 @@ for (const kind of ['OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP', 'OPEN_FIRE'
   });
 }
 
-test('delayed MCP transfer resumes a helicopter carry without replaying an opening on reload', async ({ page }, info) => {
-  test.setTimeout(90000); const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+clockSceneTest('delayed MCP transfer resumes a helicopter carry without replaying an opening on reload', async ({ page }, info) => {
+  test.setTimeout(90000); await installSceneClock(page);
+  const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   try {
     await f.focus(f.pendingSchool);
     await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
@@ -96,25 +99,51 @@ test('delayed MCP transfer resumes a helicopter carry without replaying an openi
     await expect(f.host).toHaveAttribute('data-animation-active', 'false');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const home = await f.service.getTask(f.user.countryId, f.pendingHome.id); expect(home.stage).toBe(5); await f.panFocus(home);
-    // Hold the real post-transfer scene beyond the original carry window.
-    // The renderer must resume a flight instead of jumping from lift to land.
+    // Подготовка выше идёт с работающим clock; только перенос использует
+    // фиксированные RAF. Реальный ответ и renderer не подменяются.
+    await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+    // Держим реальную сцену за пределами исходного окна CARRY.
+    // Между шагами часы неподвижны: decode/worker не расходуют бюджет анимации.
     const scenePattern = /\/api\/countries\/[^/]+\/cities\/[^/]+\/scene(?:\?|$)/;
     let releaseScene!: () => void, delayedScene = false;
     const sceneGate = new Promise<void>(resolve => { releaseScene = resolve; });
     await page.route(scenePattern, async route => {
       const response = await route.fetch(); delayedScene = true; await sceneGate; await route.fulfill({ response });
     });
-    const cinematicFrames=await observeCinematics(f.host);
-    const transferStarted = performance.now();
+    const cinematicFrames = await observeCinematics(f.host);
+    const carryVisible = async () => (await cinematicFrames.frames()).some(frame => frame.states.some(state =>
+      state.taskId === home.id && state.kind === 'TRANSFER' && state.phase === 'CARRY'
+      && state.oldVisible && !state.targetVisible && state.aircraftVisible));
+    let beginSteps = 0, readinessSteps = 0;
     try {
       await f.call('task.transfer', { taskId: home.id, targetDistrictId: f.pendingSchool.districtId });
+      await expect.poll(async () => {
+        if ((await cinematicFrames.frames()).some(frame => frame.states.some(state => state.taskId === home.id && state.kind === 'TRANSFER'))) return true;
+        if (beginSteps >= 32) return false;
+        await page.clock.runFor(16); beginSteps++;
+        return (await cinematicFrames.frames()).some(frame => frame.states.some(state => state.taskId === home.id && state.kind === 'TRANSFER'));
+      }, { timeout: 15000, intervals: [100], message: 'Реальный MCP/WebSocket должен начать перенос за 32 native clock шага' }).toBe(true);
+      await page.clock.runFor(4500);
       await expect(f.host).toHaveAttribute('data-cinematic-phases', /TRANSFER:LIFT/);
-      await page.waitForTimeout(Math.max(0, 4500 - (performance.now() - transferStarted)));
-      expect(delayedScene).toBe(true); releaseScene();
-      await expect.poll(async()=> (await cinematicFrames.frames()).some(frame=>frame.states.some(state=>state.taskId===home.id&&state.kind==='TRANSFER'&&state.phase==='CARRY'&&state.oldVisible&&!state.targetVisible&&state.aircraftVisible))).toBe(true);
+      await expect.poll(() => delayedScene, { timeout: 15000 }).toBe(true); releaseScene();
+      await expect.poll(async () => {
+        if (await carryVisible()) return true;
+        if (readinessSteps >= 100) return false;
+        await page.clock.runFor(16); readinessSteps++;
+        return carryVisible();
+      }, { timeout: 15000, intervals: [100], message: 'Реальный delayed target должен возобновить видимый CARRY за 100 native clock шагов' }).toBe(true);
+      // Даже при всех 32+100 шагах ready наступает не позднее 6612ms,
+      // оставляя >=680ms CARRY до прежнего hard deadline 7700ms.
+      // Настоящие RAF после ready обязаны сохранить видимый полёт.
+      await page.clock.runFor(100);
+      expect(JSON.parse((await f.host.getAttribute('data-cinematic-state')) ?? '[]')).toEqual(expect.arrayContaining([
+        expect.objectContaining({ taskId: home.id, kind: 'TRANSFER', phase: 'CARRY', oldVisible: true, targetVisible: false, aircraftVisible: true }),
+      ]));
+      await page.clock.runFor(3200);
     } finally { await writeFile(info.outputPath('delayed-transfer-frames.json'),JSON.stringify(await cinematicFrames.frames(),null,2));releaseScene(); await page.unroute(scenePattern); }
     await expect(f.host).toHaveAttribute('data-city-cinematics', '0', { timeout: 10000 });
     expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
+    await page.clock.resume();
     await page.reload(); await openMapCity(page); await expect(f.host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
     expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
     expect(errors).toEqual([]);
@@ -413,7 +442,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       const kind = await f.host.getAttribute('data-everyday-event');
       if (!kind) await writeFile(info.outputPath('missing-scene.json'), JSON.stringify({ start, task, data: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
       expect(kind).toBeTruthy();
-      const visitors = Number(await f.host.getAttribute('data-everyday-visitors'));
+      const initial = await safe(f.host), visitors = Number(initial.everydayVisitors);
       // A calendar slot can choose a campus without reachable idle children.
       // Try a later real slot, as the school-bus test does; each of the six
       // kinds still must complete with actual visitors and physical arrivals.
@@ -435,10 +464,27 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         fetched ||= state.dogCarrying === 'true'; scattered ||= state.birdsScattered === 'true';
         if (i === 8) await page.screenshot({ path: info.outputPath(`everyday-${kind!.toLowerCase()}.png`) });
       }
+      // Complete the real physical steps only until the published event end.
+      // A fixed extra14s kept rendering after expiry and exhausted WebKit's
+      // aggregate wall budget after all six arrivals had already passed.
+      for (let step = 0; step < 14 && Number(await f.host.getAttribute('data-road-event-server-now')) < start + 44_200; step++) {
+        await page.clock.runFor(1000); await safe(f.host);
+      }
       const actualFrames=await observed();arrivals=Math.max(arrivals,actualFrames.arrivals);animals=Math.max(animals,actualFrames.animals);
       fetched||=actualFrames.fetched;scattered||=actualFrames.scattered;
-      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, observed:actualFrames, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
-      if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })), null, 2));
+      const terminal = await safe(f.host);
+      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ start, taskId:id, initial, arrivals, animals, fetched, scattered, observed:actualFrames, state: terminal }, null, 2));
+      if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(terminal, null, 2));
+      // A visit token admits a route, not an arrival deadline. Only a fully
+      // observed natural expiry may remain an unqualified calendar attempt;
+      // all six positive scenes are still due within the original36 slots.
+      if (!arrivals && isEverydayAttemptExpiredWithoutArrival({ scheduledStartMs:start,kind:kind!,taskId:id!,initial,terminal,observed:actualFrames,errors })) {
+        expect(errors).toEqual([]);
+        unavailable.push({kind,taskId:id,reason:'expired-before-arrival',start,initial,observed:actualFrames,terminal});
+        await writeFile(info.outputPath('everyday-unavailable-slots.json'),JSON.stringify(unavailable,null,2));
+        await setSceneLife(page,false);await seek(page,f.host,start+44_200);await drainCarriers();
+        continue;
+      }
       expect(arrivals, `${kind} residents never arrived`).toBeGreaterThan(0);
       // The view deliberately hides animals while another physical resident
       // occupies the pad. Such a slot cannot qualify the animal rendering.
@@ -457,12 +503,6 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       seen.add(kind!);
       samples.push({ kind, arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) });
       await writeFile(info.outputPath('everyday-scenes-progress.json'), JSON.stringify(samples, null, 2));
-      // Complete the real physical steps only until the published event end.
-      // A fixed extra14s kept rendering after expiry and exhausted WebKit's
-      // aggregate wall budget after all six arrivals had already passed.
-      for (let step = 0; step < 14 && Number(await f.host.getAttribute('data-road-event-server-now')) < start + 44_200; step++) {
-        await page.clock.runFor(1000); await safe(f.host);
-      }
       await seek(page, f.host, start + 44_200);
       await expect(f.host).toHaveAttribute('data-everyday-event', '');
       await setSceneLife(page, false);
@@ -597,16 +637,23 @@ clockSceneTest('school bus delivers children through the real school entrance in
       await expect(f.host).toHaveAttribute('data-everyday-event', 'SCHOOL');
       const deliveryStartedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
       const before = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
-      for (let i = 0; i < deliveryBudgetMs / 1000 && Number(await f.host.getAttribute('data-school-bus-arrived')) === Number(before.schoolBusArrived); i++) {
+      let sample = before, observedSchoolBus = before.transitRole === 'SCHOOL_BUS';
+      for (let i = 0; i < deliveryBudgetMs / 1000 && Number(sample.schoolBusArrived) === Number(before.schoolBusArrived); i++) {
         await page.clock.runFor(1000);
+        sample = await f.host.evaluate(el => {
+          const d = (el as HTMLElement).dataset;
+          return { roadEventServerNow: d.roadEventServerNow, transitRole: d.transitRole, schoolBusVisits: d.schoolBusVisits,
+            schoolBusArrived: d.schoolBusArrived, schoolBuses: d.schoolBuses };
+        });
+        observedSchoolBus ||= sample.transitRole === 'SCHOOL_BUS';
         if (i % 5 === 0) {
           await safe(f.host); progress.push({ episode, ...(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }))) });
           await writeFile(info.outputPath('school-bus-progress.json'), JSON.stringify(progress, null, 2));
         }
-        // Once both the ceremony and possible bus run have expired, a trip
-        // without a school visit cannot become a doorway arrival later.
-        if (i >= (44_000 + 80_000) / 1000 && await f.host.getAttribute('data-transit-role') !== 'SCHOOL_BUS'
-          && Number(await f.host.getAttribute('data-school-bus-visits')) === 0) break;
+        // Stop an observed cancelled/empty trip only after its scheduled ceremony
+        // ended. Keep every physics step for a live bus or a walking child.
+        if (isSchoolBusAttemptTerminal({ scheduledStartMs: start, before, current: sample, observedSchoolBus })
+          || i >= (44_000 + 80_000) / 1000 && sample.transitRole !== 'SCHOOL_BUS' && Number(sample.schoolBusVisits) === 0) break;
       }
       const state = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
       const deliveryElapsedMs = Number(state.roadEventServerNow) - deliveryStartedAt;

@@ -2738,8 +2738,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         }
       };
       const reportPaddingRoads = () => {
-        const shownPadding = cityCamera.pending ? new Set(cameraTerrainPadding(world.position,world.scale.x,app.screen,cameraBounds(),CELL_SIZE,chunkSize)
-          .filter(([x,y])=>!residentTerrainKeys.has(chunkKey(x,y))).map(coordinate=>chunkKey(...coordinate))) : visiblePaddingKeys;
+        const shownPadding = cityCamera.pending ? new Set(cameraTerrainPadding(world.position,world.scale.x,app.screen,residentTerrainKeys,CELL_SIZE,chunkSize)
+          .map(coordinate=>chunkKey(...coordinate))) : visiblePaddingKeys;
         host.dataset.cameraPaddingRoadViews = String([...paddingTerrain.values()].filter(record => record.overlayView).length);
         host.dataset.cameraPaddingRoadCells = String([...paddingTerrain.values()].reduce((count, record) => count + (record.roads?.roads.length ?? 0), 0));
         host.dataset.cameraPaddingSurfaceCells = String([...paddingTerrain.values()].reduce((count, record) => count + (record.roads?.surfaces.length ?? 0), 0));
@@ -2909,18 +2909,15 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       const refreshCameraPadding = () => {
         if (!focusCityId) return;
         const camera = cityCamera.pending ?? {x:world.x,y:world.y,scale:world.scale.x};
-        const visible = cameraTerrainPadding(camera, camera.scale, app.screen, cameraBounds(), CELL_SIZE, chunkSize)
-          .filter(([x, y]) => !residentTerrainKeys.has(chunkKey(x, y)));
+        const visible = cameraTerrainPadding(camera, camera.scale, app.screen, residentTerrainKeys, CELL_SIZE, chunkSize);
         const nextVisibleKeys = new Set(visible.map(([x, y]) => chunkKey(x, y)));
         if (nextVisibleKeys.size !== visiblePaddingKeys.size || [...nextVisibleKeys].some(id => !visiblePaddingKeys.has(id))) {
           visiblePaddingKeys = nextVisibleKeys; wakePaddingWaiters();
         }
         // The invisible halo must not spend the first-frame bake/worker budget.
         // Visible exterior still uses the same exact terrain and tree pipeline.
-        const targetCoordinates = cameraTerrainPadding(camera, camera.scale, app.screen, cameraBounds(), CELL_SIZE, chunkSize, paintedFrame ? 1 : 0)
-          .filter(([x, y]) => !residentTerrainKeys.has(chunkKey(x, y)));
-        const previousCoordinates = cityCamera.pending ? cameraTerrainPadding(world.position,world.scale.x,app.screen,cameraBounds(),CELL_SIZE,chunkSize)
-          .filter(([x,y])=>!residentTerrainKeys.has(chunkKey(x,y))) : [];
+        const targetCoordinates = cameraTerrainPadding(camera, camera.scale, app.screen, residentTerrainKeys, CELL_SIZE, chunkSize, paintedFrame ? 1 : 0);
+        const previousCoordinates = cityCamera.pending ? cameraTerrainPadding(world.position,world.scale.x,app.screen,residentTerrainKeys,CELL_SIZE,chunkSize) : [];
         const coordinates = [...new Map([...targetCoordinates,...previousCoordinates].map(coordinate=>[chunkKey(...coordinate),coordinate])).values()];
         const wanted = new Set(coordinates.map(([x, y]) => chunkKey(x, y)));
         cityRoadPadding?.retain(coordinates);
@@ -3013,8 +3010,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         const pages = planCityResidency(cityScene.chunks,range,chunkSize).visibleKeys;
         if ([...pages].some(id=>!cityResidentGroundReady(groundContainers.get(id),chunkLods.get(id),entityChunkLods.get(id),
           invalidatedGroundKeys.has(id),dirtyEntityKeys.has(id)))) return false;
-        return cameraTerrainPadding(pose,pose.scale,app.screen,cameraBounds(),CELL_SIZE,chunkSize)
-          .filter(([x,y])=>!residentTerrainKeys.has(chunkKey(x,y)))
+        return cameraTerrainPadding(pose,pose.scale,app.screen,residentTerrainKeys,CELL_SIZE,chunkSize)
           .every(coordinate=>{const record=paddingTerrain.get(chunkKey(...coordinate));return visibleMapPaddingReady(record);});
       };
       const clampCamera = () => {
