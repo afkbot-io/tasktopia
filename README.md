@@ -31,17 +31,18 @@
 База данных — PostgreSQL 16.
 
 ```bash
-git clone https://github.com/afkbot-io/tasktopia.git
+git clone --depth 1 https://github.com/afkbot-io/tasktopia.git
 cd tasktopia
 npm ci
 cp .env.example .env
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait postgres
 npm run seed
 npm run dev
 ```
 
-Откройте [localhost:5173](http://localhost:5173). Команда `seed` добавляет
-демонстрационные данные в локальную базу. Для рабочей установки используйте
+Откройте [localhost:5173](http://localhost:5173) и войдите как `demo@tasktopia.local`
+с паролем `tasktopia-demo`. Команда `seed` создаёт этот локальный аккаунт и
+демонстрационные данные. Она пересоздаёт его демонстрационный мир при повторном запуске. Для рабочей установки используйте
 следующий раздел. Секреты из `.env` не должны попадать в Git.
 
 ## Развёртывание

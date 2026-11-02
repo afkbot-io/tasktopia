@@ -51,7 +51,7 @@ PostgreSQL только на loopback. Основной production compose по�
 публикует:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait postgres
 npm run seed
 npm run dev
 ```
