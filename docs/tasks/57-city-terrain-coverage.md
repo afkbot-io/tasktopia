@@ -31,6 +31,17 @@
 viewport/chunks. Desktop дополнительно изменяет высоту окна до 1440×1100;
 iPhone WebKit проверяется в браузерной эмуляции.
 
+Контролируемый HTTP-interceptor запрашивает `identity`, чтобы Playwright мог
+разобрать JSON при Firefox, предлагающем Zstd. Сценарий задержанного переноса
+использует управляемые часы и настоящие RAF: задержка ответа не расходует
+окно полёта из-за скорости тестового GPU. Видимый CARRY и прежние пределы
+времени остаются обязательными. Отдельные проверки CPU используют реальные часы.
+
+Школьный сценарий прекращает ожидание отменённого или пустого рейса только
+после конца его церемонии, при подтверждённом запуске автобуса и отсутствии
+самого рейса и детей, идущих ко входу. Живой рейс сохраняет все шаги физики и
+прежний бюджет; окончательный результат требует настоящего прибытия ребёнка.
+
 Перед E2E остановите dev-сервер и освободите порт5173. Проверять следует
 production-сборку, которую поднимает обычный Playwright webServer.
 Dev StrictMode намеренно отменяет первые bootstrap/плановые запросы при
@@ -39,7 +50,7 @@ Dev StrictMode намеренно отменяет первые bootstrap/пла
 
 ```sh
 npm run test:db:start
-npm test -- tests/camera-terrain-padding-coverage.test.ts tests/city-terrain-padding.test.ts tests/world-camera.test.ts tests/city-residency.test.ts tests/city-ground-readiness.test.ts tests/city-camera-presentation.test.ts tests/ground-bake-budget.test.ts tests/padding-retry.test.ts
+npm test -- tests/camera-terrain-padding-coverage.test.ts tests/city-terrain-padding.test.ts tests/world-camera.test.ts tests/city-residency.test.ts tests/city-ground-readiness.test.ts tests/city-camera-presentation.test.ts tests/ground-bake-budget.test.ts tests/padding-retry.test.ts tests/school-bus-attempt.test.ts
 npm run test:e2e -- tests/e2e/city-terrain-coverage.spec.ts --project=chromium --project=world-review-iphone --workers=1 --retries=0
 npm run test:db:stop
 ```

@@ -1,0 +1,39 @@
+type Snapshot = Readonly<{
+  roadEventServerNow?: string;
+  transitRole?: string;
+  schoolBusVisits?: string;
+  schoolBusArrived?: string;
+  schoolBuses?: string;
+}>;
+
+function metric(value: string | undefined): number | undefined {
+  if (value === undefined || value.trim() === '') return undefined;
+  const result = Number(value);
+  return Number.isFinite(result) ? result : undefined;
+}
+
+function count(value: string | undefined): number | undefined {
+  const result = metric(value);
+  return result !== undefined && Number.isSafeInteger(result) && result >= 0 ? result : undefined;
+}
+
+/** A completed ceremony cannot dispatch another school bus for this episode.
+ * Preserve a live bus and children still walking from its stop to the school. */
+export function isSchoolBusAttemptTerminal(input: {
+  scheduledStartMs: number;
+  before: Snapshot;
+  current: Snapshot;
+  observedSchoolBus: boolean;
+}): boolean {
+  const { scheduledStartMs, before, current } = input;
+  const now = metric(current.roadEventServerNow);
+  const arrivedBefore = count(before.schoolBusArrived), arrivedNow = count(current.schoolBusArrived);
+  const busesBefore = count(before.schoolBuses), busesNow = count(current.schoolBuses);
+  const witnessed = input.observedSchoolBus || before.transitRole === 'SCHOOL_BUS'
+    || busesBefore !== undefined && busesNow !== undefined && busesNow > busesBefore;
+  return Number.isSafeInteger(scheduledStartMs) && Math.abs(scheduledStartMs) <= Number.MAX_SAFE_INTEGER - 44_000
+    && now !== undefined && Math.abs(now) <= Number.MAX_SAFE_INTEGER && now >= scheduledStartMs + 44_000
+    && busesBefore !== undefined && busesNow !== undefined && busesNow >= busesBefore
+    && witnessed && (current.transitRole === '' || current.transitRole === 'BUS')
+    && count(current.schoolBusVisits) === 0 && arrivedBefore !== undefined && arrivedNow === arrivedBefore;
+}
