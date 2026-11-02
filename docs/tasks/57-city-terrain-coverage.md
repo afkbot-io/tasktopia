@@ -42,6 +42,16 @@ iPhone WebKit проверяется в браузерной эмуляции.
 самого рейса и детей, идущих ко входу. Живой рейс сохраняет все шаги физики и
 прежний бюджет; окончательный результат требует настоящего прибытия ребёнка.
 
+Проверка шести повседневных сцен сохраняет ограничение 36 календарных попыток
+и требует все шесть видов с настоящим прибытием, безопасностью и очисткой.
+Назначенный маршрут сам по себе не обещает прибытия до конца сценки.
+Полностью наблюдавшаяся попытка без прибытия может остаться непройденной
+только после естественного истечения: обязательны все три фазы, готовые
+ресурсы, реальное продвижение физики, пустое завершённое событие и нулевые
+счётчики ошибок. Она сохраняется в диагностике и не добавляется в успешные
+виды. Неизвестное состояние, неполное наблюдение, скрытие или другая причина
+отмены сохраняют прежний отказ. Физика, время сцен и общий предел не меняются.
+
 Перед E2E остановите dev-сервер и освободите порт5173. Проверять следует
 production-сборку, которую поднимает обычный Playwright webServer.
 Dev StrictMode намеренно отменяет первые bootstrap/плановые запросы при
@@ -50,7 +60,7 @@ Dev StrictMode намеренно отменяет первые bootstrap/пла
 
 ```sh
 npm run test:db:start
-npm test -- tests/camera-terrain-padding-coverage.test.ts tests/city-terrain-padding.test.ts tests/world-camera.test.ts tests/city-residency.test.ts tests/city-ground-readiness.test.ts tests/city-camera-presentation.test.ts tests/ground-bake-budget.test.ts tests/padding-retry.test.ts tests/school-bus-attempt.test.ts
+npm test -- tests/camera-terrain-padding-coverage.test.ts tests/city-terrain-padding.test.ts tests/world-camera.test.ts tests/city-residency.test.ts tests/city-ground-readiness.test.ts tests/city-camera-presentation.test.ts tests/ground-bake-budget.test.ts tests/padding-retry.test.ts tests/school-bus-attempt.test.ts tests/everyday-attempt.test.ts
 npm run test:e2e -- tests/e2e/city-terrain-coverage.spec.ts --project=chromium --project=world-review-iphone --workers=1 --retries=0
 npm run test:db:stop
 ```

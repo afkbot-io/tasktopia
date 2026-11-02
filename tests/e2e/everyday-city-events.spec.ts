@@ -10,6 +10,7 @@ import { openMapCity } from './map-navigation';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
 import { sceneClockStepTowardStart } from '../scene-clock-step';
 import { isSchoolBusAttemptTerminal } from '../school-bus-attempt';
+import { isEverydayAttemptExpiredWithoutArrival } from '../everyday-attempt';
 
 // Long fixed-step journeys already save native checkpoints and telemetry.
 // Repeated automatic DOM/canvas snapshots produced a 306 MiB failure artifact
@@ -441,7 +442,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       const kind = await f.host.getAttribute('data-everyday-event');
       if (!kind) await writeFile(info.outputPath('missing-scene.json'), JSON.stringify({ start, task, data: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
       expect(kind).toBeTruthy();
-      const visitors = Number(await f.host.getAttribute('data-everyday-visitors'));
+      const initial = await safe(f.host), visitors = Number(initial.everydayVisitors);
       // A calendar slot can choose a campus without reachable idle children.
       // Try a later real slot, as the school-bus test does; each of the six
       // kinds still must complete with actual visitors and physical arrivals.
@@ -463,10 +464,27 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         fetched ||= state.dogCarrying === 'true'; scattered ||= state.birdsScattered === 'true';
         if (i === 8) await page.screenshot({ path: info.outputPath(`everyday-${kind!.toLowerCase()}.png`) });
       }
+      // Complete the real physical steps only until the published event end.
+      // A fixed extra14s kept rendering after expiry and exhausted WebKit's
+      // aggregate wall budget after all six arrivals had already passed.
+      for (let step = 0; step < 14 && Number(await f.host.getAttribute('data-road-event-server-now')) < start + 44_200; step++) {
+        await page.clock.runFor(1000); await safe(f.host);
+      }
       const actualFrames=await observed();arrivals=Math.max(arrivals,actualFrames.arrivals);animals=Math.max(animals,actualFrames.animals);
       fetched||=actualFrames.fetched;scattered||=actualFrames.scattered;
-      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ arrivals, animals, fetched, scattered, observed:actualFrames, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
-      if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })), null, 2));
+      const terminal = await safe(f.host);
+      await writeFile(info.outputPath(`everyday-${kind!.toLowerCase()}-observation.json`), JSON.stringify({ start, taskId:id, initial, arrivals, animals, fetched, scattered, observed:actualFrames, state: terminal }, null, 2));
+      if (!arrivals) await writeFile(info.outputPath('missing-arrival.json'), JSON.stringify(terminal, null, 2));
+      // A visit token admits a route, not an arrival deadline. Only a fully
+      // observed natural expiry may remain an unqualified calendar attempt;
+      // all six positive scenes are still due within the original36 slots.
+      if (!arrivals && isEverydayAttemptExpiredWithoutArrival({ scheduledStartMs:start,kind:kind!,taskId:id!,initial,terminal,observed:actualFrames,errors })) {
+        expect(errors).toEqual([]);
+        unavailable.push({kind,taskId:id,reason:'expired-before-arrival',start,initial,observed:actualFrames,terminal});
+        await writeFile(info.outputPath('everyday-unavailable-slots.json'),JSON.stringify(unavailable,null,2));
+        await setSceneLife(page,false);await seek(page,f.host,start+44_200);await drainCarriers();
+        continue;
+      }
       expect(arrivals, `${kind} residents never arrived`).toBeGreaterThan(0);
       // The view deliberately hides animals while another physical resident
       // occupies the pad. Such a slot cannot qualify the animal rendering.
@@ -485,12 +503,6 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       seen.add(kind!);
       samples.push({ kind, arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) });
       await writeFile(info.outputPath('everyday-scenes-progress.json'), JSON.stringify(samples, null, 2));
-      // Complete the real physical steps only until the published event end.
-      // A fixed extra14s kept rendering after expiry and exhausted WebKit's
-      // aggregate wall budget after all six arrivals had already passed.
-      for (let step = 0; step < 14 && Number(await f.host.getAttribute('data-road-event-server-now')) < start + 44_200; step++) {
-        await page.clock.runFor(1000); await safe(f.host);
-      }
       await seek(page, f.host, start + 44_200);
       await expect(f.host).toHaveAttribute('data-everyday-event', '');
       await setSceneLife(page, false);
