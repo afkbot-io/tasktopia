@@ -6,8 +6,14 @@
 
 ## Проверки
 
+Нужны Node.js 24+, Docker Compose v2 и Python 3.9+ с `venv`.
+Остановите dev-сервер перед E2E и освободите порт 5173. Playwright запускает
+отдельный сервер с тестовой базой; при занятом порту он может переиспользовать
+существующий сервер и его базу.
+
 ```bash
 npm run assets:setup
+npx playwright install --with-deps chromium firefox webkit
 npm run test:db:start
 npm run typecheck
 npm run lint

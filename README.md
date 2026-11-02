@@ -35,14 +35,33 @@ git clone https://github.com/afkbot-io/tasktopia.git
 cd tasktopia
 npm ci
 cp .env.example .env
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait postgres
 npm run seed
 npm run dev
 ```
 
-Откройте [localhost:5173](http://localhost:5173). Команда `seed` добавляет
-демонстрационные данные в локальную базу. Для рабочей установки используйте
+Откройте [localhost:5173](http://localhost:5173) и войдите с email
+`demo@tasktopia.local` и паролем `tasktopia-demo`. Это учётная запись только для
+локальной разработки. `seed` создаёт демо-мир; повторный запуск пересоздаёт
+города, задачи и историю демо-страны. Для рабочей установки используйте
 следующий раздел. Секреты из `.env` не должны попадать в Git.
+
+Миграции базы применяются автоматически. Готовая графика хранится в репозитории;
+для обычного запуска генерировать её не нужно. Проверить API можно командой
+`curl -fsS http://localhost:5173/health`. Для работы через MCP откройте меню
+«Подключить MCP» и используйте локальный URL `http://localhost:5173/mcp`;
+дальнейшие шаги — в [руководстве MCP](docs/MCP.md#быстрое-подключение).
+
+По умолчанию нужны свободные порты 5173 (клиент), 3000 (API) и 5432
+(PostgreSQL). Если API или клиент уже заняты, например:
+
+```bash
+PORT=5305 VITE_API_TARGET=http://127.0.0.1:5305 VITE_DEV_PORT=5307 \
+  APP_ORIGIN=http://localhost:5307 npm run dev
+```
+
+В этом случае открывайте `http://localhost:5307`. Для другого порта PostgreSQL
+задайте `POSTGRES_PORT` перед запуском Compose и тот же порт в `DATABASE_URL`.
 
 ## Развёртывание
 
@@ -58,10 +77,14 @@ npm run dev
 ## Разработка и проверки
 
 Клиент: React, TypeScript, Vite и PixiJS. Сервер: Fastify и PostgreSQL.
-Для проверок графики нужен Python 3 с модулем `venv`.
+Для проверок графики нужен Python 3.9+ с модулем `venv`.
+Перед E2E остановите `npm run dev` через Ctrl+C и освободите порт 5173:
+Playwright сам запускает приложение с тестовой базой. Уже работающий сервер
+на этом порту может быть переиспользован вместе с его базой.
 
 ```bash
 npm run assets:setup
+npx playwright install --with-deps chromium firefox webkit
 npm run test:db:start
 npm run typecheck
 npm run lint
