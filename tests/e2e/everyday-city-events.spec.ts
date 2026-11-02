@@ -513,18 +513,41 @@ clockSceneTest('public bus completes an actual boarding, directed trip and safe 
   try {
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
     const now = Number(await f.host.getAttribute('data-road-event-server-now'));
-    // This minute starts30s into a road window; an80s physical trip can be
-    // observed before the next roadside scene preempts the bus.
-    let minute = Math.floor(now / 60000) + 1; while (minute % 3 !== 2 || ![30_000, 390_000].includes(minute * 60_000 % 450_000)) minute++;
-    await seek(page, f.host, minute * 60000 + 300);
+    // Skip only the dead interval with city life paused. A conservative seek
+    // can otherwise land in road admission12..16s and create WATER/BREAKDOWN
+    // across the intended bus window30..34s, postponing departure by a minute.
+    let minute = Math.floor(now / 60000) + 1;
+    while (minute % 3 !== 2 || ![30_000, 390_000].includes(minute * 60_000 % 450_000) || minute * 60000 - now < 5000) minute++;
+    const minuteStart = minute * 60000;
+    await setSceneLife(page, false);
+    // Two seconds before this minute is after everyday admission8..12s;
+    // enabling seven seconds before it could start a school ceremony instead.
+    await seek(page, f.host, minuteStart - 2000);
+    const prepared = await safe(f.host), preparedAt = Number(prepared.roadEventServerNow);
+    expect(preparedAt).toBeGreaterThanOrEqual(minuteStart - 2500);
+    expect(preparedAt).toBeLessThan(minuteStart);
+    expect(prepared.roadEvent).toBe(''); expect(prepared.transitPhase).toBe('');
+    const baseline = { boarded: Number(prepared.transitBoarded), alighted: Number(prepared.transitAlighted) };
     const phases = new Set<string>();
-    for (let i = 0; i < 80 && Number(await f.host.getAttribute('data-transit-alighted')) === 0; i++) {
+    await setSceneLife(page, true);
+    for (let step = 0; step < 40 && Number(await f.host.getAttribute('data-road-event-server-now')) < minuteStart + 300; step++) {
+      await page.clock.runFor(100); phases.add((await f.host.getAttribute('data-transit-phase'))!);
+    }
+    const admission = await safe(f.host);
+    await writeFile(info.outputPath('bus-clock-arrangement.json'), JSON.stringify({ now, minuteStart, prepared, baseline, admission }, null, 2));
+    expect(Number(admission.roadEventServerNow)).toBeGreaterThanOrEqual(minuteStart + 300);
+    expect(admission.roadEvent).toBe(''); expect(admission.transitRole).toBe('BUS');
+    expect(admission.transitPhase).toMatch(/^(ARRIVE|BOARD)$/);
+    // Observe every physical step of the new trip, including normal future
+    // city events; the original80s horizon and210s wall budget stay unchanged.
+    for (let i = 0; i < 80 && Number(await f.host.getAttribute('data-transit-alighted')) === baseline.alighted; i++) {
       await page.clock.runFor(1000); phases.add((await f.host.getAttribute('data-transit-phase'))!);
       if (i % 5 === 0) await safe(f.host);
     }
     const state = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
-    await writeFile(info.outputPath('bus-round-trip.json'), JSON.stringify({ phases: [...phases], state }, null, 2));
-    expect(Number(state.transitBoarded)).toBeGreaterThan(0); expect(Number(state.transitAlighted)).toBeGreaterThan(0);
+    await writeFile(info.outputPath('bus-round-trip.json'), JSON.stringify({ phases: [...phases], baseline, state }, null, 2));
+    expect(Number(state.transitBoarded) - baseline.boarded).toBeGreaterThan(0);
+    expect(Number(state.transitAlighted) - baseline.alighted).toBeGreaterThan(0);
     expect([...phases]).toEqual(expect.arrayContaining(['ARRIVE', 'BOARD', 'TRAVEL', 'ALIGHT']));
     await safe(f.host); await page.screenshot({ path: info.outputPath('bus-alighting.png') });
   } finally { await f.cleanup(); }

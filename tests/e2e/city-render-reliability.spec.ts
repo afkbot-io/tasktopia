@@ -54,7 +54,9 @@ async function enterCity(page:Page) {
     localStorage.setItem("tasktopia:world-preferences:v2",JSON.stringify({quality:"NORMAL",cityLife:true,sound:false}));
   });
   expect((await page.request.post("/api/auth/login",{data:{email:process.env.E2E_CITY_EMAIL??"demo@tasktopia.local",password:process.env.E2E_CITY_PASSWORD??"tasktopia-demo"}})).status()).toBe(200);
-  await page.goto("/");await openMapCity(page);
+  // The journey waits for the actual PLANET/CITY readiness below. Generic
+  // window.load is a separate lifecycle signal from those visible UI gates.
+  await page.goto("/", { waitUntil: "domcontentloaded" });await openMapCity(page);
   const host=page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit","atomic",{timeout:30_000});
   await expect(host).toHaveAttribute("data-loading","false");
