@@ -125,7 +125,8 @@ test('transport boundary outside resident scene keeps visible terrain covered af
   const scenePattern = '**/api/countries/*/cities/*/scene';
   const transportEnvelope = (route: Route) => {
     const delivery = (async () => {
-      const response = await route.fetch(); expect(response.status()).toBe(200);
+      // Playwright's APIResponse decoder cannot inspect Firefox's Zstd body.
+      const response = await route.fetch({ headers: { ...route.request().headers(), 'accept-encoding': 'identity' } }); expect(response.status()).toBe(200);
       const envelope = await response.json(), scene = decodeCitySceneWire(envelope), original = scene.railway;
       expect(original?.axis, 'The owned local fixture must provide its real vertical railway').toBe('vertical');
       const immutable = () => hash([scene.city, scene.chunks, scene.completedDistrictSnapshots, scene.airports]);
