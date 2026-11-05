@@ -1,6 +1,6 @@
 import { planCityAirServices,sampleCityAirService } from "../../shared/city-air-service";
 import { addTransportWalkways } from "../transport-walkways";
-import { airportSiteIntersectsRect,drawCityAirportSites } from "../airport-site-view";
+import { airportFacilityTaskAt,airportSiteIntersectsRect,drawCityAirportSites } from "../airport-site-view";
 import { createCityRoadEventView } from "../city-road-event-view";
 import { planRoadEpisode, roadEpisodePose, type RoadEpisode } from "../city-road-events";
 import { createCityCinematicView } from "../city-cinematic-view";
@@ -1438,7 +1438,14 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       railwayGround.eventMode = "none";
       world.addChildAt(railwayGround, world.getChildIndex(worldObjectLayer));
       const airportGround = new Graphics();
-      airportGround.eventMode = "none";
+      airportGround.eventMode = "static"; airportGround.cursor = "pointer";
+      const airportTaskAtPixel = (x: number, y: number) => airportFacilityTaskAt(cityScene?.airports ?? [], latestCanonicalTasks,
+        { x: x / CELL_SIZE, y: y / CELL_SIZE });
+      airportGround.hitArea = { contains: (x, y) => airportTaskAtPixel(x, y) !== undefined };
+      airportGround.on("pointertap", event => {
+        const point = airportGround.toLocal(event.global), taskId = airportTaskAtPixel(point.x, point.y);
+        if (taskId) { event.stopPropagation(); selectTask(taskId); }
+      });
       world.addChildAt(airportGround, world.getChildIndex(railwayGround));
       const trainLayer = new Container();
       trainLayer.eventMode = "passive";

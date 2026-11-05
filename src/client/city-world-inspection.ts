@@ -41,7 +41,9 @@ export class CityWorldInspection {
     if(item&&this.target&&matches(this.target,item)&&!this.ended)this.item=item;
     else {this.ended=true;this.following=false;}
     if(!this.item.local||!this.item.position)this.following=false;
-    const signature=`${this.item.phase}:${this.item.kind==="TRANSPORT"?this.item.activity:""}:${this.following}:${this.ended}:${this.enabled}:${this.item.local}:${!!this.item.position}`;
+    // Names may resolve after opening while reduced motion stops the clock.
+    // Publish that content once immediately; moving progress remains throttled.
+    const signature=`${this.item.phase}:${this.item.kind==="TRANSPORT"?`${this.item.activity}:${this.item.fromName}:${this.item.toName}`:""}:${this.following}:${this.ended}:${this.enabled}:${this.item.local}:${!!this.item.position}`;
     if(this.ended&&signature===this.signature)return {};
     let publication:InspectionSnapshot|undefined;
     if(signature!==this.signature||time-this.publishedAt>=250||time<this.publishedAt){

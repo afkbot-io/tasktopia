@@ -9,7 +9,7 @@ import {TRANSPORT_EPOCH,transportJourney} from "../../src/shared/transport-sched
 import {installSceneClock} from "./city-scene-clock";
 test.use(process.env.E2E_OBSERVATION_TOUCH==="true"?{...devices["Pixel 7"],serviceWorkers:"block"}:{});
 test.skip(process.env.E2E_WORLD_OBSERVATION!=="true","Requires the isolated owned transport world");
-const fixture=()=>JSON.parse(readFileSync(".builder/world-reliability-evolution-20261016/transport/functional-fixture.json","utf8")) as {sites:{countryId:string;city:{id:string;name:string}}[]};
+const fixture=()=>JSON.parse(readFileSync(process.env.E2E_TRANSPORT_FIXTURE??".builder/world-reliability-evolution-20261016/transport/functional-fixture.json","utf8")) as {sites:{countryId:string;city:{id:string;name:string}}[]};
 async function entry(page:Page,kind:"AIR"|"RAIL"|"SEA"){
  expect(new URL(process.env.E2E_BASE_URL!).hostname).toMatch(/^(127\.0\.0\.1|localhost)$/);
  const site=fixture().sites[0]!;await installSceneClock(page);
@@ -37,6 +37,43 @@ async function clickWorldPoint(page:Page,point:Cell){
  expect(x).toBeGreaterThan(0);expect(y).toBeGreaterThan(0);expect(x).toBeLessThan(box.width);expect(y).toBeLessThan(box.height);
  await canvas.click({position:{x,y}});
 }
+
+async function showRoute(page:Page,id:string){
+ await page.locator('.game-popover > summary').filter({hasText:'Фильтры'}).click();
+ await page.getByRole('button',{name:'Развитие города',exact:true}).click();
+ const route=page.getByRole('complementary',{name:'Развитие города'}).locator(`[data-transport-route="${id}"]`);
+ await expect(route).toHaveCount(1);await route.getByRole('button',{name:'Показать направление'}).click();
+ const host=page.locator('.world-canvas');
+ await expect(host).toHaveAttribute('data-selected-transport-route',id);
+ await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+}
+
+test('the actual airport runway opens its existing terminal task and dismissal preserves the shown camera',async({page},info)=>{
+ const errors:string[]=[],reads:string[]=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+ const {host,scene}=await entry(page,'AIR'),airport=scene.airports![0]!,plan=planCityAirServices(scene)[0]!;
+ await showRoute(page,plan.schedule.id);
+ const runway=airport.plan!.runway,point={x:(runway[0].x+runway[1].x)/2+.5,y:runway[0].y+.5};
+ const pose=()=>host.evaluate(node=>{const d=(node as HTMLElement).dataset;return {x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale)};});
+ const before=await pose();await clickWorldPoint(page,point);
+ await expect(page.locator('#task-title')).toBeVisible();
+ await expect.poll(()=>new URL(page.url()).searchParams.get('taskId')).toBe(airport.taskId);
+ const task=[...scene.chunks.flatMap(chunk=>chunk.tasks),...scene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)].find(task=>task.id===airport.taskId)!;
+ await expect(host).toHaveAttribute('data-focus-x',String(task.origin.x));
+ await expect(host).toHaveAttribute('data-focus-y',String(task.origin.y));
+ // The public camera snapshot is published at a bounded250ms cadence.
+ await page.clock.runFor(350);
+ await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+ const shown=await pose();expect(shown.scale).toBe(before.scale);
+ await page.screenshot({path:info.outputPath('airport-task.png')});
+ await page.keyboard.press('Escape');await expect(page.locator('.task-modal')).toHaveCount(0);
+ await expect.poll(pose).toEqual(shown);
+ expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
+ expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+ expect(errors).toEqual([]);
+ await info.attach('airport-selection',{body:JSON.stringify({airportTaskId:airport.taskId,point,before,shown,reads}),contentType:'application/json'});
+});
 for(const [kind,title] of [["AIR","Самолёт"],["RAIL","Поезд"],["SEA","Паром"]] as const)test(`real ${kind} inspector opens without automatic motion, follows only on request and cancels on manual navigation`,async({page},info)=>{
  test.setTimeout(90_000);const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));
  const {host,site,scene}=await entry(page,kind),canvas=host.locator("canvas"),identity=await canvas.elementHandle();
@@ -47,13 +84,7 @@ for(const [kind,title] of [["AIR","Самолёт"],["RAIL","Поезд"],["SEA"
  // The removed tour is not replaced by a synthetic inspector test hook.
  const initialPlan=kind==='AIR'?planCityAirServices(scene)[0]!:kind==='RAIL'?planCityRailServices(scene.railway!,scene.railConnections??[])[0]!:planCitySeaServices(scene.ports??[],scene.seaConnections??[])[0]!;
  const routeId=initialPlan.schedule.id;
- await page.locator('.game-popover > summary').filter({hasText:'Фильтры'}).click();
- await page.getByRole('button',{name:'Развитие города',exact:true}).click();
- const development=page.getByRole('complementary',{name:'Развитие города'});
- const route=development.locator(`[data-transport-route="${routeId}"]`);
- await expect(route).toHaveCount(1);await route.getByRole('button',{name:'Показать направление'}).click();
- await expect(host).toHaveAttribute('data-selected-transport-route',routeId);
- await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+ await showRoute(page,routeId);
  await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+1000).toISOString()));await page.clock.runFor(200);
  const before=await readPose(),nowAtClick=Number(await host.getAttribute('data-road-event-server-now'));
  const point=kind==='AIR'?sampleCityAirService(planCityAirServices(scene)[0]!,nowAtClick).point

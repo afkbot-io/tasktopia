@@ -1,6 +1,19 @@
 import type { Graphics } from "pixi.js";
 import type { AirportSitePlan } from "../shared/airport-site";
 import type { Cell } from "../shared/contracts";
+/** Resolve only visible canonical facilities to their existing task. An old
+ * persisted airfield can outlive a demolished terminal; it is not a task. */
+export function airportFacilityTaskAt(sites: readonly { taskId: string; stage: number; plan: AirportSitePlan | null }[],
+  tasks: ReadonlyMap<string, { stage: number }>, point: Cell): string | undefined {
+  if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return undefined;
+  for (const { taskId, stage, plan } of sites) {
+    if (!plan || stage < 1 || (tasks.get(taskId)?.stage ?? 0) < 1) continue;
+    const r = plan.airfield;
+    if (point.x >= r.minX && point.x < r.maxX + 1 && point.y >= r.minY && point.y < r.maxY + 1
+      || plan.access.some(cell => Math.floor(point.x) === cell.x && Math.floor(point.y) === cell.y)) return taskId;
+  }
+  return undefined;
+}
 export function airportSiteIntersectsRect(sites:readonly {plan:AirportSitePlan|null}[],origin:Cell,width:number,height:number):boolean{
   return sites.some(({plan})=>plan&&(origin.x<=plan.airfield.maxX&&origin.x+width>plan.airfield.minX&&origin.y<=plan.airfield.maxY&&origin.y+height>plan.airfield.minY
     ||plan.access.some(p=>p.x>=origin.x&&p.x<origin.x+width&&p.y>=origin.y&&p.y<origin.y+height)));
