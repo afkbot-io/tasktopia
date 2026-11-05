@@ -1,12 +1,12 @@
-import type { Cell, ChunkTaskDto, Rect } from '../shared/contracts';
+import type { Cell, ChunkTaskDto } from '../shared/contracts';
 import { incidentMode } from './task-incidents';
 import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from './cooperative-preparation';
 export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'>;
 
 export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL';
-export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[]};
+export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[];responseCells?:readonly Cell[]};
 export type CityLifePlan=CityLifeSite & {id:string;start:number;durationMs:number};
-export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';progress:number;position:Cell;durationMs:number};
+export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';position:Cell;actorIds:string[];serviceId?:string;arrived:number};
 const key=(cell:Cell)=>`${cell.x},${cell.y}`;
 export function cityLifeHash(value:string) {let h=2166136261;for(const char of value)h=Math.imul(h^char.charCodeAt(0),16777619);return h>>>0;}
 const directions=[{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
@@ -21,7 +21,7 @@ function kindFor(task:CityLifeTask):CityLifeKind {
 }
 
 /** Compile only real walkable approaches. Completed task records remain immutable. */
-export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):Generator<void,CityLifeSite[],void> {
+export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,roads?:ReadonlyMap<string,Cell>):Generator<void,CityLifeSite[],void> {
   const sites:CityLifeSite[]=[];
   const unique=new Map<string,CityLifeTask>();
   for(const task of tasks){unique.set(task.id,task);yield;}
@@ -44,15 +44,20 @@ export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:Read
       }
     }
     if(route.length<7)continue;
-    sites.push({taskId:task.id,kind:kindFor(task),route:route.reverse()});
+    const kind = kindFor(task), responseCells: Cell[] = [];
+    if (kind === 'DRILL' && roads) for (let y = entrance.y - 8; y <= entrance.y + 8; y++) for (let x = entrance.x - 8; x <= entrance.x + 8; x++) {
+      const cell = roads.get(`${x},${y}`);if (cell) responseCells.push(cell);yield;
+    }
+    responseCells.sort((a,b)=>Math.abs(a.x-entrance.x)+Math.abs(a.y-entrance.y)-Math.abs(b.x-entrance.x)-Math.abs(b.y-entrance.y));
+    sites.push({taskId:task.id,kind,route:route.reverse(),...(kind === 'DRILL' ? {responseCells:responseCells.slice(0,16)} : {})});
   }
   return sites;
 }
-export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):CityLifeSite[] {
-  return completePreparation(cityLifeSitesSteps(tasks,walkGraph,blocked));
+export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,roads?:ReadonlyMap<string,Cell>):CityLifeSite[] {
+  return completePreparation(cityLifeSitesSteps(tasks,walkGraph,blocked,roads));
 }
-export function cityLifeSitesAsync(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,options:CooperativePreparationOptions={}):Promise<CityLifeSite[]> {
-  return prepareCooperatively(cityLifeSitesSteps(tasks,walkGraph,blocked),options);
+export function cityLifeSitesAsync(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,options:CooperativePreparationOptions={},roads?:ReadonlyMap<string,Cell>):Promise<CityLifeSite[]> {
+  return prepareCooperatively(cityLifeSitesSteps(tasks,walkGraph,blocked,roads),options);
 }
 
 /** The shared director supplies bounded visible candidates and owns admission.
@@ -62,15 +67,5 @@ export function planCityLife(cityId:string,sites:readonly CityLifeSite[],now:num
   const window=Math.floor(now/180_000);
   const ordered=[...sites].sort((a,b)=>a.taskId.localeCompare(b.taskId));
   const site=ordered[cityLifeHash(`${cityId}:${window}`)%ordered.length]!;
-  return {...site,id:`${cityId}:${window}:${site.taskId}`,start:now,durationMs:38_000};
-}
-export function cityLifePose(plan:CityLifePlan|undefined,now:number,view:Rect,options:{enabled:boolean;reducedMotion:boolean}):CityLifeScene|undefined {
-  if(!plan||!options.enabled||options.reducedMotion||!Number.isFinite(now))return;
-  const anchor=plan.route.at(-1)!;
-  if(anchor.x<view.minX||anchor.x>view.maxX||anchor.y<view.minY||anchor.y>view.maxY)return;
-  const elapsed=now-plan.start;if(elapsed<0||elapsed>=plan.durationMs)return;
-  const phase=elapsed<8000?'ARRIVING':elapsed<30000?'ACTIVITY':'LEAVING';
-  const progress=phase==='ARRIVING'?elapsed/8000:phase==='ACTIVITY'?1:1-(elapsed-30000)/8000;
-  const step=progress*(plan.route.length-1),from=plan.route[Math.floor(step)]!,to=plan.route[Math.min(plan.route.length-1,Math.floor(step)+1)]!;
-  return {...plan,phase,progress,position:{x:from.x+(to.x-from.x)*(step%1),y:from.y+(to.y-from.y)*(step%1)}};
+  return {...site,id:`${cityId}:${window}:${site.taskId}`,start:now,durationMs:75_000};
 }
