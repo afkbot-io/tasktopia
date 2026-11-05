@@ -124,6 +124,7 @@ export type CityMobilityAgent = {
   activity: "NONE" | "REST" | "PARKED" | "INSIDE"; waitMs: number;
   yieldReason: "NONE" | "RESERVATION" | "OCCUPIED_EXIT" | "BODY" | "ROAD_CLOSED" | "WORK_SITE";
   response?: CityResponseRole;
+  responseOwner?: string;
   /** A permanent vehicle role, independent of its current appointment. */
   fleet?: TransitFleetRole;
   visit?: { id: string; arrived: boolean };
@@ -148,8 +149,8 @@ export type CityMobility = {
   setRoadClosures(cells: ReadonlySet<string>): void;
   setWalkClosures(cells: ReadonlySet<string>): void;
   roadEventSites(view?: Rect): RoadEventSite[];
-  dispatchResponse(role: CityResponseRole, targets: readonly Cell[], stayMs?: number, agentId?: string): boolean;
-  clearResponses(roles?: readonly CityResponseRole[], agentId?: string): void;
+  dispatchResponse(role: CityResponseRole, targets: readonly Cell[], stayMs?: number, agentId?: string, ownerId?: string): boolean;
+  clearResponses(roles?: readonly CityResponseRole[], agentId?: string, ownerId?: string): void;
   holdTransit(agentId: string): void;
   dispatchVisit(id: string, targets: readonly Cell[], count: number, stayMs: number, indoors: boolean, actorIds?: readonly string[], travelBudgetMs?: number): string[];
   clearVisits(id?: string): void;
@@ -575,7 +576,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
   const spawn = (): void => completePreparation(spawnSteps());
 
   const publish = () => {
-    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response, fleet, visit, carrier, age }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response, fleet, visit: visit && { ...visit }, carrier, age }));
+    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response, responseOwner, fleet, visit, carrier, age }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response, responseOwner, fleet, visit: visit && { ...visit }, carrier, age }));
     const signal = (zone: MobilityZone, axis: Reservation["axis"] | undefined): CityMobilitySignal => ({
       id: zone.id, bounds: zone.bounds, signalPosts: zone.signalPosts,
       horizontal: axis === "H" ? "GREEN" : "RED", vertical: axis === "V" ? "GREEN" : "RED", pedestrians: axis === "P" ? "GREEN" : "RED",
@@ -639,7 +640,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       if (actor.evacuating) {
         if (!actors.some(a => a.carrier === actor.id)) {
           actor.evacuating = undefined; actor.evacuationTargets = undefined;
-          actor.response = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant;
+          actor.response = undefined; actor.responseOwner = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant;
           actor.restMs = 0; actor.activity = 'NONE';
         } else if (actor.activity === 'REST') {
           alight(actor.id, actor.evacuationTargets ?? nearbyExits(actor.current));
@@ -652,7 +653,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       }
       if (actor.responseUntil !== undefined && clock >= actor.responseUntil) {
         if (actors.some(a => a.carrier === actor.id)) recoverPassengers(actor);
-        else { actor.response = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant; }
+        else { actor.response = undefined; actor.responseOwner = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant; }
       }
       if (actor.restMs > 0) {
         actor.restMs = Math.max(0, actor.restMs - STEP_MS);
@@ -962,10 +963,11 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       }
       return sites;
     },
-    dispatchResponse(role, targets, stayMs = 2500, agentId) {
+    dispatchResponse(role, targets, stayMs = 2500, agentId, ownerId) {
       const transit = role === 'BUS' || role === 'SCHOOL_BUS';
       if (!targets.length || !(input.transitFleet && transit) && actors.filter(a => a.response && !a.fleet && a.id !== agentId).length >= 2) return false;
       const candidates = actors.filter(actor => actor.kind === "CAR" && !actor.evacuating && (!actor.response || actor.id === agentId) && (!agentId || actor.id === agentId)
+        && (!actor.response || ownerId === undefined || actor.responseOwner === ownerId)
         && (!input.transitFleet || (transit ? actor.fleet === role : !actor.fleet)))
         .sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x-a.next.x)+Math.abs(c.y-a.next.y)))-Math.min(...targets.map(c => Math.abs(c.x-b.next.x)+Math.abs(c.y-b.next.y)))).slice(0, 6);
       let picked: { actor: Agent; route: Cell[] } | undefined;
@@ -995,15 +997,16 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         actor.next = actor.route[1]!; actor.direction = heading(actor.current, actor.next, actor.direction);
         actor.progress = 0; actor.segmentStart = { x: 0, y: 0 }; actor.segmentEnd = { x: 0, y: 0 };
       }
-      actor.response = role; actor.responseUntil = undefined; actor.responseTarget = { ...picked.route.at(-1)! }; actor.responseRetryAt = undefined;
+      actor.response = role; actor.responseOwner = ownerId; actor.responseUntil = undefined; actor.responseTarget = { ...picked.route.at(-1)! }; actor.responseRetryAt = undefined;
       actor.responseStayMs = Math.max(500, Math.min(30_000, Number.isFinite(stayMs) ? stayMs : 2500));
       actor.variant = role === "POLICE" ? "blue" : role === "FIRE" ? "red" : "van";
       publish(); return true;
     },
-    clearResponses(roles, agentId) {
-      for (const actor of actors) if (actor.response && (!roles || roles.includes(actor.response)) && (!agentId || actor.id === agentId)) {
+    clearResponses(roles, agentId, ownerId) {
+      for (const actor of actors) if (actor.response && (!roles || roles.includes(actor.response)) && (!agentId || actor.id === agentId)
+        && (ownerId === undefined || actor.responseOwner === ownerId)) {
         if (actors.some(passenger => passenger.carrier === actor.id)) { recoverPassengers(actor); continue; }
-        actor.response = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant;
+        actor.response = undefined; actor.responseOwner = undefined; actor.responseUntil = undefined; actor.responseTarget = undefined; actor.responseRetryAt = undefined; actor.variant = actor.baseVariant;
         actor.restMs = 0; actor.activity = "NONE"; actor.route = actor.route.slice(0, 2);
       }
       publish();

@@ -164,6 +164,39 @@ test('world weather survives pan, respects quality and motion, and dries without
   await info.attach('weather-state',{body:JSON.stringify(await host.evaluate(node=>({...((node as HTMLElement).dataset)}))),contentType:'application/json'});
 });
 
+test('a city entered mid-window admits local scenes and releases shared owners when life is disabled',async({page,hasTouch},info)=>{
+  test.setTimeout(90_000);
+  const errors:string[]=[],reads:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  const origin=Math.floor(Date.UTC(2035,0,1)/900_000)*900_000+42_000;
+  await page.route('**/api/**',async route=>{
+    const response=await route.fetch({headers:{...route.request().headers(),'accept-encoding':'identity'}});
+    await route.fulfill({response,headers:{...response.headers(),'x-tasktopia-server-time':String(origin)}});
+  });
+  const host=await enterCity(page,true);
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await pauseInstalledClock(page);
+  for(let step=0;step<16&&Number(await host.getAttribute('data-city-event-admitted')??0)===0;step++)await page.clock.runFor(500);
+  expect(Number(await host.getAttribute('data-city-event-admitted'))).toBeGreaterThan(0);
+  const owners=JSON.parse((await host.getAttribute('data-city-event-owners'))!) as {id:string;channel:string}[];
+  expect(owners.length).toBeGreaterThan(0);expect(owners.length).toBeLessThanOrEqual(3);
+  expect(new Set(owners.map(owner=>owner.channel)).size).toBe(owners.length);
+  expect(Number(await host.getAttribute('data-event-local-site-work')??0)).toBeLessThanOrEqual(4096);
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');await page.clock.runFor(300);
+  expect(Number(await host.getAttribute('data-city-event-leases'))).toBeLessThanOrEqual(2);
+  await preferences.getByLabel('Жизнь города').setChecked(false);await page.clock.runFor(300);
+  await expect(host).toHaveAttribute('data-city-event-leases','0');
+  for(const attribute of ['data-city-life-event','data-everyday-event','data-road-event'])await expect(host).toHaveAttribute(attribute,'');
+  await preferences.getByLabel('Жизнь города').setChecked(true);await page.clock.runFor(2500);
+  const next=JSON.parse((await host.getAttribute('data-city-event-owners'))!) as {id:string}[];
+  expect(next.some(owner=>owners.some(previous=>previous.id===owner.id))).toBe(false);
+  for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total'])await expect(host).toHaveAttribute(metric,'0');
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('common-event-director',{body:JSON.stringify({owners,next,state:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:'application/json'});
+});
+
 // Visible CITY readiness is independent of the offscreen prewarm queue.
 async function expectVisibleCityGround(host:Locator,info:TestInfo,phase:string){
  let last:Record<string,string|undefined>|undefined;

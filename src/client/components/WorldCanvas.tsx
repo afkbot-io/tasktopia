@@ -10,6 +10,8 @@ import { createEverydayView } from '../city-everyday-view';
 import { createCloudShadowView } from '../city-cloud-shadow-view';
 import { prepareWetCellIndexAsync } from '../city-weather';
 import { createTransitStopView } from '../city-transit-stop-view';
+import { CityEventDirector, type CityEventLease } from '../city-event-director';
+import { createCityEventSiteIndex, prepareCityEventSiteIndexAsync, type CityEventSiteIndex } from '../city-event-site-index';
 import { cityBusInspection } from '../city-bus-inspection';
 import { createTaskActivityController } from '../task-activity-feedback';
 import { createTaskActivityView } from '../task-activity-view';
@@ -1714,7 +1716,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       let movementPreparationFailed=false;
       startupDisposers.push(()=>{movementPreparation.dispose();lifePreparation.dispose();animalPreparation.dispose();});
       type LifeGeometry=Pick<PreparedCityMobilityGeometry,"walkingCells"|"visitTargets"|"canDrive">;
-      type PreparedLife={revision:number;value:{tasks:ReadonlyMap<string,ChunkTaskDto>;everyday:PreparedEveryday;sites:CityLifeSite[];candidates:string[];planningMs:number}};
+      type PreparedLife={revision:number;value:{tasks:ReadonlyMap<string,ChunkTaskDto>;everyday:PreparedEveryday;sites:CityLifeSite[];neighbourhoodIndex:CityEventSiteIndex<CityLifeSite>;planningMs:number}};
       let prepareLifeSites: ((signal:AbortSignal,geometry:LifeGeometry)=>Promise<PreparedLife>) | undefined;
       let resizeAnimals: (()=>void) | undefined;
       let movementInput: Parameters<ReturnType<typeof createCityMobility>["updateNetwork"]>[0] | undefined;
@@ -1740,19 +1742,50 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       let simulationTimeMs = 0;
       const constructionWorkers = new Map<string, { worker: ConstructionLifeSite["workers"][number]; view: Sprite }>();
       const constructionMaterials = new Map<string, Sprite>();
-      let completedLifeSites:CityLifeSite[]=[];
-      let completedLifeCandidates:string[]=[];
+      const eventDirector = new CityEventDirector();
+      let eventDirectorTelemetryAt = 0;
+      startupDisposers.push(() => eventDirector.clear());
+      const eventAdmissionView = (): Rect | undefined => {
+        const rect = host.getBoundingClientRect(), size = CELL_SIZE * world.scale.x;
+        const overlays = [...document.querySelectorAll<HTMLElement>('.map-level-nav,.task-modal,.city-world-observation')].map(element => {
+          const bounds = element.getBoundingClientRect();
+          return { x: (bounds.x - rect.x) * app.screen.width / rect.width, y: (bounds.y - rect.y) * app.screen.height / rect.height,
+            width: bounds.width * app.screen.width / rect.width, height: bounds.height * app.screen.height / rect.height };
+        });
+        const area = availableMapArea({ x: 0, y: 0, width: app.screen.width, height: app.screen.height }, overlays);
+        if (!area) return;
+        return { minX: (area.x - world.x) / size + 3, minY: (area.y - world.y) / size + 3,
+          maxX: (area.x + area.width - world.x) / size - 3, maxY: (area.y + area.height - world.y) / size - 3 };
+      };
+      let completedLifeIndex = createCityEventSiteIndex<CityLifeSite>([], site => site.route.at(-1)!, site => `${site.taskId}:${site.kind}`);
       let completedLifePlan:CityLifePlan|undefined;
-      let completedLifeWindow=-1;
       const completedLifeView=createCityLifeView(cachedTexture);
       agentOverlayLayer.addChild(completedLifeView.root);
+      const clearCompletedLife = () => {
+        const previous = completedLifePlan; completedLifePlan = undefined;
+        if (previous) eventDirector.release(previous.id);
+        completedLifeView.update(undefined, 0);
+      };
       const updateCompletedLife=()=>{
         const now=readServerWorldTime()??Date.now(),window=Math.floor(now/180_000);
-        if(window!==completedLifeWindow) {
-          completedLifeWindow=window;
-          completedLifePlan=planCityLife(focusCityId??'',completedLifeSites,now,completedLifeCandidates);
-          host.dataset.cityLifeStartsIn=String(completedLifePlan?Math.round(completedLifePlan.start-now):-1);
-          host.dataset.cityLifePlannedTask=completedLifePlan?.taskId??'';
+        const enabled = readWorldPreferences().cityLife && currentLod === 'DETAIL' && ambientAssetsReady
+          && !reducedMotion && activeRef.current && !document.hidden;
+        eventDirector.update(now, { enabled, economy, busy: cinematicView.reservedCells() });
+        if (!completedLifePlan && eventDirector.due('NEIGHBOURHOOD', now, window * 180_000 + 6000)) {
+          const bounds = eventAdmissionView(), local = bounds ? completedLifeIndex.query(bounds) : undefined;
+          host.dataset.eventLocalSiteWork = String(local?.visited ?? 0);
+          const lease = (plan: CityLifePlan): CityEventLease => ({ id: plan.id, channel: 'NEIGHBOURHOOD', priority: 1,
+            cells: plan.route, actors: [], until: plan.start + plan.durationMs,
+            replayUntil: Math.max((window + 1) * 180_000, plan.start + plan.durationMs), onRelease: clearCompletedLife });
+          const candidates = local?.items.filter(site => eventDirector.canAcquire(lease(planCityLife(focusCityId ?? '', [site], now)!))) ?? [];
+          const plan = planCityLife(focusCityId ?? '', candidates, now);
+          if (plan && eventDirector.acquire(lease(plan))) completedLifePlan = plan;
+        }
+        host.dataset.cityLifeStartsIn = String(completedLifePlan ? 0 : -1);
+        host.dataset.cityLifePlannedTask = completedLifePlan?.taskId ?? '';
+        if (host.dataset.cityLifeEpisodeId !== (completedLifePlan?.id ?? '')) {
+          host.dataset.cityLifeEpisodeId = completedLifePlan?.id ?? '';
+          host.dataset.cityLifePlan = JSON.stringify(completedLifePlan ?? null);
         }
         const size=CELL_SIZE*world.scale.x;
         const pose=cityLifePose(completedLifePlan,now,{
@@ -1762,6 +1795,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         completedLifeView.update(pose,now);
         if(host.dataset.cityLifeEvent!==(pose?.kind??''))host.dataset.cityLifeEvent=pose?.kind??'';
         if(host.dataset.cityLifePhase!==(pose?.phase??''))host.dataset.cityLifePhase=pose?.phase??'';
+        const active = eventDirector.active;
+        if (now >= eventDirectorTelemetryAt || host.dataset.cityEventLeases !== String(active.length)) {
+          eventDirectorTelemetryAt = now + 250;
+          host.dataset.cityEventLeases = String(active.length); host.dataset.cityEventOwners = JSON.stringify(active);
+          host.dataset.cityEventAdmitted = String(eventDirector.metrics.admitted); host.dataset.cityEventConflicts = String(eventDirector.metrics.conflicts);
+          host.dataset.cityEventAttempts = String(eventDirector.metrics.attempts);
+        }
       };
       const updateConstructionWorkers = () => {
         for (const { worker, view } of constructionWorkers.values()) {
@@ -1999,20 +2039,29 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         view.scale.set(pose.scale);
         view.position.set(pose.x, pose.y);
       };
-      const everydayController = createEverydayController(focusCityId ?? countryId, () => mobility, cue => { playCitySound(cue); });
+      const everydayController = createEverydayController(focusCityId ?? countryId, () => mobility, cue => { playCitySound(cue); }, eventDirector);
       const residentItinerary=createCityResidentItinerary({mobility:()=>mobility,limit:()=>economy?2:4});
       const commitLifeSites=(prepared:PreparedLife,isCurrent:()=>boolean):boolean=>{
         if(!everydayController.commitPrepared(prepared.value.everyday,()=>isCurrent()&&latestMovement.life===prepared.revision))return false;
-        const {tasks,sites,candidates,planningMs}=prepared.value;
+        const {tasks,sites,neighbourhoodIndex,planningMs}=prepared.value;
         lastEverydayReservations=undefined;
-        completedLifeCandidates=candidates;completedLifeSites=sites;
+        completedLifeIndex = neighbourhoodIndex;
+        if (completedLifePlan) {
+          const task = tasks.get(completedLifePlan.taskId);
+          const anchor = completedLifePlan.route.at(-1)!;
+          const retained = neighbourhoodIndex.query({ minX: anchor.x, minY: anchor.y, maxX: anchor.x, maxY: anchor.y }).items
+            .some(site => site.taskId === completedLifePlan!.taskId && site.kind === completedLifePlan!.kind
+              && site.route.length === completedLifePlan!.route.length && site.route.every((cell, i) => key(cell) === key(completedLifePlan!.route[i]!)));
+          if (!task || task.status !== 'COMPLETED' || task.stage !== 5 || incidentMode(task) !== 'NONE'
+            || !retained || !completedLifePlan.route.every(cell => mobilityWalkGraph.has(key(cell)))) clearCompletedLife();
+        }
         residentItinerary.compile({tasks:[...tasks.values()],stops:everydayController.transitStops,
           parks:sites.filter(site=>tasks.get(site.taskId)?.visualKind==="PARK").map(site=>({taskId:site.taskId,targets:site.route.slice(-3)})),
           walk:mobility!.walkingCells});
         host!.dataset.residentItineraryCompiles=String(Number(host!.dataset.residentItineraryCompiles??0)+1);
         const itinerary=residentItinerary.metrics;host!.dataset.residentItineraryHomes=String(itinerary.homes);
         host!.dataset.residentItinerarySchools=String(itinerary.schools);host!.dataset.residentItineraryWorkplaces=String(itinerary.workplaces);
-        completedLifeWindow=-1;movementLife=prepared.revision;
+        movementLife=prepared.revision;
         host!.dataset.cityLifeSites=String(sites.length);
         host!.dataset.everydayPlanningMs=planningMs.toFixed(3);
         host!.dataset.everydayPlanningMode="cooperative-wall";
@@ -2091,7 +2140,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         const view = { minX: -world.x / size, minY: -world.y / size, maxX: (app.screen.width - world.x) / size, maxY: (app.screen.height - world.y) / size };
         const state = everydayController.update(now, view, { enabled: readWorldPreferences().cityLife && !reducedMotion
           && activeRef.current && !document.hidden && currentLod === 'DETAIL' && ambientAssetsReady,
-        economy, busy: cinematicView.reservedCells(), roadBusy: !!roadEpisode });
+        economy, busy: cinematicView.reservedCells(), roadBusy: !!roadEpisode, admissionView: eventAdmissionView });
         const views = everydayView.update(state, mobility?.agents ?? [], now, view, economy);
         const shadows = cloudShadows.update(focusCityId ?? '', now, view, economy, !!focusCityId && paintedFrame
           && readWorldPreferences().cityLife && !reducedMotion && activeRef.current && !document.hidden && currentLod === 'DETAIL');
@@ -2247,48 +2296,44 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       let parkingCells=new Set<string>();
       const roadEventView = createCityRoadEventView(developmentTexture, cachedTexture, placePixelAgent);
       agentOverlayLayer.addChild(roadEventView.root);
-      let roadEpisode: RoadEpisode | undefined, roadWindow = -1, lastRoadSiren = -1;
+      let roadEpisode: RoadEpisode | undefined, lastRoadSiren = -1;
       const roadInspectionResponders=new Set<string>();
       const roadInspectionHit=new Graphics();roadInspectionHit.eventMode="static";roadInspectionHit.cursor="pointer";world.addChild(roadInspectionHit);
       roadInspectionHit.on("pointertap",event=>{event.stopPropagation();if(performance.now()<suppressSelectionUntil)return;
         const item=readRoadInspection(readServerWorldTime()??Date.now());if(item)openInspection(item);});
       const clearRoadEvent = () => {
-        if (roadEpisode) mobility?.clearVisits(`driver:${roadEpisode.id}`);
-        roadInspectionHit.clear();roadInspectionResponders.clear();roadEpisode = undefined; mobility?.setRoadClosures(new Set()); mobility?.clearResponses(['POLICE', 'FIRE', 'AMBULANCE', 'REPAIR', 'TOW']);
+        const previous = roadEpisode; roadEpisode = undefined;
+        if (previous) { mobility?.clearVisits(`driver:${previous.id}`); eventDirector.release(previous.id); }
+        if (previous) for (const id of roadInspectionResponders) mobility?.clearResponses(undefined, id, previous.id);
+        roadInspectionHit.clear();roadInspectionResponders.clear();mobility?.setRoadClosures(new Set());
         roadEventView.update(undefined, 0, economy); host.dataset.roadEvent = ""; host.dataset.roadEventPhase = "";
         host.dataset.roadClosedCells = "0"; host.dataset.roadResponders = "0";
       };
       startupDisposers.push(clearRoadEvent);
       const updateRoadEvents = () => {
         const now = readServerWorldTime() ?? Date.now(), window = Math.floor(now / 90_000), offset = now % 90_000;
+        eventDirector.update(now, { enabled: readWorldPreferences().cityLife && !reducedMotion && activeRef.current && !document.hidden
+          && currentLod === 'DETAIL' && ambientAssetsReady && !!mobility, economy, busy: cinematicView.reservedCells() });
         host.dataset.roadEventServerNow = String(now);
         host.dataset.roadEventNextStart = String((offset < 12_000 ? window : window + 1) * 90_000 + 12_000);
         if (!readWorldPreferences().cityLife || reducedMotion || !activeRef.current || document.hidden ) {
-          if (roadEpisode) clearRoadEvent(); roadWindow = window; return;
+          if (roadEpisode) clearRoadEvent(); return;
         }
         if (currentLod !== "DETAIL" || !ambientAssetsReady || !mobility) return;
         if (roadEpisode && (now >= roadEpisode.end || roadEpisode.cells.some(cell => !mobilityRoads.has(key(cell))))) clearRoadEvent();
-        if (!roadEpisode && roadWindow !== window && offset >= 12_000) {
-          roadWindow = window;
-          if (offset < 16_000) {
-            const size = CELL_SIZE * world.scale.x;
-            // Scene admission happens rarely, so measure actual UI occlusion
-            // here rather than spawning a call beneath the phone navigation.
-            const rect = host.getBoundingClientRect();
-            const overlays = [...document.querySelectorAll<HTMLElement>('.map-level-nav,.task-modal,.city-world-observation')].map(element => {
-              const bounds = element.getBoundingClientRect();
-              return { x: (bounds.x - rect.x) * app.screen.width / rect.width, y: (bounds.y - rect.y) * app.screen.height / rect.height,
-                width: bounds.width * app.screen.width / rect.width, height: bounds.height * app.screen.height / rect.height };
-            });
-            const area = availableMapArea({ x: 0, y: 0, width: app.screen.width, height: app.screen.height }, overlays);
-            if (!area) return;
-            const bounds = { minX: (area.x - world.x) / size + 3, minY: (area.y - world.y) / size + 3,
-              maxX: (area.x + area.width - world.x) / size - 3, maxY: (area.y + area.height - world.y) / size - 3 };
+        if (!roadEpisode && eventDirector.due('ROAD', now, window * 90_000 + 12_000)) {
+          const bounds = eventAdmissionView();
+          if (bounds) {
             const planningStart = performance.now(), candidates = mobility.roadEventSites(bounds);
             host.dataset.roadCandidateSites = String(candidates.length);
             for (let attempt = 0; attempt < Math.min(3, candidates.length); attempt++) {
               const episode = planRoadEpisode(focusCityId ?? countryId, [...candidates.slice(attempt), ...candidates.slice(0, attempt)], now, bounds);
               if (!episode) break;
+              if (now - episode.start >= 4000) { const duration = episode.end - episode.start; episode.start = now; episode.end = now + duration; }
+              const lease: CityEventLease = { id: episode.id, channel: 'ROAD', priority: 3, provisional: true,
+                cells: [...episode.cells, ...episode.responseCells], actors: [], until: episode.end,
+                replayUntil: Math.max((window + 1) * 90_000, episode.end), onRelease: () => { if (roadEpisode?.id === episode.id) clearRoadEvent(); } };
+              if (!eventDirector.acquire(lease)) continue;
               if (episode.kind !== "PATROL") mobility.setRoadClosures(new Set(episode.cells.map(key)));
               const roles = episode.kind === "ACCIDENT" ? ["POLICE", "AMBULANCE"] as const
                 : episode.kind === "REPAIR" || episode.kind === 'WATER' ? ["REPAIR"] as const : episode.kind === 'BREAKDOWN' ? ['TOW'] as const : episode.kind === "FIRE" ? ["FIRE"] as const
@@ -2296,19 +2341,25 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
               everydayController.preemptRoadResponse(roles.length);
               const targets = episode.kind === 'BREAKDOWN' && episode.towCell ? [episode.towCell] : episode.responseCells;
               const existingResponders = new Set(mobility.agents.filter(a => a.response).map(a => a.id));
-              if (roles.filter(role => mobility!.dispatchResponse(role, targets, episode.kind === 'BREAKDOWN' || episode.kind === 'WATER' ? 20_000 : 2500)).length) {
+              if (roles.filter(role => mobility!.dispatchResponse(role, targets, episode.kind === 'BREAKDOWN' || episode.kind === 'WATER' ? 20_000 : 2500, undefined, episode.id)).length) {
                 episode.responderId = mobility.agents.find(a => a.response && roles.some(role => role === a.response) && !existingResponders.has(a.id))?.id;
                 roadInspectionResponders.clear();for(const agent of mobility.agents)if(agent.response&&!existingResponders.has(agent.id))roadInspectionResponders.add(agent.id);
+                if (!eventDirector.claimActors(lease.id, [...roadInspectionResponders])) {
+                  for (const id of roadInspectionResponders) mobility.clearResponses(undefined, id, episode.id);
+                  roadInspectionResponders.clear(); eventDirector.release(lease.id); mobility.setRoadClosures(new Set()); continue;
+                }
                 roadEpisode = episode; break;
               }
-              mobility.setRoadClosures(new Set());
+              mobility.setRoadClosures(new Set()); eventDirector.release(lease.id);
             }
             host.dataset.roadPlanningMs = (performance.now() - planningStart).toFixed(3);
             if (roadEpisode) {
               if (roadEpisode.kind === 'BREAKDOWN') {
                 const anchor = roadEpisode.cells[0]!;
                 const curb = [...mobility.visitTargets.values()].filter(c => Math.abs(c.x - anchor.x) + Math.abs(c.y - anchor.y) <= 3);
-                mobility.dispatchVisit(`driver:${roadEpisode.id}`, curb, 1, 24_000, false);
+                const drivers = mobility.dispatchVisit(`driver:${roadEpisode.id}`, curb, 1, 24_000, false,
+                  mobility.agents.filter(actor => actor.kind === 'WALKER' && actor.age !== 'CHILD').map(actor => actor.id));
+                if (!eventDirector.claimActors(roadEpisode.id, [...roadInspectionResponders, ...drivers])) mobility.clearVisits(`driver:${roadEpisode.id}`);
               }
               host.dataset.roadEventStarted = String(Number(host.dataset.roadEventStarted ?? 0) + 1);
               host.dataset.roadEventGeometry = JSON.stringify(roadEpisode.cells);
@@ -2317,7 +2368,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           }
         }
         const pose = roadEpisode && roadEpisodePose(roadEpisode, now);
-        const responder = roadEpisode && mobility.agents.find(a => a.id === roadEpisode!.responderId);
+        const responder = roadEpisode && mobility.agents.find(a => a.id === roadEpisode!.responderId && a.responseOwner === roadEpisode!.id);
         if (roadEpisode && responder?.activity === 'REST' && roadEpisode.serviceArrival === undefined) roadEpisode.serviceArrival = now;
         if (roadEpisode?.kind === 'BREAKDOWN' && roadEpisode.serviceArrival !== undefined && !roadEpisode.cargoLoaded && now - roadEpisode.serviceArrival >= 4000 && responder) {
           roadEpisode.cargoLoaded = true; mobility.setRoadClosures(new Set()); mobility.releaseResponse(responder.id, 20_000);
@@ -2327,7 +2378,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host.dataset.roadCargoLoaded = String(!!roadEpisode?.cargoLoaded); host.dataset.roadServiceArrived = String(roadEpisode?.serviceArrival !== undefined);
         host.dataset.roadEvent = pose ? roadEpisode!.kind : ""; host.dataset.roadEventPhase = pose?.phase ?? "";
         host.dataset.roadClosedCells = String(pose && roadEpisode!.kind !== "PATROL" && !roadEpisode!.cargoLoaded ? roadEpisode!.cells.length : 0);
-        const responders = mobility.agents.filter(agent => agent.response && agent.response !== 'BUS' && agent.response !== 'SCHOOL_BUS');
+        const responders = roadEpisode ? mobility.agents.filter(agent => roadInspectionResponders.has(agent.id) && agent.responseOwner === roadEpisode!.id && agent.response) : [];
         host.dataset.roadResponders = String(responders.length);
         host.dataset.roadResponseTrips = String(mobility.metrics.responseTrips);
         const siren = Math.floor(now / 1000);
@@ -3952,8 +4003,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
                   ground:{has:id=>{const cell=terrain.get(id);return !!cell&&(cell.terrain==='GRASS'||cell.terrain==='MEADOW'||cell.terrain==='DIRT');}},
                   decorations:[...decorations.values()]},lifeGeometry.canDrive,{signal:lifeSignal});
                 const sites=await cityLifeSitesAsync(taskList,walk.walkGraph,lifeBlocked,{signal:lifeSignal});
-                return {tasks:currentTasks,everyday,sites,
-                  candidates:taskList.filter(task=>task.status==='COMPLETED'&&task.stage===5&&incidentMode(task)==='NONE').map(task=>task.id),
+                const neighbourhoodIndex = await prepareCityEventSiteIndexAsync(sites, site => site.route.at(-1)!, site => `${site.taskId}:${site.kind}`, { signal: lifeSignal });
+                return {tasks:currentTasks,everyday,sites,neighbourhoodIndex,
                   planningMs:performance.now()-started};
               },lifeSignal);
             const life=await prepareLife(signal,geometry);preparedLifeRevision=life.revision;
@@ -5149,7 +5200,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             sceneRefresh.cancel();
             clearCinematics();
             clearTaskActivity();
-            clearRoadEvent(); roadWindow = Math.floor((readServerWorldTime() ?? Date.now()) / 90_000);
+            clearRoadEvent();
             clearEveryday();
             endStreamingFeedback();
           }
@@ -5504,7 +5555,6 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           stopFollowing();
           sceneRenderRequest++; sceneRefreshPending = false; sceneRefresh.cancel();
           silenceCityAudio(); clearRoadEvent(); clearEveryday(); clearTaskActivity();
-          roadWindow = Math.floor((readServerWorldTime() ?? Date.now()) / 90_000);
         } else {
           preloadWeatherAssets();
           prepareCanonicalCity();

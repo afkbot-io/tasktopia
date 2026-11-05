@@ -2,8 +2,9 @@ import { expect, it, vi } from 'vitest';
 import { createEverydayController } from '../src/client/city-everyday-controller';
 import { createCityMobility } from '../src/client/city-mobility';
 import type { Cell, ChunkTaskDto, RoadCellDto } from '../src/shared/contracts';
+import { CityEventDirector } from '../src/client/city-event-director';
 
-function fixture() {
+function fixture(director?: CityEventDirector) {
   const walk = new Map<string, Cell>();
   for (let i = 0; i <= 12; i++) for (const c of [{ x: i, y: 0 }, { x: i, y: 12 }, { x: 0, y: i }, { x: 12, y: i }]) walk.set(`${c.x},${c.y}`, c);
   const task = { id: 'school', status: 'COMPLETED', stage: 5, visualKind: 'BUILDING', visualAssetKey: 'compact-modern-school-v1',
@@ -11,11 +12,37 @@ function fixture() {
   const input = { tasks: [task], walk, roads: new Map<string, RoadCellDto>(), blocked: new Set<string>(), decorations: [] };
   const city = createCityMobility({ roads: input.roads, walkGraph: walk, crosswalks: new Set(), activityCells: new Set(),
     buildingEntrances: new Set(['3,0']), seed: 19, carLimit: 0, walkerLimit: 6 });
-  const sounds: string[] = [], controller = createEverydayController('city', () => city, sound => sounds.push(sound));
+  const sounds: string[] = [], controller = createEverydayController('city', () => city, sound => sounds.push(sound), director);
   controller.compile(input);
   const view = { minX: -5, minY: -5, maxX: 15, maxY: 15 }, options = { enabled: true, economy: false, busy: new Set<string>(), roadBusy: false };
   return { city, task, input, sounds, controller, view, options };
 }
+
+it('при позднем входе запускает видимую сцену после короткой паузы и не повторяет принятый ID', () => {
+  const director = new CityEventDirector(), f = fixture(director);
+  expect(f.controller.update(42_000, f.view, f.options).pose).toBeUndefined();
+  const state = f.controller.update(43_200, f.view, f.options);
+  expect(state.pose?.kind).toBe('SCHOOL');expect(state.pose?.start).toBe(43_200);
+  expect(state.visitors.length).toBeGreaterThan(0);
+  expect(director.active.map(lease => lease.channel)).toEqual(['EVERYDAY']);
+  f.controller.clear();expect(director.active).toEqual([]);
+  expect(f.controller.update(50_000, f.view, f.options).pose).toBeUndefined();
+  expect(f.controller.metrics.episodes).toBe(1);
+});
+
+it('повторяет непринятую занятую сцену с ограниченной частотой и освобождает её по приоритету дороги', () => {
+  const director = new CityEventDirector(), f = fixture(director), busy = { ...f.options, busy: new Set(['3,0']) };
+  f.controller.update(42_000, f.view, busy);
+  expect(f.controller.update(43_200, f.view, busy).pose).toBeUndefined();
+  for (let now = 43_250; now < 45_200; now += 50) f.controller.update(now, f.view, busy);
+  expect(director.metrics.attempts).toBe(1);
+  expect(f.controller.update(45_200, f.view, f.options).pose?.kind).toBe('SCHOOL');
+  expect(director.acquire({ id: 'road', channel: 'ROAD', priority: 3, cells: [{ x: 3, y: 0 }], actors: [],
+    until: 60_000, replayUntil: 90_000, onRelease: () => {} })).toBe(true);
+  expect(f.city.agents.some(actor => actor.visit)).toBe(false);
+  expect(f.controller.update(45_250, f.view, f.options).pose).toBeUndefined();
+  expect(director.active.map(lease => lease.id)).toEqual(['road']);
+});
 
 it('спортивная площадка не закрывает проходы между своими конечными точками', () => {
   const f = fixture();
@@ -40,6 +67,25 @@ it('открытие использует адресные проверки за
   f.controller.update(0, f.view, f.options);
   expect(f.controller.open(f.task, 'local-blocked', 1)).toBe(true);
   expect(f.controller.update(2, f.view, f.options).pose?.kind).toBe('OPEN_SCHOOL');
+});
+
+it('открытие по MCP ждёт освобождения строительной площадки и не теряется из очереди', () => {
+  const f = fixture();f.controller.update(0, f.view, f.options);
+  expect(f.controller.open(f.task, 'pending-construction', 1)).toBe(true);
+  expect(f.controller.update(2, f.view, { ...f.options, busy: new Set(['3,0']) }).pose).toBeUndefined();
+  expect(f.controller.update(300, f.view, f.options).pose?.kind).toBe('OPEN_SCHOOL');
+  expect(f.controller.metrics.episodes).toBe(1);
+  expect(f.controller.open(f.task, 'pending-construction', 301)).toBe(false);
+});
+
+it('не ищет задачу полным перебором 10000 записей при каждом кадре ожидающего открытия', () => {
+  const f = fixture(), tasks = [...Array.from({ length: 10_000 }, (_, i) => ({ ...f.task, id: `remote:${i}`, accessPath: [{ x: 10_000 + i, y: 10_000 }] })), f.task];
+  f.controller.compile({ ...f.input, tasks });
+  tasks.find = () => { throw new Error('Full task scan'); };
+  f.controller.update(0, f.view, f.options);
+  expect(f.controller.open(f.task, 'indexed-opening', 1)).toBe(true);
+  for (let now = 2; now < 250; now += 16) f.controller.update(now, f.view, { ...f.options, busy: new Set(['3,0']) });
+  expect(f.controller.update(300, f.view, f.options).pose?.kind).toBe('OPEN_SCHOOL');
 });
 
 it('открывает школу только по свежему подтверждённому событию, звонит после прихода и не повторяет версию', () => {
@@ -113,8 +159,11 @@ it('церемония управляет своим новым пожарным
   vi.spyOn(f.city, 'dispatchResponse').mockImplementation(() => { agents.push({ ...other, id: 'opening-engine' }); return true; });
   const clear = vi.spyOn(f.city, 'clearResponses');
   f.controller.update(0, f.view, f.options); f.controller.open(task, 'fire', 1); f.controller.update(2, f.view, f.options);
-  f.controller.clear(); expect(clear).toHaveBeenCalledWith(['FIRE'], 'opening-engine');
-  expect(clear).not.toHaveBeenCalledWith(['FIRE'], 'other-engine');
+  f.controller.preemptRoadResponse(2);
+  f.controller.update(3, f.view, { ...f.options, roadBusy: true });
+  expect(clear).not.toHaveBeenCalledWith(['FIRE'], 'opening-engine', 'opening:fire');
+  f.controller.clear(); expect(clear).toHaveBeenCalledWith(['FIRE'], 'opening-engine', 'opening:fire');
+  expect(clear).not.toHaveBeenCalledWith(['FIRE'], 'other-engine', expect.anything());
 });
 
 it('рейс не занимает машину, пока к выбранной очереди не назначены настоящие доступные пассажиры', () => {

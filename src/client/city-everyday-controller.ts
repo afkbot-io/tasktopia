@@ -6,9 +6,12 @@ import { approachRoute, cellKey, compileEverydaySitesSteps, compileTransitStopsS
   type EverydayTask, type RainPose, type TransitStop } from './city-everyday-life';
 import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from './cooperative-preparation';
 import { compileTransitLinesSteps, type TransitLine } from './city-transit-lines';
+import { CityEventDirector, type CityEventLease } from './city-event-director';
+import { cityEventSiteIndexSteps, createCityEventSiteIndex, type CityEventSiteIndex } from './city-event-site-index';
 
 const everydayPreparation = Symbol('prepared-everyday-sites');
-type EverydayPreparation = { input: EverydayInput; sites: EverydaySite[]; stops: TransitStop[]; lines: TransitLine[]; kinds: string };
+type EverydayPreparation = { input: EverydayInput; sites: EverydaySite[]; stops: TransitStop[]; lines: TransitLine[]; kinds: string;
+  siteIndex: CityEventSiteIndex<EverydaySite>; tasksById: ReadonlyMap<string, EverydayTask> };
 export type PreparedEveryday = { readonly [everydayPreparation]: EverydayPreparation };
 function* prepareEverydaySteps(input: EverydayInput, canDrive: ((from: Cell, to: Cell) => boolean) | undefined): Generator<void, PreparedEveryday, void> {
   const sites = yield* compileEverydaySitesSteps(input);
@@ -17,7 +20,10 @@ function* prepareEverydaySteps(input: EverydayInput, canDrive: ((from: Cell, to:
   const kinds = new Set<EverydaySite['kind']>();
   for (const site of sites) { kinds.add(site.kind); yield; }
   const ordered = yield* stableSortPreparation(kinds, (a, b) => a < b ? -1 : a > b ? 1 : 0);
-  return { [everydayPreparation]: { input, sites, stops, lines, kinds: ordered.join(',') } };
+  const siteIndex = yield* cityEventSiteIndexSteps(sites, site => site.route.at(-1)!, site => site.id);
+  const tasksById = new Map<string, EverydayTask>();
+  for (const task of input.tasks) { tasksById.set(task.id, task); yield; }
+  return { [everydayPreparation]: { input, sites, stops, lines, kinds: ordered.join(','), siteIndex, tasksById } };
 }
 /** Only canonical sites/curbs are prepared. Actors, visits and reservations are
  * read by the synchronous guarded commit, never captured across an await. */
@@ -35,9 +41,12 @@ export type EverydayState = { pose?: EverydayPose; visitors: readonly CityMobili
 
 /** Presentation director. All pedestrians, passengers and vehicles remain in
  * the shared fixed-step mobility simulation. No independent traffic timer. */
-export function createEverydayController(cityId: string, mobility: () => CityMobility | undefined, sound: (cue: 'bell' | 'chirp' | 'whistle') => void) {
+export function createEverydayController(cityId: string, mobility: () => CityMobility | undefined, sound: (cue: 'bell' | 'chirp' | 'whistle') => void,
+  director = new CityEventDirector()) {
   let input: EverydayInput | undefined, sites: EverydaySite[] = [], stops: TransitStop[] = [], lines: TransitLine[] = [];
   let kinds = '';
+  let siteIndex = createCityEventSiteIndex<EverydaySite>([], site => site.route.at(-1)!, site => site.id);
+  let tasksById: ReadonlyMap<string, EverydayTask> = new Map();
   let active: EverydayEpisode | undefined, run: TransitRun | undefined;
   let planned: EverydayEpisode | undefined;
   let players: string[] = [], nextPlay = 0, fireVehicle = '';
@@ -45,19 +54,20 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
   let areaReady = false, reservations = new Set<string>(), reservedSignature = '';
   let lastSkip = '', lastNow = 0;
   const openings: EverydayEpisode[] = [], seen = new Set<string>();
+  let openingAttemptAt = 0;
   const schoolVisits = new Map<string, { until: number; taskId: string; entrance: { x: number; y: number } }>();
   const schoolArrivals = new Set<string>();
   const metrics = { episodes: 0, visitors: 0, boarded: 0, alighted: 0, schoolBuses: 0, regularBuses: 0, regularStops: 0, regularCycles: 0, schoolBoarded: 0, schoolAlighted: 0, schoolArrived: 0, cancellations: 0 };
   const validEpisode = (episode: EverydayEpisode) => {
     if (!input || !episode.route.every(c => input!.walk.has(cellKey(c)) && !input!.blocked.has(cellKey(c)))) return false;
-    const task = input.tasks.find(t => t.id === episode.taskId);
+    const task = episode.taskId ? tasksById.get(episode.taskId) : undefined;
     if (!task || task.status !== 'COMPLETED' || task.stage !== 5 || incidentMode(task) !== 'NONE') return false;
     if (episode.kind.startsWith('OPEN_')) return openingKind(task) === episode.kind && !!task.accessPath[0] && cellKey(task.accessPath[0]) === cellKey(episode.route.at(-1)!);
     const sameCells = (a: readonly { x: number; y: number }[], b: readonly { x: number; y: number }[]) => a.length === b.length && a.every((c, i) => cellKey(c) === cellKey(b[i]!));
     return sites.some(site => site.taskId === episode.taskId && site.kind === episode.kind && sameCells(site.route, episode.route) && sameCells(site.area, episode.area));
   };
   const validSchool = (school: NonNullable<TransitRun['school']>) => {
-    const current = input?.tasks.find(task => task.id === school.taskId);
+    const current = tasksById.get(school.taskId);
     return !!current && current.status === 'COMPLETED' && current.stage === 5 && incidentMode(current) === 'NONE'
       && ['OPEN_SCHOOL', 'OPEN_KINDERGARTEN'].includes(openingKind(current)) && !!current.accessPath[0]
       && cellKey(current.accessPath[0]) === cellKey(school.entrance);
@@ -68,22 +78,35 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     if (signature !== reservedSignature) { reservedSignature = signature; reservations = new Set(cells.map(cellKey)); }
   };
   const endEpisode = () => {
-    if (active) mobility()?.clearVisits(active.id);
-    if (fireVehicle) mobility()?.clearResponses(['FIRE'], fireVehicle);
+    const previous = active; active = undefined;
+    if (previous) { mobility()?.clearVisits(previous.id); director.release(previous.id); }
+    if (fireVehicle && previous) mobility()?.clearResponses(['FIRE'], fireVehicle, previous.id);
     players = []; fireVehicle = '';
-    active = undefined; released = false; bell = false; areaReady = false;
+    released = false; bell = false; areaReady = false;
   };
   const endTransit = () => {
     if (run) {
       mobility()?.alightVisit(run.vehicleId, (run.destination ?? run.stop).queue);
       mobility()?.clearVisits(run.id);
-      mobility()?.clearResponses([run.role], run.vehicleId);
+      mobility()?.clearResponses([run.role], run.vehicleId, run.id);
     }
     run = undefined; nextRegularAttempt = lastNow + 8000;
   };
-  const clear = () => { endEpisode(); endTransit(); for (const id of schoolVisits.keys()) mobility()?.clearVisits(id); schoolVisits.clear(); mobility()?.clearVisits(`shelter:${lastRain}`); openings.length = 0; planned = undefined; rebuildReservations(false); };
+  const clear = () => { endEpisode(); endTransit(); for (const id of schoolVisits.keys()) mobility()?.clearVisits(id); schoolVisits.clear(); mobility()?.clearVisits(`shelter:${lastRain}`); openings.length = 0; openingAttemptAt = 0; planned = undefined; rebuildReservations(false); };
+  const episodeLease = (episode: EverydayEpisode): CityEventLease => ({ id: episode.id, channel: 'EVERYDAY', priority: episode.kind.startsWith('OPEN_') ? 4 : 2,
+      cells: [...episode.route, ...episode.area], actors: [], until: episode.end,
+      replayUntil: Math.max(episode.end, (Math.floor(episode.start / EVERYDAY_WINDOW_MS) + 1) * EVERYDAY_WINDOW_MS + 44_000),
+      onRelease: () => { if (active?.id === episode.id) endEpisode(); } });
+  const localEpisode = (candidates: readonly EverydaySite[], now: number) => {
+    const plan = planEverydayEpisode(cityId, candidates, now);
+    if (!plan) return;
+    const start = now - plan.start >= 4000 ? now : plan.start;
+    return { ...plan, start, end: start + 44_000 };
+  };
   const startEpisode = (episode: EverydayEpisode, economy: boolean) => {
-    const city = mobility(); if (!city) return;
+    const city = mobility(); if (!city) return false;
+    const lease = episodeLease(episode);
+    if (!director.acquire(lease)) return false;
     active = episode; released = false; bell = false; areaReady = false; schoolBusAttemptAt = 0;
     if ((episode.kind === 'SCHOOL' || episode.kind === 'KINDERGARTEN') && run?.role === 'BUS') endTransit();
     const indoors = ['SCHOOL', 'KINDERGARTEN', 'OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP'].includes(episode.kind);
@@ -105,9 +128,10 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       const anchor = episode.route.at(-1)!;
       const curbs = [...input!.roads.values()].filter(c => Math.abs(c.x - anchor.x) + Math.abs(c.y - anchor.y) <= 8);
       const responders = new Set(city.agents.filter(a => a.response).map(a => a.id));
-      if (city.dispatchResponse('FIRE', curbs, 20_000)) fireVehicle = city.agents.find(a => a.response === 'FIRE' && !responders.has(a.id))?.id ?? '';
+      if (city.dispatchResponse('FIRE', curbs, 20_000, undefined, episode.id)) fireVehicle = city.agents.find(a => a.response === 'FIRE' && !responders.has(a.id))?.id ?? '';
     }
-    metrics.visitors += ids.length; metrics.episodes++;
+    if (!director.claimActors(lease.id, [...ids, ...(fireVehicle ? [fireVehicle] : [])])) { endEpisode(); return false; }
+    metrics.visitors += ids.length; metrics.episodes++; return true;
   };
   const startTransit = (now: number, economy: boolean) => {
     const city = mobility(); if (!city || stops.length < 2) return;
@@ -133,7 +157,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       if (!audience.length && !(role === 'BUS' && city.agents.some(a => a.fleet === 'BUS'))) continue;
       if (school?.kind === 'KINDERGARTEN') city.dispatchVisit(id, stop.queue, economy ? 1 : 2, 30_000, false, city.agents.filter(a => a.age === 'ADULT').map(a => a.id));
       const responders = new Set(city.agents.filter(a => a.response).map(a => a.id));
-      if (!city.dispatchResponse(role, [stop.lane], 30_000)) { city.clearVisits(id); continue; }
+      if (!city.dispatchResponse(role, [stop.lane], 30_000, undefined, id)) { city.clearVisits(id); continue; }
       const vehicle = city.agents.find(a => a.response === role && !responders.has(a.id))!;
       run = { id, vehicleId: vehicle.id, role, stop, destination: next, phase: 'ARRIVE', since: now, start: now, boarded: 0, alighted: 0,
         lineId: line?.id, lineIndex: index, stopsVisited: 0, legStart: now, routeRetryAt: 0, stopBoarded: 0, recentAlighted: [],
@@ -156,7 +180,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       if (run.role === 'SCHOOL_BUS') metrics.schoolBoarded += boarded;
       if (now - run.since >= (run.stopBoarded ? 5500 : run.lineId ? 4500 : 24000) && now >= run.routeRetryAt) {
         run.routeRetryAt = now + 1000;
-        const next = (run.destination ? [run.destination] : stops).find(stop => stop.id !== run!.stop.id && city.dispatchResponse(run!.role, [stop.lane], 12_000, run!.vehicleId));
+        const next = (run.destination ? [run.destination] : stops).find(stop => stop.id !== run!.stop.id && city.dispatchResponse(run!.role, [stop.lane], 12_000, run!.vehicleId, run!.id));
         if (next) { run.destination = next; run.phase = 'TRAVEL'; run.since = now; run.recentAlighted = []; }
         // A temporary closure is not a terminal failure or an arrival. Keep
         // the same bus at its curb and let the bounded leg retry after repair.
@@ -195,7 +219,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     const next = prepared[everydayPreparation];
     if (!next) throw new TypeError('Invalid everyday preparation');
     const first = !input;
-    input = next.input; sites = next.sites; stops = next.stops; lines = next.lines; kinds = next.kinds;
+    input = next.input; sites = next.sites; stops = next.stops; lines = next.lines; kinds = next.kinds; siteIndex = next.siteIndex; tasksById = next.tasksById;
     if (lineCursor >= lines.length) lineCursor = 0;
     if (first) window = -1;
     if (active && !validEpisode(active)) { lastSkip = 'invalidated'; endEpisode(); metrics.cancellations++; }
@@ -212,7 +236,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     },
     commitPrepared,
     open(task: EverydayTask, version: string, now: number) {
-      const current = input?.tasks.find(candidate => candidate.id === task.id);
+      const current = tasksById.get(task.id);
       if (!input || !current || !enabledLast || task.status !== 'COMPLETED' || task.stage !== 5 || incidentMode(task) !== 'NONE' || seen.has(version)
         || current.status !== 'COMPLETED' || current.stage !== 5 || incidentMode(current) !== 'NONE') return false;
       if (!task.accessPath[0] || !current.accessPath[0] || cellKey(task.accessPath[0]) !== cellKey(current.accessPath[0])) return false;
@@ -223,12 +247,14 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       // A confirmed opening takes priority over a cosmetic scheduled episode.
       // Later openings wait only for another opening, in a bounded queue.
       if (active && !active.kind.startsWith('OPEN_')) endEpisode();
+      if (!openings.length) openingAttemptAt = 0;
       openings.push({ id: `opening:${version}`, taskId: task.id, kind: openingKind(current), route, area: [], start: now, end: now + 44_000 });
       while (openings.length > 3) openings.shift(); return true;
     },
     clear,
     preemptRoadResponse(required: number) {
-      if (fireVehicle) { mobility()?.clearResponses(['FIRE'], fireVehicle); fireVehicle = ''; }
+      // A confirmed opening owns its engine until its own scene ends. A
+      // cosmetic road call may yield a temporary bus, never that MCP crew.
       if (required > 1 && !mobility()?.agents.find(a => a.id === run?.vehicleId)?.fleet) endTransit();
     },
     reservedCells: () => reservations,
@@ -240,8 +266,9 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     get planned() { return planned; },
     get lastSkip() { return lastSkip; },
     get metrics() { return { ...metrics, schoolVisits: schoolVisits.size }; },
-    update(now: number, view: Rect, options: { enabled: boolean; economy: boolean; busy: ReadonlySet<string>; roadBusy: boolean }): EverydayState {
+    update(now: number, view: Rect, options: { enabled: boolean; economy: boolean; busy: ReadonlySet<string>; roadBusy: boolean; admissionView?: () => Rect | undefined }): EverydayState {
       const city = mobility(), windowNow = Math.floor(now / EVERYDAY_WINDOW_MS);
+      director.update(now, { enabled: options.enabled && !!city && !!input, economy: options.economy, busy: options.busy });
       if (Number.isFinite(now)) lastNow = now;
       if (!options.enabled || !city || !input || !Number.isFinite(now)) {
         if (enabledLast) { clear(); window = windowNow; }
@@ -258,16 +285,24 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
         if (!schoolArrivals.has(arrival)) { schoolArrivals.add(arrival); metrics.schoolArrived++; }
       }
       while (schoolArrivals.size > 32) schoolArrivals.delete(schoolArrivals.values().next().value!);
-      if (window !== windowNow) { window = windowNow; planned = planEverydayEpisode(cityId, sites, now); }
+      if (window !== windowNow) { window = windowNow; planned = planEverydayEpisode(cityId, siteIndex.query(view).items, now); }
       if (active && (now >= active.end || [...active.route, ...active.area].some(c => options.busy.has(cellKey(c))))) { lastSkip = now >= active.end ? 'expired' : 'busy'; endEpisode(); metrics.cancellations++; }
       while (openings[0] && (now - openings[0].start > 150_000 || !validEpisode(openings[0]))) openings.shift();
-      if (openings.length && !active) startEpisode({ ...openings.shift()!, start: now, end: now + 44_000 }, options.economy);
-      if (!active && planned && now >= planned.start) {
-        const plan = planned; planned = undefined;
-        lastSkip = now - plan.start >= 4000 ? 'late' : !everydayPose(plan, now, view) ? 'offscreen'
-          : [...plan.route, ...plan.area].some(c => options.busy.has(cellKey(c))) ? 'busy' : '';
-        if (now - plan.start < 4000 && everydayPose(plan, now, view)
-          && ![...plan.route, ...plan.area].some(c => options.busy.has(cellKey(c)))) startEpisode(plan, options.economy);
+      if (openings.length && !active && now >= openingAttemptAt) {
+        openingAttemptAt = now + 250;
+        if (startEpisode({ ...openings[0]!, start: now, end: now + 44_000 }, options.economy)) openings.shift();
+      }
+      if (!active && !openings.length && director.due('EVERYDAY', now, windowNow * EVERYDAY_WINDOW_MS + 8000)) {
+        const visible = options.admissionView ? options.admissionView() : view;
+        const candidates = visible ? siteIndex.query(visible).items.filter(site => director.canAcquire(episodeLease(localEpisode([site], now)!))) : [];
+        const preferred = planned?.kind;
+        const matching = candidates.filter(site => site.kind === preferred);
+        const local = localEpisode(matching.length ? matching : candidates, now);
+        lastSkip = !local ? 'offscreen' : [...local.route, ...local.area].some(c => options.busy.has(cellKey(c))) ? 'busy' : '';
+        if (local && !lastSkip) {
+          if (startEpisode(local, options.economy)) planned = undefined;
+          else lastSkip = 'busy';
+        }
       }
       const pose = everydayPose(active, now, view);
       if (pose?.kind === 'SPORT' && pose.phase === 'ACTIVITY' && now >= nextPlay && pose.playTargets && pose.playTargets.length >= 2) {
@@ -286,7 +321,6 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
         && !(active!.kind === 'SPORT' && a.visit?.id === active!.id)
         && active!.area.some(c => Math.abs(a.position.x - c.x - .5) < .8 && Math.abs(a.position.y - c.y - .5) < .8));
       rebuildReservations(true);
-      if (options.roadBusy && fireVehicle) { city.clearResponses(['FIRE'], fireVehicle); fireVehicle = ''; }
       if (active && (active.kind === 'SCHOOL' || active.kind === 'KINDERGARTEN') && schoolBusEpisode !== active.id && !options.roadBusy && now >= schoolBusAttemptAt) {
         schoolBusAttemptAt = now + 5000;
         if (run?.role === 'BUS') endTransit();

@@ -4,7 +4,6 @@ import { completePreparation, prepareCooperatively, stableSortPreparation, type 
 export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'>;
 
 export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL';
-export const CITY_LIFE_LABEL:Record<CityLifeKind,string>={MOVING:'Новосёлы',DELIVERY:'Доставка',GARDEN:'Уход за двором',MUSIC:'Уличная музыка',CELEBRATION:'Праздник во дворе',CLEANING:'Уборка улицы',MAINTENANCE:'Уход за фасадом',DRILL:'Учебный выезд'};
 export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[]};
 export type CityLifePlan=CityLifeSite & {id:string;start:number;durationMs:number};
 export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';progress:number;position:Cell;durationMs:number};
@@ -56,15 +55,14 @@ export function cityLifeSitesAsync(tasks:readonly CityLifeTask[],walkGraph:Reado
   return prepareCooperatively(cityLifeSitesSteps(tasks,walkGraph,blocked),options);
 }
 
-/** One deterministic scene per window; compile candidates only when the window
- * or canonical site list changes. No camera-dependent event identity. */
-export function planCityLife(cityId:string,sites:readonly CityLifeSite[],now:number,canonicalTaskIds:readonly string[]=sites.map(site=>site.taskId)):CityLifePlan|undefined {
+/** The shared director supplies bounded visible candidates and owns admission.
+ * A site keeps its window ID even when a temporary conflict delays its start. */
+export function planCityLife(cityId:string,sites:readonly CityLifeSite[],now:number):CityLifePlan|undefined {
+  if(!sites.length||!Number.isFinite(now))return;
   const window=Math.floor(now/180_000);
-  const candidates=[...new Set(canonicalTaskIds)].filter(id=>cityLifeHash(id)%4===((window%4)+4)%4).sort();
-  if(!candidates.length)return;
-  const selected=candidates[cityLifeHash(`${cityId}:${window}`)%candidates.length]!;
-  const site=sites.find(site=>site.taskId===selected);if(!site)return;
-  return {...site,id:`${cityId}:${window}:${site.taskId}`,start:window*180_000+15_000+cityLifeHash(`${cityId}:${window}:start`)%90_000,durationMs:38_000};
+  const ordered=[...sites].sort((a,b)=>a.taskId.localeCompare(b.taskId));
+  const site=ordered[cityLifeHash(`${cityId}:${window}`)%ordered.length]!;
+  return {...site,id:`${cityId}:${window}:${site.taskId}`,start:now,durationMs:38_000};
 }
 export function cityLifePose(plan:CityLifePlan|undefined,now:number,view:Rect,options:{enabled:boolean;reducedMotion:boolean}):CityLifeScene|undefined {
   if(!plan||!options.enabled||options.reducedMotion||!Number.isFinite(now))return;
@@ -75,7 +73,4 @@ export function cityLifePose(plan:CityLifePlan|undefined,now:number,view:Rect,op
   const progress=phase==='ARRIVING'?elapsed/8000:phase==='ACTIVITY'?1:1-(elapsed-30000)/8000;
   const step=progress*(plan.route.length-1),from=plan.route[Math.floor(step)]!,to=plan.route[Math.min(plan.route.length-1,Math.floor(step)+1)]!;
   return {...plan,phase,progress,position:{x:from.x+(to.x-from.x)*(step%1),y:from.y+(to.y-from.y)*(step%1)}};
-}
-export function sampleCityLife(cityId:string,sites:readonly CityLifeSite[],now:number,view:Rect,options:{enabled:boolean;reducedMotion:boolean}):CityLifeScene|undefined {
-  return cityLifePose(planCityLife(cityId,[...sites].sort((a,b)=>a.taskId.localeCompare(b.taskId)),now),now,view,options);
 }
