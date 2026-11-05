@@ -1,9 +1,10 @@
 import {expect,test,devices,type Page} from "@playwright/test";
 import {readFileSync} from "node:fs";
 import type {CitySceneDto} from "../../src/shared/city-scene-contract";
-import {planCityAirServices} from "../../src/shared/city-air-service";
-import {planCityRailServices} from "../../src/shared/city-rail-service";
-import {planCitySeaServices} from "../../src/shared/city-sea-service";
+import {planCityAirServices,sampleCityAirService} from "../../src/shared/city-air-service";
+import {planCityRailServices,sampleCityRailService} from "../../src/shared/city-rail-service";
+import {planCitySeaServices,sampleCitySeaService} from "../../src/shared/city-sea-service";
+import type {Cell} from "../../src/shared/contracts";
 import {TRANSPORT_EPOCH,transportJourney} from "../../src/shared/transport-schedule";
 import {installSceneClock} from "./city-scene-clock";
 test.use(process.env.E2E_OBSERVATION_TOUCH==="true"?{...devices["Pixel 7"],serviceWorkers:"block"}:{});
@@ -28,17 +29,39 @@ async function entry(page:Page,kind:"AIR"|"RAIL"|"SEA"){
  const host=page.locator(".world-canvas");await expect(host).toHaveAttribute("data-city-scene-commit","atomic",{timeout:30_000});await expect(host).toHaveAttribute("data-mobility-ready","true");
  return {host,scene,site};
 }
+
+async function clickWorldPoint(page:Page,point:Cell){
+ const host=page.locator('.world-canvas'),canvas=host.locator('canvas'),box=(await canvas.boundingBox())!;
+ const pose=await host.evaluate(node=>{const d=(node as HTMLElement).dataset;return {x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale)};});
+ const x=box.width/2+(point.x-pose.x)*8*pose.scale,y=box.height/2+(point.y-pose.y)*8*pose.scale;
+ expect(x).toBeGreaterThan(0);expect(y).toBeGreaterThan(0);expect(x).toBeLessThan(box.width);expect(y).toBeLessThan(box.height);
+ await canvas.click({position:{x,y}});
+}
 for(const [kind,title] of [["AIR","Самолёт"],["RAIL","Поезд"],["SEA","Паром"]] as const)test(`real ${kind} inspector opens without automatic motion, follows only on request and cancels on manual navigation`,async({page},info)=>{
  test.setTimeout(90_000);const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));
  const {host,site,scene}=await entry(page,kind),canvas=host.locator("canvas"),identity=await canvas.elementHandle();
  await page.evaluate(()=>document.fonts.ready);expect(await page.evaluate(()=>document.fonts.check("400 14px Manrope"))).toBe(true);
  const readPose=()=>host.evaluate(node=>{const d=(node as HTMLElement).dataset;return {x:d.cameraWorldX,y:d.cameraWorldY,scale:d.renderScale};});
- const before=await readPose(),trigger=page.getByRole("button",{name:"Сейчас в городе",exact:true});
- const nav=(await page.getByRole("navigation",{name:"Уровень карты"}).boundingBox())!,button=(await trigger.boundingBox())!;
+ await expect(page.getByRole('button',{name:'Сейчас в городе',exact:true})).toHaveCount(0);
+ // Explicitly reveal a real route, then select the actual vehicle pixels.
+ // The removed tour is not replaced by a synthetic inspector test hook.
+ const initialPlan=kind==='AIR'?planCityAirServices(scene)[0]!:kind==='RAIL'?planCityRailServices(scene.railway!,scene.railConnections??[])[0]!:planCitySeaServices(scene.ports??[],scene.seaConnections??[])[0]!;
+ const routeId=initialPlan.schedule.id;
+ await page.locator('.game-popover > summary').filter({hasText:'Фильтры'}).click();
+ await page.getByRole('button',{name:'Развитие города',exact:true}).click();
+ const development=page.getByRole('complementary',{name:'Развитие города'});
+ const route=development.locator(`[data-transport-route="${routeId}"]`);
+ await expect(route).toHaveCount(1);await route.getByRole('button',{name:'Показать направление'}).click();
+ await expect(host).toHaveAttribute('data-selected-transport-route',routeId);
+ await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+ await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+1000).toISOString()));await page.clock.runFor(200);
+ const before=await readPose(),nowAtClick=Number(await host.getAttribute('data-road-event-server-now'));
+ const point=kind==='AIR'?sampleCityAirService(planCityAirServices(scene)[0]!,nowAtClick).point
+  :kind==='RAIL'?sampleCityRailService(planCityRailServices(scene.railway!,scene.railConnections??[])[0]!,nowAtClick).cars[0]!
+  :sampleCitySeaService(planCitySeaServices(scene.ports??[],scene.seaConnections??[])[0]!,nowAtClick).position;
+ const nav=(await page.getByRole("navigation",{name:"Уровень карты"}).boundingBox())!;
  const overlaps=(a:typeof nav,b:typeof nav)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
- expect(overlaps(nav,button),"Tour trigger must not cover map navigation").toBe(false);await trigger.click();
- const tour=page.getByRole("complementary",{name:"Интересное в городе"});await expect(tour).toBeVisible();expect(await readPose()).toEqual(before);
- await tour.getByRole("button").filter({has:page.getByText(title,{exact:true})}).first().click();
+ await clickWorldPoint(page,point);expect(await readPose()).toEqual(before);
  const panel=page.getByRole("complementary",{name:"Наблюдение за городом"});await expect(panel.getByRole("heading",{name:title,exact:true})).toBeVisible();
  await expect(panel).toContainText(site.city.name);await expect(panel).not.toContainText("Другой город");
  const follow=panel.getByRole("button",{name:"Следить за транспортом",exact:true});await expect(follow).toHaveAttribute("aria-pressed","false");
@@ -75,9 +98,8 @@ test("a real road episode exposes actual services and closures, ends cleanly and
   for(let step=0;step<3&&!kind;step++){kind=(await host.getAttribute("data-road-event"))??"";if(!kind)await page.clock.runFor(300);}
  }
  expect(kind,"Owned road graph must dispatch one reachable real episode").not.toBe("");
- const names:Record<string,string>={ACCIDENT:"Дорожная авария",REPAIR:"Ремонт дороги",FIRE:"Пожар на дороге",MEDICAL:"Медицинская помощь",PATROL:"Патруль",BREAKDOWN:"Помощь сломавшейся машине",WATER:"Ремонт водопровода"};
- await page.getByRole("button",{name:"Сейчас в городе",exact:true}).click();
- await page.getByRole("complementary",{name:"Интересное в городе"}).getByRole("button").filter({has:page.getByText(names[kind]!,{exact:true})}).click();
+ const cells=JSON.parse((await host.getAttribute('data-road-event-geometry'))!) as Cell[];
+ expect(cells.length).toBeGreaterThan(0);await clickWorldPoint(page,{x:cells[1]!.x+.5,y:cells[1]!.y+.5});
  const panel=page.getByRole("complementary",{name:"Наблюдение за городом"});await expect(panel).toHaveAttribute("data-world-kind","ROAD");
  expect(Number(await panel.getAttribute("data-closed-cells"))).toBe(Number(await host.getAttribute("data-road-closed-cells")));
  await expect(panel).toContainText(/Полиция|Пожарные|Скорая помощь|Ремонтная служба|Эвакуатор/);

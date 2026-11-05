@@ -171,15 +171,14 @@ test("a movement timeout keeps its native retry after a same-range camera pan",a
    await page.screenshot({path:info.outputPath("movement-timeout-after-pan.png")});
    const layout=await failure.evaluate(alert=>{
      const rect=(node:Element)=>{const r=node.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
-     const retry=alert.querySelector<HTMLButtonElement>('button')!,wrap=alert.closest('.world-canvas-wrap')!,world=wrap.querySelector('.world-canvas')!,tour=wrap.querySelector('.city-world-tour-trigger')!;
-     return {alert:rect(alert),retry:rect(retry),world:rect(world),tour:rect(tour),retryClientWidth:retry.clientWidth,retryScrollWidth:retry.scrollWidth};
+     const retry=alert.querySelector<HTMLButtonElement>('button')!,wrap=alert.closest('.world-canvas-wrap')!,world=wrap.querySelector('.world-canvas')!;
+     return {alert:rect(alert),retry:rect(retry),world:rect(world),retryClientWidth:retry.clientWidth,retryScrollWidth:retry.scrollWidth};
    });
    await info.attach("movement-timeout-layout",{body:JSON.stringify(layout),contentType:"application/json"});
    expect(layout.retryScrollWidth,"The complete retry label must fit inside its button").toBeLessThanOrEqual(layout.retryClientWidth+1);
    for(const edge of ['left','top'] as const){expect(layout.alert[edge]).toBeGreaterThanOrEqual(layout.world[edge]-1);expect(layout.retry[edge]).toBeGreaterThanOrEqual(layout.alert[edge]-1);}
    for(const edge of ['right','bottom'] as const){expect(layout.alert[edge]).toBeLessThanOrEqual(layout.world[edge]+1);expect(layout.retry[edge]).toBeLessThanOrEqual(layout.alert[edge]+1);}
-   const overlapsTour=layout.alert.left<layout.tour.right&&layout.alert.right>layout.tour.left&&layout.alert.top<layout.tour.bottom&&layout.alert.bottom>layout.tour.top;
-   expect(overlapsTour,"The city tour trigger must not obscure the error message").toBe(false);
+   await expect(page.locator(".city-world-tour-trigger")).toHaveCount(0);
    await expect(failure).toBeVisible();
    await expect(host).not.toHaveAttribute("data-mobility-ready","true");
    await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());
@@ -459,11 +458,14 @@ test("real resident itinerary compilation reuses the canonical city and bounds e
  expect(await host.getAttribute("data-canonical-task-count")).toBe(canonical);expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);
 });
 
-test("the voluntary city tour opens with keyboard focus and Escape returns to its trigger",async({page})=>{
- await enterCity(page);const trigger=page.getByRole("button",{name:"Сейчас в городе",exact:true});await trigger.focus();await page.keyboard.press("Enter");
- const tour=page.getByRole("complementary",{name:"Интересное в городе"});await expect(tour).toBeVisible();
- await expect(tour.getByRole("button",{name:"Закрыть интересное в городе"})).toBeFocused();
- await page.keyboard.press("Escape");await expect(tour).toHaveCount(0);await expect(trigger).toBeFocused();
+test("the city has no unsolicited tour and keyboard navigation remains available",async({page})=>{
+ const host=await enterCity(page),canvas=host.locator("canvas");
+ await expect(page.getByRole("button",{name:"Сейчас в городе",exact:true})).toHaveCount(0);
+ await expect(page.getByRole("complementary",{name:"Интересное в городе"})).toHaveCount(0);
+ const before=await host.getAttribute("data-camera-world-x");
+ await canvas.focus();await page.keyboard.press("ArrowRight");
+ await expect.poll(()=>host.getAttribute("data-camera-world-x")).not.toBe(before);
+ await expect(canvas).toBeFocused();
 });
 
 test("leaving during cooperative preparation cancels late publication and a retained city really retries",async({page})=>{

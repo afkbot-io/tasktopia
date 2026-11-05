@@ -150,6 +150,7 @@ import { bindMapPointerGestures } from "../map-pointer-gesture";
 import { decorationWorldAnchor } from "../decoration-placement";
 import { pixelAtlasFrame } from "../pixel-atlas-frame";
 import { stopPixiApplication } from "../pixi-app-lifecycle";
+import { availableMapArea, revealCameraPosition, type ScreenRect } from "../city-task-camera";
 
 const CELL_SIZE = 8;
 const DETAIL_LOD_SCALE = 1;
@@ -177,10 +178,11 @@ const GROUND_PRESERVING_EVENTS = new Set([
   "district.activated", "district.completed",
   "archive.record_created", "archive.record_deleted",
 ]);
-type FocusArea = { point: Cell; bounds: Rect };
-function buildingFocusArea(origin: Cell): FocusArea {
+type FocusArea = { point: Cell; bounds: Rect; taskId?: string };
+function buildingFocusArea(origin: Cell, taskId?: string): FocusArea {
   return {
     point: origin,
+    taskId,
     bounds: { minX: origin.x - 14, minY: origin.y - 14, maxX: origin.x + 14, maxY: origin.y + 14 },
   };
 }
@@ -924,8 +926,9 @@ function ambientDetailAssets(): string[] {
   return microAmbientAssetUrls();
 }
 
-export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTransportRoute,transportRevision = 0, dependencies, attentionIds, countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, onCitySceneCommitted, startAtMinimumScale = false, active = true, focusTask, invalidations, onInvalidationsProcessed, showDistricts, onTaskSelect, onInspectTask, onDistrictSelect, onArchiveSelect, onSiteSelect, onReady, onFatalError, onZoomOutToPlanet, wheelNavigation }: {
+export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRef, selectedTransportRoute,transportRevision = 0, dependencies, attentionIds, countryId, chunkSize, worldManifest, viewBounds, focusCity, initialCityScene, onCitySceneCommitted, startAtMinimumScale = false, active = true, focusTask, invalidations, onInvalidationsProcessed, showDistricts, onTaskSelect, onInspectTask, onDistrictSelect, onArchiveSelect, onSiteSelect, onReady, onFatalError, onZoomOutToPlanet, wheelNavigation }: {
   initialView?:CityViewState;restoreView?:CityViewRestoreRequest;onViewChange?:(view:CityViewState,meta?:CityViewChangeMeta)=>void;
+  viewReaderRef?: { current: (() => CityViewState | undefined) | null };
   transportRevision?: number;selectedTransportRoute?:string;
   dependencies?: MapDependencySelection;
   attentionIds?: readonly string[];
@@ -938,7 +941,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   onCitySceneCommitted?: (countryId: string, scene: CitySceneDto) => void;
   startAtMinimumScale?: boolean;
   active?: boolean;
-  focusTask?: { origin: Cell; token: number } | null;
+  focusTask?: { taskId: string; origin: Cell; token: number } | null;
   invalidations: readonly MapInvalidation[];
   onInvalidationsProcessed: (cursor: number) => void;
   showDistricts: boolean;
@@ -953,9 +956,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   wheelNavigation: AtlasWheelNavigation;
 }) {
   const [inspection,setInspection]=useState<InspectionSnapshot>();
-  const [tour,setTour]=useState<readonly WorldInspection[]>();
-  const tourTriggerRef=useRef<HTMLButtonElement>(null);
-  const observationRef=useRef<{close:()=>void;follow:()=>void;task:()=>void;tour:()=>void;choose:(item:WorldInspection)=>void}|null>(null);
+  const observationRef=useRef<{close:()=>void;follow:()=>void;task:()=>void}|null>(null);
   const onInspectTaskRef=useRef(onInspectTask);useEffect(()=>{onInspectTaskRef.current=onInspectTask;},[onInspectTask]);
   const [firstFrameReady, setFirstFrameReady] = useState(false);
   const [streaming, setStreaming] = useState(false);
@@ -967,7 +968,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   const initialViewRef=useRef(readCityViewState(initialView));
   const restoreQueueRef=useRef(new CityViewRestoreQueue());
   const pendingFocusRef=useRef<FocusArea|undefined>(undefined);
-  const focusRequestKey=focusTask?`${focusTask.token}:${focusTask.origin.x}:${focusTask.origin.y}`:"";
+  const focusRequestKey=focusTask?`${focusTask.token}:${focusTask.taskId}:${focusTask.origin.x}:${focusTask.origin.y}`:"";
   const handledFocusRef=useRef(focusRequestKey);
   const onViewChangeRef=useRef(onViewChange);
   useEffect(()=>{onViewChangeRef.current=onViewChange;},[onViewChange]);
@@ -1010,7 +1011,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
   const focusMaxX = focusArea?.bounds.maxX;
   const focusMaxY = focusArea?.bounds.maxY;
   const viewBoundsKey = `${viewBounds.minX},${viewBounds.minY},${viewBounds.maxX},${viewBounds.maxY}`;
-  const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin) : focusArea);
+  const initialFocusRef = useRef(focusTask ? buildingFocusArea(focusTask.origin, focusTask.taskId) : focusArea);
   const initialViewBoundsRef = useRef(viewBounds);
   const initialCitySceneRef = useRef(initialCityScene);
   const onCitySceneCommittedRef = useRef(onCitySceneCommitted);
@@ -1067,7 +1068,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     if (!focusTaskToken || !focusTask) return;
     if(handledFocusRef.current===focusRequestKey)return;
     handledFocusRef.current=focusRequestKey;restoreQueueRef.current.cancel();
-    const area=buildingFocusArea(focusTask.origin);
+    const area=buildingFocusArea(focusTask.origin, focusTask.taskId);
     if(runtimeRef.current)runtimeRef.current.focus(area);else pendingFocusRef.current=area;
   }, [focusTaskToken, focusTask, focusRequestKey]);
 
@@ -1097,7 +1098,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
     const host = hostRef.current;
     if (!host) return;
     const cityBootstrapStartedAt = performance.now();
-    setInspection(undefined);setTour(undefined);
+    setInspection(undefined);
     setFirstFrameReady(false);
     setMapLoadError(undefined);
     delete host.dataset.residentChunks;
@@ -1825,34 +1826,15 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
         }
       }
       function stopFollowing(){worldInspection.manualNavigation();updateWorldInspection();}
-      function openInspection(item:WorldInspection,move=false){
-        worldInspection.open(item);inspectionItem=item;inspectionReadAt=readServerWorldTime()??Date.now();setTour(undefined);updateWorldInspection();
+      function openInspection(item:WorldInspection){
+        worldInspection.open(item);inspectionItem=item;inspectionReadAt=readServerWorldTime()??Date.now();updateWorldInspection();
         if(item.kind==="TRANSPORT"&&(item.fromName==="Другой город"||item.toName==="Другой город"))loadInspectionMetadata();
-        if(move&&item.position)runtimeRef.current?.focus({point:item.position,bounds:{minX:item.position.x-24,maxX:item.position.x+24,minY:item.position.y-18,maxY:item.position.y+18}});
       }
       function openTransportInspection(vehicleId:string){if(performance.now()<suppressSelectionUntil)return;
         const item=readTransportInspection(vehicleId,readServerWorldTime()??Date.now());if(item)openInspection(item);}
       observationRef.current={close:()=>{worldInspection.close();setInspection(undefined);inspectionMetadataController?.abort();canvas.focus({preventScroll:true});},
         follow:()=>{if(worldInspection.following)worldInspection.manualNavigation();else worldInspection.follow();updateWorldInspection();},
-        task:()=>{const task=inspectionItem?.task;if(!task)return;stopFollowing();markExplicitView();publishSettledView();if(task.countryId===countryId)onTaskSelectRef.current(task.taskId);else onInspectTaskRef.current?.(task.countryId,task.taskId);},
-        tour:()=>{const now=readServerWorldTime()??Date.now(),items:WorldInspection[]=[];const road=readRoadInspection(now);if(road)items.push(road);
-          if(readWorldPreferences().cityLife){
-            const groups=[airViews,trainViews,portShipViews];
-            for(const records of groups){for(const record of records){const item=readTransportInspection(record.plan.vehicleId,now);if(item?.local){items.push(item);break;}}}
-            for(const records of groups)for(const record of records){if(items.length>=5)break;
-              if(items.some(item=>item.kind==="TRANSPORT"&&item.vehicleId===record.plan.vehicleId))continue;
-              const item=readTransportInspection(record.plan.vehicleId,now);if(item?.local)items.push(item);}
-          }
-          const center={x:(app.screen.width/2-world.x)/world.scale.x/CELL_SIZE,y:(app.screen.height/2-world.y)/world.scale.y/CELL_SIZE};
-          const places=[...attentionTasks.values()].filter(task=>task.visualKind==="PARK"||task.serviceRole==="EDUCATION"||task.serviceRole==="SHOP")
-            .sort((a,b)=>Math.hypot(a.origin.x-center.x,a.origin.y-center.y)-Math.hypot(b.origin.x-center.x,b.origin.y-center.y));
-          for(const task of places){const item=readPlaceInspection(task.id);if(item)items.push(item);if(items.length>=8)break;}
-          worldInspection.close();setInspection(undefined);setTour(items.slice(0,8));},
-        choose:(item)=>{const target:InspectionTarget=item.kind==="TRANSPORT"?{kind:item.kind,vehicleId:item.vehicleId,journeyId:item.journeyId}:item.kind==="ROAD"?{kind:item.kind,id:item.id}:{kind:item.kind,taskId:item.task.taskId};
-          const current=readInspection(target,readServerWorldTime()??Date.now());
-          if(!current||current.kind==="TRANSPORT"&&item.kind==="TRANSPORT"&&current.journeyId!==item.journeyId||current.kind==="ROAD"&&item.kind==="ROAD"&&current.id!==item.id){
-            worldInspection.open(item);inspectionItem=undefined;inspectionReadAt=-Infinity;setTour(undefined);updateWorldInspection();return;}
-          openInspection(current,true);}};
+        task:()=>{const task=inspectionItem?.task;if(!task)return;stopFollowing();markExplicitView();publishSettledView();if(task.countryId===countryId)onTaskSelectRef.current(task.taskId);else onInspectTaskRef.current?.(task.countryId,task.taskId);}};
       startupDisposers.push(()=>{worldInspection.close();inspectionMetadataController?.abort();observationRef.current=null;});
       let lastTransportFocus:string|undefined;
       function renderTransportSelection(){
@@ -2585,6 +2567,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       let viewPublishTimer:ReturnType<typeof setTimeout>|undefined,viewGestureActive=false;
       const currentCityView=():CityViewState=>({center:{x:(app.screen.width/2-world.x)/world.scale.x/CELL_SIZE,
         y:(app.screen.height/2-world.y)/world.scale.y/CELL_SIZE},scale:world.scale.x});
+      const readPresentedView = () => !disposed && activeRef.current && paintedFrame ? currentCityView() : undefined;
+      if (viewReaderRef) viewReaderRef.current = readPresentedView;
+      startupDisposers.push(() => { if (viewReaderRef?.current === readPresentedView) viewReaderRef.current = null; });
       const publishSettledView=()=>{
         if(!onViewChangeRef.current||disposed||!focusCityId||!viewPublisher.pending)return;
         if(viewPublishTimer)clearTimeout(viewPublishTimer);
@@ -5099,6 +5084,37 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
           stopFollowing();
           restoreQueueRef.current.cancel();
           markExplicitView();cameraZoomAnchor=undefined;
+          if (area.taskId) {
+            const rect = host.getBoundingClientRect();
+            const overlays = [...document.querySelectorAll<HTMLElement>('.task-modal, .map-level-nav')].map(element => {
+              const bounds = element.getBoundingClientRect();
+              return { x: (bounds.x - rect.x) * app.screen.width / rect.width,
+                y: (bounds.y - rect.y) * app.screen.height / rect.height,
+                width: bounds.width * app.screen.width / rect.width, height: bounds.height * app.screen.height / rect.height };
+            });
+            const available = availableMapArea({ x: 0, y: 0, width: app.screen.width, height: app.screen.height }, overlays);
+            const task = attentionTasks.get(area.taskId);
+            host.dataset.focusX = String(task?.origin.x ?? area.point.x);
+            host.dataset.focusY = String(task?.origin.y ?? area.point.y);
+            if (!available) return;
+            let target: ScreenRect;
+            if (task && task.visualKind !== 'PARK') {
+              const art = transportBuildingArt(task), entry = getBuilding(art.key);
+              const entrance = entry.entrances[0] ?? { side: 'S' as const, offset: Math.floor(entry.footprint.width / 2) };
+              const construction = constructionStageLayout(entry.footprint, entrance, task.stage, task.taskNumber);
+              const visual = buildingInteractiveBounds(entry, task.stage, construction.padDepth, CELL_SIZE);
+              target = { x: art.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2 + visual.x,
+                y: art.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE + visual.y, width: visual.width, height: visual.height };
+            } else if (task?.footprint.length) {
+              const xs = task.footprint.map(cell => cell.x), ys = task.footprint.map(cell => cell.y);
+              target = { x: Math.min(...xs) * CELL_SIZE, y: Math.min(...ys) * CELL_SIZE,
+                width: (Math.max(...xs) - Math.min(...xs) + 1) * CELL_SIZE, height: (Math.max(...ys) - Math.min(...ys) + 1) * CELL_SIZE };
+            } else target = { x: area.point.x * CELL_SIZE, y: area.point.y * CELL_SIZE, width: CELL_SIZE, height: CELL_SIZE };
+            world.position.copyFrom(revealCameraPosition(world.position, world.scale.x, target, available));
+            cameraTargetScale = world.scale.x;
+            clampCamera(); renderedRange = ''; void loadVisible(); publishSettledView();
+            return;
+          }
           const scale = pixelPerfectCameraScale(
             fitCameraScale(app.screen, area.bounds, CELL_SIZE),
             cameraMinimumScale(),
@@ -5478,13 +5494,12 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, selectedTran
       cleanupStartupResources();
       destroyApp();
     };
-  }, [chunkSize, countryId, focusCityId, rendererAttempt, terrainSeed, terrainProfile, keyboardHelpId]);
+  }, [chunkSize, countryId, focusCityId, rendererAttempt, terrainSeed, terrainProfile, keyboardHelpId, viewReaderRef]);
 
   return <div className="world-canvas-wrap">
     <span id={keyboardHelpId} style={{position:"absolute",width:1,height:1,padding:0,margin:-1,overflow:"hidden",clipPath:"inset(50%)",whiteSpace:"nowrap",border:0}}>Стрелки или WASD перемещают карту. Плюс и минус меняют масштаб. Home возвращает к центру города.</span>
     <div ref={hostRef} className="world-canvas" data-animation-active="true" />
-    {firstFrameReady&&active&&<><button ref={tourTriggerRef} type="button" className="city-world-tour-trigger" onClick={()=>observationRef.current?.tour()}>Сейчас в городе</button>
-      <CityWorldObservation snapshot={inspection} tour={tour} onClose={()=>observationRef.current?.close()} onFollow={()=>observationRef.current?.follow()} onTask={()=>observationRef.current?.task()} onTourClose={()=>{setTour(undefined);tourTriggerRef.current?.focus({preventScroll:true});}} onChoose={item=>observationRef.current?.choose(item)}/></>}
+    {firstFrameReady&&active&&<CityWorldObservation snapshot={inspection} onClose={()=>observationRef.current?.close()} onFollow={()=>observationRef.current?.follow()} onTask={()=>observationRef.current?.task()}/>}
     {!firstFrameReady && !mapLoadError && <div className="app-loading world-first-frame-loading" role="status"><div className="loader-square" /><span>Готовим карту…</span></div>}
     {firstFrameReady && streaming && !mapLoadError && <div className="world-streaming-indicator" role="status"><span className="world-streaming-dot" />Подгружаем карту…</div>}
     {firstFrameReady&&transportLoadError&&!mapLoadError&&<div className="world-streaming-error" role="alert"><span>Не удалось загрузить транспорт. Направления и расписание доступны в развитии города.</span><button type="button" className="map-retry-button" onClick={()=>runtimeRef.current?.retry()}>Повторить загрузку транспорта</button></div>}

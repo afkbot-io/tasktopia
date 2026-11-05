@@ -6,17 +6,13 @@ const phase:Record<string,string>={GATE:"У терминала",TAXI_OUT:"На �
 const transportPhase=(item:Extract<WorldInspection,{kind:"TRANSPORT"}>)=>item.transportKind==="SEA"
  ?item.phase==="STOPPED"?(item.local?"У причала":"В другом порту"):item.phase==="MOVING"?"На водном маршруте":"Ожидает рейса"
  :phase[item.phase]??"В пути";
-export function CityWorldObservation({snapshot,tour,onClose,onFollow,onTask,onTourClose,onChoose}:{snapshot?:InspectionSnapshot;tour?:readonly WorldInspection[];
- onClose:()=>void;onFollow:()=>void;onTask:()=>void;onTourClose:()=>void;onChoose:(item:WorldInspection)=>void}){
- const close=useRef<HTMLButtonElement>(null),tourClose=useRef<HTMLButtonElement>(null);
- const tourOpen=tour!==undefined;useEffect(()=>{if(tourOpen)tourClose.current?.focus();},[tourOpen]);
+export function CityWorldObservation({snapshot,onClose,onFollow,onTask}:{snapshot?:InspectionSnapshot;
+ onClose:()=>void;onFollow:()=>void;onTask:()=>void}){
+ const close=useRef<HTMLButtonElement>(null);
  const identity=snapshot?.item.kind==="TRANSPORT"?snapshot.item.journeyId:snapshot?.item.kind==="ROAD"?snapshot.item.id:snapshot?.item.task.taskId;
  useEffect(()=>{if(identity)close.current?.focus();},[identity,snapshot?.item.kind]);
  const item=snapshot?.item;
  return <>
-  {tour&&<aside className="city-world-observation city-world-tour" aria-label="Интересное в городе" onKeyDown={event=>{if(event.key==="Escape"){event.stopPropagation();onTourClose();}}}><header><h2>Сейчас в городе</h2><button ref={tourClose} type="button" onClick={onTourClose} aria-label="Закрыть интересное в городе">×</button></header>
-   {!tour.length?<p>Сейчас поблизости нет активных событий.</p>:<ul>{tour.map((value)=><li key={value.kind==="TRANSPORT"?value.vehicleId:value.kind==="ROAD"?value.id:value.task.taskId}><button type="button" onClick={()=>onChoose(value)}><strong>{value.title}</strong><span>{value.kind==="TRANSPORT"?`${value.fromName}${value.toName?` → ${value.toName}`:""}`:phase[value.phase]??value.phase}</span></button></li>)}</ul>}
-   <p className="city-world-hint">Выберите объект, чтобы посмотреть его на карте.</p></aside>}
   {snapshot&&item&&<aside className="city-world-observation" aria-label="Наблюдение за городом" data-world-kind={item.kind} data-world-vehicle={item.kind==="TRANSPORT"?item.vehicleId:undefined} data-closed-cells={item.kind==="ROAD"?item.closedCells:undefined} onKeyDown={event=>{if(event.key==="Escape"){event.stopPropagation();onClose();}}}>
    <header><div><span className="city-world-kicker">{item.kind==="TRANSPORT"?item.transportKind==="AIR"?"Авиарейс":item.transportKind==="RAIL"?"Поезд":"Паром":item.kind==="ROAD"?"На дороге":"Место в городе"}</span><h2>{item.title}</h2></div><button ref={close} type="button" onClick={onClose} aria-label="Закрыть наблюдение">×</button></header>
    {snapshot.ended?<p role="status">Это событие завершилось.</p>:<>

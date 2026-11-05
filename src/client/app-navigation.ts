@@ -28,9 +28,20 @@ const samePlace = (a: NavigationView, b: NavigationView) => a.countryId === b.co
 
 /** Browser history owns route entries; camera changes only replace the pose. */
 export class AppNavigation {
+  private dismissedView: NavigationView | undefined;
   constructor(private readonly history: HistoryPort, private readonly url: () => string) {}
   current() { return readNavigationState(this.history.state); }
+  /** Consume an explicit dismiss once. Native Back/Forward keeps its own pose. */
+  restore(value: unknown): NavigationState | null {
+    const state = readNavigationState(value), shown = this.dismissedView;
+    this.dismissedView = undefined;
+    if (!state || state.task || !shown || !samePlace(state.view, shown)) return state;
+    const next = { ...state, view: structuredClone(shown) };
+    this.history.replaceState(next, '', viewUrl(shown));
+    return next;
+  }
   view(view: NavigationView) {
+    this.dismissedView = undefined;
     const current = this.current(), next: NavigationState = { kind: 'tasktopia.navigation', version: 1, view, taskDepth: 0 };
     if (current && samePlace(current.view, view) && !current.task) this.history.replaceState(next, '', viewUrl(view));
     else if (!current) this.history.replaceState(next, '', viewUrl(view));
@@ -41,6 +52,7 @@ export class AppNavigation {
     this.history.replaceState({ ...current, view }, '', this.url());
   }
   pending(view: NavigationView, id: string, standalone: boolean) {
+    this.dismissedView = undefined;
     const current = this.current(); if (current?.task?.id === id && current.view.countryId === view.countryId) return;
     const direct = !current && /^\/task(?:\/|\?)/.test(this.url());
     const next: NavigationState = { kind: 'tasktopia.navigation', version: 1, view, task: { id, standalone, pending: true },
@@ -49,10 +61,12 @@ export class AppNavigation {
     if (direct) this.history.replaceState(next, '', url); else this.history.pushState(next, '', url);
   }
   task(view: NavigationView, task: { id: string; taskNumber: number }, standalone: boolean, replace = false) {
+    if (replace && this.dismissedView) return;
     const current = this.current(), direct = !current && /^\/task(?:\/|\?)/.test(this.url());
     const sameTask = current?.task?.id === task.id && current.view.countryId === view.countryId;
     // A restored card may become ready after Back or a newer task took ownership.
     if (replace && !sameTask && !direct) return;
+    this.dismissedView = undefined;
     const next: NavigationState = { kind: 'tasktopia.navigation', version: 1, view, task: { ...task, standalone },
       taskDepth: sameTask || replace ? current?.taskDepth ?? 0 : direct ? 0 : Math.min(500, (current?.taskDepth ?? 0) + 1) };
     if (direct || sameTask || replace) this.history.replaceState(next, '', taskLink(view.countryId, task));
@@ -60,7 +74,11 @@ export class AppNavigation {
   }
   close(view: NavigationView) {
     const current = this.current();
-    if (current?.task && current.taskDepth > 0) { this.history.go(-current.taskDepth); return true; }
+    this.dismissedView = undefined;
+    if (current?.task && current.taskDepth > 0) {
+      this.dismissedView = structuredClone(view);
+      this.history.go(-current.taskDepth); return true;
+    }
     this.history.replaceState({ kind: 'tasktopia.navigation', version: 1, view, taskDepth: 0 }, '', viewUrl(view));
     return false;
   }

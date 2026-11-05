@@ -3,7 +3,7 @@ import {renderToStaticMarkup} from "react-dom/server";
 import {CityWorldObservation} from "../src/client/components/CityWorldObservation";
 import type {InspectionSnapshot} from "../src/client/city-world-inspection";
 const snapshot:InspectionSnapshot={item:{kind:"PLACE",local:true,title:"Школа",phase:"READY",task:{countryId:"country",taskId:"school"}},following:false,canFollow:false,ended:false};
-const props={onClose:()=>{},onFollow:()=>{},onTask:()=>{},onTourClose:()=>{},onChoose:()=>{}};
+const props={onClose:()=>{},onFollow:()=>{},onTask:()=>{}};
 it("keeps the active place task action but removes an obsolete task button after the inspected place ends",()=>{
  expect(renderToStaticMarkup(<CityWorldObservation {...props} snapshot={snapshot}/>)).toContain("Открыть задачу");
  const ended=renderToStaticMarkup(<CityWorldObservation {...props} snapshot={{...snapshot,ended:true}}/>);

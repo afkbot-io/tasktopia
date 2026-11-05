@@ -51,6 +51,7 @@ it('keeps the map entry when a restored task becomes ready after browser Back', 
   const mapUrl = f.url();
   nav.pending(city, task.id, false);
   nav.close(city);
+  nav.restore(f.history.state);
   f.history.go(1);
   expect(nav.current()?.task?.pending).toBe(true);
   f.history.go(-1);
@@ -90,6 +91,39 @@ it('keeps a newer task entry when an older restore reports readiness', () => {
   expect(nav.current()?.task?.id).toBe('b');
   expect(nav.current()?.taskDepth).toBe(1);
   expect(f.url()).toBe(taskLink(city.countryId, { id: 'b', taskNumber: 41 }));
+});
+
+it('dismisses a task chain with the camera actually shown, while ordinary Back keeps historical poses', () => {
+  const f = historyFixture(), nav = new AppNavigation(f.history, f.url);
+  const shown: NavigationView = { ...city, cityView: { center: { x: 180, y: -90 }, scale: 2.37 } };
+  nav.view(city); nav.task(city, { id: 'a', taskNumber: 1 }, false);
+  nav.task(shown, { id: 'b', taskNumber: 2 }, false);
+  nav.close(shown);
+  const restored = nav.restore(f.history.state);
+  expect(restored?.task).toBeUndefined();
+  expect(restored?.view.cityView).toEqual(shown.cityView);
+  expect(nav.current()?.view.cityView).toEqual(shown.cityView);
+  f.history.go(1);
+  expect(nav.restore(f.history.state)?.view.cityView).toEqual(city.cityView);
+  f.history.go(1);
+  expect(nav.restore(f.history.state)?.view.cityView).toEqual(shown.cityView);
+});
+
+it('never carries a dismissed camera into a different city or a later browser navigation', () => {
+  const f = historyFixture(), nav = new AppNavigation(f.history, f.url);
+  const other: NavigationView = { ...city, cityId: 'city-b', cityView: { center: { x: 700, y: 900 }, scale: 3 } };
+  nav.view(city); nav.task(other, { id: 'b', taskNumber: 2 }, false); nav.close(other);
+  expect(nav.restore(f.history.state)?.view).toEqual(city);
+  f.history.go(1); expect(nav.restore(f.history.state)?.view).toEqual(other);
+  f.history.go(-1); expect(nav.restore(f.history.state)?.view).toEqual(city);
+});
+
+it('does not let late card readiness consume the pending dismiss camera', () => {
+  const f = historyFixture(), nav = new AppNavigation(f.history, f.url);
+  const shown = { ...city, cityView: { center: { x: 70, y: 80 }, scale: 1.6 } };
+  nav.view(city); nav.pending(city, 'a', false); nav.close(shown);
+  nav.task(city, { id: 'a', taskNumber: 1 }, false, true);
+  expect(nav.restore(f.history.state)?.view.cityView).toEqual(shown.cityView);
 });
 
 it.each(['number', 'UUID'])('canonicalizes an unowned direct %s task entry without adding history', kind => {
