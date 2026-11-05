@@ -23,7 +23,7 @@ it.each<CityResponseRole>(['BUS', 'SCHOOL_BUS', 'FIRE'])('останавлива
     const measured: routing.MobilityRouteSearch = (...args) => {
       const call = consume(real.steps(...args)); calls.push(call); return call.result;
     };
-    measured.steps = real.steps; measured.setBlocked = real.setBlocked;
+    measured.steps = real.steps; measured.setBlocked = real.setBlocked; measured.planning = real.planning;
     return measured;
   });
   const input = { roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),

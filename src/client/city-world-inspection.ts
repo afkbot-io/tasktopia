@@ -3,7 +3,7 @@ import type { TransportKind,TransportStopActivity } from "../shared/transport-sc
 
 export type InspectionTask={countryId:string;taskId:string;title?:string};
 type InspectionBase={title:string;phase:string;position?:Cell;local:boolean;task?:InspectionTask};
-export type TransportInspection=InspectionBase&{kind:"TRANSPORT";transportKind:TransportKind;routeId:string;vehicleId:string;journeyId:string;
+export type TransportInspection=InspectionBase&{kind:"TRANSPORT";transportKind:TransportKind|'BUS';routeId:string;vehicleId:string;journeyId:string;
   activity:TransportStopActivity;fromName:string;toName?:string;progress:number;waiting:number;aboard:number;boarded:number;alighted:number};
 export type RoadInspection=InspectionBase&{kind:"ROAD";id:string;closedCells:number;services:string[]};
 export type PlaceInspection=InspectionBase&{kind:"PLACE";task:InspectionTask};

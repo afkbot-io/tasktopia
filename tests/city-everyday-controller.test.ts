@@ -154,6 +154,11 @@ it.each(['delete', 'entrance', 'incident', 'role', 'stage'] as const)('изме�
     vehicle.response = role; vehicle.current = targets[0]!; vehicle.next = vehicle.current;
     vehicle.position = { x: vehicle.current.x + .5, y: vehicle.current.y + .5 }; vehicle.activity = 'REST'; return true;
   });
+  // Regular service can now precede the school episode. This director seam
+  // must model release as well as assignment of its explicit actor snapshot.
+  vi.spyOn(city, 'clearResponses').mockImplementation((roles, id) => {
+    for (const actor of actors) if ((!id || actor.id === id) && actor.response && (!roles || roles.includes(actor.response))) actor.response = undefined;
+  });
   vi.spyOn(city, 'dispatchVisit').mockImplementation(id => {
     if (!id.includes(':bus:')) return [];
     child.visit = { id, arrived: !id.endsWith(':school') }; return [child.id];

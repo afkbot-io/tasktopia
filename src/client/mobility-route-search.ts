@@ -6,6 +6,8 @@ export type MobilityRouteSearch = {
   (start: Cell, previous?: Cell, target?: Cell, maxCells?: number): MobilityRouteResult;
   steps(start: Cell, previous?: Cell, target?: Cell, maxCells?: number): Generator<void, MobilityRouteResult, void>;
   setBlocked(closedCells: ReadonlySet<string>): void;
+  /** Immutable topology only. Never use for a live movement assignment. */
+  planning(start: Cell, previous?: Cell, target?: Cell, maxCells?: number): MobilityRouteResult;
 };
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
@@ -53,7 +55,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
   const root = cells.length * 4;
   const blocked = new Uint8Array(cells.length);
   let blockedIndices: number[] = [];
-  function* searchSteps(start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity): Generator<void, MobilityRouteResult, void> {
+  function* searchSteps(start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity, planning = false): Generator<void, MobilityRouteResult, void> {
     // A grid state has at most four cheap edges. Check the outer time/abort
     // budget in small batches instead of spending its fallback operation cap
     // on each state and scheduling needless browser tasks between renders.
@@ -83,7 +85,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
         const index = state === root ? startIndex : Math.floor(state / 4), direction = state === root ? -1 : state % 4;
         for (let pass = direction < 0 ? 1 : 0; pass < 2; pass++) for (let edge = offsets[index]!; edge < offsets[index + 1]!; edge++) {
           const nextIndex = targets[edge]!, nextDirection = headings[edge]!;
-          if (blocked[nextIndex] || (nextDirection === direction) !== (pass === 0)
+          if (!planning && blocked[nextIndex] || (nextDirection === direction) !== (pass === 0)
             || direction >= 0 && nextDirection === (direction + 2) % 4) continue;
           const nextState = nextIndex * 4 + nextDirection;
           if (parents.has(nextState)) continue;
@@ -127,7 +129,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
       // array or comparator for each state. Initial heading has no straight.
       for (let pass = direction < 0 ? 1 : 0; pass < 2; pass++) for (let edge = offsets[index]!; edge < offsets[index + 1]!; edge++) {
         const nextIndex = targets[edge]!, nextDirection = headings[edge]!;
-        if (blocked[nextIndex] || (nextDirection === direction) !== (pass === 0)
+        if (!planning && blocked[nextIndex] || (nextDirection === direction) !== (pass === 0)
           || direction >= 0 && nextDirection === (direction + 2) % 4) continue;
         const nextState = nextIndex * 4 + nextDirection;
         if (visited[nextState]) continue;
@@ -155,6 +157,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
   const search = (start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity) => completePreparation(searchSteps(start, previous, target, maxCells));
   return Object.assign(search, {
     steps: searchSteps,
+    planning: (start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity) => completePreparation(searchSteps(start, previous, target, maxCells, true)),
     setBlocked(closedCells: ReadonlySet<string>): void {
       // Only changed closure cells are touched. The immutable topology and
       // earlier route results survive; a closed starting cell can still exit.

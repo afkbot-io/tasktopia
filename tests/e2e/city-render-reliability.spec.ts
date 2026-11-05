@@ -8,6 +8,7 @@ import { openMapCity, openMapPlanet } from "./map-navigation";
 import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
 import { installCooperativeYieldGate, type CooperativeYieldGateWindow } from './cooperative-yield-gate';
 import { pauseInstalledClock } from './city-clock-control';
+import { installSceneClock } from './city-scene-clock';
 
 // Сохраняем вызовы, сеть, исходники и итоговый PNG. Повторные автоматические
 // снимки canvas не являются частью проверяемой работы города.
@@ -338,6 +339,63 @@ test("permanent transit stops survive event preferences, reduced motion and qual
   expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(2);
   await info.attach('permanent-stops-state',{body:JSON.stringify({stops,geometry:JSON.parse(geometry!),reads,errors}),contentType:'application/json'});
   expect(errors).toEqual([]);
+});
+
+test('a regular city bus opens halfway through a minute and its native pixels expose the actual line',async({page,hasTouch},info)=>{
+  test.setTimeout(120_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  const origin=Date.UTC(2035,0,1)+42_000;
+  await page.route('**/api/**',async route=>{
+    const response=await route.fetch({headers:{...route.request().headers(),'accept-encoding':'identity'}});
+    await route.fulfill({response,headers:{...response.headers(),'x-tasktopia-server-time':String(origin)}});
+  });
+  const host=await enterCity(page),canvas=host.locator('canvas');
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect(host).toHaveAttribute('data-transit-fleet','2');
+  await expect(host).toHaveAttribute('data-transit-line',/.+/);
+  await expect(host).toHaveAttribute('data-transit-role','BUS');
+  expect(Number(await host.getAttribute('data-road-event-server-now'))%60_000).toBeGreaterThan(4000);
+  await pauseInstalledClock(page);
+  for(let step=0;step<120&&await host.getAttribute('data-transit-phase')!=='BOARD';step++)await page.clock.runFor(500);
+  await expect(host).toHaveAttribute('data-transit-phase','BOARD');await page.clock.runFor(300);
+  const id=(await host.getAttribute('data-transit-vehicle'))!;
+  for(let pan=0;pan<12;pan++){
+    const vehicles=JSON.parse((await host.getAttribute('data-transit-vehicles'))!) as {id:string;role:string;position:{x:number;y:number}}[];
+    const bus=vehicles.find(bus=>bus.id===id)!;expect(bus.role).toBe('BUS');
+    const box=(await canvas.boundingBox())!,scale=Number(await host.getAttribute('data-render-scale'));
+    const point={x:box.width/2+(bus.position.x-Number(await host.getAttribute('data-camera-world-x')))*8*scale,
+      y:box.height/2+(bus.position.y-Number(await host.getAttribute('data-camera-world-y')))*8*scale};
+    if(point.x>24&&point.x<box.width-24&&point.y>24&&point.y<box.height-100)break;
+    const dx=Math.max(-box.width*.35,Math.min(box.width*.35,box.width/2-point.x)),dy=Math.max(-box.height*.35,Math.min(box.height*.35,box.height/2-point.y));
+    await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+    await page.mouse.move(box.x+box.width/2+dx,box.y+box.height/2+dy,{steps:4});await page.mouse.up();
+    await page.clock.runFor(300);await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+  }
+  // Drag suppression lasts500ms. Let it expire while this bus is at its curb.
+  await page.clock.runFor(600);
+  const vehicles=JSON.parse((await host.getAttribute('data-transit-vehicles'))!) as {id:string;position:{x:number;y:number}}[];
+  const bus=vehicles.find(bus=>bus.id===id)!,box=(await canvas.boundingBox())!,scale=Number(await host.getAttribute('data-render-scale'));
+  const point={x:box.width/2+(bus.position.x-Number(await host.getAttribute('data-camera-world-x')))*8*scale,
+    y:box.height/2+(bus.position.y-Number(await host.getAttribute('data-camera-world-y')))*8*scale};
+  if(hasTouch)await canvas.tap({position:point});else await canvas.click({position:point});
+  const inspector=page.getByRole('complementary',{name:'Наблюдение за городом'});
+  await expect(inspector).toHaveAttribute('data-world-vehicle',id);
+  await expect(inspector.getByRole('heading',{name:'Автобус',exact:true})).toBeVisible();
+  await expect(inspector).toContainText('Городской маршрут');await expect(inspector).toContainText(/Остановка \d+/);
+  await expect(inspector.getByRole('button',{name:'Открыть задачу',exact:true})).toHaveCount(0);
+  await page.screenshot({path:info.outputPath('regular-bus.png')});
+  await inspector.getByRole('button',{name:'Следить за транспортом',exact:true}).click();
+  await canvas.focus();await page.keyboard.press('ArrowRight');
+  await expect(inspector.getByRole('button',{name:'Следить за транспортом',exact:true})).toHaveAttribute('aria-pressed','false');
+  await page.emulateMedia({reducedMotion:'reduce'});await expect(host).toHaveAttribute('data-animation-active','false');
+  await expect(host).toHaveAttribute('data-transit-fleet','2');
+  for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total'])await expect(host).toHaveAttribute(metric,'0');
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
+  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('bus-line-state',{body:JSON.stringify(await host.evaluate(node=>({...((node as HTMLElement).dataset)}))),contentType:'application/json'});
 });
 
 test("authoritative resync keeps a ready CITY canvas and reuses identical physical networks",async({page})=>{

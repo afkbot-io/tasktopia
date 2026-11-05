@@ -15,3 +15,10 @@ it("describes a boarding ferry at its real berth instead of claiming it is trave
  const html=renderToStaticMarkup(<CityWorldObservation {...props} snapshot={ferry}/>);
  expect(html).toContain("Посадка пассажиров");expect(html).toContain("У причала");
 });
+it('describes a city bus stop without a fabricated trip percentage or terminal task',()=>{
+ const bus:InspectionSnapshot={...snapshot,item:{kind:'TRANSPORT',transportKind:'BUS',routeId:'line',vehicleId:'bus',journeyId:'ride',
+  title:'Автобус',phase:'BOARD',activity:'BOARDING',fromName:'Остановка1',toName:'Остановка2',progress:0,local:true,waiting:2,aboard:1,boarded:1,alighted:0}};
+ const html=renderToStaticMarkup(<CityWorldObservation {...props} snapshot={bus}/>);
+ expect(html).toContain('Городской маршрут');expect(html).toContain('У остановки');
+ expect(html).not.toContain('Путь рейса');expect(html).not.toContain('Открыть задачу');
+});

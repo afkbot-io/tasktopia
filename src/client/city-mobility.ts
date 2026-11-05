@@ -1,5 +1,5 @@
 import type { RoadEventSite } from "./city-road-events";
-import type { Cell } from "../shared/contracts";
+import type { Cell, Rect } from "../shared/contracts";
 import { roadBandRole } from '../shared/road-profile';
 import { MICRO_CAR_VARIANTS, MICRO_PERSON_VARIANTS, microAmbientSprite, type MicroDirection } from "../shared/micro-ambient";
 import { nextSeededRandom } from "./agent-routing";
@@ -7,8 +7,9 @@ import { buildMobilityNetworkSteps, mobilityCellKey as key, mobilityNetworkSigna
 import { createMobilityRouteSearchSteps, type MobilityRouteSearch } from "./mobility-route-search";
 import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "./cooperative-preparation";
 import { prepareRoadEventGeometrySteps, type PreparedRoadEventGeometry } from "./city-road-event-geometry";
+import { transitVehicleArt, type TransitFleetRole } from '../shared/transit-vehicle-art';
 
-export type CityMobilityInput = MobilityNetworkInput & { seed: number; carLimit: number; walkerLimit: number;spawnPriorityCells?:readonly Cell[] };
+export type CityMobilityInput = MobilityNetworkInput & { seed: number; carLimit: number; walkerLimit: number;spawnPriorityCells?:readonly Cell[];transitFleet?:boolean };
 type MobilityPopulationSettings = Partial<Pick<CityMobilityInput, 'carLimit' | 'walkerLimit' | 'spawnPriorityCells'>>;
 const preparedTopology = Symbol('prepared-city-mobility-network');
 export type PreparedCityMobilityZone = {
@@ -123,6 +124,8 @@ export type CityMobilityAgent = {
   activity: "NONE" | "REST" | "PARKED" | "INSIDE"; waitMs: number;
   yieldReason: "NONE" | "RESERVATION" | "OCCUPIED_EXIT" | "BODY" | "ROAD_CLOSED" | "WORK_SITE";
   response?: CityResponseRole;
+  /** A permanent vehicle role, independent of its current appointment. */
+  fleet?: TransitFleetRole;
   visit?: { id: string; arrived: boolean };
   carrier?: string;
   age?: 'CHILD' | 'ADULT';
@@ -144,9 +147,10 @@ export type CityMobility = {
   advance(elapsedMs: number, frameElapsedMs?: number): void;
   setRoadClosures(cells: ReadonlySet<string>): void;
   setWalkClosures(cells: ReadonlySet<string>): void;
-  roadEventSites(): RoadEventSite[];
+  roadEventSites(view?: Rect): RoadEventSite[];
   dispatchResponse(role: CityResponseRole, targets: readonly Cell[], stayMs?: number, agentId?: string): boolean;
   clearResponses(roles?: readonly CityResponseRole[], agentId?: string): void;
+  holdTransit(agentId: string): void;
   dispatchVisit(id: string, targets: readonly Cell[], count: number, stayMs: number, indoors: boolean, actorIds?: readonly string[], travelBudgetMs?: number): string[];
   clearVisits(id?: string): void;
   boardVisit(id: string, vehicleId: string): number;
@@ -157,6 +161,8 @@ export type CityMobility = {
   removeExternalCarrier(carrierId: string): void;
   releaseResponse(agentId: string, retainMs?: number): void;
   canDrive(from: Cell, to: Cell): boolean;
+  /** Topology planning ignores transient road closures. Dispatch never does. */
+  canPlanDrive(from: Cell, to: Cell): boolean;
   readonly agents: readonly CityMobilityAgent[];
   readonly signals: readonly CityMobilitySignal[];
   readonly metrics: Readonly<CityMobilityMetrics>;
@@ -203,11 +209,12 @@ function position(agent: Pick<Agent, "current" | "next" | "progress" | "segmentS
 }
 
 const bodies = new Map<string, { half: Cell; offset: Cell }>();
-function body(agent: Pick<Agent, "kind" | "variant" | "direction">) {
-  const cacheKey = `${agent.kind}:${agent.variant}:${agent.direction}`;
+function body(agent: Pick<Agent, "kind" | "variant" | "direction" | "fleet">) {
+  const cacheKey = `${agent.kind}:${agent.fleet ?? agent.variant}:${agent.direction}`;
   let result = bodies.get(cacheKey);
   if (!result) {
-    const art = microAmbientSprite(agent.kind === "CAR" ? "car" : "person", agent.variant, agent.direction);
+    const art = agent.fleet ? transitVehicleArt(agent.fleet, agent.direction)
+      : microAmbientSprite(agent.kind === "CAR" ? "car" : "person", agent.variant, agent.direction);
     const { left, right, top, bottom } = art.opaqueBounds;
     result = { half: { x: (right - left) / 16, y: (bottom - top) / 16 },
       offset: { x: ((left + right) / 2 - art.anchor.x) / 8, y: ((top + bottom) / 2 - art.anchor.y) / 8 } };
@@ -309,7 +316,7 @@ export function mobilityPassageExit(route: readonly Cell[], zone: Pick<MobilityZ
 }
 
 /** Public admission policy: an exit cannot be borrowed from an occupied body. */
-export function mobilityExitAvailable(exit: Cell, incoming: Pick<CityMobilityAgent, "id" | "kind" | "variant" | "direction">, agents: readonly CityMobilityAgent[]): boolean {
+export function mobilityExitAvailable(exit: Cell, incoming: Pick<CityMobilityAgent, "id" | "kind" | "variant" | "direction" | "fleet">, agents: readonly CityMobilityAgent[]): boolean {
   const offset = incoming.kind === "WALKER" ? inset(incoming.direction) : { x: 0, y: 0 };
   const center = { x: exit.x + .5 + offset.x, y: exit.y + .5 + offset.y };
   const candidate = { ...incoming, position: center } as CityMobilityAgent;
@@ -545,9 +552,12 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         const current = choices[Math.floor(random() * choices.length)];
         if (!current) break;
         const count = actors.filter(actor => actor.kind === kind).length;
+        const fleet: TransitFleetRole | undefined = input.transitFleet && kind === 'CAR'
+          ? !actors.some(actor => actor.fleet === 'BUS') ? 'BUS' : !actors.some(actor => actor.fleet === 'SCHOOL_BUS') ? 'SCHOOL_BUS' : undefined : undefined;
         const actor: Agent = {
           id: `mobility-${input.seed >>> 0}-${idCounter}`, kind, variant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
           baseVariant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
+          fleet,
           age: kind === 'WALKER' ? count % 4 === 0 ? 'CHILD' : 'ADULT' : undefined,
           current, next: current, progress: 0, position: { x: current.x + .5, y: current.y + .5 }, direction: "east",
           speed: kind === "CAR" ? .0021 + random() * .00045 : .0012 + random() * .00018,
@@ -565,7 +575,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
   const spawn = (): void => completePreparation(spawnSteps());
 
   const publish = () => {
-    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response, visit, carrier, age }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response, visit: visit && { ...visit }, carrier, age }));
+    agentsSnapshot = actors.map(({ id, kind, variant, current, next, progress, position, direction, speed, steps, activity, waitMs, yieldReason, response, fleet, visit, carrier, age }) => ({ id, kind, variant, current: { ...current }, next: { ...next }, progress, position: { ...position }, direction, speed, steps, activity, waitMs, yieldReason, response, fleet, visit: visit && { ...visit }, carrier, age }));
     const signal = (zone: MobilityZone, axis: Reservation["axis"] | undefined): CityMobilitySignal => ({
       id: zone.id, bounds: zone.bounds, signalPosts: zone.signalPosts,
       horizontal: axis === "H" ? "GREEN" : "RED", vertical: axis === "V" ? "GREEN" : "RED", pedestrians: axis === "P" ? "GREEN" : "RED",
@@ -841,8 +851,11 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
   if (updated.carLimit !== undefined) limits.CAR = Math.max(0, Math.min(48, Math.floor(updated.carLimit)));
   if (updated.walkerLimit !== undefined) limits.WALKER = Math.max(0, Math.min(64, Math.floor(updated.walkerLimit)));
   if (limits.CAR < oldCarLimit || limits.WALKER < oldWalkerLimit) {
-    const counts={CAR:0,WALKER:0};
-    actors=actors.filter(actor=>actor.carrier||++counts[actor.kind]<=limits[actor.kind]);
+    // A replacement bus may be appended after civilian cars. Population order
+    // must not erase the line when the user subsequently selects Economy.
+    const fleet=new Set(actors.filter(actor=>actor.fleet).slice(0,limits.CAR).map(actor=>actor.id));
+    const counts={CAR:fleet.size,WALKER:0};
+    actors=actors.filter(actor=>actor.carrier||fleet.has(actor.id)||++counts[actor.kind]<=limits[actor.kind]);
     const alive=new Set(actors.map(actor=>actor.id));
     for(const [id,reservation] of reservations) if(!alive.has(reservation.owner)) reservations.delete(id);
   }
@@ -914,11 +927,17 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       }
       publish();
     },
-    roadEventSites() {
+    roadEventSites(view) {
       // A cosmetic call cannot choose a lane whose curb no available service
       // can reach. Compute this once per episode, not on animation frames.
       const reachable = new Set<string>();
-      for (const actor of actors.filter(a => a.kind === "CAR" && !a.response).slice(0, 6)) {
+      const services = actors.filter(a => a.kind === 'CAR' && !a.response && !a.fleet);
+      if (view) {
+        const distance = (actor: Agent) => Math.max(view.minX - actor.position.x, 0, actor.position.x - view.maxX)
+          + Math.max(view.minY - actor.position.y, 0, actor.position.y - view.maxY);
+        services.sort((a, b) => distance(a) - distance(b));
+      }
+      for (const actor of services.slice(0, 6)) {
         const moving = actor.route.length >= 2, start = moving ? actor.next : actor.current;
         const search = carRoutes(start, moving ? actor.current : actor.previous, undefined, 28);
         for (const cell of search.cells) {
@@ -932,8 +951,9 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       const available = new Set<number>();
       for (const id of reachable) for (const index of roadEvents.byCurb.get(id) ?? []) available.add(index);
       const sites: RoadEventSite[] = [];
-      for (const [index, candidate] of roadEvents.candidates.entries()) {
-        if (!available.has(index) || candidate.keys.some(id => unsafe.has(id) || closures.has(id))) continue;
+      for (const index of [...available].sort((a, b) => a - b)) {
+        const candidate = roadEvents.candidates[index]!;
+        if (candidate.keys.some(id => unsafe.has(id) || closures.has(id))) continue;
         const responseCells = candidate.responseKeys.filter(id => reachable.has(id)).map(id => network.cars.get(id)!);
         const behind = candidate.towCandidate;
         const towCell = behind && safeDestination(behind) && reachable.has(key(behind)) ? { ...behind } : undefined;
@@ -943,8 +963,10 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       return sites;
     },
     dispatchResponse(role, targets, stayMs = 2500, agentId) {
-      if (!targets.length || actors.filter(a => a.response && a.id !== agentId).length >= 2) return false;
-      const candidates = actors.filter(actor => actor.kind === "CAR" && !actor.evacuating && (!actor.response || actor.id === agentId) && (!agentId || actor.id === agentId))
+      const transit = role === 'BUS' || role === 'SCHOOL_BUS';
+      if (!targets.length || !(input.transitFleet && transit) && actors.filter(a => a.response && !a.fleet && a.id !== agentId).length >= 2) return false;
+      const candidates = actors.filter(actor => actor.kind === "CAR" && !actor.evacuating && (!actor.response || actor.id === agentId) && (!agentId || actor.id === agentId)
+        && (!input.transitFleet || (transit ? actor.fleet === role : !actor.fleet)))
         .sort((a, b) => Math.min(...targets.map(c => Math.abs(c.x-a.next.x)+Math.abs(c.y-a.next.y)))-Math.min(...targets.map(c => Math.abs(c.x-b.next.x)+Math.abs(c.y-b.next.y)))).slice(0, 6);
       let picked: { actor: Agent; route: Cell[] } | undefined;
       for (const actor of candidates) {
@@ -985,6 +1007,11 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         actor.restMs = 0; actor.activity = "NONE"; actor.route = actor.route.slice(0, 2);
       }
       publish();
+    },
+    holdTransit(agentId) {
+      const actor = actors.find(a => a.id === agentId && a.activity === 'REST' && !a.evacuating
+        && (a.response === 'BUS' || a.response === 'SCHOOL_BUS'));
+      if (actor) { actor.responseUntil = clock + 30_000; actor.restMs = 30_000; }
     },
     dispatchVisit(id, targets, count, stayMs, indoors, actorIds, travelBudgetMs = Infinity) {
       if (!id || !targets.length || !Number.isFinite(count) || !Number.isFinite(stayMs) || !(travelBudgetMs > 0)) return [];
@@ -1139,6 +1166,12 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       const role = roadBandRole(network.roads, from);
       if (role.kind !== 'TRAVEL' || !safeDestination(to) || closures.has(key(to))) return false;
       const route = carRoutes(from, { x: from.x - role.dx, y: from.y - role.dy }, to, 64).routeTo(to);
+      return route.length >= 2 && route.length <= 64;
+    },
+    canPlanDrive(from, to) {
+      const role = roadBandRole(network.roads, from);
+      if (role.kind !== 'TRAVEL' || !safeDestination(to)) return false;
+      const route = carRoutes.planning(from, { x: from.x - role.dx, y: from.y - role.dy }, to, 64).routeTo(to);
       return route.length >= 2 && route.length <= 64;
     },
     advance(elapsedMs, frameElapsedMs) {

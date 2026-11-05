@@ -35,6 +35,8 @@ async function clickWorldPoint(page:Page,point:Cell){
  const pose=await host.evaluate(node=>{const d=(node as HTMLElement).dataset;return {x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale)};});
  const x=box.width/2+(point.x-pose.x)*8*pose.scale,y=box.height/2+(point.y-pose.y)*8*pose.scale;
  expect(x).toBeGreaterThan(0);expect(y).toBeGreaterThan(0);expect(x).toBeLessThan(box.width);expect(y).toBeLessThan(box.height);
+ expect(await page.evaluate(({x,y})=>Boolean(document.elementFromPoint(x,y)?.closest('canvas')),{x:box.x+x,y:box.y+y}),
+  'The actual world pixels must be reachable above navigation and other overlays').toBe(true);
  await canvas.click({position:{x,y}});
 }
 
