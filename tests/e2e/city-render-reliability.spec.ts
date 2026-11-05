@@ -296,6 +296,50 @@ test("quality limits preserve the physical walk network and everyday compilation
   expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);
 });
 
+test("permanent transit stops survive event preferences, reduced motion and quality changes",async({page,hasTouch},info)=>{
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  const host=await enterCity(page);
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect.poll(async()=>Number(await host.getAttribute('data-transit-stops'))).toBeGreaterThan(0);
+  const stops=await host.getAttribute('data-transit-stops'),geometry=await host.getAttribute('data-transit-stop-geometry');
+  const walk=await host.getAttribute('data-walk-network-builds'),compiles=await host.getAttribute('data-everyday-compiles');
+  expect(JSON.parse(geometry!)).toHaveLength(Number(stops));
+  const unchanged=async()=>{
+    await expect(host).toHaveAttribute('data-transit-stop-views',stops!);
+    await expect(host).toHaveAttribute('data-transit-stop-visible',stops!);
+    await expect(host).toHaveAttribute('data-transit-stop-geometry',geometry!);
+    await expect(host).toHaveAttribute('data-everyday-compiles',compiles!);
+    await expect(host).toHaveAttribute('data-walk-network-builds',walk!);
+  };
+  await unchanged();
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Жизнь города',{exact:true}).uncheck();await unchanged();
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');
+  await expect(host).toHaveAttribute('data-world-quality','ECONOMY');await unchanged();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(host).toHaveAttribute('data-animation-active','false');await unchanged();
+  await preferences.getByLabel('Жизнь города',{exact:true}).check();await unchanged();
+  await preferences.getByLabel('Детализация').selectOption('NORMAL');
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await expect(host).toHaveAttribute('data-animation-active','true');await unchanged();
+  await preferences.locator(':scope > summary').click();
+  if(hasTouch)await page.locator('.world-menu > summary').click();
+  await host.locator('canvas').focus();await page.keyboard.press('ArrowRight');await unchanged();
+  await openMapPlanet(page);await openMapCity(page);await unchanged();
+  await page.screenshot({path:info.outputPath('permanent-stops.png')});
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
+  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect(host).toHaveAttribute('data-transit-stop-geometry',geometry!);
+  await expect(host).toHaveAttribute('data-transit-stop-visible',stops!);
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(2);
+  await info.attach('permanent-stops-state',{body:JSON.stringify({stops,geometry:JSON.parse(geometry!),reads,errors}),contentType:'application/json'});
+  expect(errors).toEqual([]);
+});
+
 test("authoritative resync keeps a ready CITY canvas and reuses identical physical networks",async({page})=>{
   let recovering=false,failedHistory=0,bootstrapReads=0;
   await page.route("**/api/bootstrap",async route=>{

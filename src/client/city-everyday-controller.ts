@@ -60,7 +60,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       && cellKey(current.accessPath[0]) === cellKey(school.entrance);
   };
   const rebuildReservations = (enabled: boolean) => {
-    const cells = enabled ? [...stops.flatMap(stop => stop.shelter), ...(active?.area.filter(c => !input?.walk.has(cellKey(c))) ?? [])] : [];
+    const cells = [...stops.flatMap(stop => stop.shelter), ...(enabled ? active?.area.filter(c => !input?.walk.has(cellKey(c))) ?? [] : [])];
     const signature = cells.map(cellKey).sort().join(';');
     if (signature !== reservedSignature) { reservedSignature = signature; reservations = new Set(cells.map(cellKey)); }
   };
@@ -217,7 +217,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       if (!options.enabled || !city || !input || !Number.isFinite(now)) {
         if (enabledLast) { clear(); window = windowNow; transitWindow = Math.floor(now / 60_000); }
         enabledLast = false;
-        return { visitors: [], stops: [], areaReady: false, rain: { phase: 'DRY', intensity: 0, puddles: 0, id: '' }, sheltered: new Set() };
+        return { visitors: [], stops, areaReady: false, rain: { phase: 'DRY', intensity: 0, puddles: 0, id: '' }, sheltered: new Set() };
       }
       // Availability may return before this window starts (e.g. an LOD
       // transition). Preserve that future event; never replay a past window.

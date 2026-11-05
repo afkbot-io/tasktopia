@@ -15,7 +15,7 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
   const stall = new Sprite(), animals = Array.from({ length: 4 }, () => new Sprite());
   stall.anchor.set(.5, 1);
   for (const animal of animals) animal.anchor.set(.5);
-  const stopViews = new Map<string, Sprite>(), umbrellas = new Map<string, Sprite>();
+  const umbrellas = new Map<string, Sprite>();
   let cells: Cell[] = [], lastWeatherFrame = -1;
   let lastRainPhase = '', animalEpisode = '', dogOwner = '', scatterAt: number | undefined;
   root.addChild(weather, stall, ...animals, cues);
@@ -38,16 +38,6 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
     update(state: EverydayState, agents: readonly CityMobilityAgent[], now: number, view: Rect, economy: boolean) {
       hideActivity();
       let dogCarrying = false;
-      const wantedStops = new Set(state.stops.map(stop => stop.id));
-      for (const [id, sprite] of stopViews) if (!wantedStops.has(id)) { sprite.destroy(); stopViews.delete(id); }
-      for (const stop of state.stops) {
-        let sprite = stopViews.get(stop.id);
-        if (!sprite) { sprite = new Sprite({ eventMode: 'none', roundPixels: true }); sprite.anchor.set(.5, 1); root.addChildAt(sprite, 1); stopViews.set(stop.id, sprite); }
-        const loaded = texture(`bus-stop-${stop.direction}`); if (loaded) sprite.texture = loaded;
-        const left = Math.min(...stop.shelter.map(c => c.x)), bottom = Math.max(...stop.shelter.map(c => c.y)) + 1;
-        sprite.position.set((left + 1) * 8, bottom * 8);
-        sprite.visible = !!loaded && !agents.some(a => a.activity !== 'INSIDE' && stop.shelter.some(c => Math.abs(a.position.x - c.x - .5) < .8 && Math.abs(a.position.y - c.y - .5) < .8));
-      }
       const pose = state.pose;
       if (pose?.id !== animalEpisode) { animalEpisode = pose?.id ?? ''; dogOwner = ''; scatterAt = undefined; }
       if (pose) {
@@ -136,8 +126,8 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
         umbrella.visible = !!loaded; place(umbrella, actor.position.x * 8, actor.position.y * 8 - 1);
       }
       for (const [id, umbrella] of umbrellas) if (!wet.has(id)) { umbrella.destroy(); umbrellas.delete(id); }
-      return { umbrellas: wet.size, weatherPrimitives: rain.phase === 'DRY' ? 0 : 1, stops: stopViews.size, animals: animals.filter(a => a.visible).length, birdsScattered: scatterAt !== undefined, dogCarrying };
+      return { umbrellas: wet.size, weatherPrimitives: rain.phase === 'DRY' ? 0 : 1, animals: animals.filter(a => a.visible).length, birdsScattered: scatterAt !== undefined, dogCarrying };
     },
-    destroy() { root.destroy({ children: true }); stopViews.clear(); umbrellas.clear(); cells = []; },
+    destroy() { root.destroy({ children: true }); umbrellas.clear(); cells = []; },
   };
 }

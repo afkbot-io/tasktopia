@@ -7,6 +7,7 @@ import { createCityCinematicView } from "../city-cinematic-view";
 import { createEverydayController,prepareEverydayAsync,type PreparedEveryday } from '../city-everyday-controller';
 import { createCityResidentItinerary } from '../city-resident-itinerary';
 import { createEverydayView } from '../city-everyday-view';
+import { createTransitStopView } from '../city-transit-stop-view';
 import { createTaskActivityController } from '../task-activity-feedback';
 import { createTaskActivityView } from '../task-activity-view';
 import { cinematicMarkerMatches } from "../city-cinematics";
@@ -2002,9 +2003,14 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host!.dataset.everydayCompiles=String(Number(host!.dataset.everydayCompiles??0)+1);
         host!.dataset.lifeRevision=String(prepared.revision);
         updateCompletedLife();
+        updateEveryday();
+        if (reducedMotion && paintedFrame) app.render();
         return true;
       };
       const everydayView = createEverydayView(developmentTexture, cachedTexture, placePixelAgent);
+      const transitStopView = createTransitStopView(developmentTexture, sprite => {
+        worldObjectLayer.addChild(registerWorldObject(sprite, 'FEATURE'));
+      });
       agentOverlayLayer.addChild(everydayView.root);
       const taskActivity = createTaskActivityController(() => mobility);
       const taskActivityView = createTaskActivityView((view, x, y) => {
@@ -2054,6 +2060,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         lastCrewReservations = crew; lastEverydayReservations = everyday;
         mobility?.setWalkClosures(new Set([...crew, ...everyday]));
       }
+      let stopGeometrySource: typeof everydayController.transitStops | undefined;
       const updateEveryday = () => {
         const now = readServerWorldTime() ?? Date.now(), size = CELL_SIZE * world.scale.x;
         for (const [id, opening] of pendingOpenings) {
@@ -2066,6 +2073,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           && activeRef.current && !document.hidden && currentLod === 'DETAIL' && ambientAssetsReady,
         economy, busy: cinematicView.reservedCells(), roadBusy: !!roadEpisode });
         const views = everydayView.update(state, mobility?.agents ?? [], now, view, economy);
+        const stopViews = transitStopView.update(state.stops);
+        if (stopGeometrySource !== state.stops) {
+          stopGeometrySource = state.stops;
+          host.dataset.transitStopGeometry = JSON.stringify(state.stops.map(({ id, shelter }) => ({ id, shelter })));
+        }
         const everydayMetrics = everydayController.metrics;
         applyWalkReservations();
         host.dataset.everydayEvent = state.pose?.kind ?? ''; host.dataset.everydayPhase = state.pose?.phase ?? '';
@@ -2081,6 +2093,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host.dataset.everydayPlannedAnchor = JSON.stringify(planned?.route.at(-1) ?? null);
         host.dataset.everydayGeometry = JSON.stringify(state.pose ? { route: state.pose.route, area: state.pose.area } : null);
         host.dataset.transitStops = String(state.stops.length); host.dataset.transitRole = state.transit?.role ?? '';
+        host.dataset.transitStopViews = String(stopViews.total); host.dataset.transitStopVisible = String(stopViews.visible);
         host.dataset.transitPhase = state.transit?.phase ?? ''; host.dataset.transitVehicle = state.transit?.vehicleId ?? '';
         host.dataset.transitBoarded = String(everydayMetrics.boarded); host.dataset.transitAlighted = String(everydayMetrics.alighted);
         host.dataset.transitPassengers = String(mobility?.agents.filter(a => a.carrier).length ?? 0);
@@ -2097,7 +2110,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       const clearEveryday = () => { pendingOpenings.clear(); everydayController.clear(); residentItinerary.clear();
         host.dataset.residentItineraries="0";host.dataset.residentItineraryPhases="";
         host.dataset.residentItineraryCancelled=String(residentItinerary.metrics.cancelled);updateEveryday(); };
-      startupDisposers.push(() => { residentItinerary.clear(); everydayController.clear(); everydayView.destroy(); });
+      startupDisposers.push(() => { residentItinerary.clear(); everydayController.clear(); everydayView.destroy(); transitStopView.destroy(); });
       const drawMobility = (): void => {
         if (!mobility) return;
         const visible = currentLod === "DETAIL" && ambientAssetsReady;
