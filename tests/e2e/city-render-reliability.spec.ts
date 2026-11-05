@@ -9,6 +9,8 @@ import { installCityPreparationDiagnostics, attachCityPreparationFailure } from 
 import { installCooperativeYieldGate, type CooperativeYieldGateWindow } from './cooperative-yield-gate';
 import { pauseInstalledClock } from './city-clock-control';
 import { installSceneClock } from './city-scene-clock';
+import { cityLifeHash } from '../../src/client/city-life';
+import { rainPose } from '../../src/client/city-everyday-life';
 
 // Сохраняем вызовы, сеть, исходники и итоговый PNG. Повторные автоматические
 // снимки canvas не являются частью проверяемой работы города.
@@ -41,7 +43,7 @@ async function openWorldPreferences(page:Page,hasTouch:boolean,keyboardDesktop=f
   return preferences;
 }
 
-async function enterCity(page:Page) {
+async function enterCity(page:Page,direct=false) {
   await page.addInitScript(() => {
     const NativeSocket=window.WebSocket,sockets=new Set<WebSocket>(),upgraded=new Set<WebSocket>();
     window.WebSocket=class extends NativeSocket {
@@ -57,12 +59,110 @@ async function enterCity(page:Page) {
   expect((await page.request.post("/api/auth/login",{data:{email:process.env.E2E_CITY_EMAIL??"demo@tasktopia.local",password:process.env.E2E_CITY_PASSWORD??"tasktopia-demo"}})).status()).toBe(200);
   // The journey waits for the actual PLANET/CITY readiness below. Generic
   // window.load is a separate lifecycle signal from those visible UI gates.
-  await page.goto("/", { waitUntil: "domcontentloaded" });await openMapCity(page);
+  let url='/';
+  if(direct){const bootstrap=await (await page.request.get('/api/bootstrap')).json() as BootstrapDto;
+    url=`/?${new URLSearchParams({countryId:bootstrap.country.id,cityId:bootstrap.initialCity!.id})}`;}
+  await page.goto(url, { waitUntil: "domcontentloaded" });await openMapCity(page);
   const host=page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit","atomic",{timeout:30_000});
   await expect(host).toHaveAttribute("data-loading","false");
   return host;
 }
+
+test('optional cloud art never blocks the first city frame and recovers after its delayed load',async({page},info)=>{
+  test.setTimeout(90_000);
+  let release!:()=>void,requests=0;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/atlas/clouds-v3/*.png*',async route=>{requests++;await gate;await route.continue().catch(()=>undefined);});
+  try{
+    const host=await enterCity(page,true);
+    await expectVisibleCityGround(host,info,'cloud-art-delayed');
+    await expect(host).toHaveAttribute('data-weather-assets','loading');
+    await expect(host).toHaveAttribute('data-cloud-shadows','0');
+    expect(requests).toBeGreaterThan(0);
+    release();await expect(host).toHaveAttribute('data-weather-assets','ready');
+    await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  }finally{release();}
+});
+
+test('failed optional cloud art retries through the existing city-life preference without replacing the map',async({page,hasTouch})=>{
+  test.setTimeout(90_000);
+  let unavailable=true,requests=0;
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.route('**/atlas/clouds-v3/*.png*',async route=>{requests++;
+    if(unavailable)await route.fulfill({status:503,body:''});else await route.continue();
+  });
+  const host=await enterCity(page,true),canvas=await host.locator('canvas').elementHandle();
+  await expect(host).toHaveAttribute('data-weather-assets','retry');
+  await expect(host).toHaveAttribute('data-loading','false');await expect(host).toHaveAttribute('data-cloud-shadows','0');
+  const failedRequests=requests;unavailable=false;
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Жизнь города').setChecked(false);
+  await preferences.getByLabel('Жизнь города').setChecked(true);
+  await expect(host).toHaveAttribute('data-weather-assets','ready');
+  await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  expect(requests).toBeGreaterThan(failedRequests);expect(await canvas!.evaluate(node=>node===document.querySelector('.world-canvas canvas'))).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('world weather survives pan, respects quality and motion, and dries without extra scene reads',async({page,hasTouch},info)=>{
+  test.setTimeout(120_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  let origin=Date.UTC(2035,0,1),cityId='';
+  await page.route('**/api/**',async route=>{
+    const response=await route.fetch({headers:{...route.request().headers(),'accept-encoding':'identity'}});
+    if(new URL(route.request().url()).pathname==='/api/bootstrap'){
+      const data=await response.json() as BootstrapDto;cityId=data.initialCity!.id;
+      origin=Math.floor(Date.UTC(2035,0,1)/540_000)*540_000+90_000+cityLifeHash(cityId)%150_000+22_000;
+    }
+    await route.fulfill({response,headers:{...response.headers(),'x-tasktopia-server-time':String(origin)}});
+  });
+  const host=await enterCity(page,true),canvas=host.locator('canvas');
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect(host).toHaveAttribute('data-weather-assets','ready');
+  await expect(host).toHaveAttribute('data-city-weather','RAIN');
+  await expect.poll(async()=>Number(await host.getAttribute('data-weather-rain-streaks'))).toBeGreaterThan(0);
+  await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  await pauseInstalledClock(page);await page.clock.runFor(300);
+  const before=JSON.parse((await host.getAttribute('data-cloud-shadow-poses'))!) as {id:string;x:number;y:number}[];
+  await page.screenshot({path:info.outputPath('city-rain-clouds.png')});
+  const x=await host.getAttribute('data-camera-world-x');
+  await canvas.focus();await page.keyboard.press('ArrowRight');await page.clock.runFor(600);
+  await expect(host).not.toHaveAttribute('data-camera-world-x',x!);
+  const after=JSON.parse((await host.getAttribute('data-cloud-shadow-poses'))!) as {id:string;x:number;y:number}[];
+  const common=before.filter(p=>after.some(n=>n.id===p.id));expect(common.length).toBeGreaterThan(0);
+  for(const previous of common){const next=after.find(n=>n.id===previous.id)!;expect(Math.abs(next.x-previous.x)).toBeLessThanOrEqual(4);expect(Math.abs(next.y-previous.y)).toBeLessThanOrEqual(2);}
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');await page.clock.runFor(300);
+  expect(Number(await host.getAttribute('data-cloud-shadows'))).toBeLessThanOrEqual(6);
+  expect(Number(await host.getAttribute('data-weather-rain-streaks'))).toBeLessThanOrEqual(48);
+  expect(Number(await host.getAttribute('data-weather-wet-cells'))).toBeLessThanOrEqual(12);
+  expect(Number(await host.getAttribute('data-weather-wet-visited'))).toBeLessThanOrEqual(6144);
+  await preferences.getByLabel('Жизнь города').setChecked(false);await page.clock.runFor(100);
+  await expect(host).toHaveAttribute('data-cloud-shadows','0');await expect(host).toHaveAttribute('data-weather-rain-streaks','0');
+  await preferences.getByLabel('Жизнь города').setChecked(true);await page.clock.runFor(300);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(host).toHaveAttribute('data-cloud-shadows','0');await expect(host).toHaveAttribute('data-weather-rain-streaks','0');
+  await page.emulateMedia({reducedMotion:'no-preference'});await expect(host).toHaveAttribute('data-animation-active','true');await page.clock.runFor(300);
+  await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+  for(const phase of ['DRYING','DRY'] as const){
+    for(let attempt=0;attempt<5&&await host.getAttribute('data-city-weather')!==phase;attempt++){
+      const now=Number(await host.getAttribute('data-road-event-server-now'));
+      const target=Array.from({length:120},(_,i)=>now+(i+1)*1000).find(t=>rainPose(cityId,t).phase===phase);
+      expect(target).toBeDefined();await page.clock.fastForward(Math.max(100,(target!-now)/.9+300));await page.clock.runFor(300);
+    }
+    await expect(host).toHaveAttribute('data-city-weather',phase);await expect(host).toHaveAttribute('data-weather-rain-streaks','0');
+  }
+  await expect(host).toHaveAttribute('data-weather-wet-cells','0');
+  await page.screenshot({path:info.outputPath('city-dry-clouds.png')});
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+  expect(errors).toEqual([]);
+  await info.attach('weather-state',{body:JSON.stringify(await host.evaluate(node=>({...((node as HTMLElement).dataset)}))),contentType:'application/json'});
+});
 
 // Visible CITY readiness is independent of the offscreen prewarm queue.
 async function expectVisibleCityGround(host:Locator,info:TestInfo,phase:string){

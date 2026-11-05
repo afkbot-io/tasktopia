@@ -3,6 +3,7 @@ import { Graphics } from "pixi.js";
 import { createEverydayView } from "../src/client/city-everyday-view";
 import type { EverydayState } from "../src/client/city-everyday-controller";
 import type { CityMobilityAgent } from "../src/client/city-mobility";
+import { createWetCellIndex } from '../src/client/city-weather';
 
 const idle: EverydayState = {
   visitors: [], stops: [], areaReady: false,
@@ -73,5 +74,27 @@ it("retains timed rain drawing and its transition back to a dry world", () => {
     updates = 0;
     view.update(idle, [], 360, viewport, false);
     expect(updates).toBe(0);
+  } finally { view.destroy(); }
+});
+
+it('refreshes wet ground after a paused-clock pan and reads only viewport buckets', () => {
+  const view = createEverydayView(() => undefined, () => undefined, () => undefined);
+  const cells = new Map<string, { x: number; y: number }>();
+  for (let x = 0; x < 20_000; x++) cells.set(`${x},0`, { x, y: 0 });
+  const wet: EverydayState = { ...idle, rain: { id: 'shower', phase: 'RAIN', intensity: 1, puddles: 1 } };
+  try {
+    view.adopt(createWetCellIndex(cells, new Map(), new Set()));
+    const first = view.update(wet, [], 120, viewport, false);
+    expect(first.wetCells).toBeGreaterThan(0);
+    expect(first.wetVisited).toBeLessThanOrEqual(24);
+    const weather = view.root.children.find((child): child is Graphics => child instanceof Graphics && child.context.instructions.length > 0)!;
+    let updates = 0; weather.context.on('update', () => { updates++; });
+    const pan = view.update(wet, [], 120, { minX: 1000, minY: 0, maxX: 1020, maxY: 20 }, true);
+    expect(updates).toBeGreaterThan(0);
+    expect(pan.wetCells).toBeGreaterThan(0);
+    expect(pan.wetVisited).toBeLessThanOrEqual(24);
+    expect(pan.rainStreaks).toBeLessThanOrEqual(48);
+    const dry = view.update(idle, [], 240, viewport, false);
+    expect(dry.wetCells).toBe(0); expect(dry.rainStreaks).toBe(0);
   } finally { view.destroy(); }
 });

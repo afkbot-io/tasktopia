@@ -7,6 +7,8 @@ import { createCityCinematicView } from "../city-cinematic-view";
 import { createEverydayController,prepareEverydayAsync,type PreparedEveryday } from '../city-everyday-controller';
 import { createCityResidentItinerary } from '../city-resident-itinerary';
 import { createEverydayView } from '../city-everyday-view';
+import { createCloudShadowView } from '../city-cloud-shadow-view';
+import { prepareWetCellIndexAsync } from '../city-weather';
 import { createTransitStopView } from '../city-transit-stop-view';
 import { cityBusInspection } from '../city-bus-inspection';
 import { createTaskActivityController } from '../task-activity-feedback';
@@ -56,7 +58,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "re
 import "pixi.js/unsafe-eval";
 import "../map-texture-loader";
 import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
-import { PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TILE_SPRITES, gameAssetUrl, getBuilding, illuminatedPropKey } from "../../shared/catalog";
+import { ATLAS_CLOUD_SPRITES, PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TILE_SPRITES, gameAssetUrl, getBuilding, illuminatedPropKey } from "../../shared/catalog";
 import { MICRO_ANIMAL_SPECIES, microAmbientAssetUrls, microAmbientSprite, microDirection } from "../../shared/micro-ambient";
 import { microIncidentResponder } from "../micro-incident-responder";
 import { roadBandRole, roadMarkingAxis } from "../../shared/road-profile";
@@ -2022,6 +2024,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         return true;
       };
       const everydayView = createEverydayView(developmentTexture, cachedTexture, placePixelAgent);
+      const cloudShadows = createCloudShadowView(variant => cachedTexture(ATLAS_CLOUD_SPRITES[variant]!));
+      world.addChildAt(cloudShadows.root, world.getChildIndex(flightLayer));
+      let weatherAssetsPromise: Promise<void> | undefined, weatherAssetsReady = false, weatherTelemetryAt = 0;
+      host.dataset.weatherAssets = 'deferred';
       const transitStopView = createTransitStopView(developmentTexture, sprite => {
         worldObjectLayer.addChild(registerWorldObject(sprite, 'FEATURE'));
       });
@@ -2087,6 +2093,16 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           && activeRef.current && !document.hidden && currentLod === 'DETAIL' && ambientAssetsReady,
         economy, busy: cinematicView.reservedCells(), roadBusy: !!roadEpisode });
         const views = everydayView.update(state, mobility?.agents ?? [], now, view, economy);
+        const shadows = cloudShadows.update(focusCityId ?? '', now, view, economy, !!focusCityId && paintedFrame
+          && readWorldPreferences().cityLife && !reducedMotion && activeRef.current && !document.hidden && currentLod === 'DETAIL');
+        if (now >= weatherTelemetryAt || host.dataset.cloudShadows !== String(shadows.visible)) {
+          weatherTelemetryAt = now + 250;
+          host.dataset.cloudShadows = String(shadows.visible); host.dataset.cloudShadowWork = String(shadows.visited);
+          host.dataset.cloudShadowPoses = JSON.stringify(shadows.poses);
+        }
+        host.dataset.weatherWetCells = String(views.wetCells); host.dataset.weatherWetVisited = String(views.wetVisited);
+        host.dataset.weatherWetBuckets = String(views.wetBuckets); host.dataset.weatherRainStreaks = String(views.rainStreaks);
+        host.dataset.weatherRainWork = String(views.rainVisited);
         const stopViews = transitStopView.update(state.stops);
         if (stopGeometrySource !== state.stops) {
           stopGeometrySource = state.stops;
@@ -2128,7 +2144,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       const clearEveryday = () => { pendingOpenings.clear(); everydayController.clear(); residentItinerary.clear();
         host.dataset.residentItineraries="0";host.dataset.residentItineraryPhases="";
         host.dataset.residentItineraryCancelled=String(residentItinerary.metrics.cancelled);updateEveryday(); };
-      startupDisposers.push(() => { residentItinerary.clear(); everydayController.clear(); everydayView.destroy(); transitStopView.destroy(); });
+      startupDisposers.push(() => { residentItinerary.clear(); everydayController.clear(); everydayView.destroy(); transitStopView.destroy(); cloudShadows.destroy(); });
       const drawMobility = (): void => {
         if (!mobility) return;
         const visible = currentLod === "DETAIL" && ambientAssetsReady;
@@ -2443,6 +2459,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         applyLighting();
         updateCompletedLife();
         updateEveryday();
+        preloadWeatherAssets();
         updateTaskActivity();
         if(paintedFrame){const now=readServerWorldTime()??Date.now();animateCityTrains(now);animateCityAircraft(now);animatePortShip();}
         if (reducedMotion && paintedFrame) app.render();
@@ -3940,10 +3957,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
                   planningMs:performance.now()-started};
               },lifeSignal);
             const life=await prepareLife(signal,geometry);preparedLifeRevision=life.revision;
-            return {roads,terrain,tasks,decorations,walk,parking,input,next,existingCrosswalks,postOrigins,routes,signalPlan,life,prepareLife};
+            const weatherIndex=await prepareWetCellIndexAsync(walk.walkGraph,roads,walk.blockedCells,{signal});
+            return {roads,terrain,tasks,decorations,walk,parking,input,next,existingCrosswalks,postOrigins,routes,signalPlan,life,prepareLife,weatherIndex};
           },prepared=>{
           const commitStarted=performance.now();
-          const {roads,walk,parking,input,next,existingCrosswalks,postOrigins,routes,signalPlan,life,prepareLife}=prepared;
+          const {roads,walk,parking,input,next,existingCrosswalks,postOrigins,routes,signalPlan,life,prepareLife,weatherIndex}=prepared;
           const latestInput={...input,
             carLimit:Math.min(worldDetailProfile(economy).cars,Math.max(5,Math.floor(roads.size/120))),
             walkerLimit:Math.min(worldDetailProfile(economy).walkers,Math.max(6,Math.floor(walk.walkGraph.size/70)))};
@@ -3974,7 +3992,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             .filter(origin => roads.has(key(origin)) || blockedCells.has(key(origin))).length);
           mobilityRoads = roads;
           mobilityWalkGraph = walkGraph;
-          everydayView.compile(walkGraph, roads, blockedCells);
+          everydayView.adopt(weatherIndex);
           prepareLifeSites=prepareLife;
           // The owner validated both revisions immediately before this atomic
           // turn; adoption and life publication cannot interleave with an event.
@@ -4505,6 +4523,19 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           if (!disposed) host!.dataset.ambientAssets = "retry";
         });
       };
+      const preloadWeatherAssets = (): void => {
+        if (!focusCityId || !paintedFrame || weatherAssetsReady || weatherAssetsPromise || !readWorldPreferences().cityLife || reducedMotion) return;
+        host.dataset.weatherAssets = 'loading';
+        weatherAssetsPromise = assetLease.load(ATLAS_CLOUD_SPRITES, loadTextureAssets).then(() => {
+          if (disposed) return;
+          weatherAssetsReady = true; host.dataset.weatherAssets = 'ready';
+          host.dataset.leasedAssets = String(leasedAssetCount());
+          updateEveryday();
+        }).catch(() => {
+          weatherAssetsPromise = undefined;
+          if (!disposed) host.dataset.weatherAssets = 'retry';
+        });
+      };
       const commitChunk = (
         cacheKey: string,
         chunk: ChunkDto,
@@ -4609,6 +4640,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         setFirstFrameReady(true);
         updateAnimation();
         preloadAmbientAssets();
+        preloadWeatherAssets();
         prepareCanonicalCity();
         paddingPrewarmFrame = requestAnimationFrame(() => {
           paddingPrewarmFrame = 0;
@@ -5474,6 +5506,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           silenceCityAudio(); clearRoadEvent(); clearEveryday(); clearTaskActivity();
           roadWindow = Math.floor((readServerWorldTime() ?? Date.now()) / 90_000);
         } else {
+          preloadWeatherAssets();
           prepareCanonicalCity();
           if (cityScene && sceneDirty && !sceneRefreshPending) refreshSceneAndRender(sceneDirtyMovement);
           updateCinematics();
@@ -5494,7 +5527,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           for (const celebration of celebrations.splice(0)) for (const particle of celebration.particles) particle.view.destroy();
           animateCameraZoom({ deltaMS: 1_000 });
         }
+        // Restore presentation on the preference event itself. Movement may
+        // still be preparing, and its paused ticker must not gate the weather.
+        updateEveryday();
         updateTaskActivity(true);
+        preloadWeatherAssets();
         updateWorldInspection();
         updateAnimation();
         scheduleEntityReconcile(false);

@@ -1,10 +1,11 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { microAmbientSprite } from '../shared/micro-ambient';
-import type { Cell, Rect } from '../shared/contracts';
+import type { Rect } from '../shared/contracts';
 import type { CityMobilityAgent } from './city-mobility';
 import { cityLifeHash } from './city-life';
 import { dogFetchPose } from './city-everyday-life';
 import type { EverydayState } from './city-everyday-controller';
+import { createWetCellIndex, sampleRainStreaks, type WetCellIndex } from './city-weather';
 
 /** Fixed-size authored props and small native activity/weather cues. Actors
  * come from mobility; this layer has no pointer targets or working controls. */
@@ -16,7 +17,8 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
   stall.anchor.set(.5, 1);
   for (const animal of animals) animal.anchor.set(.5);
   const umbrellas = new Map<string, Sprite>();
-  let cells: Cell[] = [], lastWeatherFrame = -1;
+  let wetIndex = createWetCellIndex(new Map(), new Map(), new Set()), lastWeatherFrame = -1, lastWeatherView = '';
+  let weatherCounts = { wetCells: 0, wetVisited: 0, wetBuckets: 0, rainStreaks: 0, rainVisited: 0 };
   let lastRainPhase = '', animalEpisode = '', dogOwner = '', scatterAt: number | undefined;
   root.addChild(weather, stall, ...animals, cues);
   const hideActivity = () => {
@@ -26,15 +28,10 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
     if (cues.context.instructions.length) cues.clear();
     for (const animal of animals) animal.visible = false;
   };
+  const adopt = (index: WetCellIndex) => { wetIndex = index; lastWeatherFrame = -1; };
   return {
     root,
-    compile(walk: ReadonlyMap<string, Cell>, roads: ReadonlyMap<string, Cell>, blocked: ReadonlySet<string>) {
-      // A sparse deterministic sample; no full-graph scan on animation frames.
-      cells = [];
-      for (const graph of [walk, roads]) for (const [id, cell] of graph)
-        if (!blocked.has(id) && cityLifeHash(id) % 11 === 0) cells.push(cell);
-      lastWeatherFrame = -1;
-    },
+    adopt,
     update(state: EverydayState, agents: readonly CityMobilityAgent[], now: number, view: Rect, economy: boolean) {
       hideActivity();
       let dogCarrying = false;
@@ -101,17 +98,19 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
         if (bus) cues.rect(bus.position.x * 8 + (bus.direction === 'east' ? 1 : -2), bus.position.y * 8 + 1, 2, 1).fill(0xf0e6bd);
       }
       const rain = state.rain, weatherFrame = Math.floor(now / 120);
-      if (lastRainPhase !== rain.phase || rain.phase !== 'DRY' && lastWeatherFrame !== weatherFrame) {
-        lastWeatherFrame = weatherFrame; lastRainPhase = rain.phase; weather.clear();
-        const visibleCells = rain.puddles > 0 ? cells.filter(c => c.x >= view.minX && c.x <= view.maxX && c.y >= view.minY && c.y <= view.maxY).slice(0, economy ? 12 : 28) : [];
-        for (const cell of visibleCells) {
+      const weatherView = `${Math.floor(view.minX)},${Math.floor(view.minY)},${Math.ceil(view.maxX)},${Math.ceil(view.maxY)},${economy}`;
+      if (lastRainPhase !== rain.phase || rain.phase !== 'DRY' && (lastWeatherFrame !== weatherFrame || lastWeatherView !== weatherView)) {
+        lastWeatherFrame = weatherFrame; lastRainPhase = rain.phase; lastWeatherView = weatherView; weather.clear();
+        const local = rain.puddles > 0 ? wetIndex.query(view, economy ? 12 : 28) : { cells: [], visited: 0, buckets: 0 };
+        const streaks = sampleRainStreaks(rain.id, weatherFrame * 120, view, economy, rain.intensity);
+        weatherCounts = { wetCells: local.cells.length, wetVisited: local.visited, wetBuckets: local.buckets, rainStreaks: streaks.poses.length, rainVisited: streaks.visited };
+        for (const cell of local.cells) {
           const width = Math.max(1, Math.round(5 * rain.puddles));
           weather.rect(cell.x * 8 + 1, cell.y * 8 + 5, width, 1).rect(cell.x * 8 + 2, cell.y * 8 + 4, Math.max(1, width - 2), 1).fill(0x6c939d);
         }
-        for (let i = 0; i < Math.round((economy ? 24 : 56) * rain.intensity); i++) {
-          const hash = cityLifeHash(`${rain.id}:${i}`), x = (view.minX + (hash % 1009) / 1009 * (view.maxX - view.minX)) * 8;
-          const y = (view.minY + ((hash % 997) / 997 + (weatherFrame % 20) / 20) % 1 * (view.maxY - view.minY)) * 8;
-          weather.rect(Math.round(x), Math.round(y), 1, 2).fill(0x93b6bb);
+        for (const streak of streaks.poses) {
+          const x = Math.round(streak.x), y = Math.round(streak.y);
+          weather.rect(x, y, 1, streak.length - 1).rect(x + 1, y + streak.length - 1, 1, 2).fill({ color: 0xb2c9c6, alpha: .8 });
         }
         if (rain.puddles > .4) for (const car of agents.filter(a => a.kind === 'CAR' && a.activity === 'NONE' && a.waitMs === 0).slice(0, economy ? 4 : 10)) {
           weather.rect(Math.round(car.position.x * 8) - 3, Math.round(car.position.y * 8) + 2, 1, 1).rect(Math.round(car.position.x * 8) + 3, Math.round(car.position.y * 8) + 2, 1, 1).fill(0x9ac7ce);
@@ -126,8 +125,8 @@ export function createEverydayView(texture: (key: string) => Texture | undefined
         umbrella.visible = !!loaded; place(umbrella, actor.position.x * 8, actor.position.y * 8 - 1);
       }
       for (const [id, umbrella] of umbrellas) if (!wet.has(id)) { umbrella.destroy(); umbrellas.delete(id); }
-      return { umbrellas: wet.size, weatherPrimitives: rain.phase === 'DRY' ? 0 : 1, animals: animals.filter(a => a.visible).length, birdsScattered: scatterAt !== undefined, dogCarrying };
+      return { umbrellas: wet.size, weatherPrimitives: rain.phase === 'DRY' ? 0 : 1, ...weatherCounts, animals: animals.filter(a => a.visible).length, birdsScattered: scatterAt !== undefined, dogCarrying };
     },
-    destroy() { root.destroy({ children: true }); umbrellas.clear(); cells = []; },
+    destroy() { root.destroy({ children: true }); umbrellas.clear(); wetIndex = createWetCellIndex(new Map(), new Map(), new Set()); },
   };
 }
