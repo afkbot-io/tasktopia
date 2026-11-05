@@ -30,8 +30,8 @@ export type MobilityNetwork = {
   roads: ReadonlyMap<string, RoadCellDto>;
   cars: Map<string, Cell>;
   walkers: Map<string, Cell>;
-  carEdges: Map<string, Cell[]>;
-  walkerEdges: Map<string, Cell[]>;
+  carEdges: ReadonlyMap<string, Cell[]>;
+  walkerEdges: ReadonlyMap<string, Cell[]>;
   zones: MobilityZone[];
   zoneByCell: Map<string, MobilityZone>;
   activityCells: ReadonlySet<string>;

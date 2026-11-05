@@ -36,10 +36,9 @@ it.each<CityResponseRole>(['BUS', 'SCHOOL_BUS', 'FIRE'])('останавлива
   // Count actual cooperative BFS work; topology, routes and physics stay real.
   vi.spyOn(routing, 'createMobilityRouteSearchSteps').mockImplementation(function* (graph, edges) {
     const real = yield* original(graph, edges);
-    const measured: routing.MobilityRouteSearch = (...args) => {
+    const measured = Object.assign((...args: Parameters<routing.MobilityRouteSearch>) => {
       const call = consume(real.steps(...args)); calls.push(call); return call.result;
-    };
-    measured.steps = real.steps; measured.setBlocked = real.setBlocked; measured.planning = real.planning;
+    }, { steps: real.steps, setBlocked: real.setBlocked, planning: real.planning, adjacency: real.adjacency });
     return measured;
   });
   const input = { roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),

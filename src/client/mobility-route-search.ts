@@ -8,10 +8,41 @@ export type MobilityRouteSearch = {
   setBlocked(closedCells: ReadonlySet<string>): void;
   /** Immutable topology only. Never use for a live movement assignment. */
   planning(start: Cell, previous?: Cell, target?: Cell, maxCells?: number): MobilityRouteResult;
+  /** Valid compiled edges in graph order, independent of live closures.
+   * Each read owns its plain coordinates; no source adjacency is retained. */
+  readonly adjacency: ReadonlyMap<string, Cell[]>;
 };
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 const heading = (a: Cell, b: Cell) => b.x > a.x ? 1 : b.x < a.x ? 3 : b.y > a.y ? 2 : 0;
+
+type AdjacencyStorage = { indices: ReadonlyMap<string, number>; coordinates: Float64Array;
+  offsets: Uint32Array; targets: Uint32Array; present: Uint8Array; size: number };
+class CompiledAdjacency implements ReadonlyMap<string, Cell[]> {
+  #storage: AdjacencyStorage;
+  constructor(storage: AdjacencyStorage) { this.#storage = storage; Object.freeze(this); }
+  get size() { return this.#storage.size; }
+  has(id: string) { const index = this.#storage.indices.get(id);return index !== undefined && !!this.#storage.present[index]; }
+  get(id: string): Cell[] | undefined {
+    const { indices, coordinates, offsets, targets, present } = this.#storage, index = indices.get(id);
+    if (index === undefined || !present[index]) return;
+    const result: Cell[] = [];
+    for (let edge = offsets[index]!; edge < offsets[index + 1]!; edge++) {
+      const target = targets[edge]!;result.push({ x: coordinates[target * 2]!, y: coordinates[target * 2 + 1]! });
+    }
+    return result;
+  }
+  *keys(): Generator<string, undefined, unknown> {
+    for (const [id, index] of this.#storage.indices) if (this.#storage.present[index]) yield id;
+    return undefined;
+  }
+  *values(): Generator<Cell[], undefined, unknown> { for (const id of this.keys()) yield this.get(id)!;return undefined; }
+  *entries(): Generator<[string, Cell[]], undefined, unknown> { for (const id of this.keys()) yield [id, this.get(id)!];return undefined; }
+  [Symbol.iterator]() { return this.entries(); }
+  forEach(callback: (value: Cell[], key: string, map: ReadonlyMap<string, Cell[]>) => void, thisArg?: unknown) {
+    for (const [id, value] of this) callback.call(thisArg, value, id, this);
+  }
+}
 
 /** Compile one immutable topology once. Search keeps heading-aware reachability,
  * straight-first stable BFS order and the existing 8,000-state work ceiling.
@@ -25,14 +56,17 @@ export function createMobilityRouteSearchAsync(graph: ReadonlyMap<string, Cell>,
 export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>): Generator<void, MobilityRouteSearch, void> {
   const cells: Cell[] = [], indices = new Map<string, number>();
   const coordinates = new Float64Array(graph.size * 2);
-  let edgeCapacity = 0;
+  const present = new Uint8Array(graph.size);
+  let edgeCapacity = 0, adjacencySize = 0;
   // Keep original metadata/iteration order, but snapshot route coordinates in
   // numeric storage instead of allocating a second city-sized Cell graph.
   for (const cell of graph.values()) {
     const id = key(cell), index = cells.length;
+    const outgoing = edges.get(id);
     indices.set(id, index); cells.push(cell);
+    if (outgoing !== undefined) { present[index] = 1;adjacencySize++; }
     coordinates[index * 2] = cell.x || 0; coordinates[index * 2 + 1] = cell.y || 0;
-    edgeCapacity += edges.get(id)?.length ?? 0; yield;
+    edgeCapacity += outgoing?.length ?? 0; yield;
   }
   let hasNonlocalEdges = false, boundedDegree = true, edgeCount = 0;
   // CSR preserves every authored edge and its stable order, including custom
@@ -156,6 +190,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
   }
   const search = (start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity) => completePreparation(searchSteps(start, previous, target, maxCells));
   return Object.assign(search, {
+    adjacency: new CompiledAdjacency({ indices, coordinates, offsets, targets, present, size: adjacencySize }),
     steps: searchSteps,
     planning: (start: Cell, previous?: Cell, target?: Cell, maxCells = Infinity) => completePreparation(searchSteps(start, previous, target, maxCells, true)),
     setBlocked(closedCells: ReadonlySet<string>): void {

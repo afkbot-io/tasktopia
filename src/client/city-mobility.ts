@@ -118,6 +118,9 @@ function* prepareCityMobilityNetworkSteps(input: MobilityNetworkInput): Generato
       return route.length >= 2 && route.length <= 64;
     },
   });
+  // Planning has finished reading the object adjacency. The live controller
+  // shares its route compiler's immutable CSR instead of retaining both forms.
+  network.carEdges = carRoutes.adjacency;network.walkerEdges = walkerRoutes.adjacency;
   const prepared = { signature: network.signature, [preparedTopology]: { input: topology, network, carRoutes, walkerRoutes, roadEvents, visitTargets, geometry, spawnSites } };
   validPreparations.add(prepared);
   return prepared;
