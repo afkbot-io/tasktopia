@@ -78,6 +78,10 @@ test('a completed neighbourhood uses real residents through arrival, activity an
   for (let step = 0; step < 24 && await world.getAttribute('data-city-life-episode-id') === plan.id; step++) await page.clock.runFor(500);
   await expect(world).not.toHaveAttribute('data-city-life-episode-id', plan.id);
   expect(Number(await world.getAttribute('data-city-life-completed'))).toBeGreaterThan(0);
+  // The phase changes immediately; the director publishes its bounded debug
+  // snapshot every250ms when a replacement keeps the lease count unchanged.
+  // Advance one publication interval, well before the old75s lease expires.
+  await page.clock.runFor(250);
   const owners = JSON.parse((await world.getAttribute('data-city-event-owners'))!) as { id: string }[];expect(owners.some(owner => owner.id === plan.id)).toBe(false);
   for (const metric of ['data-mobility-vehicle-unsafe-total', 'data-mobility-pedestrian-unsafe-total', 'data-mobility-vehicle-pedestrian-unsafe-total']) await expect(world).toHaveAttribute(metric, '0');
   expect(writes).toEqual([]);expect(errors).toEqual([]);

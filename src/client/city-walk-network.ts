@@ -14,6 +14,7 @@ export type CityWalkInput = {
   /** Canonical seed/profile lookup; dense terrain remains viewport-owned. */
   sampleTerrain?: (cell: Cell) => TerrainKind | undefined;
 };
+const WALK_CHECKPOINT_BATCH = 16;
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 
 export function buildCityWalkNetwork(input: CityWalkInput) {
@@ -21,18 +22,21 @@ export function buildCityWalkNetwork(input: CityWalkInput) {
 }
 
 export function buildCityWalkNetworkAsync(input: CityWalkInput, options: CooperativePreparationOptions = {}) {
-  return prepareCooperatively(buildCityWalkNetworkSteps(input), options);
+  return prepareCooperatively(buildCityWalkNetworkSteps(input), options, 8192 / WALK_CHECKPOINT_BATCH);
 }
 
 function* buildCityWalkNetworkSteps(input: CityWalkInput) {
+  // One counter includes nested rectangles: no parent/child batch can hide
+  // extra raw work behind the async scheduler's per-builder ceiling.
+  let work = 0;
   const blocked = new Set<string>();
   function* blockRect(origin: Cell, width: number, height: number) {
     for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
-      blocked.add(key({ x: origin.x + x, y: origin.y + y })); yield;
+      blocked.add(key({ x: origin.x + x, y: origin.y + y })); if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
     }
   }
   for (const task of input.tasks) {
-    yield;
+    if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
     if (task.stage < 5 && task.footprint.length) {
       // Building works use an external fence; public-space works are bounded
       // by their own parcel so narrow infill never closes a neighbour's aisle.
@@ -41,20 +45,20 @@ function* buildCityWalkNetworkSteps(input: CityWalkInput) {
       const clearance = task.visualKind === "PARK" ? 0 : 1;
       yield* blockRect({ x: minX - clearance, y: minY - clearance }, maxX - minX + 1 + 2 * clearance, maxY - minY + 1 + 2 * clearance);
     } else if (task.visualKind !== "PARK") {
-      for (const cell of task.footprint) { blocked.add(key(cell)); yield; }
+      for (const cell of task.footprint) { blocked.add(key(cell)); if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } }
     } else {
       for (const cell of greenAreaSurfaceLayout(task.footprint, 5, task.visualAssetKey)) {
-        yield;
+        if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
         if (cell.role === "WATER" || cell.role === "BASIN") blocked.add(key(cell));
       }
       for (const prop of taskParkDecorLayout(task.footprint, 5, task.visualAssetKey, task.taskNumber)) yield* blockRect(prop.origin, prop.width, prop.height);
     }
   }
   for (const feature of input.features) {
-    yield;
-    if (feature.assetKind !== "AREA") { for (const cell of feature.footprint) { blocked.add(key(cell)); yield; } }
+    if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
+    if (feature.assetKind !== "AREA") { for (const cell of feature.footprint) { blocked.add(key(cell)); if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } } }
     else for (const cell of greenAreaSurfaceLayout(feature.footprint, feature.developmentStage, feature.assetKey)) {
-      yield;
+      if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
       if (cell.role === "WATER" || cell.role === "BASIN") blocked.add(key(cell));
     }
   }
@@ -63,27 +67,27 @@ function* buildCityWalkNetworkSteps(input: CityWalkInput) {
     yield* blockRect(decoration.origin, size.width, size.height);
   }
   const crosswalks = new Set<string>(), surfaceKeys = new Set<string>();
-  for (const cell of input.surfaces) { if (cell.kind === "CROSSWALK") crosswalks.add(key(cell)); surfaceKeys.add(key(cell)); yield; }
+  for (const cell of input.surfaces) { if (cell.kind === "CROSSWALK") crosswalks.add(key(cell)); surfaceKeys.add(key(cell)); if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } }
   const base = new Map<string, Cell>(), safeGround = new Map<string, Cell>(), animalGraph = new Map<string, Cell>();
   for (const cell of input.surfaces) {
     if (!blocked.has(key(cell)) && ["SIDEWALK", "PATH", "CROSSWALK"].includes(cell.kind)
       && (!input.roads.has(key(cell)) || crosswalks.has(key(cell)))) base.set(key(cell), { x: cell.x, y: cell.y });
-    yield;
+    if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
   }
   for (const cell of input.terrain) {
     if (!blocked.has(key(cell)) && !input.roads.has(key(cell))) {
       if (["GRASS", "MEADOW", "DIRT"].includes(cell.terrain)) safeGround.set(key(cell), { x: cell.x, y: cell.y });
       if (!surfaceKeys.has(key(cell)) && ["MEADOW", "FOREST"].includes(cell.terrain)) animalGraph.set(key(cell), { x: cell.x, y: cell.y });
     }
-    yield;
+    if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
   }
   const walkGraph = new Map<string, Cell>();
-  for (const [id, cell] of base) { walkGraph.set(id, cell); yield; }
+  for (const [id, cell] of base) { walkGraph.set(id, cell); if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } }
   // Keep connectShortWalkGaps' exact origin/direction/gap insertion order.
   for (const origin of base.values()) {
     for (const direction of [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }]) {
       for (let gap = 1; gap <= 2; gap++) {
-        yield;
+        if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
         const target = { x: origin.x + direction.x * (gap + 1), y: origin.y + direction.y * (gap + 1) };
         if (!base.has(key(target))) continue;
         const intermediate: Cell[] = [];
@@ -103,7 +107,7 @@ function* buildCityWalkNetworkSteps(input: CityWalkInput) {
   const activityCells = new Set<string>();
   const buildingEntrances = new Set<string>();
   for (const task of input.tasks) {
-    yield;
+    if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
     const approach = task.accessPath[0];
     if (task.stage === 5 && task.visualKind === "BUILDING" && approach && walkGraph.has(key(approach))
       && !input.roads.has(key(approach)) && !crosswalks.has(key(approach))) buildingEntrances.add(key(approach));
@@ -111,12 +115,14 @@ function* buildCityWalkNetworkSteps(input: CityWalkInput) {
   const addActivity = (cell: Cell) => {
     if (walkGraph.has(key(cell)) && !input.roads.has(key(cell)) && !crosswalks.has(key(cell))) activityCells.add(key(cell));
   };
-  for (const task of input.tasks) { if (task.stage === 5) for (const cell of task.accessPath) { addActivity(cell); yield; } yield; }
-  for (const feature of input.features) { if (feature.kind === "BUS_STOP" || feature.kind === "PARK") for (const cell of feature.accessPath) { addActivity(cell); yield; } yield; }
+  for (const task of input.tasks) { if (task.stage === 5) for (const cell of task.accessPath) { addActivity(cell); if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } } if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  for (const feature of input.features) { if (feature.kind === "BUS_STOP" || feature.kind === "PARK") for (const cell of feature.accessPath) { addActivity(cell); if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } } if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } }
   for (const decoration of input.decorations) {
-    yield;
+    if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
     if (!["bench-horizontal", "bench-vertical", "picnic-table", "playground-small", "trash-bin"].includes(decoration.kind)) continue;
     for (const [x, y] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) addActivity({ x: decoration.origin.x + x!, y: decoration.origin.y + y! });
   }
+  // Flush the last partial unit before the caller starts another phase.
+  if (work) yield;
   return { walkGraph, activityCells, buildingEntrances, crosswalks, animalGraph, blockedCells: blocked };
 }

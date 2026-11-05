@@ -6,6 +6,9 @@ export type CooperativePreparationOptions = {
   yieldTask?: () => Promise<void>;
   now?: () => number;
   budgetMs?: number;
+  /** Generator checkpoints; a builder can further cap this to retain its
+   * raw-work fairness bound when batching its small canonical units. */
+  maxOperations?: number;
 };
 
 export function completePreparation<T>(steps: Generator<void, T, void>): T {
@@ -79,9 +82,13 @@ export async function yieldPreparationTask(signal?: AbortSignal): Promise<void> 
   finally { scheduler.close(); }
 }
 
-export async function prepareCooperatively<T>(steps: Generator<void, T, void>, options: CooperativePreparationOptions = {}): Promise<T> {
+export async function prepareCooperatively<T>(steps: Generator<void, T, void>, options: CooperativePreparationOptions = {}, operationCeiling = 8192): Promise<T> {
   const budget = options.budgetMs ?? 4;
   if (!Number.isFinite(budget) || budget <= 0) throw new RangeError('Invalid preparation budget');
+  const requestedLimit = options.maxOperations ?? 8192;
+  if (![requestedLimit, operationCeiling].every(value => Number.isSafeInteger(value) && value >= 1 && value <= 8192))
+    throw new RangeError('Invalid preparation operation limit');
+  const operationLimit = Math.min(requestedLimit, operationCeiling);
   const now = options.now ?? (() => performance.now());
   const scheduler = options.yieldTask ? undefined : taskScheduler();
   const yieldTask = options.yieldTask ?? scheduler!.yieldTask;
@@ -94,7 +101,7 @@ export async function prepareCooperatively<T>(steps: Generator<void, T, void>, o
       if (next.done) { completed = true; return next.value; }
       // The operation bound also covers coarse/frozen clocks. The time budget
       // is soft by one canonical step, whose contents are deliberately small.
-      if (++operations >= 8192 || now() - slice >= budget) {
+      if (++operations >= operationLimit || now() - slice >= budget) {
         await pause(yieldTask, options.signal);
         assertActive(options.signal);
         slice = now(); operations = 0;
