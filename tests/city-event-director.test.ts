@@ -52,3 +52,12 @@ it('retries an unconfirmed service dispatch but never replays its confirmed epis
   expect(director.claimActors(call.id, ['engine'])).toBe(true);director.release(call.id);
   expect(director.acquire(call)).toBe(false);
 });
+
+it('protects only current scene actors and never exposes the internal ownership set', () => {
+  const director = new CityEventDirector(); director.update(10_000, options);
+  expect(director.acquire(lease('visit', { actors: ['resident'] }))).toBe(true);
+  expect(director.protectedActorIds).toEqual(new Set(['resident']));
+  (director.protectedActorIds as Set<string>).clear();
+  expect(director.protectedActorIds.has('resident')).toBe(true);
+  director.release('visit');expect(director.protectedActorIds.size).toBe(0);
+});

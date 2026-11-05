@@ -474,6 +474,46 @@ test("permanent transit stops survive event preferences, reduced motion and qual
   expect(errors).toEqual([]);
 });
 
+test('local population stays bounded across native camera movement, quality and disabled presentation without city reads',async({page,hasTouch},info)=>{
+  test.setTimeout(90_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  const host=await enterCity(page),canvas=host.locator('canvas'),identity=await canvas.elementHandle();
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect.poll(async()=>Number(await host.getAttribute('data-population-local-cars'))).toBeGreaterThan(0);
+  await expect.poll(async()=>Number(await host.getAttribute('data-population-local-walkers'))).toBeGreaterThan(0);
+  await pauseInstalledClock(page);
+  const before=await host.evaluate(node=>({...((node as HTMLElement).dataset)}));
+  await page.screenshot({path:info.outputPath('local-population-initial.png')});
+  await canvas.focus();
+  for(let step=0;step<3;step++){await page.keyboard.press('ArrowRight');await page.clock.runFor(300);}
+  await expect(host).not.toHaveAttribute('data-camera-world-x',before.cameraWorldX!);
+  await page.clock.runFor(2000);
+  await expect(host).toHaveAttribute('data-mobility-network-builds',before.mobilityNetworkBuilds!);
+  await expect(host).toHaveAttribute('data-population-full-scans','0');
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');await page.clock.runFor(500);
+  await expect(host).toHaveAttribute('data-mobility-network-builds',before.mobilityNetworkBuilds!);
+  const population=()=>host.evaluate(node=>{const d=(node as HTMLElement).dataset;return{cars:Number(d.cars),walkers:Number(d.walkers),
+    spawned:Number(d.populationSpawned),pending:d.populationPending,steps:Number(d.populationWorkSteps),
+    visited:Number(d.populationQueryWork),buckets:Number(d.populationQueryBuckets),fullScans:Number(d.populationFullScans),p95:Number(d.populationSliceP95Ms)};});
+  const economy=await population();
+  expect(economy.cars).toBeLessThanOrEqual(24);expect(economy.walkers).toBeLessThanOrEqual(32);
+  expect(economy.steps).toBeLessThanOrEqual(256);expect(economy.visited).toBeLessThanOrEqual(4096);expect(economy.buckets).toBeLessThanOrEqual(512);
+  await preferences.getByLabel('Жизнь города').setChecked(false);
+  await expect(host).toHaveAttribute('data-population-pending','false');
+  const disabled=await population();await page.clock.runFor(3000);expect((await population()).spawned).toBe(disabled.spawned);
+  await preferences.getByLabel('Жизнь города').setChecked(true);await page.clock.runFor(2000);
+  await page.emulateMedia({reducedMotion:'reduce'});await expect(host).toHaveAttribute('data-population-pending','false');
+  const reduced=await population();await page.clock.runFor(2000);expect((await population()).spawned).toBe(reduced.spawned);
+  expect(await identity!.evaluate(node=>node.isConnected)).toBe(true);
+  for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total'])await expect(host).toHaveAttribute(metric,'0');
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('local-population',{body:JSON.stringify({before,economy,disabled,reduced,reads,errors}),contentType:'application/json'});
+});
+
 test('a regular city bus opens halfway through a minute and its native pixels expose the actual line',async({page,hasTouch},info)=>{
   test.setTimeout(120_000);
   const errors:string[]=[],reads:string[]=[];

@@ -1745,6 +1745,37 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       const eventDirector = new CityEventDirector();
       let eventDirectorTelemetryAt = 0;
       startupDisposers.push(() => eventDirector.clear());
+      const populationRegion = (): Rect => {
+        const size = CELL_SIZE * world.scale.x;
+        return { minX: -world.x / size, minY: -world.y / size,
+          maxX: (app.screen.width - world.x) / size, maxY: (app.screen.height - world.y) / size };
+      };
+      const populationSliceMetric = new RollingPerformanceMetric(120);
+      let populationTelemetryAt = 0;
+      const updateLocalPopulation = () => {
+        if (!mobility) return;
+        const view = populationRegion(), protectedIds = new Set(eventDirector.protectedActorIds), target = worldInspection.target;
+        if (target?.kind === 'TRANSPORT') protectedIds.add(target.vehicleId);
+        mobility.updatePopulation(view, { protectedIds, budgetMs: 4, enabled: !disposed && paintedFrame && ambientAssetsReady
+          && readWorldPreferences().cityLife && !reducedMotion && activeRef.current && !document.hidden
+          && currentLod === 'DETAIL' && !movementPreparation.busy });
+        const metrics = mobility.population;
+        if (metrics.sliceMsLast > 0) populationSliceMetric.record(metrics.sliceMsLast);
+        if (simulationTimeMs >= populationTelemetryAt || host.dataset.populationPending !== String(metrics.pending)) {
+          populationTelemetryAt = simulationTimeMs + 250;
+          const local = mobility.agents.filter(actor => actor.position.x >= view.minX && actor.position.x <= view.maxX
+            && actor.position.y >= view.minY && actor.position.y <= view.maxY);
+          const timing = populationSliceMetric.snapshot();
+          host.dataset.populationLocalCars = String(local.filter(actor => actor.kind === 'CAR').length);
+          host.dataset.populationLocalWalkers = String(local.filter(actor => actor.kind === 'WALKER').length);
+          host.dataset.populationRetired = String(metrics.retired); host.dataset.populationSpawned = String(metrics.spawned);
+          host.dataset.populationFullScans = String(metrics.graphCellsScanned); host.dataset.populationPending = String(metrics.pending);
+          host.dataset.populationQueryWork = String(metrics.queryVisited); host.dataset.populationQueryBuckets = String(metrics.queryBuckets);
+          host.dataset.populationWorkSteps = String(metrics.workStepsLast);
+          host.dataset.populationSliceP95Ms = timing.p95.toFixed(3); host.dataset.populationSliceMaxMs = timing.max.toFixed(3);
+        }
+      };
+      startupDisposers.push(() => mobility?.updatePopulation(populationRegion(), { enabled: false }));
       const eventAdmissionView = (): Rect | undefined => {
         const rect = host.getBoundingClientRect(), size = CELL_SIZE * world.scale.x;
         const overlays = [...document.querySelectorAll<HTMLElement>('.map-level-nav,.task-modal,.city-world-observation')].map(element => {
@@ -2512,6 +2543,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         updateEveryday();
         preloadWeatherAssets();
         updateTaskActivity();
+        updateLocalPopulation();
         if(paintedFrame){const now=readServerWorldTime()??Date.now();animateCityTrains(now);animateCityAircraft(now);animatePortShip();}
         if (reducedMotion && paintedFrame) app.render();
       };
@@ -2531,6 +2563,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         // and Pixi rendering. Include existing ground fades conservatively.
         const livingStarted = performance.now();
         updateCinematics();
+        updateLocalPopulation();
         if(!movementPreparation.busy)updateRoadEvents();
         updateConstructionWorkers();
         if(!movementPreparation.busy){updateCompletedLife();updateEveryday();}
@@ -3968,7 +4001,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             const parking=planCityParking([...tasks.values()],roads,[...surfaces.values()],walk.blockedCells);
             const transferProviders=scene?transportPassengerProviders(scene):[];
             const input={roads,walkGraph:walk.walkGraph,crosswalks:walk.crosswalks,activityCells:walk.activityCells,
-              transitFleet:true,
+              transitFleet:true,spawnRegion:populationRegion(),
               buildingEntrances:walk.buildingEntrances,parking,transferCells:new Set(transferProviders.flatMap(provider=>provider.boardingCells.map(key))),
               spawnPriorityCells:[...new Map(transferProviders.filter(provider=>provider.boardingCells.length).map(provider=>[provider.stopId,provider.boardingCells[0]!])).values()],
               carLimit:Math.min(worldDetailProfile(economy).cars,Math.max(5,Math.floor(roads.size/120))),
@@ -4014,16 +4047,17 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           const commitStarted=performance.now();
           const {roads,walk,parking,input,next,existingCrosswalks,postOrigins,routes,signalPlan,life,prepareLife,weatherIndex}=prepared;
           const latestInput={...input,
+            spawnRegion:populationRegion(),
             carLimit:Math.min(worldDetailProfile(economy).cars,Math.max(5,Math.floor(roads.size/120))),
             walkerLimit:Math.min(worldDetailProfile(economy).walkers,Math.max(6,Math.floor(walk.walkGraph.size/70)))};
           const {walkGraph,animalGraph,crosswalks,blockedCells}=walk;
           const before=mobilityViews.size+animals.length;
           if(existing&&next.prepared)existing.updateNetworkPrepared(next.prepared,{
-            carLimit:latestInput.carLimit,walkerLimit:latestInput.walkerLimit,spawnPriorityCells:latestInput.spawnPriorityCells,
+            carLimit:latestInput.carLimit,walkerLimit:latestInput.walkerLimit,spawnPriorityCells:latestInput.spawnPriorityCells,spawnRegion:latestInput.spawnRegion,
           });
           else if(next.initial){
             mobility=next.initial;
-            if(input.carLimit!==latestInput.carLimit||input.walkerLimit!==latestInput.walkerLimit)mobility.updateNetwork(latestInput);
+            mobility.updatePopulationLimits(latestInput);
           }
           transportCrosswalkGround.clear();
           for(const id of crosswalks)if(!existingCrosswalks.has(id)) {
@@ -4101,7 +4135,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           if (movementEconomy !== economy && movementInput && mobility) {
             movementInput = {...movementInput,carLimit:Math.min(worldDetailProfile(economy).cars,Math.max(5,Math.floor(movementInput.roads.size/120))),
               walkerLimit:Math.min(worldDetailProfile(economy).walkers,Math.max(6,Math.floor(movementInput.walkGraph.size/70)))};
-            mobility.updateNetwork(movementInput);
+            updateLocalPopulation();
+            mobility.updatePopulationLimits({carLimit:movementInput.carLimit,walkerLimit:movementInput.walkerLimit,spawnRegion:populationRegion()});
             resizeAnimals?.();syncTransportPassengers();
             movementEconomy=economy;
           }
@@ -5175,6 +5210,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       runtimeRef.current = {
         setActive(value) {
           activeRef.current = value;
+          updateLocalPopulation();
           updateAnimation();
           if (value) {
             applyPreferences();
@@ -5547,6 +5583,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         if (active) app.start(); else app.stop();
       };
       const visibility = () => {
+        updateLocalPopulation();
         if (document.hidden) {
           if(movementPreparation.busy){movementPreparation.cancel();reconcilePending=true;host.dataset.movementPreparing="false";}
           if(lifePreparation.busy){lifePreparation.cancel();reconcilePending=true;host.dataset.lifePreparing="false";}
@@ -5569,6 +5606,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       startupDisposers.push(() => canvas.removeEventListener("pointerdown", audioGesture));
       const motionChanged = () => {
         reducedMotion = motionPreference.matches || readWorldPreferences().reduceMotion;
+        updateLocalPopulation();
         if (reducedMotion) {
           clearCinematics(); clearRoadEvent(); clearEveryday();
           for (const fade of groundFades.splice(0)) for (const container of fade.containers) {

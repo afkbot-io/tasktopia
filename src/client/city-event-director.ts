@@ -99,5 +99,6 @@ export class CityEventDirector {
   }
 
   clear(reason: CityEventRelease = 'CANCEL') { for (const id of [...this.leases.keys()]) this.release(id, reason); }
+  get protectedActorIds(): ReadonlySet<string> { return new Set([...this.leases.values()].flatMap(lease => [...lease.actors])); }
   get active() { return [...this.leases.values()].map(({ value: { id, channel, priority, until } }) => ({ id, channel, priority, until })); }
 }
