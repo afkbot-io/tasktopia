@@ -157,7 +157,7 @@ import {
 } from "../../shared/construction-stage";
 import { atlasTerrainConnectionMask, atlasTerrainKindFromWorld, atlasTerrainTile, type AtlasTerrainKind } from "../../shared/atlas-scene";
 import { bindMapPointerGestures } from "../map-pointer-gesture";
-import { decorationWorldAnchor } from "../decoration-placement";
+import { decorationWorldAnchor, decorationSpriteCellBounds } from "../decoration-placement";
 import { pixelAtlasFrame } from "../pixel-atlas-frame";
 import { stopPixiApplication } from "../pixi-app-lifecycle";
 import { availableMapArea, revealCameraPosition, type ScreenRect } from "../city-task-camera";
@@ -3811,12 +3811,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           for (const site of plannedSites.values()) for (let y = 0; y < site.height; y++)
             for (let x = 0; x < site.width; x++) blocked.add(key({ x: site.origin.x + x, y: site.origin.y + y }));
           for (const prop of decorations.values()) {
-            const size = PROP_CATALOG[prop.kind]?.size;
-            if (!size) continue;
-            const width = Math.ceil(size.width / CELL_SIZE), height = Math.ceil(size.height / CELL_SIZE);
-            // Conservative full sprite envelope, including crowns above origin.
-            for (let y = prop.origin.y - height; y <= prop.origin.y + height; y++)
-              for (let x = prop.origin.x - width; x <= prop.origin.x + width; x++) blocked.add(key({ x, y }));
+            const metadata = PROP_CATALOG[prop.kind];
+            if (!metadata) continue;
+            const bounds = decorationSpriteCellBounds(prop.kind, prop.origin, metadata, CELL_SIZE);
+            for (let y = bounds.minY; y <= bounds.maxY; y++)
+              for (let x = bounds.minX; x <= bounds.maxX; x++) blocked.add(key({ x, y }));
           }
           for (const district of developmentDistricts.values()) {
             if (developmentEmphasis.get(district.id)?.status !== district.status)

@@ -314,7 +314,9 @@ describe("Tasktopia compact-block application service", { timeout: 20_000 }, () 
       designSystem: "Use existing tokens", implementationPlan: "Test, patch, verify", estimate: 1, dueAt: deadline,
       buildingHint: "compact-apartment-v1", idempotencyKey: "regen-task",
     });
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    const initialFeatures=await service.listWorldFeatures(countryId);
+    expect(initialFeatures.length).toBeGreaterThan(0);
+    expect(initialFeatures.every(feature=>feature.kind==='BUS_STOP')).toBe(true);
     const defect = await service.createTaskDefect(countryId, {
       taskId: task.id, title: "Broken path", reproductionSteps: "Open the map", actualResult: "Path breaks", expectedResult: "Path stays whole",
       idempotencyKey: "regen-defect",
@@ -355,10 +357,10 @@ describe("Tasktopia compact-block application service", { timeout: 20_000 }, () 
     expect(preserved.comments?.map((comment) => comment.body)).toContain("History survives");
     expect(preserved.events?.some((event) => event.type === "STATUS_CHANGED")).toBe(true);
     const geometryAfter = JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin });
-    // Explicit regeneration compacts the singleton block; repeating that
-    // regeneration must then reproduce its geometry while retaining identity.
-    expect(geometryAfter).not.toBe(geometryBefore);
-    expect(JSON.parse(geometryAfter).district.length).toBeLessThan(JSON.parse(geometryBefore).district.length);
+    // Published stops keep their source street/parcels fixed. Regeneration
+    // rebuilds projections and advances the revision without moving them.
+    expect(geometryAfter).toBe(geometryBefore);
+    expect(await service.listWorldFeatures(countryId)).toEqual(initialFeatures);
     await service.regenerateCountry(countryId, { confirmName: "Tester: страна", idempotencyKey: "regenerate-world-again" });
     expect(JSON.stringify({ city: (await service.listCities(countryId))[0]?.center, district: (await service.listDistricts(countryId))[0]?.cells, task: (await service.listTasks(countryId))[0]?.origin })).toBe(geometryAfter);
     expect(await db.prepare("SELECT 1 FROM countries WHERE name LIKE 'regeneration-%'").get()).toBeUndefined();

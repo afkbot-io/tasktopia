@@ -28,6 +28,16 @@ const input = (count: number): BlockLayoutCompilerInput => ({ countryId: 'countr
   districts: [{ id: 'district', archetype: 'MIXED_URBAN', sequence: 0, tasks: Array.from({ length: count }, (_,i) => ({
     id: `task-${i+1}`, taskNumber: i+1, buildingFamily: 'compact-apartment', facadeVariant: 'south', constructionStage: 5, autoVisualKind: true,
   })) }] });
+it('keeps the full protected stop corridor clear of existing street junctions',()=>{
+  const layout=compileBlockLayout(input(200)),plan=planner.planCityTransitStops({layout,isDry:()=>true}).plan;
+  expect(plan.stops.length).toBeGreaterThan(0);
+  const junctions=layout.roadNetwork.nodes.filter(node=>node.kind==='JUNCTION');expect(junctions.length).toBeGreaterThan(0);
+  for(const stop of plan.stops)for(const node of junctions){
+    const horizontal=stop.heading==='E'||stop.heading==='W';
+    const sameStreet=horizontal?node.y===stop.lane.y-(stop.heading==='E'?1:-1):node.x===stop.lane.x+(stop.heading==='S'?1:-1);
+    if(sameStreet)expect(Math.abs(horizontal?node.x-stop.lane.x:node.y-stop.lane.y),`${stop.id} protected junction corridor`).toBeGreaterThan(8);
+  }
+});
 it('packs every future parcel and entrance around an inherited public plaza without moving old blocks', () => {
   const original = compileBlockLayout(input(1)), first = original.blocks[0]!;
   const reservation = blockSlots(first)[0]!.siteBounds;

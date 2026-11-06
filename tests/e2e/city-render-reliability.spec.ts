@@ -2,6 +2,7 @@ import { expect,test,type Page,type Locator,type TestInfo } from "@playwright/te
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { CITY_SCENE_LOAD_TIMEOUT_MS } from "../../src/client/city-scene-deadline";
+import { CITY_MOVEMENT_MAX_TIMEOUT_MS } from '../../src/client/city-movement-deadline';
 import type { BootstrapDto,RealtimeEvent } from "../../src/shared/contracts";
 import { chunkPayloadContentHash } from "../../src/server/world/chunk-payload-hash";
 import { openMapCity, openMapPlanet } from "./map-navigation";
@@ -121,7 +122,7 @@ test('world weather survives pan, respects quality and motion, and dries without
     await route.fulfill({response,headers:{...response.headers(),'x-tasktopia-server-time':String(origin)}});
   });
   const host=await enterCity(page,true),canvas=host.locator('canvas');
-  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect(host).toHaveAttribute('data-mobility-ready','true',{timeout:CITY_MOVEMENT_MAX_TIMEOUT_MS});
   await expect(host).toHaveAttribute('data-weather-assets','ready');
   await expect(host).toHaveAttribute('data-city-weather','RAIN');
   await expect.poll(async()=>Number(await host.getAttribute('data-weather-rain-streaks'))).toBeGreaterThan(0);
@@ -419,10 +420,13 @@ test("quality limits preserve the physical walk network and everyday compilation
   const host=await enterCity(page);
   await expect(host).toHaveAttribute("data-mobility-ready","true");
   const walk=await host.getAttribute("data-walk-network-builds"),life=await host.getAttribute("data-everyday-compiles");
+  const cars=Number(await host.getAttribute('data-cars'));
   const preferences=await openWorldPreferences(page,hasTouch);
   await preferences.getByLabel("Детализация").selectOption("ECONOMY");
   await expect(host).toHaveAttribute("data-world-quality","ECONOMY");
-  await expect.poll(async()=>Number(await host.getAttribute("data-cars"))).toBeLessThanOrEqual(8);
+  // Active/visible physical trips drain above the new target; Economy must
+  // not erase them in place. Exact target caps/draining have controller tests.
+  await expect.poll(async()=>Number(await host.getAttribute("data-cars"))).toBeLessThanOrEqual(Math.max(8,cars));
   expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);
   expect(await host.getAttribute("data-everyday-compiles")).toBe(life);
   await preferences.getByLabel("Детализация").selectOption("NORMAL");

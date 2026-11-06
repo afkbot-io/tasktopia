@@ -491,7 +491,9 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       }
       const portPlans = new Map<string, PortSitePlan | null>();
       const portPlan = ({ block, slot }: { block: CityBlockV1; slot: BlockSlot }) => {
-        const id = `${block.id}:${slot.key}`;
+        // Alternative new sites share a future block/slot identity. Their
+        // terminal rectangles are different planning candidates.
+        const b=slot.footprintBounds,id = `${block.id}:${slot.key}:${b.minX},${b.minY}:${b.maxX},${b.maxY}`;
         if (!portPlans.has(id)) {
           const plan = familyFitsSlot("compact-port-v1", slot) ? input.planPort?.(slot.footprintBounds, reservedBlocks) : null;
           const scoped = plan && plan.link.countryId === input.countryId && plan.link.cityId === input.cityId
@@ -567,6 +569,10 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
           throw error;
         }
         if (firstAuthoredFamily) block.parameters.slotFamilies = { "slot-0": firstAuthoredFamily };
+        // Infrastructure may leave a valid but smaller public parcel. Prove
+        // that this task fits before accepting the candidate, so a large park
+        // or terminal can continue through the existing connected frontier.
+        if(!blockSlots(block).some(slot=>eligible({block,slot})))return false;
         prepared.block=block;return true;
         };
         nextBlockSite(districtBlocks, districtLayoutId,

@@ -12,7 +12,11 @@ PostgreSQL integration и негативные driver/receipt проверки �
 линейный поиск всех conflict zones. Reservation теперь хранит свою зону;
 public probe108744→0 посещений, прежний signalSHA и safety сохранены.
 185уникальных mobility/transit cases,build/types/lint проходят. Финальный
-10000journey на этой сборке выполняется;200/1000,SCM CI и managed release
+10000journey на этой сборке завершился: desktop/mobile прошли строгие
+бюджеты, включая отсутствие steady long tasks. Также завершены18прогонов
+200/1000 на desktop/Android/iPhone. Первый CI PR64 выявил ошибки размещения
+новых участков рядом с остановками и устаревшие проверки; исправления
+проверяются отдельно. Обязательный итоговый SCM CI и managed release
 ещё не завершены. Нельзя считать локальную подготовку выкладкой.
 Ориентир256МиБ не достигнут. [Релиз и ограничения](../tasks/84-managed-living-city-release.md),
 [модель угроз](../tasks/84-managed-living-city-threat-model.md).

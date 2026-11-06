@@ -40,6 +40,10 @@ describe("Pixel City source hygiene", () => {
         expect(prop.size).toEqual([size, size]); expect(prop.footprintCells).toEqual([size / 8, size / 8]);
         const kind = prop.key.replace(/^city-event-/, '').replace(/-(north|east|south|west)$/, '');
         expect(prop.sheet).toBe(`ai-authored/everyday-city-v1/sources/${kind === 'child' ? 'child-v2' : kind}.png`);
+      } else if (['airport-windsock','rail-platform-clock'].includes(prop.key)) {
+        expect(prop.visualProfile,prop.key).toBe('TASKTOPIA_TRANSPORT_FURNITURE_HIGH_45_V1');
+        expect(prop.size).toEqual([16,16]);expect(prop.footprintCells).toEqual([1,1]);expect(prop.anchorPx).toEqual([8,16]);
+        expect(prop.sheet).toBe(`ai-authored/transport-furniture-v1/sources/${prop.key}.png`);
       } else expect(prop.visualProfile, prop.key).toMatch(/^TASKTOPIA_V[56]_/);
     }
   });

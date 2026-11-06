@@ -116,12 +116,19 @@ export function* cityTransitStopPlannerSteps(input: CityTransitStopPlannerInput)
     walkBlocked.add({minX:block.origin.x+3,minY:block.origin.y+3,maxX:block.origin.x+block.width-3,maxY:block.origin.y+block.height-3});
     metrics.indexedBlocks++;yield;
   }
-  for (const network of [layout.roadNetwork,...(input.extraRoads ? [input.extraRoads] : [])]) for (const segment of network.segments) {
-    let { x,y } = segment.geometry.start;
-    for (const run of segment.geometry.runs) {
-      roads.add(segment,x,y,run.direction,run.length);metrics.indexedRoadRuns++;yield;
-      const [dx,dy] = steps[run.direction];x += dx*run.length;y += dy*run.length;
+  const junctions=new Set<string>();
+  for (const network of [layout.roadNetwork,...(input.extraRoads ? [input.extraRoads] : [])]) {
+    const degree=new Map<string,number>();
+    for (const segment of network.segments) {
+      degree.set(segment.fromNodeId,(degree.get(segment.fromNodeId)??0)+1);
+      degree.set(segment.toNodeId,(degree.get(segment.toNodeId)??0)+1);
+      let { x,y } = segment.geometry.start;
+      for (const run of segment.geometry.runs) {
+        roads.add(segment,x,y,run.direction,run.length);metrics.indexedRoadRuns++;yield;
+        const [dx,dy] = steps[run.direction];x += dx*run.length;y += dy*run.length;
+      }
     }
+    for(const node of network.nodes){if((degree.get(node.id)??0)>2)junctions.add(key(node));yield;}
   }
   const dryCache = new Map<string,boolean>(), dry = (p: Cell) => {
     const id = key(p), known = dryCache.get(id);if (known !== undefined) return known;
@@ -163,6 +170,13 @@ export function* cityTransitStopPlannerSteps(input: CityTransitStopPlannerInput)
       if ([...stop.queue,...stop.accessPath].some(p => !surfaces.has(key(p))
         || !surfaces.has(`${p.x+role.dx},${p.y+role.dy}`) || !surfaces.has(`${p.x-role.dx},${p.y-role.dy}`)
         || directionDeltas.filter(([dx,dy]) => surfaces.has(`${p.x+dx},${p.y+dy}`)).length !== 2)) continue;
+      // Keep the protected corridor away from an existing junction. An outer
+      // two-way bend is still usable; a nearby T/crossing can seal later growth.
+      let straight=true;
+      for(let offset=-8;offset<=8;offset++){
+        if(junctions.has(`${lane.x+role.dy+role.dx*offset},${lane.y-role.dx+role.dy*offset}`)){straight=false;break;}
+      }
+      if(!straight)continue;
       selected.push(stop);admission.add(stop);
       hard.add(plaza);
     }

@@ -22,6 +22,7 @@ it('previews, warms and repeats across fresh compiled processes without touching
   expect(schema).toMatch(/^test_[a-f0-9]+$/);
   const url=new URL(process.env.TEST_DATABASE_URL??'postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test');
   url.searchParams.set('options',`-csearch_path=${schema}`);
+  await mkdir(join(process.cwd(),'.builder'),{recursive:true});
   folder=await mkdtemp(join(process.cwd(),'.builder/scene-cli-test-'));await mkdir(join(folder,'dist'));
   await writeFile(join(folder,'package.json'),await readFile('package.json'));
   await mkdir(join(folder,'assets/pixel-city-pack'),{recursive:true});

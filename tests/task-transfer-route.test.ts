@@ -5,12 +5,13 @@ import { AppService } from "../src/server/app-service";
 import { inviteCountryMember, registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
-import type { TaskDto } from "../src/shared/contracts";
+import type { TaskDto,WorldFeatureDto } from "../src/shared/contracts";
 
 describe("authorized atomic sprint transfer HTTP contract", { timeout: 30_000 }, () => {
   let db: Db, app: FastifyInstance, service: AppService;
   let cookie: string, viewerCookie: string, countryId: string, targetDistrictId: string;
   let crossCityDistrictId: string, foreignDistrictId: string, foreignTaskId: string, task: TaskDto;
+  let initialFeatures:WorldFeatureDto[];
   beforeAll(async () => {
     db = await createTestDb(); service = new AppService(db);
     const owner = await registerUser(db, { email: "transfer-owner@example.test", name: "Owner", password: "password123" });
@@ -28,6 +29,9 @@ describe("authorized atomic sprint transfer HTTP contract", { timeout: 30_000 },
     crossCityDistrictId = other.district.id; foreignDistrictId = foreign.district.id;
     task = await service.createTask(countryId,{cityId:home.city.id,districtId:home.district.id,title:"Canonical work",estimate:1,idempotencyKey:"home-task"});
     foreignTaskId = (await service.createTask(viewer.user.countryId,{cityId:foreign.city.id,districtId:foreign.district.id,title:"Private work",estimate:1,idempotencyKey:"private-task"})).id;
+    initialFeatures=await service.listWorldFeatures(countryId);
+    expect(initialFeatures.length).toBeGreaterThan(0);
+    expect(initialFeatures.every(feature=>feature.kind==='BUS_STOP')).toBe(true);
     app = Fastify(); await app.register(fastifyCookie); await registerRoutes(app,db,service); await app.ready();
     const login = async (email: string) => {
       const response = await app.inject({method:"POST",url:"/api/auth/login",payload:{email,password:"password123"}});
@@ -47,7 +51,7 @@ describe("authorized atomic sprint transfer HTTP contract", { timeout: 30_000 },
     }
     expect((await app.inject({method:"POST",url:"/api/tasks/bad/transfer",payload,headers:{cookie}})).statusCode).toBe(400);
     expect((await service.getTask(countryId,task.id)).districtId).toBe(task.districtId);
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    expect(await service.listWorldFeatures(countryId)).toEqual(initialFeatures);
   });
 
   it("does not disclose foreign country tasks/districts or silently expand to another project",async()=>{
@@ -55,7 +59,7 @@ describe("authorized atomic sprint transfer HTTP contract", { timeout: 30_000 },
       const response=await app.inject({method:"POST",url:`/api/tasks/${id}/transfer`,headers:{cookie},payload:{targetDistrictId:target,idempotencyKey:`deny-${id}-${target}`}});
       expect(response.statusCode).toBe(status); expect(response.json()).not.toHaveProperty("title");
     }
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    expect(await service.listWorldFeatures(countryId)).toEqual(initialFeatures);
   });
 
   it("returns the same canonical task, emits one invalidation and keeps the canonical URL while releasing the old site",async()=>{
@@ -66,7 +70,9 @@ describe("authorized atomic sprint transfer HTTP contract", { timeout: 30_000 },
     expect(moved.origin).not.toEqual(task.origin);
     const retry=await app.inject({method:"POST",url:`/api/tasks/${task.id}/transfer`,headers:{cookie},payload});
     expect(retry.json()).toEqual(moved);
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    const afterFeatures=await service.listWorldFeatures(countryId);
+    expect(afterFeatures).toEqual(expect.arrayContaining(initialFeatures));
+    expect(afterFeatures.filter(feature=>feature.kind!=='BUS_STOP')).toEqual([]);
     const resolved=await app.inject({method:"GET",url:`/api/tasks/resolve?id=${task.id}`,headers:{cookie}});
     expect(resolved.json()).toMatchObject({id:task.id,countryId,districtId:targetDistrictId,origin:moved.origin});
     const events=(await service.listEvents(countryId,0)).filter(event=>event.type==="task.transferred");

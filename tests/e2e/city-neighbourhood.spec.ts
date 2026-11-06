@@ -41,7 +41,10 @@ test('a real MCP status update reaches rendered task metadata without breaking t
   }finally{await f.cleanup();}
 });
 test('a completed neighbourhood uses real residents through arrival, activity and physical departure without task writes', async ({ page, hasTouch }, info) => {
-  test.setTimeout(120_000);await installSceneClock(page);
+  // Software WebKit must deliver all physical frames, including approach and
+  // departure. This runner allowance does not alter simulation deadlines or
+  // the separate native latency/input budgets; fastForward stays forbidden.
+  test.setTimeout(process.env.CI?240_000:120_000);await installSceneClock(page);
   await page.addInitScript(() => localStorage.setItem('tasktopia:world-preferences:v2', JSON.stringify({ quality: 'NORMAL', cityLife: false, sound: false })));
   expect((await page.request.post('/api/auth/login', { data: { email: 'demo@tasktopia.local', password: 'tasktopia-demo' } })).status()).toBe(200);
   const bootstrap = await (await page.request.get('/api/bootstrap')).json();

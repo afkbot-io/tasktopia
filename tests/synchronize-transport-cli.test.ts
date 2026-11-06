@@ -26,7 +26,7 @@ it('defaults to a read-only report, imports missing legacy geometry explicitly, 
  await db.prepare('DELETE FROM city_railway_corridors_v1 WHERE layout_id=?').run(layout.id);
  const schema=(await db.prepare('SELECT current_schema() AS name').get<{name:string}>())!.name;
  expect(schema).toMatch(/^test_[a-f0-9]+$/);
- const url=new URL(process.env.TEST_DATABASE_URL!);url.searchParams.set('options',`-csearch_path=${schema}`);
+ const url=new URL(process.env.TEST_DATABASE_URL??'postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test');url.searchParams.set('options',`-csearch_path=${schema}`);
  const run=async(...args:string[])=>JSON.parse((await execute(process.execPath,['--import','tsx','src/server/synchronize-transport-cli.ts','--country',countryId,...args],{env:{...process.env,DATABASE_URL:url.toString()},timeout:15000})).stdout.trim());
  const snapshot=async()=>({country:await db!.prepare('SELECT world_version FROM countries WHERE id=?').get(countryId),
   rail:await db!.prepare('SELECT count(*)::int AS total FROM city_railway_corridors_v1').get(),
