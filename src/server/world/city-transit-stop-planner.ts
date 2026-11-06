@@ -16,6 +16,8 @@ export type CityTransitStopPlannerInput = {
   isDry: (cell: Cell) => boolean;
   obstacles?: readonly Rect[];
   extraRoads?: SemanticRoadNetwork;
+  /** Accepted road corridors include their clearance, not only asphalt. */
+  protectedRoads?: readonly Rect[];
 };
 
 export type CityTransitStopPlannerMetrics = {
@@ -45,6 +47,11 @@ class Obstacles {
     for (const id of bucketKeys(clipped)) { const items = this.buckets.get(id) ?? [];items.push(bounds);this.buckets.set(id,items); }
   }
   has(p: Cell): boolean { return this.buckets.get(`${Math.floor(p.x/64)},${Math.floor(p.y/64)}`)?.some(rect => inside(p,rect)) ?? false; }
+  intersects(bounds: Rect): boolean {
+    for (const id of bucketKeys(bounds)) if (this.buckets.get(id)?.some(rect =>
+      rect.minX <= bounds.maxX && rect.maxX >= bounds.minX && rect.minY <= bounds.maxY && rect.maxY >= bounds.minY)) return true;
+    return false;
+  }
 }
 /** Index run rectangles, never all of a city's raster cells. Querying a block
  * includes the exact rasterizer halo, width, structure and class precedence. */
@@ -88,7 +95,9 @@ export function* cityTransitStopPlannerSteps(input: CityTransitStopPlannerInput)
     maxX: Math.max(bounds.maxX,block.origin.x+block.width), maxY: Math.max(bounds.maxY,block.origin.y+block.height) }),
     { minX: pending[0]!.origin.x, minY: pending[0]!.origin.y, maxX: pending[0]!.origin.x, maxY: pending[0]!.origin.y }),32);
   if (citySceneChunkRange(scope).count > CITY_SCENE_MAX_CHUNKS*9) throw new RangeError('Transit planner scope exceeded city capacity');
-  const hard = new Obstacles(scope), walkBlocked = new Obstacles(scope), roads = new Roads(scope), admission = new CityTransitStopAdmission();
+  const hard = new Obstacles(scope), walkBlocked = new Obstacles(scope), protectedRoads = new Obstacles(scope),
+    roads = new Roads(scope), admission = new CityTransitStopAdmission();
+  for (const rect of input.protectedRoads ?? []) { protectedRoads.add(rect);yield; }
   for (const stop of previous.stops) { admission.add(stop);yield; }
   for (const rect of input.obstacles ?? []) { hard.add(rect);walkBlocked.add(rect);yield; }
   for (const rect of cityTransitStopReservations(previous)) { hard.add(rect);yield; }
@@ -142,7 +151,11 @@ export function* cityTransitStopPlannerSteps(input: CityTransitStopPlannerInput)
       if (!admission.canAdd({ lane })) continue;
       const role = roadBandRole(graph,lane);if (role.kind !== 'TRAVEL') continue;
       const stop = canonicalTransitStop(block.id,lane,role.dx ? role.dx > 0 ? 'E' : 'W' : role.dy > 0 ? 'S' : 'N');
-      const plaza = cityTransitStopReservations({ schemaVersion:1,layoutId:layout.id,processedBlockIds:[block.id],stops:[stop] })[0]!;
+      const candidate = { schemaVersion: 1 as const, layoutId: layout.id, processedBlockIds: [block.id], stops: [stop] };
+      // The road planner must be able to revalidate its immutable routes
+      // against the same full reservation after this stop is published.
+      if (input.protectedRoads?.length && protectedRoads.intersects(cityTransitStopReservations(candidate,'ROAD')[0]!)) continue;
+      const plaza = cityTransitStopReservations(candidate)[0]!;
       const all: Cell[] = [];
       for (let y=plaza.minY; y<=plaza.maxY; y++) for (let x=plaza.minX; x<=plaza.maxX; x++) all.push({x,y});
       if (all.some(p => graph.has(key(p)) || hard.has(p) || !dry(p))) continue;
@@ -151,7 +164,7 @@ export function* cityTransitStopPlannerSteps(input: CityTransitStopPlannerInput)
         || !surfaces.has(`${p.x+role.dx},${p.y+role.dy}`) || !surfaces.has(`${p.x-role.dx},${p.y-role.dy}`)
         || directionDeltas.filter(([dx,dy]) => surfaces.has(`${p.x+dx},${p.y+dy}`)).length !== 2)) continue;
       selected.push(stop);admission.add(stop);
-      for (const rect of cityTransitStopReservations({ schemaVersion: 1, layoutId: layout.id, processedBlockIds: [block.id], stops: [stop] })) hard.add(rect);
+      hard.add(plaza);
     }
     offered.set(block.id,selected);
   }

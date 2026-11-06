@@ -11,7 +11,10 @@ afterEach(async()=>db?.close());
 it('defaults to a read-only report, imports missing legacy geometry explicitly, and repeats without changing the world',async()=>{
  db=await createTestDb();const service=new AppService(db);
  const {user}=await registerUser(db,{email:'transport-cli@example.test',name:'CLI',password:'password123'});
- const countryId=user.countryId,city=await service.createCity(countryId,{name:'Старый вокзал',idempotencyKey:'city'});
+ const countryId=user.countryId;
+ // The CLI contract needs an actual station, independent of a random coast.
+ await db.prepare('UPDATE countries SET seed=? WHERE id=?').run(424242,countryId);
+ const city=await service.createCity(countryId,{name:'Старый вокзал',idempotencyKey:'city'});
  for(let i=0;i<6;i++){
   const district=await service.createDistrict(countryId,{cityId:city.id,name:`Район ${i}`,activate:false,idempotencyKey:`district-${i}`});
   await service.createTask(countryId,{cityId:city.id,districtId:district.id,title:`Дом ${i}`,estimate:1,idempotencyKey:`task-${i}`});

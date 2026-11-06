@@ -103,6 +103,24 @@ it('retains published stops and task geography through append-only growth with p
     expect(network.zoneByCell.has(key(p)), `${stop.id} became a conflict zone after growth`).toBe(false);
   }
 });
+it('rejects new stops whose full road reservation reaches an accepted road beyond the public plaza', () => {
+  const layout = compileBlockLayout(input(50));
+  const baseline = planner.planCityTransitStops({ layout, isDry: () => true }).plan;
+  const directions = { N: [0,-1], E: [1,0], S: [0,1], W: [-1,0] } as const;
+  expect(baseline.stops.length).toBeGreaterThan(0);
+  for (const stop of baseline.stops) {
+    const [dx,dy] = directions[stop.heading];
+    const x = stop.lane.x+8*dx, y = stop.lane.y+8*dy;
+    const corridor = { minX: x-2, minY: y-2, maxX: x+2, maxY: y+2 };
+    const single = { ...baseline, stops: [stop] };
+    expect(intersects(cityTransitStopReservations(single)[0]!,corridor)).toBe(false);
+    expect(intersects(cityTransitStopReservations(single,'ROAD')[0]!,corridor)).toBe(true);
+    const request = { layout, isDry: () => true, protectedRoads: [corridor] };
+    const next = planner.planCityTransitStops(request).plan;
+    expect(next.stops.some(value => value.id === stop.id),stop.id).toBe(false);
+    for (const reserved of cityTransitStopReservations(next,'ROAD')) expect(intersects(reserved,corridor)).toBe(false);
+  }
+});
 it('leaves unsuitable wet or protected locations empty and can abort before sampling terrain', async () => {
   const layout = compileBlockLayout(input(12));
   expect(planner.planCityTransitStops({ layout, isDry: () => false }).plan.stops).toEqual([]);

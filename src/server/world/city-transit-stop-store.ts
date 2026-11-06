@@ -6,7 +6,7 @@ import { canonicalTransitStopPublicWalkway, cityTransitStopReservations, readCit
   type CityTransitStopPlan } from '../../shared/city-transit-stops';
 import { isBuildableTerrain, terrainAt } from '../../shared/world-terrain';
 import { parseWorldTerrainProfile } from '../../shared/world-terrain-profile';
-import { intercityRoadRasterNetwork } from '../../shared/intercity-roads';
+import { intercityRoadCorridors, intercityRoadRasterNetwork } from '../../shared/intercity-roads';
 import { countryAirportReservations } from './city-airport-site-store';
 import { countryRailwayReservations } from './city-railway-store';
 import { countryPortReservations } from './port-reservations';
@@ -67,6 +67,7 @@ export async function previewCityTransitStops(db: Db, layout: CompiledBlockLayou
   return (await prepareCityTransitStops({ layout, previous,
     obstacles: [...airports,...railways,...ports,...historical,...others.map(row => row.bounds_json),...stops],
     extraRoads: intercityRoadRasterNetwork(roads?.plan.routes??[]),
+    protectedRoads: intercityRoadCorridors(roads?.plan.routes??[]),
     isDry: p => isBuildableTerrain(terrainAt(layout.seed,p.x,p.y,profile).terrain),
   },{ yieldTask: () => new Promise(resolve => setImmediate(resolve)) })).plan;
 }
