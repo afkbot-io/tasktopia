@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppService } from "../src/server/app-service";
 import { createTestDb, type Db } from "../src/server/db";
 import { registerRoutes } from "../src/server/routes";
+import { registerUser } from "../src/server/auth";
+import { readCountryRoads } from "../src/server/world/intercity-road-store";
 
 describe("planet atlas HTTP boundary", () => {
   let db: Db;
@@ -20,6 +22,44 @@ describe("planet atlas HTTP boundary", () => {
   });
 
   afterEach(async () => { await app.close(); await db.close(); });
+
+  it('publishes saved ground roads only to current members and changes ETag with their revision without planning on GET',async () => {
+    const makeCountry=async (email:string) => {
+      const {user}=await registerUser(db,{email,name:'Road atlas QA',password:'password123'});
+      await db.prepare('UPDATE countries SET seed=1 WHERE id=?').run(user.countryId);
+      for(let i=0;i<2;i++) {
+        const city=await service.createCity(user.countryId,{name:`Road town ${i}`,idempotencyKey:`city${i}`});
+        const district=await service.createDistrict(user.countryId,{cityId:city.id,name:'Road sprint',activate:true,idempotencyKey:`district${i}`});
+        await service.createTask(user.countryId,{cityId:city.id,districtId:district.id,title:`Road house ${i}`,estimate:1,idempotencyKey:`task${i}`});
+      }
+      const roads=(await readCountryRoads(db,user.countryId))!;expect(roads.plan.routes).toHaveLength(1);
+      return {user,roads};
+    };
+    const own=await makeCountry('road-owner@example.test'),foreign=await makeCountry('road-outsider@example.test');
+    const login=await app.inject({method:'POST',url:'/api/auth/login',payload:{email:own.user.email,password:'password123'}});
+    const setCookie=login.headers['set-cookie']!,cookie=(Array.isArray(setCookie)?setCookie[0]!:setCookie).split(';')[0]!;
+    const snapshot=async()=>({roads:await db.prepare('SELECT * FROM country_road_snapshots_v1 ORDER BY country_id').all(),
+      placements:await db.prepare('SELECT * FROM task_placements_v1 ORDER BY task_id').all(),
+      stops:await db.prepare('SELECT * FROM city_transit_stop_plans_v1 ORDER BY layout_id').all()});
+    const before=await snapshot();
+    const response=await app.inject({method:'GET',url:'/api/planet-atlas',headers:{cookie}});
+    expect(response.statusCode).toBe(200);const atlas=response.json();
+    expect(atlas.countries).toHaveLength(1);
+    expect(atlas.countries[0].groundRoads).toMatchObject({revision:own.roads.revision,routes:own.roads.plan.routes,omittedRoutes:0});
+    expect(response.body).not.toContain(foreign.user.countryId);expect(response.body).not.toContain(foreign.roads.plan.routes[0]!.id);
+    expect(atlas.schemaVersion).toBe(6);expect(await snapshot()).toEqual(before);
+    const repeated=await app.inject({method:'GET',url:'/api/planet-atlas',headers:{cookie,'if-none-match':response.headers.etag!}});
+    expect(repeated.statusCode).toBe(304);expect(await snapshot()).toEqual(before);
+    await db.prepare('UPDATE country_road_snapshots_v1 SET revision=revision+1 WHERE country_id=?').run(own.user.countryId);
+    const changed=await app.inject({method:'GET',url:'/api/planet-atlas',headers:{cookie,'if-none-match':response.headers.etag!}});
+    expect(changed.statusCode).toBe(200);expect(changed.headers.etag).not.toBe(response.headers.etag);
+    expect(changed.json().countries[0].groundRoads.routes).toEqual(own.roads.plan.routes);
+    await db.prepare('DELETE FROM country_members WHERE user_id=? AND country_id=?').run(own.user.id,own.user.countryId);
+    const revoked=await app.inject({method:'GET',url:'/api/planet-atlas',headers:{cookie}});
+    // Revoking the session's last country invalidates that session itself.
+    expect(revoked.statusCode).toBe(401);expect(revoked.body).not.toContain(own.user.countryId);
+    expect(revoked.body).not.toContain(own.roads.plan.routes[0]!.id);
+  },30_000);
 
   it("returns only accessible countries with compact aggregate sizes", async () => {
     const register = await app.inject({ method: "POST", url: "/api/auth/register", payload: {
@@ -71,7 +111,7 @@ describe("planet atlas HTTP boundary", () => {
     expect(twin!.json().revision).toBe(response!.json().revision);
     expect(response.statusCode).toBe(200);
     expect(response.headers["cache-control"]).toContain("private");
-    expect(response.json()).toMatchObject({ schemaVersion: 5 });
+    expect(response.json()).toMatchObject({ schemaVersion: 6 });
     expect(response.json().countries).toHaveLength(2);
     expect(response.json().countries.map((country: { name: string }) => country.name).sort()).toEqual(["Вторая страна", "Первая страна"]);
     expect(response.json().countries.find((country: { name: string }) => country.name === "Первая страна")).toMatchObject({

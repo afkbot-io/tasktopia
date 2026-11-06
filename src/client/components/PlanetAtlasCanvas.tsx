@@ -1,4 +1,6 @@
 import { rasterizePlanetTerrain, type PlanetTerrainRaster } from "../planet-terrain-raster";
+import { preparePlanetGroundRoads } from '../../shared/planet-ground-road-projection';
+import { rasterizePlanetGroundRoads,type PlanetRoadRaster } from '../planet-ground-road-raster';
 import { AtlasShips } from "./AtlasShips";
 import { ScheduledAtlasTrains } from "./ScheduledAtlasTrains";
 import { useAtlasQuality } from "../use-atlas-quality";
@@ -90,6 +92,9 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   const [readyRevision, setReadyRevision] = useState<string | null>(null);
   const [assetError, setAssetError] = useState("");
   const [terrainRasters, setTerrainRasters] = useState<{ revision: string; layers: Map<string, PlanetTerrainRaster[]> } | null>(null);
+  const [roadRasters,setRoadRasters]=useState<{revision:string;layers:Map<string,PlanetRoadRaster[]>;
+    routes:number;unavailable:number;omitted:number;pixels:number;build:number}|null>(null);
+  const roadBuild=useRef(0);
   const [assetAttempt, setAssetAttempt] = useState(0);
   const [selectingCityId, setSelectingCityId] = useState<string | null>(null);
   const intentTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -245,21 +250,30 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
   ), [terrainByCoordinate]);
 
   const atlasRevision = atlas ? `${atlas.revision}:sector:${sector}` : undefined;
+  const currentRoadRasters=roadRasters&&roadRasters.revision===atlasRevision?roadRasters:null;
   useAtlasQuality(atlasView, Boolean(atlasRevision && readyRevision === atlasRevision && !assetError));
   useEffect(() => {
     const view = atlasView.current;
     if (!view || !atlasRevision) return;
     const controller = new AbortController();
     setAssetError("");
-    if (!terrainGeometry) return () => controller.abort();
+    if (!terrainGeometry || !projectedAtlas) return () => controller.abort();
+    const build=++roadBuild.current;
     const layers = new Map(terrainGeometry.countries);
     layers.set("coast", terrainGeometry.coast);
     void Promise.all([
       rasterizePlanetTerrain(layers, terrainMask, controller.signal),
       loadMapImage(gameAssetUrl("atlas/terrain-v4/planet/ocean.png"), controller.signal, { crossOrigin: null }),
-    ]).then(([rasters]) => {
+      preparePlanetGroundRoads(projectedAtlas,{}, {signal:controller.signal}).then(async projection=>({
+        raster:await rasterizePlanetGroundRoads(projectedAtlas,projection,controller.signal),unavailable:projection.unavailable.length,
+      })),
+    ]).then(([rasters,,roads]) => {
       if (controller.signal.aborted) return;
       setTerrainRasters({ revision: atlasRevision, layers: rasters });
+      setRoadRasters({revision:atlasRevision,layers:roads.raster.layers,
+        routes:[...roads.raster.layers.values()].reduce((sum,items)=>sum+items.reduce((n,r)=>n+r.routeIds.length,0),0),
+        unavailable:roads.unavailable+roads.raster.rejectedRouteIds.length,
+        omitted:projectedAtlas.countries.reduce((sum,country)=>sum+(country.groundRoads?.omittedRoutes??0),0),pixels:roads.raster.pixelCount,build});
       requestAnimationFrame(() => requestAnimationFrame(() => {
         if (!controller.signal.aborted) setReadyRevision(atlasRevision);
       }));
@@ -270,7 +284,7 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
       }
     });
     return () => { controller.abort(); };
-  }, [atlasRevision, assetAttempt, terrainGeometry, terrainMask]);
+  }, [atlasRevision, assetAttempt, terrainGeometry, terrainMask,projectedAtlas]);
 
   const selectCity = useCallback(async (city: PlanetCityTarget, focus?: { x: number; y: number }) => {
     const selection=++selectionSequence.current;
@@ -351,7 +365,12 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
     return true;
   }).slice(0,5);
 
-  return <div className="planet-atlas" data-planet-ready={readyRevision === atlasRevision && !assetError} data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={visibleCountries.length} data-planet-routes={map.routes.length} data-planet-railways={transportPaths.rails.length} data-planet-ships={transportPaths.ships.length} data-globe-zoom={camera.zoom.toFixed(2)} data-label-detail={labelDetail} data-planet-renderer="square-pixel-map" data-planet-material-subdivisions="2">
+  return <div className="planet-atlas" data-planet-ready={readyRevision === atlasRevision && !assetError} data-planet-countries={atlas?.countries.length ?? map.countries.length} data-visible-countries={visibleCountries.length} data-planet-routes={map.routes.length} data-planet-railways={transportPaths.rails.length} data-planet-ships={transportPaths.ships.length} data-globe-zoom={camera.zoom.toFixed(2)} data-label-detail={labelDetail} data-planet-renderer="square-pixel-map" data-planet-material-subdivisions="2"
+    data-ground-road-routes={currentRoadRasters?.routes??0}
+    data-ground-road-unavailable={currentRoadRasters?.unavailable??0}
+    data-ground-road-omitted={currentRoadRasters?.omitted??0}
+    data-ground-road-raster-pixels={currentRoadRasters?.pixels??0}
+    data-ground-road-builds={roadRasters?.build??0}>
     {sectors.length > 1 && <label className="planet-sector-select">Область планеты
       <select aria-label="Область планеты" value={sector} onChange={event => {
         setSelectedSector(Number(event.target.value));
@@ -393,6 +412,11 @@ export function PlanetAtlasCanvas({ userId, activeCountryId, initialFocusCountry
         <g className="planet-countries">{projectedAtlas?.countries.map(country => <g key={country.id} className="planet-country" data-country-id={country.id}
           style={{ display: visibleCountries.some(visible => visible.id === country.id) ? undefined : "none" }} transform={terrainTransform}>
           {terrainGeometry && terrainRasters && terrainRasters.revision === atlasRevision && <AtlasTerrainLayer cells={terrainGeometry.countries.get(country.id)!} rasters={terrainRasters.layers.get(country.id)!} color={country.color} />}
+          {currentRoadRasters&&<g className="planet-ground-roads" aria-hidden="true" pointerEvents="none">
+            {currentRoadRasters.layers.get(country.id)?.map(raster=><image key={raster.id} className="atlas-pixel planet-ground-road-raster"
+              data-ground-road-ids={JSON.stringify(raster.routeIds)} data-ground-road-revision={country.groundRoads?.revision}
+              x={raster.x} y={raster.y} width={raster.width} height={raster.height} href={raster.href} />)}
+          </g>}
           <PlanetMiniatures country={country} scales={miniatureScales} />
         </g>)}</g>
         <g className="planet-city-targets">{cityTargets.map(city => <g key={city.id} role="button" tabIndex={city.center.x>=visibleViewport.minX&&city.center.x<=visibleViewport.minX+visibleViewport.width&&city.center.y>=visibleViewport.minY&&city.center.y<=visibleViewport.minY+visibleViewport.height?0:-1}

@@ -107,6 +107,7 @@ import { collectionCursor, readTaskCollectionRows, type CollectionOrder } from "
 import type { TaskListPageDto,TaskCardDto,TaskCollection,TaskCollectionItems,TaskCollectionPageDto,TaskCollectionCounts,TaskCommandResultDto,TaskDocumentMetadataDto,TaskMutationResult,TaskResultMode } from "../shared/task-read-contracts";
 import { readTaskBlockGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchronizeCityBlocks,CitySceneCapacityError } from "./world/active-block-layout";
 import { readCountryRoads, synchronizeCountryRoads } from "./world/intercity-road-store";
+import { readPlanetGroundRoads } from '../shared/planet-ground-roads';
 import { citySceneIntercityRoads, intercityRoadCorridors, intercityRoadRasterNetwork } from "../shared/intercity-roads";
 import { projectCountryRoads } from "./world/country-road-projection";
 import { rasterizeBlockRoads,BlockPlacementError,BlockReservationConflictError,UniqueBuildingConflictError,PortPlacementError } from "./world/block-layout-compiler";
@@ -900,6 +901,7 @@ export class AppService {
         GROUP BY city.country_id
       )
       SELECT country.id, country.name, country.seed, country.terrain_profile_json, country.world_version, country.created_at,
+        road.revision AS road_revision, road.plan_json->'routes' AS ground_routes,
         COALESCE(city_stats.city_count, 0) AS city_count,
         city_stats.min_x, city_stats.min_y, city_stats.max_x, city_stats.max_y,
         COALESCE(district_stats.district_count, 0) AS district_count,
@@ -907,6 +909,7 @@ export class AppService {
         COALESCE(task_stats.unfinished_building_count, 0) AS unfinished_building_count,
         COALESCE(task_stats.progress, 0) AS progress
       FROM accessible country
+      LEFT JOIN country_road_snapshots_v1 road ON road.country_id = country.id
       LEFT JOIN city_stats ON city_stats.country_id = country.id
       LEFT JOIN district_stats ON district_stats.country_id = country.id
       LEFT JOIN task_stats ON task_stats.country_id = country.id
@@ -951,7 +954,11 @@ export class AppService {
       clusters.set(String(row.country_id),group);
     }
     const transportNetworks=new Map(await Promise.all(rows.map(async row=>[String(row.id),await readCountryTransportNetworks(this.db,String(row.id))] as const)));
+    const groundRoads=readPlanetGroundRoads(rows.map(row=>({countryId:String(row.id),
+      revision:row.road_revision==null?null:Number(row.road_revision),routes:row.ground_routes,
+      cityIds:new Set((clusters.get(String(row.id))??[]).map(city=>city.id))})));
     const countries = rows.map((row) => ({
+      groundRoads:groundRoads.get(String(row.id))!,
       transportNetworks:transportNetworks.get(String(row.id))!,
       id: String(row.id), name: String(row.name), seed: Number(row.seed), worldVersion: Number(row.world_version),
       terrainProfile: parseWorldTerrainProfile(row.terrain_profile_json),
