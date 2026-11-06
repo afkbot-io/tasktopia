@@ -7,6 +7,7 @@ import { taskScalarChanges } from "../shared/task-scalar-history";
 import { readPersonalTransportRenderSnapshot } from "./world/personal-transport-render-snapshot";
 import { railPolyline } from "../shared/rail-convoy";
 import { transportSchedule } from "../shared/transport-schedule";
+import { CitySceneSnapshotStore } from './world/city-scene-snapshot-store';
 import { localTransportLegMs } from "../shared/transport-local-leg";
 import { countryAirportReservations, readCountryAirportSites } from "./world/city-airport-site-store";
 import { readCountryTransportNetworks, synchronizeCountryTransportNetworks } from "./world/country-transport-network-store";
@@ -420,6 +421,7 @@ export class AppService {
     private readonly uploadDir: string = config.uploadDir,
     private readonly generationDispatcher?: WorldGenerationDispatcher,
     private readonly sharedWorldCache?: SharedWorldCache,
+    private readonly sceneSnapshots = new CitySceneSnapshotStore(db),
   ) {}
 
   /** Operator metadata only: never enumerate keys or execute SQL. */
@@ -1386,6 +1388,10 @@ export class AppService {
   }
 
   async getCityScene(countryId: string, cityId: string): Promise<CitySceneDto> {
+    return this.readWorldSnapshot(()=>this.readBaseCityScene(countryId,cityId));
+  }
+
+  private async readBaseCityScene(countryId:string,cityId:string):Promise<CitySceneDto>{
     const [cityRow, country] = await Promise.all([
       this.db.prepare("SELECT * FROM cities_v3 WHERE id = ? AND country_id = ?").get(cityId, countryId) as Promise<Row | undefined>,
       this.countryRow(countryId),
@@ -1399,6 +1405,12 @@ export class AppService {
       this.citySceneCache.delete(cacheKey);
       this.citySceneCache.set(cacheKey, cached);
       return cached;
+    }
+    const saved=await this.sceneSnapshots.read(countryId,cityId,Number(country.world_version),CHUNK_SIZE);
+    if(saved){
+      this.cacheCounters.cityScenes.hits++;
+      this.retainCityScene(cacheKey,saved);
+      return saved;
     }
     this.cacheCounters.cityScenes.misses++;
     const layout = await this.activeLayout(cityId);
@@ -1513,6 +1525,12 @@ export class AppService {
       intercityRoads,
       roadContext,
     };
+    await this.sceneSnapshots.write(countryId,cityId,Number(country.world_version),scene);
+    this.retainCityScene(cacheKey,scene);
+    return scene;
+  }
+
+  private retainCityScene(cacheKey:string,scene:CitySceneDto):void{
     onTransactionCommit(()=>{
       this.citySceneCache.set(cacheKey, scene);
       // Entry count alone allowed eight complete megacities to accumulate.
@@ -1525,7 +1543,6 @@ export class AppService {
         this.citySceneCache.delete(oldest);
       }
     });
-    return scene;
   }
 
   async listTasks(countryId: string, districtId?: string, cityId?: string): Promise<TaskDto[]> {

@@ -66,6 +66,19 @@ types/lint/build проходят.3pure10k пары~1,9s,география/до
 
 ## Общая приёмка
 
+Срез82 сохраняет одну проверенную производную сцену города между процессами
+той же сборки/world version. Новый manifest связывает оба compiled producer;
+mixed artifacts, повреждение и чужой viewer payload не принимаются.
+34 проверки/8files, types/lint/build и native10000 conservation проходят.
+После отдельного явного прогрева свежий web даёт первое открытие desktop
+2,709s / CPU4+1,6Mbps mobile23,623s при бюджетах5/30s; один scene GET,
+576chunks/10000tasks и геометрия сохранены, ошибок нет. Пустой cache miss
+остался прежним конструктором: preview3,250s/write3,773s/repeat0,374s.
+Runbook требует прогрев после transport/road maintenance. Это scoped cold
+проверка, не весь browser journey; память клиента256МиБ ещё не достигнута,
+SCM CI и общий managed release остаются незавершёнными.
+[Контракт и доказательства](../tasks/82-persistent-city-scene.md).
+
 Срез81 назначает только новым межгородским связям COLLECTOR/ARTERIAL по
 устойчивому размаху концов. Прежние LOCAL, IDs и геометрия сохранены.
 Planner4 сокращает native200 отказ с8 000 избыточных heading до4 855 и

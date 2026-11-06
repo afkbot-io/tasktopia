@@ -4,6 +4,7 @@ import { registerUser } from "../src/server/auth";
 import { createTestDb, type Db } from "../src/server/db";
 import { synchronizeCityBlocks } from "../src/server/world/active-block-layout";
 import * as spatial from "../src/server/world/scene-spatial-index";
+import { CitySceneSnapshotStore } from '../src/server/world/city-scene-snapshot-store';
 
 let db: Db;
 afterEach(async () => { vi.restoreAllMocks(); await db?.close(); });
@@ -28,6 +29,7 @@ it("keeps the exact full-city wire content when replacing repeated global scans 
   // Reuse that public projection to compare complete wire content, including
   // surfaces, paths, planned parcels, plaques, hashes and decoration halos.
   vi.spyOn(spatial, "createSceneSpatialIndex").mockImplementation(source => ({ forChunk: () => source }));
-  const reference = await new AppService(db).getCityScene(countryId, city.id);
+  const reference = await new AppService(db,undefined,undefined,undefined,undefined,
+    new CitySceneSnapshotStore(db,{read:false,write:false})).getCityScene(countryId, city.id);
   expect(indexed).toEqual(reference);
 }, 30_000);
