@@ -463,11 +463,17 @@ test("permanent transit stops survive event preferences, reduced motion and qual
   expect(Number(visible)).toBeLessThanOrEqual(Number(stops));
   const canonical=new Map(manifest?.map(stop=>[stop.id,stop.shelter]));
   const fixed=async()=>{
-    await expect(host).toHaveAttribute('data-transit-stops',stops!);
-    const local=JSON.parse((await host.getAttribute('data-transit-stop-geometry'))!) as Array<{id:string;shelter:unknown}>;
-    for(const stop of local)expect(stop.shelter).toEqual(canonical.get(stop.id));
-    await expect(host).toHaveAttribute('data-transit-stop-views',String(local.length));
-    await expect(host).toHaveAttribute('data-transit-stop-visible',String(local.length));
+    // A keyboard pan can cross a culling boundary between Playwright calls.
+    // Read one published frame, rather than holding the preceding frame's list.
+    await expect.poll(async()=>{
+      const state=await host.evaluate(node=>{
+        const d=(node as HTMLElement).dataset;
+        return {total:d.transitStops,views:Number(d.transitStopViews),visible:Number(d.transitStopVisible),
+          local:JSON.parse(d.transitStopGeometry!) as Array<{id:string;shelter:unknown}>};
+      });
+      return {total:state.total,views:state.views===state.local.length,visible:state.visible===state.local.length,
+        canonical:state.local.every(stop=>JSON.stringify(stop.shelter)===JSON.stringify(canonical.get(stop.id)))};
+    }).toEqual({total:stops,views:true,visible:true,canonical:true});
   };
   const unchanged=async()=>{
     await fixed();
@@ -622,17 +628,19 @@ test("authoritative resync keeps a ready CITY canvas and reuses identical physic
   expect(await host.getAttribute("data-everyday-compiles")).toBe(life);
 });
 
-test("returning to an unchanged ready CITY retains its complete physical snapshot",async({page})=>{
+test("returning to an unchanged ready CITY retains its complete physical snapshot",async({page},info)=>{
   test.setTimeout(90_000);
   const scenes:string[]=[],errors:string[]=[];
   page.on("request",request=>{if(new URL(request.url()).pathname.endsWith("/scene"))scenes.push(request.url());});
   page.on("pageerror",error=>errors.push(error.message));
-  const host=await enterCity(page);
+  const started=performance.now(),host=await enterCity(page);
   // First establish the two cold phases, then assert3 retained returns. The
   // dense fixture's cold latency belongs to the separate scale budget.
   const coldPhaseTimeout=process.env.E2E_CITY_200==="true"?30_000:5000;
   await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false",{timeout:coldPhaseTimeout});
   await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:coldPhaseTimeout});
+  const coldReadyMs=performance.now()-started;
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
   const state=()=>host.evaluate(node=>{
     const d=(node as HTMLElement).dataset;
     return {started:d.canonicalStartSinceBootstrapMs,prepare:d.canonicalPrepareMs,
@@ -649,7 +657,11 @@ test("returning to an unchanged ready CITY retains its complete physical snapsho
     expect(await canvas!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
     expect(await state()).toEqual(before);
   }
-  expect(scenes).toHaveLength(1);expect(errors).toEqual([]);await canvas!.dispose();
+  expect(scenes).toHaveLength(1);expect(errors).toEqual([]);
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
+  await info.attach("retained-city-preparation",{body:JSON.stringify({coldReadyMs,before,after:await state(),
+    renderer:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:"application/json"});
+  await canvas!.dispose();
 });
 
 test("an offscreen frontage update replaces compact physics without retaining offscreen visual terrain",async({page})=>{
@@ -880,6 +892,7 @@ test("a physical worker failure retains the visible city and its native retry pu
   await expect(page.getByRole("alert").filter({hasText:"Не удалось подготовить движение"})).toBeVisible();
   await expect(host).toHaveAttribute("data-canonical-snapshot-pending","true");
   await expect(host).toHaveAttribute("data-canonical-decoded-chunks","0");
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
   expect(await page.evaluate(()=>(window as unknown as {qaPhysicalFault():{firstPhysicalFrame:unknown}}).qaPhysicalFault().firstPhysicalFrame))
     .toEqual({commit:"atomic",rendered:"true"});
   const ground=await host.getAttribute("data-ground-rebuilds"),sceneReads=reads.filter(path=>path.endsWith("/scene")).length;
@@ -887,6 +900,7 @@ test("a physical worker failure retains the visible city and its native retry pu
   await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false",{timeout:30_000});
   await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
   await expect(host).toHaveAttribute("data-canonical-terrain-cells","0");
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
   await expect(page.getByRole("alert").filter({hasText:"Не удалось подготовить движение"})).toHaveCount(0);
   expect(await canvas!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
   expect(await host.getAttribute("data-ground-rebuilds")).toBe(ground);
@@ -1241,4 +1255,53 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
  expect(reads.filter(path=>path.endsWith("/scene"))).toHaveLength(1);
  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
  await page.screenshot({path:info.outputPath("initial-critical-city-after-pan.png")});
+});
+
+
+test('leaving during real physical read-ahead destroys only its workers and retries the retained city',async({page},info)=>{
+  test.skip(process.env.E2E_CITY_200!=="true","Requires the owned dense fixture");test.setTimeout(90_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await page.addInitScript(()=>{
+    const NativeWorker=window.Worker,held:Array<()=>void>=[];let released=false,physicalWorkers=0,terminated=0;
+    window.Worker=class extends NativeWorker{
+      private closed=false;private physical=false;
+      constructor(url:string|URL,options?:WorkerOptions){
+        super(url,options);const post=this.postMessage.bind(this),owned=String(url).includes('chunk-materializer-worker');
+        this.postMessage=((...args:Parameters<Worker['postMessage']>)=>{
+          if(owned&&(args[0] as {physicalOnly?:boolean}|null)?.physicalOnly){
+            if(!this.physical){this.physical=true;physicalWorkers++;}
+            if(!released){held.push(()=>{if(!this.closed)post(...args);});return;}
+          }
+          post(...args);
+        }) as Worker['postMessage'];
+      }
+      override terminate(){if(this.physical&&!this.closed)terminated++;this.closed=true;super.terminate();}
+    };
+    Object.assign(window,{qaPhysicalReadAhead:()=>({held:held.length,released,physicalWorkers,terminated}),
+      qaReleasePhysicalReadAhead:()=>{released=true;for(const post of held.splice(0))post();}});
+  });
+  const host=await enterCity(page),canvas=await host.locator('canvas').elementHandle();
+  const state=()=>page.evaluate(()=>(window as unknown as {qaPhysicalReadAhead():{held:number;physicalWorkers:number;terminated:number}}).qaPhysicalReadAhead());
+  const width=Number(await host.getAttribute('data-canonical-read-width'));expect([1,2]).toContain(width);
+  await expect.poll(async()=>(await state()).held).toBe(width);
+  await expect(host).toHaveAttribute('data-canonical-decode-pools','1');
+  await expect(host).not.toHaveAttribute('data-mobility-ready','true');
+  await expect.poll(async()=>Number(await host.getAttribute('data-transit-stop-visible'))).toBeGreaterThan(0);
+  await openMapPlanet(page);await expect(host).toHaveAttribute('data-map-active','false');
+  await expect(host).toHaveAttribute('data-canonical-decode-pools','0');
+  expect((await state()).terminated).toBe(width);
+  await page.evaluate(()=>(window as unknown as {qaReleasePhysicalReadAhead():void}).qaReleasePhysicalReadAhead());
+  await expect(host).not.toHaveAttribute('data-mobility-ready','true');
+  await openMapCity(page);
+  await expect(host).toHaveAttribute('data-canonical-snapshot-pending','false',{timeout:30_000});
+  await expect(host).toHaveAttribute('data-mobility-ready','true',{timeout:30_000});
+  await expect(host).toHaveAttribute('data-canonical-decode-pools','0');
+  await expect(host).toHaveAttribute('data-canonical-task-count',String(Number(process.env.WORLD_RENDER_TASK_COUNT??200)));
+  expect(await canvas!.evaluate(node=>node===document.querySelector('.world-canvas canvas'))).toBe(true);
+  const final=await state();expect(final.physicalWorkers).toBe(width*2);expect(final.terminated).toBe(width*2);
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
+  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('physical-read-ahead-cancellation',{body:JSON.stringify({width,final,renderer:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:'application/json'});
 });

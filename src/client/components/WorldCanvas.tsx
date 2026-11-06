@@ -82,7 +82,7 @@ import { isBuildableTerrain, isWater, terrainAt } from "../../shared/world-terra
 import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 import { encodeTerrainSample } from "../../shared/world-chunk-payload";
 import { apiWithMetrics } from "../api";
-import { ChunkMaterializer, chunkMaterializationMetrics } from "../chunk-materializer";
+import { ChunkMaterializer, chunkMaterializationMetrics, recommendedChunkWorkerCount } from "../chunk-materializer";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../chunk-task-patches";
 import { loadGameAssets } from "../game-asset-loader";
 import { AssetLease, leasedAssetCount } from "../asset-lease-registry";
@@ -1220,10 +1220,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
     const pendingChunks = new Map<string, { promise: Promise<ChunkDto>; controller: AbortController }>();
     const chunkMaterializer = new ChunkMaterializer();
     startupDisposers.push(() => chunkMaterializer.destroy());
-    // One background physical worker cannot consume the visual worker queue
-    // or make a pan wait behind every offscreen city page.
-    const canonicalMaterializer = new ChunkMaterializer(1);
-    startupDisposers.push(() => canonicalMaterializer.destroy());
+    // Physical decoding never consumes the visual queue. Each projection
+    // lazily owns up to2 workers, released when that exact run settles.
+    const canonicalReadWidth=Math.min(2,recommendedChunkWorkerCount(navigator.hardwareConcurrency||2));
+    const canonicalPools=new Set<ChunkMaterializer>();
+    host.dataset.canonicalReadWidth=String(canonicalReadWidth);
+    host.dataset.canonicalDecodePools="0";
+    startupDisposers.push(() => { for(const pool of canonicalPools)pool.destroy();canonicalPools.clear(); });
     const assetLease = new AssetLease();
     startupDisposers.push(() => {
       assetLease.dispose();
@@ -1699,7 +1702,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         renderTransportSelection();
       };
       const movementDependencies = createCityMovementDependencies();
-      const canonicalCityData = new CanonicalCityProjection();
+      const canonicalCityData = new CanonicalCityProjection(canonicalReadWidth);
       let canonicalRequestedScene:CitySceneDto|undefined,canonicalReadyScene:CitySceneDto|undefined;
       let canonicalRequestVersion=0;
       let canonicalProjectionFailed=false;
@@ -4407,13 +4410,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           return previousStage !== undefined && (previousStage >= 3) !== (task.stage >= 3);
         });
       };
-      const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal, terrainSamples?: Uint8Array,physicalOnly=false): Promise<ChunkDto> => {
+      const materializePayload = async (payload: ChunkPayloadDto, signal?: AbortSignal, terrainSamples?: Uint8Array,physicalOnly=false,materializer:Pick<ChunkMaterializer,"materialize">=chunkMaterializer): Promise<ChunkDto> => {
         const materializeStartedAt = performance.now();
         let candidate = patchChunkPayloadTaskStatuses(payload, latestTaskStatusPatches);
         let realtimeDecorationsRematerialized = crossesDecorationStage(payload, candidate);
         let materialized: ChunkDto;
         while (true) {
-          materialized = await (physicalOnly?canonicalMaterializer:chunkMaterializer).materialize(candidate, signal, terrainSamples,physicalOnly);
+          materialized = await materializer.materialize(candidate, signal, terrainSamples,physicalOnly);
           const timing=chunkMaterializationMetrics(materialized),prefix=physicalOnly?"physical":"visual";
           for(const [name,value] of [["WorkerQueue",timing?.queueMs],["WorkerRoundTrip",timing?.roundTripMs],["WorkerCompute",timing?.computeMs]] as const){
             if(value===undefined)continue;
@@ -4451,12 +4454,22 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host!.dataset.canonicalStartedAfterAtomic="true";
         host!.dataset.canonicalStartSinceBootstrapMs=(started-cityBootstrapStartedAt).toFixed(3);
         let projected=0;
+        let pool:ChunkMaterializer|undefined;
+        const releasePool=()=>{
+          if(!pool)return;
+          pool.destroy();canonicalPools.delete(pool);
+          host!.dataset.canonicalDecodePools=String(canonicalPools.size);
+        };
         const request=++canonicalRequestVersion;
         const payloads=scene.chunks.map(payload=>
           chunkPayloadCache.get(dataKey(chunkKey(payload.chunkX,payload.chunkY),"DETAIL"))??payload);
         host!.dataset.canonicalSnapshotPending="true";
         void canonicalCityData.prepare(`${scene.sceneRevision}:${request}`,payloads,[...completedSnapshotTasks.values()],
-          (payload,signal)=>{projected++;return materializePayload(payload,signal,undefined,true);}).then(committed=>{
+          (payload,signal)=>{
+            if(!pool){pool=new ChunkMaterializer(canonicalReadWidth,undefined,signal);canonicalPools.add(pool);
+              host!.dataset.canonicalDecodePools=String(canonicalPools.size);}
+            projected++;return materializePayload(payload,signal,undefined,true,pool);
+          }).then(committed=>{
           if(!committed||disposed||cityScene!==scene||request!==canonicalRequestVersion)return;
           canonicalReadyScene=scene;
           canonicalTerrainPages=new Map(payloads.map(payload=>[chunkKey(payload.chunkX,payload.chunkY),payload]));
@@ -4471,7 +4484,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           canonicalRequestedScene=scene;canonicalProjectionFailed=true;movementPreparationFailed=true;host!.dataset.loadError="true";
           setMapLoadError("Не удалось подготовить движение в городе. Повторите загрузку.");
           console.error("City physical projection failed",error);
-        });
+        }).finally(releasePool);
       };
       const fetchChunkData = async (chunkX: number, chunkY: number, lod: MapLod): Promise<ChunkDto> => {
         const cacheKey = chunkKey(chunkX, chunkY);

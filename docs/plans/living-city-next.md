@@ -361,3 +361,24 @@ canonical17,87s/movement21,08s. Это подтверждённый оставш
 См. docs/tasks/70-city-dependency-memory.md. Открытых замечанийAI-review нет;
 контракты/арт/география не менялись. Следом — ограниченный read-ahead для
 физических страниц и освобождение их worker pool, затем прочие пункты цели.
+
+
+Физическая проекция (#71): вместо1постоянного backgroundworker — lazyпул
+на один запрос,1/2worker по прежнему hardwareheuristic, максимум2ожидаемых
+страницы. Принятие остаётсяordered/atomic для всей карты. Сразу присоединённый
+rejection-handler обрабатывает даже ранние/поздние ошибки prefetchedpage;
+отмена/failure сохраняют предыдущийготовыйsnapshot. OwnerSignal закрывает
+целыйпул без перезапускакаждогопотока, finally освобождаеттолькосвойowner.
+Первыйatomicframe и visualqueue независимы; cache0reads не создаётpool.
+
+79unit/5files, build/typecheck/lint и rootAI-review PASS. Три чередующиеся
+native10000browserпары (реальныйMetalM5Pro, directCITY1440×1000/DPR1,
+NORMAL/seed37): canonical4262,1→2493,4ms (−41,5%), fullphysics19318,2→17728,7ms,
+firstframe~4,3s; mainheap526,8→525,9МиБ послеGC, все новыеpools0.
+Ещё6native10000browser desktop/Android/iPhone подтверждают retainedreturns
+и реальную отмену physicalread-ahead: исходныеworkers уничтожены, новыйpool
+принимаетвсюкарту и освобождается, canvasтотже/sceneGET1/viewportGET0.
+9ordinarybrowser stops/resync/workerfailure-retry также проходят (8v1+1v2):
+исправлена гонка QAснимка остановок12→11приpan, rendererне менялся.
+Детали и пределы: docs/tasks/71-canonical-read-ahead.md. Общая цель/256МиБ/
+финальныемасштабы/100событий/дороги/SCM/managedrelease не завершены.
