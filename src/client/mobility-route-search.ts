@@ -1,5 +1,6 @@
 import type { Cell } from "../shared/contracts";
 import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
+import { mobilityCoordinateIndexSteps,type MobilityCoordinateIndex } from './mobility-coordinate-index';
 
 export type MobilityRouteResult = { cells: Cell[]; routeTo(target: Cell): Cell[] };
 export type MobilityRouteSearch = {
@@ -16,7 +17,7 @@ export type MobilityRouteSearch = {
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 const heading = (a: Cell, b: Cell) => b.x > a.x ? 1 : b.x < a.x ? 3 : b.y > a.y ? 2 : 0;
 
-type AdjacencyStorage = { indices: ReadonlyMap<string, number>; coordinates: Float64Array;
+type AdjacencyStorage = { indices: MobilityCoordinateIndex; coordinates: Float64Array;
   offsets: Uint32Array; targets: Uint32Array; present: Uint8Array; size: number };
 class CompiledAdjacency implements ReadonlyMap<string, Cell[]> {
   #storage: AdjacencyStorage;
@@ -33,7 +34,7 @@ class CompiledAdjacency implements ReadonlyMap<string, Cell[]> {
     return result;
   }
   *keys(): Generator<string, undefined, unknown> {
-    for (const [id, index] of this.#storage.indices) if (this.#storage.present[index]) yield id;
+    for (const [id, index] of this.#storage.indices.entries()) if (this.#storage.present[index]) yield id;
     return undefined;
   }
   *values(): Generator<Cell[], undefined, unknown> { for (const id of this.keys()) yield this.get(id)!;return undefined; }
@@ -54,20 +55,25 @@ export function createMobilityRouteSearchAsync(graph: ReadonlyMap<string, Cell>,
   return prepareCooperatively(createMobilityRouteSearchSteps(graph, edges), options);
 }
 export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>, edges: ReadonlyMap<string, readonly Cell[]>): Generator<void, MobilityRouteSearch, void> {
-  const cells: Cell[] = [], indices = new Map<string, number>();
+  const cells: Cell[] = [];
   const coordinates = new Float64Array(graph.size * 2);
   const present = new Uint8Array(graph.size);
+  let sourceKeys:Map<number,string>|undefined;
   let edgeCapacity = 0, adjacencySize = 0;
   // Keep original metadata/iteration order, but snapshot route coordinates in
   // numeric storage instead of allocating a second city-sized Cell graph.
   for (const cell of graph.values()) {
     const id = key(cell), index = cells.length;
     const outgoing = edges.get(id);
-    indices.set(id, index); cells.push(cell);
+    cells.push(cell);
     if (outgoing !== undefined) { present[index] = 1;adjacencySize++; }
     coordinates[index * 2] = cell.x || 0; coordinates[index * 2 + 1] = cell.y || 0;
+    // The legacy physical snapshot normalizes NaN/signed zero, while custom
+    // lookup keys still follow the source spelling. Retain only exceptions.
+    if(id!==`${coordinates[index*2]},${coordinates[index*2+1]}`)(sourceKeys??=new Map()).set(index,id);
     edgeCapacity += outgoing?.length ?? 0; yield;
   }
+  const indices=yield* mobilityCoordinateIndexSteps(coordinates,cells.length,sourceKeys);
   let hasNonlocalEdges = false, boundedDegree = true, edgeCount = 0;
   // CSR preserves every authored edge and its stable order, including custom
   // nonlocal/wide graphs. No per-node arrays or per-edge objects stay live.
@@ -75,7 +81,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
   for (let current = 0; current < cells.length; current++) {
     const cell = cells[current]!; offsets[current] = edgeCount;
     for (const next of edges.get(key(cell)) ?? []) {
-      const index = indices.get(key(next));
+      const index = indices.at(next.x,next.y);
       if (index !== undefined) {
         if (Math.abs(next.x - cell.x) + Math.abs(next.y - cell.y) > 1) hasNonlocalEdges = true;
         targets[edgeCount] = index; headings[edgeCount++] = heading(cell, next);
@@ -96,8 +102,8 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
     // Custom graphs with a wider fan-out keep a checkpoint at every state.
     const batchSize = boundedDegree ? 64 : 1;
     let work = 0;
-    const startIndex = indices.get(key(start));
-    const targetIndex = target ? indices.get(key(target)) : undefined;
+    const startIndex = indices.at(start.x,start.y);
+    const targetIndex = target ? indices.at(target.x,target.y) : undefined;
     if (startIndex === undefined || target && targetIndex === undefined || !(maxCells >= 1)) return { cells: [], routeTo: (): Cell[] => [] };
     // On a unit grid, even a perfectly straight trip needs distance+1 cells.
     // Distant visitors cannot arrive within the quota; avoid exploring the
@@ -135,7 +141,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
       return {
         cells: reachableCells,
         routeTo(target: Cell): Cell[] {
-          const index = indices.get(key(target));
+          const index = indices.at(target.x,target.y);
           const firstState = index === undefined ? undefined : reached.get(index);
           if (firstState === undefined) return [];
           let state: number = firstState;
@@ -178,7 +184,7 @@ export function* createMobilityRouteSearchSteps(graph: ReadonlyMap<string, Cell>
     return {
       cells: reachableCells,
       routeTo(target: Cell): Cell[] {
-        const targetIndex = indices.get(key(target));
+        const targetIndex = indices.at(target.x,target.y);
         if (targetIndex === undefined || reached[targetIndex] === -1) return [];
         const route: Cell[] = [];
         for (let state = reached[targetIndex]!; state >= 0; state = parents[state]!) {

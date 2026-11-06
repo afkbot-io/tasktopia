@@ -44,3 +44,38 @@ it('matches every native car and walking adjacency row including authored order'
   for (const [graph, edges] of [[network.cars, network.carEdges], [network.walkers, network.walkerEdges]] as const)
     expect([...createMobilityRouteSearch(graph, edges).adjacency]).toEqual([...edges]);
 });
+it.each([NaN,Infinity,-Infinity,2**40,.125])('preserves custom source keys and snapshot endpoints for x=%s',x=>{
+  const start={x:1,y:2},target={x,y:0},targetKey=key(target);
+  const graph=new Map([['start-alias',start],['target-alias',target]]),edges=new Map([[key(start),[target]],[targetKey,[]]]);
+  const search=createMobilityRouteSearch(graph,edges);
+  expect([...search.adjacency.keys()]).toEqual([key(start),targetKey]);
+  expect(search.adjacency.has(targetKey)).toBe(true);
+  expect(search.adjacency.get(key(start))).toEqual([{x:x||0,y:0}]);
+  expect(search(start,undefined,target,2).routeTo(target)).toEqual([start,{x:x||0,y:0}]);
+  search.setBlocked(new Set([targetKey]));
+  expect(search(start,undefined,target,2).routeTo(target)).toEqual([]);
+});
+it('distinguishes canonical keys, opposite int32 extremes and duplicate source coordinates',()=>{
+  const first={x:-2147483648,y:2147483647},second={x:2147483647,y:-2147483648};
+  const search=createMobilityRouteSearch(new Map([['a',first],['b',second]]),new Map([[key(first),[second]],[key(second),[]]]));
+  expect([...search.adjacency.keys()]).toEqual([key(first),key(second)]);
+  for(const id of ['-02147483648,2147483647',' 2147483647,-2147483648','2147483647,-2147483648.0','2147483647,','2147483647,-2147483648,'])
+    expect(search.adjacency.has(id)).toBe(false);
+  expect(search(first,undefined,second,2).routeTo(second)).toEqual([first,second]);
+  const a={x:0,y:0,name:'first'},b={x:1,y:0},duplicate={x:0,y:0,name:'last'};
+  const duplicates=createMobilityRouteSearch(new Map([['a',a],['b',b],['c',duplicate]]),new Map([[key(a),[b]],[key(b),[a]]]));
+  expect([...duplicates.adjacency.keys()]).toEqual(['0,0','1,0']);
+  expect(duplicates(a,undefined,b,2).cells).toEqual([duplicate,b]);
+  expect(duplicates(a,undefined,b,2).cells[0]).toBe(duplicate);
+});
+it('preserves all rows on a frozen adversarial collision chain without inventing a route',()=>{
+  // Captured coordinates sharing one bucket in the typed128/256-slot index.
+  // Expectations use only the authored directed chain, never the hash code.
+  const xs=[0,237,565,1454,1466,1811,2411,2816,3111,3313,3639,3921,5062,5298,5368,5520,5522,5585,5614,5718,5854,6767,7392,7598,7677,7687,7704,8080,8365,8412,8557,8566,9496,10008,10279,10642,10909,10941,11062,11668,11748,11889,12233,12477,12558,13447,14029,14234,15408,15569,15718,15864,16001,17209,17665,17930,18013,18039,18242,19057,19669,19852,20321,20399,20683];
+  const cells=xs.map(x=>({x,y:0})),graph=new Map(cells.map(c=>[key(c),c]));
+  const edges=new Map(cells.map((c,i)=>[key(c),cells[i+1]?[cells[i+1]!]:[]]));
+  const search=createMobilityRouteSearch(graph,edges);
+  expect([...search.adjacency]).toEqual([...edges]);
+  expect(search(cells[0]!,undefined,cells.at(-1),65).routeTo(cells.at(-1)!)).toEqual(cells);
+  expect(search(cells.at(-1)!).routeTo(cells[0]!)).toEqual([]);
+});

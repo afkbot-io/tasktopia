@@ -66,6 +66,18 @@ types/lint/build проходят.3pure10k пары~1,9s,география/до
 
 ## Общая приёмка
 
+Срез83 заменяет compiled string coordinate indexes числовым bounded hash
+lookup с прежним Map fallback для custom/duplicate/pathological координат.
+177unit/22files, types/lint/build и frozen route/adjacency SHA проходят.
+Три native10000 пары: main469,03→458,67МиБ, но backing+6МиБ; net−4,36МиБ.
+Прогноз16МиБ FAILED сохранён; уточнённый агентский ориентир4МиБ и5%timing
+guard проходят на той же неизменной серии. Общий256МиБ target не достигнут.
+3actualMCP lifecycle и2compactphone bus проходят. Desktop bus отказал и на
+прежнем клиенте: ARRIVE45s сменяется школьным рейсом. Это незавершённый
+транспортный boundary общей приёмки; исходныйfail не скрыт. Финальные
+масштабы/SCM/managedrelease впереди.
+[Контракт и доказательства](../tasks/83-compact-route-index.md).
+
 Срез82 сохраняет одну проверенную производную сцену города между процессами
 той же сборки/world version. Новый manifest связывает оба compiled producer;
 mixed artifacts, повреждение и чужой viewer payload не принимаются.
