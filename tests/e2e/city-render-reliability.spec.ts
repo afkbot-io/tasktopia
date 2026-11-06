@@ -628,8 +628,11 @@ test("returning to an unchanged ready CITY retains its complete physical snapsho
   page.on("request",request=>{if(new URL(request.url()).pathname.endsWith("/scene"))scenes.push(request.url());});
   page.on("pageerror",error=>errors.push(error.message));
   const host=await enterCity(page);
-  await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false");
-  await expect(host).toHaveAttribute("data-mobility-ready","true");
+  // First establish the two cold phases, then assert3 retained returns. The
+  // dense fixture's cold latency belongs to the separate scale budget.
+  const coldPhaseTimeout=process.env.E2E_CITY_200==="true"?30_000:5000;
+  await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false",{timeout:coldPhaseTimeout});
+  await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:coldPhaseTimeout});
   const state=()=>host.evaluate(node=>{
     const d=(node as HTMLElement).dataset;
     return {started:d.canonicalStartSinceBootstrapMs,prepare:d.canonicalPrepareMs,
