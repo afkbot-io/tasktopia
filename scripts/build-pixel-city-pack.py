@@ -23,6 +23,7 @@ from compact_tree_contract import publish_compact_trees
 from courtyard_furniture_contract import publish_courtyard_furniture
 from cargo_helicopter_art import publish_cargo_helicopter
 from everyday_city_art import publish_everyday_city
+from transport_furniture_art import publish_transport_furniture
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -211,6 +212,7 @@ def main() -> None:
     publish_courtyard_furniture(ROOT, manifest)
     publish_cargo_helicopter(ROOT, manifest)
     publish_everyday_city(ROOT, manifest)
+    publish_transport_furniture(ROOT, manifest)
     pack_props(manifest)
     publish_micro_ambient(manifest, RUNTIME, PACK)
     manifest["generator"] = "scripts/build-pixel-city-pack.py"

@@ -44,6 +44,18 @@ iPhone проходят; полный mobile lifecycle перепроверен 
 types/lint/build и fixed AI-review проходят. Полный WebPush envelope сохранён.
 [Поведение и границы](../tasks/79-compact-realtime-notices.md).
 
+Срез80 добавляет native windsock/clock и принятые городские материалы
+аэродрома. Два source-pinned16×16 предмета имеют общий bounded placement для
+постоянного renderer и1×1 walking mask; старые планы и все146 props сохранены.
+41unit/integration/10files,3actualMCP browser200/один район desktop/compact
+Android/iPhone и3actualAIR/RAIL/SEA inspector проходят. Визуальное ревью
+выявило UV-дефект целого атласа после первого успешного прогона; реальный
+pixel RED0/64→GREEN≥60/64 на всех3профилях подтверждает исправление.
+Шесть native CITY4× кадров просмотрены, wholepack audits/types/lint/build
+проходят. Отсутствие безопасной суши корректно запрещает декор; новый cargo
+apron старого порта не придумывается без его canonical резерва.
+[Контракт и доказательства](../tasks/80-native-transport-furniture.md).
+
 Срез75: новые кварталы получают TERRACOTTA/SLATE/GARDENS по world-зонам128,
 через подбор существующих approved семей без изменения геометрии и PNG.
 Минимум2/fallback и местный баланс предотвращают однообразие из-за далёкой

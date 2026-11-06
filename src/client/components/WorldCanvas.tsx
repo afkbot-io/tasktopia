@@ -1,6 +1,6 @@
 import { planCityAirServices,sampleCityAirService } from "../../shared/city-air-service";
 import { addTransportWalkways } from "../transport-walkways";
-import { airportFacilityTaskAt,airportSiteIntersectsRect,drawCityAirportSites } from "../airport-site-view";
+import { airportFacilityTaskAt,airportSiteIntersectsRect,drawCityAirportSites,selectAirportApronTasks } from "../airport-site-view";
 import { createCityRoadEventView } from "../city-road-event-view";
 import { planRoadEpisode, roadEpisodePose, type RoadEpisode } from "../city-road-events";
 import { createCityCinematicView } from "../city-cinematic-view";
@@ -10,6 +10,8 @@ import { createEverydayView } from '../city-everyday-view';
 import { createCloudShadowView } from '../city-cloud-shadow-view';
 import { prepareWetCellIndexAsync } from '../city-weather';
 import { createTransitStopView } from '../city-transit-stop-view';
+import { createCityTransportFurnitureView } from '../city-transport-furniture-view';
+import { resolveCityTransportFurniture } from '../../shared/city-transport-furniture';
 import { prepareTransitStopIndexAsync,type TransitStopIndex } from '../city-transit-stop-index';
 import { CityEventDirector, type CityEventLease } from '../city-event-director';
 import { createCityEventSiteIndex, prepareCityEventSiteIndexAsync, type CityEventSiteIndex } from '../city-event-site-index';
@@ -61,7 +63,7 @@ import { isGroundPlantingStrip } from "../../shared/green-area";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import "pixi.js/unsafe-eval";
 import "../map-texture-loader";
-import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
+import { Application, Assets, Cache, Container, FederatedPointerEvent, Graphics, Matrix, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import { ATLAS_CLOUD_SPRITES, PROP_ATLAS, PROP_CATALOG, PROP_SPRITES, TILE_SPRITES, gameAssetUrl, getBuilding, illuminatedPropKey } from "../../shared/catalog";
 import { MICRO_ANIMAL_SPECIES, microAmbientAssetUrls, microAmbientSprite, microDirection } from "../../shared/micro-ambient";
 import { microIncidentResponder } from "../micro-incident-responder";
@@ -1451,6 +1453,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       railwayGround.eventMode = "none";
       world.addChildAt(railwayGround, world.getChildIndex(worldObjectLayer));
       const airportGround = new Graphics();
+      let airportGroundSignature='';
       airportGround.eventMode = "static"; airportGround.cursor = "pointer";
       const airportTaskAtPixel = (x: number, y: number) => airportFacilityTaskAt(cityScene?.airports ?? [], latestCanonicalTasks,
         { x: x / CELL_SIZE, y: y / CELL_SIZE });
@@ -2127,6 +2130,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       const transitStopView = createTransitStopView(developmentTexture, sprite => {
         worldObjectLayer.addChild(registerWorldObject(sprite, 'FEATURE'));
       });
+      const transportFurnitureView=createCityTransportFurnitureView(developmentTexture,sprite=>{
+        worldObjectLayer.addChild(registerWorldObject(sprite,'DECORATION'));
+      });
+      startupDisposers.push(()=>transportFurnitureView.destroy());
       agentOverlayLayer.addChild(everydayView.root);
       const taskActivity = createTaskActivityController(() => mobility);
       const taskActivityView = createTaskActivityView((view, x, y) => {
@@ -3550,6 +3557,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host!.dataset.canonicalTerrainCells = String(canonical.terrain.size);
         host!.dataset.canonicalSnapshotPending = String(Boolean(cityScene&&canonicalCityData.pending));
         const { districts, tasks, roads, surfaces, features, plannedSites, blockPlaques } = collected;
+        const transportFurniture=resolveCityTransportFurniture({airports:cityScene?.airports??[],railway,tasks:canonical.tasks,
+          free:p=>isBuildableTerrain(terrainAt(terrainSeed,p.x,p.y,terrainProfile).terrain)
+            &&!canonical.roads.has(key(p))&&!canonical.surfaces.has(key(p))});
+        const furnitureViews=transportFurnitureView.update(transportFurniture);
+        host!.dataset.transportFurniture=JSON.stringify(transportFurniture);
+        host!.dataset.transportFurnitureViews=String(furnitureViews.total);
+        host!.dataset.transportFurnitureReady=String(furnitureViews.visible);
         // Transport exclusions are local to this render; never mutate the
         // cached geography when a railway/airport presentation changes.
         const excludeTransportDecorations = (source: typeof collected.decorations, taskSource: typeof collected.tasks) => {
@@ -3569,9 +3583,28 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           return result;
         };
         const decorations = excludeTransportDecorations(collected.decorations,collected.tasks);
-        airportGround.clear();
-        for (const task of tasks.values()) drawAirportApron(airportGround, task, CELL_SIZE);
-        drawCityAirportSites(airportGround,cityScene?.airports??[],CELL_SIZE);
+        const airportTasks=selectAirportApronTasks(cityScene?.airports,tasks);
+        const surfaceAtlasReady=Cache.has(gameAssetUrl('atlas/road-v2/surface.png'));
+        const nextAirportGround=JSON.stringify([cityScene?.airports??[],surfaceAtlasReady,
+          airportTasks.map(task=>[task.id,task.stage,task.buildingType,task.origin,task.footprint])]);
+        if(airportGroundSignature!==nextAirportGround){
+          airportGround.clear();let tiles=0;
+          for(const task of airportTasks)drawAirportApron(airportGround,task,CELL_SIZE);
+          drawCityAirportSites(airportGround,cityScene?.airports??[],CELL_SIZE,(view,x,y,w,h,family)=>{
+            if(!surfaceAtlasReady||![x,y,w,h].every(value=>Number.isInteger(value/CELL_SIZE)))return false;
+            for(let py=y;py<y+h;py+=CELL_SIZE)for(let px=x;px<x+w;px+=CELL_SIZE){
+              const tile=roadAtlasSurfaceTile(family,px/CELL_SIZE,py/CELL_SIZE,15);
+              const texture=atlasFrameTexture(gameAssetUrl(tile.url),tile.sourceX,tile.sourceY,tile.tileSize);
+              // Graphics local UVs span the entire source atlas. Translate
+              // this world cell to its subframe before source normalization.
+              view.rect(px,py,CELL_SIZE,CELL_SIZE).fill({texture,textureSpace:'global',matrix:new Matrix().translate(px,py)});tiles++;
+            }
+            return true;
+          });
+          airportGroundSignature=nextAirportGround;
+          host!.dataset.airportNativeMaterialTiles=String(tiles);
+          host!.dataset.airportGroundBuilds=String(Number(host!.dataset.airportGroundBuilds??0)+1);
+        }
         host!.dataset.cityAirfields=String(cityScene?.airports?.filter(site=>site.plan).length??0);
         host!.dataset.cityAirportUnavailable=cityScene?.airports?.filter(site=>!site.plan).map(site=>site.taskId).join(",")??"";
         if (latestTaskStatusPatches.size) host!.dataset.realtimeRenderedTasks = JSON.stringify(
@@ -4036,6 +4069,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             const {roads,surfaces,tasks,features}=canonical;
             const terrain=scene?canonicalTerrain:canonical.terrain;
             const decorations=excludeTransportDecorations(scene?new Map([...canonical.decorations,...collected.decorations]):canonical.decorations,canonical.tasks);
+            // Facility-owned props are accepted after broad transport clearing.
+            // The exact same immutable placements own both image and collision.
+            for(const prop of transportFurniture)decorations.set(prop.id,prop);
             const walk=await buildCityWalkNetworkAsync({roads,terrain:scene?sourceChunks.flatMap(chunk=>chunk.terrain):[...canonical.terrain.values()],surfaces:[...surfaces.values()],
               sampleTerrain:scene?cell=>terrain.get(key(cell))?.terrain:undefined,
               tasks:[...tasks.values()],features:[...features.values()],decorations:[...decorations.values()]},{signal});
