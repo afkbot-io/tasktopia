@@ -3,6 +3,8 @@ import { getBuilding } from "../../shared/catalog";
 import { nextInfrastructure, PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
 import { buildingProfile } from "../../shared/building-profiles";
 import {LocalCityServices,LOCAL_SERVICE_THRESHOLDS,type LocalServiceRole} from './local-city-services';
+import {quarterCharacterFor,quarterCharacter} from '../../shared/city-quarter-character';
+import {cityNeighbourhoodKey} from '../../shared/city-neighbourhood';
 import { createHash } from "node:crypto";
 import { BLOCK_WORLD_GENERATOR_VERSION, type BlockServiceRole, type BlockSlotKind, type BlockWorldBounds, type CityBlockV1,
   type CompiledBlockLayoutV1, type ConstructionStage, type DistrictLayoutV1, type TaskPlacementV1 } from "../../shared/block-world";
@@ -31,6 +33,7 @@ export type BlockLayoutCompilerInput = {
   compactReplay?: boolean;
   /** Trusted generation policy; legacy compiler callers keep their exact plan. */
   localServices?:'DISTRIBUTED_V1';
+  localCharacters?:'LOCAL_V1';
   /** Trusted coastal allocator; never accepted from a task request. */
   planPort?: (terminal: BlockWorldBounds, blocks: readonly CityBlockV1[]) => PortSitePlan | null;
   canPlaceBlock?: (bounds: BlockWorldBounds) => boolean;
@@ -426,7 +429,10 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   // The durable task number, not district grouping, defines construction order.
   // Replaying an interleaved city must not move its railway/airport to another
   // task simply because one district happened to be enumerated first.
-  const homeUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>() };
+  const blockContext = new Map(contexts.flatMap(context => context.districtBlocks.map(block => [block.id, { block, districtId: context.district.id }] as const)));
+  const trackLocalHomes=input.localCharacters==='LOCAL_V1'||reservedBlocks.some(block=>block.parameters.quarterCharacterVersion===1
+    &&quarterCharacter(block.parameters.quarterCharacter));
+  const homeUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>(),zones:new Map<string,Map<string,number>>() };
   const serviceUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>() };
   const recordFamily = (placement: TaskPlacementV1) => {
     if (kinds.get(placement.taskId) !== "BUILDING") return;
@@ -437,9 +443,13 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
     if (!counts) { counts = new Map(); usage.blocks.set(placement.blockId, counts); }
     counts.set(placement.buildingFamily, (counts.get(placement.buildingFamily) ?? 0) + 1);
     usage.city.set(placement.buildingFamily, (usage.city.get(placement.buildingFamily) ?? 0) + 1);
+    if(trackLocalHomes&&!placement.serviceRole){
+      const zone=cityNeighbourhoodKey(blockContext.get(placement.blockId)!.block);
+      let counts=homeUsage.zones.get(zone);if(!counts){counts=new Map();homeUsage.zones.set(zone,counts);}
+      counts.set(placement.buildingFamily,(counts.get(placement.buildingFamily)??0)+1);
+    }
   };
   for (const placement of activePlacements.values()) recordFamily(placement);
-  const blockContext = new Map(contexts.flatMap(context => context.districtBlocks.map(block => [block.id, { block, districtId: context.district.id }] as const)));
   const infrastructure: InfrastructureState = {
     nonemptyBlocks: new Set(), cityDistricts: new Set(), districtBlocks: new Map(), districtBuildings: new Map(), latestSequence: new Map(),
     triggers: new Set([...durableTriggers, ...reservedBlocks.flatMap(block => Object.values(block.parameters.slotRoleTriggers as Record<string, string> ?? {}))]),
@@ -538,6 +548,8 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
           parameters: { entrancePolicyVersion: 1, buildingProfile: buildingProfile(district.archetype) ?? "MIXED_URBAN", buildingProfileVersion: 1, packingCorner: ["NW", "NE", "SW", "SE"][((input.seed + sequence + district.sequence) % 4 + 4) % 4], infill: true,
             ...(site.separator ? { districtSeparator: site.separator } : {}),
             ...(requestedFamily ? { firstFamily: compactBuildingShapeFamily(requestedFamily)! } : task.parkSize === "POCKET" ? { firstFamily: "compact-apartment-v1" } : {}) }, summary: {} };
+        if(input.localCharacters==='LOCAL_V1')block.parameters={...block.parameters,
+          quarterCharacter:quarterCharacterFor(input.seed,block),quarterCharacterVersion:1};
         // A port's coastal allocator chooses its terminal independently; its
         // existing south-centre access does not need a provisional art alias.
         const firstAuthoredFamily = wantsPort ? undefined : requestedFamily;
@@ -629,14 +641,17 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       const accepts = (family: string) => familyAccessFits(selected.block, selected.slot, family);
       const familyEntropy = Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16);
       const assignedUsage = serviceRole ? serviceUsage : homeUsage;
-      const usage = new Map([...assignedUsage.city].map(([family, count]) => [family,
+      const character=selected.block.parameters.quarterCharacterVersion===1?quarterCharacter(selected.block.parameters.quarterCharacter):undefined;
+      const familyCounts=character&&!serviceRole?(homeUsage.zones.get(cityNeighbourhoodKey(selected.block))??new Map<string,number>()):assignedUsage.city;
+      const usage = new Map([...familyCounts].map(([family, count]) => [family,
         count + (assignedUsage.blocks.get(selected.block.id)?.get(family) ?? 0) * 100]));
       const authoredFamily = requestedFamily ?? (!task.serviceRoleAssigned && serviceRole ? serviceFamilyForSlot(serviceRole,selected.slot, accepts, familyEntropy, usage) : undefined)
         ?? (landmarkCandidates.length ? landmarkCandidates[landmarkEntropy % landmarkCandidates.length] : undefined)
         ?? (!serviceRole && selected.slot.kind === "BUILDING" ? compactHomeFamily(
           selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1,
           selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1,
-          familyEntropy, usage, selected.block.parameters.buildingProfileVersion === 1 ? buildingProfile(selected.block.parameters.buildingProfile) : undefined, accepts) : undefined)
+          familyEntropy, usage, selected.block.parameters.buildingProfileVersion === 1 ? buildingProfile(selected.block.parameters.buildingProfile) : undefined, accepts,
+          character) : undefined)
         ?? selected.slot.buildingFamily ?? task.buildingFamily;
       if (selected.slot.kind === "BUILDING") {
         const oldEntrance = selected.slot.buildingFamily ? getBuilding(selected.slot.buildingFamily).entrances[0] : undefined;

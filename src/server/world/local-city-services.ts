@@ -1,11 +1,11 @@
 import type {BlockServiceRole, CityBlockV1} from '../../shared/block-world';
+import {cityNeighbourhoodKey} from '../../shared/city-neighbourhood';
 
 export const LOCAL_SERVICE_THRESHOLDS = {EDUCATION:8,MEDICAL:11,FIRE:15,POLICE:19} as const;
 export type LocalServiceRole = keyof typeof LOCAL_SERVICE_THRESHOLDS;
 type Block = Pick<CityBlockV1,'origin'|'width'|'height'>;
 /** World anchored; crossing an administrative district never changes a zone. */
-export const localServiceZone=(block:Block):string=>
-  `${Math.floor((block.origin.x+block.width/2)/128)}:${Math.floor((block.origin.y+block.height/2)/128)}`;
+export const localServiceZone=cityNeighbourhoodKey;
 const prefix=(zone:string,role:LocalServiceRole)=>`city:local-service:v1:${zone}:${role}:`;
 const localRole=(role:BlockServiceRole):role is LocalServiceRole=>Object.hasOwn(LOCAL_SERVICE_THRESHOLDS,role);
 

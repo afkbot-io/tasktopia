@@ -22,6 +22,14 @@ MCP status browser на desktop/Android/iPhone,types/lint/build проходят
 характеры кварталов и не итоговый browser/SCM/release gate.
 Подробности: [местные службы](../tasks/74-local-city-services.md).
 
+Срез75: новые кварталы получают TERRACOTTA/SLATE/GARDENS по world-зонам128,
+через подбор существующих approved семей без изменения геометрии и PNG.
+Минимум2/fallback и местный баланс предотвращают однообразие из-за далёкой
+старой застройки. Старые планы/семьи/входы сохранены.74 уникальных проверок/
+15files,3browser desktop/Android/iPhone с просмотром9 итоговых кадров,
+types/lint/build проходят.3pure10k пары~1,9s,география/дороги1939кварталов
+совпадают. [Контракт и границы](../tasks/75-city-quarter-character.md).
+
 ## Общая приёмка
 
 - [ ] Камера: крестик/Escape сохраняют текущую позу; browser history отдельно;
