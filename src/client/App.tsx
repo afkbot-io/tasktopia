@@ -87,6 +87,7 @@ export function App() {
   });
   const [wheelNavigation] = useState(createAtlasWheelNavigation);
   const [navigation] = useState(() => new AppNavigation(window.history, () => location.pathname + location.search));
+  useEffect(()=>()=>navigation.cancelPose(),[navigation]);
   const [cityViewMemory] = useState(() => new Map<string, CityViewState>());
   const cityViewReaderRef = useRef<(() => CityViewState | undefined) | null>(null);
   const navigationRestoringRef = useRef(false), navigationRequestRef = useRef(0), navigationRestoreEpochRef = useRef(0);
@@ -255,6 +256,7 @@ export function App() {
     setDirectoryOpen(true);
   }, []);
   const clearPrivateSessionUi = useCallback(() => {
+    navigation.cancelPose();
     taskCardFocus.cancel();
     sessionGenerationRef.current++; navigationRequestRef.current++; navigationRestoreEpochRef.current++;
     navigationRestoringRef.current = false; restoredTaskRef.current = null;
@@ -270,7 +272,7 @@ export function App() {
     eventCountryRef.current = undefined; lastWorldEventIdRef.current = 0;
     clearMapSceneCaches(); clearTaskDetailCache(); clearPlanetAtlasCache(); silenceCityAudio();
     cityViewMemory.clear(); cityRestoreTokensRef.current.clear(); planetViewMemory.clear();
-  }, [cityViewMemory, planetViewMemory, taskCardFocus]);
+  }, [cityViewMemory, planetViewMemory, taskCardFocus,navigation]);
   const transitionMap = useCallback(async (
     to: MapLevel,
     focus: { x: number; y: number },
