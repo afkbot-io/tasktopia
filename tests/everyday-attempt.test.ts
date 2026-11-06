@@ -24,6 +24,26 @@ describe('непройденная everyday попытка с доказанны
       sample('ACTIVITY', 10_000), sample('ACTIVITY', 33_999), sample('LEAVE', 34_000), sample('LEAVE', 43_999)] } })).toBe(true);
   });
 
+  it('различает истёкший слот и уже начавшееся следующее событие по наблюдаемому episode ID', () => {
+    const successor={...terminal,everydayEvent:'SCHOOL',everydayPhase:'ARRIVE',everydayTask:'school',
+      everydayEpisodeId:'city:window:school',everydayVisitors:'2',everydaySkip:''};
+    const ended={episodeId:initial.everydayEpisodeId,serverNow:start+44_000,nextEpisodeId:successor.everydayEpisodeId};
+    const history={...observed,ended};
+    expect(expired({terminal:successor,observed:history})).toBe(true);
+    expect(expired({terminal:successor})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,serverNow:start+43_999}}})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,episodeId:'another-episode'}}})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,nextEpisodeId:initial.everydayEpisodeId}}})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,nextEpisodeId:''}}})).toBe(true);
+    for(const serverNow of [NaN,Infinity,start+44_001])expect(expired({terminal:successor,observed:{...history,ended:{...ended,serverNow}}})).toBe(false);
+    expect(expired({terminal:{...successor,everydayEvent:'UNKNOWN'},observed:history})).toBe(false);
+    expect(expired({terminal:{...successor,everydayPhase:'LEAVE'},observed:history})).toBe(false);
+    expect(expired({terminal:{...successor,everydayTask:''},observed:history})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,arrivals:1}})).toBe(false);
+    expect(expired({terminal:{...successor,everydayEpisodeId:initial.everydayEpisodeId},observed:history})).toBe(false);
+    expect(expired({terminal:{...successor,mobilityFixedSteps:'101'},observed:history})).toBe(false);
+  });
+
   it('сохраняет границу44s и не создаёт истечение из прежнего40s окна', () => {
     expect(expired({ terminal: { ...terminal, roadEventServerNow: String(start + 43_999.99) } })).toBe(false);
     expect(expired({ terminal: { ...terminal, roadEventServerNow: String(start + 44_000) } })).toBe(true);

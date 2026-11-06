@@ -51,8 +51,10 @@ for (const kind of ['OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP', 'OPEN_FIRE'
       const task = targets[kind]; expect(task.stage).toBe(4);
       await f.service.activateDistrict(f.user.countryId, task.districtId, crypto.randomUUID());
       await f.panFocus(task);
+      const cinematicFrames = await observeCinematics(f.host);
       const key = crypto.randomUUID(); await f.call('task.set_status', { taskId: task.id, status: 'COMPLETED' }, key);
-      await expect(f.host).toHaveAttribute('data-cinematic-phases', /CONSTRUCT:WORK/);
+      await expect.poll(async () => (await cinematicFrames.frames()).some(frame => frame.states.some(state =>
+        state.taskId === task.id && state.kind === 'CONSTRUCT' && state.phase === 'WORK'))).toBe(true);
       await expect(f.host).toHaveAttribute('data-everyday-event', kind, { timeout: 15000 });
       await expect(f.host).toHaveAttribute('data-city-cinematics', '0');
       expect((await f.service.getTask(f.user.countryId, task.id)).stage).toBe(5);
@@ -385,14 +387,19 @@ async function setSceneLife(page: Page, on: boolean) {
 
 type EverydaySample={kind:string;phase:string;areaReady:boolean;arrivals:number;animals:number;fetched:boolean;scattered:boolean;serverNow:number};
 type EverydayObservedNode=HTMLElement&{__qaEveryday?:{arrivals:number;animals:number;fetched:boolean;scattered:boolean;
-  activityArrivals:boolean;eligibleActivity:boolean;assetsUnavailable:boolean;invalidTelemetry:boolean;truncated:boolean;samples:EverydaySample[];observer:MutationObserver}};
+  activityArrivals:boolean;eligibleActivity:boolean;assetsUnavailable:boolean;invalidTelemetry:boolean;truncated:boolean;samples:EverydaySample[];observer:MutationObserver;
+  episodeId?:string;ended?:{episodeId:string;serverNow:number;nextEpisodeId:string}}};
 async function observeEveryday(host:Locator,taskId:string){
   await host.evaluate((el,taskId)=>{
     const node=el as EverydayObservedNode;node.__qaEveryday?.observer.disconnect();
     let signature='';
     const read=()=>{const d=node.dataset,record=node.__qaEveryday!;
       record.assetsUnavailable||=d.ambientAssets!=='ready';
+      if(record.episodeId&&d.everydayEpisodeId!==record.episodeId){
+        record.ended??={episodeId:record.episodeId,serverNow:Number(d.roadEventServerNow),nextEpisodeId:d.everydayEpisodeId??''};return;
+      }
       if(d.everydayTask!==taskId||!d.everydayEvent)return;
+      record.episodeId??=d.everydayEpisodeId;
       record.invalidTelemetry||=!['true','false'].includes(d.everydayAreaReady??'')
         ||!Number.isFinite(Number(d.everydayArrived))||!Number.isFinite(Number(d.everydayAnimals));
       record.arrivals=Math.max(record.arrivals,Number(d.everydayArrived??0));record.animals=Math.max(record.animals,Number(d.everydayAnimals??0));
@@ -407,11 +414,11 @@ async function observeEveryday(host:Locator,taskId:string){
     };
     const observer=new MutationObserver(read);
     node.__qaEveryday={arrivals:0,animals:0,fetched:false,scattered:false,activityArrivals:false,eligibleActivity:false,assetsUnavailable:false,invalidTelemetry:false,truncated:false,samples:[],observer};
-    observer.observe(node,{attributes:true,attributeFilter:['data-everyday-event','data-everyday-phase','data-everyday-area-ready','data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered','data-ambient-assets']});
+    observer.observe(node,{attributes:true,attributeFilter:['data-everyday-event','data-everyday-episode-id','data-everyday-task','data-everyday-phase','data-everyday-area-ready','data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered','data-ambient-assets']});
     read();
   },taskId);
   return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered,
-    activityArrivals:r.activityArrivals,eligibleActivity:r.eligibleActivity,assetsUnavailable:r.assetsUnavailable,invalidTelemetry:r.invalidTelemetry,truncated:r.truncated,samples:r.samples};});
+    activityArrivals:r.activityArrivals,eligibleActivity:r.eligibleActivity,assetsUnavailable:r.assetsUnavailable,invalidTelemetry:r.invalidTelemetry,truncated:r.truncated,samples:r.samples,ended:r.ended};});
 }
 
 clockSceneTest('six everyday scenes use actual residents and approaches', async ({ page }, info) => {
@@ -661,6 +668,36 @@ clockSceneTest('school bus delivers children through the real school entrance in
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
     const schools = f.tasks.filter(task => task.stage === 5 && BUILDING_CATALOG.find(b => b.key === task.visualAssetKey)?.educationKind === 'SCHOOL');
     expect(schools.length).toBeGreaterThan(0);
+    type Dropoff={taskId:string;serial:number;alighted:number;serverNow:number};
+    type WitnessNode=HTMLElement&{__qaSchoolWitness?:{dropoffs:Dropoff[];invalid:boolean;truncated:boolean;observer:MutationObserver}};
+    // A later kindergarten ceremony can start the only successful bus. Bind
+    // its real admission and alighting to that destination, rather than
+    // attributing a global arrival counter to the earlier planned school.
+    await f.host.evaluate(el=>{
+      const node=el as WitnessNode,admissions=new Map<number,string>();let serial=-1,alighted=Number(node.dataset.schoolBusAlighted??0);
+      const read=()=>{
+        const d=node.dataset,w=node.__qaSchoolWitness!,next=Number(d.schoolBuses),out=Number(d.schoolBusAlighted);
+        if(!Number.isSafeInteger(next)||next<0||!Number.isSafeInteger(out)||out<0)return;
+        const previousSerial=serial;
+        if(out<alighted||next<serial||serial>=0&&next>serial+1)w.invalid=true;
+        if(next!==serial){
+          serial=next;
+          if(d.transitRole==='SCHOOL_BUS'&&['SCHOOL','KINDERGARTEN'].includes(d.everydayEvent??'')&&d.everydayTask)admissions.set(serial,d.everydayTask);
+          if(admissions.size>16){w.truncated=true;admissions.delete(admissions.keys().next().value!);}
+        }
+        if(out>alighted){
+          // Alighting may finish and release a run in this same frame. Its
+          // cumulative school counter still belongs to the witnessed bus.
+          const completedSerial=previousSerial>=0&&previousSerial!==serial?previousSerial:serial;
+          const taskId=admissions.get(completedSerial),serverNow=Number(d.roadEventServerNow);
+          if(!taskId||!Number.isFinite(serverNow))w.invalid=true;
+          else{w.dropoffs.push({taskId,serial:completedSerial,alighted:out,serverNow});if(w.dropoffs.length>16){w.truncated=true;w.dropoffs.shift();}}
+        }
+        alighted=out;
+      };
+      const observer=new MutationObserver(read);node.__qaSchoolWitness={dropoffs:[],invalid:false,truncated:false,observer};
+      observer.observe(node,{attributes:true,attributeFilter:['data-school-buses','data-school-bus-alighted','data-transit-role','data-transit-phase']});read();
+    });
     // Ordinary traffic can delay passengers beyond a finite boarding window.
     // Exercise up to three scheduled ceremonies in the same live city, recording
     // empty/cancelled trips too; never replace a real doorway arrival with a lease.
@@ -708,22 +745,44 @@ clockSceneTest('school bus delivers children through the real school entrance in
           || i >= (44_000 + 80_000) / 1000 && sample.transitRole !== 'SCHOOL_BUS' && Number(sample.schoolBusVisits) === 0) break;
       }
       const state = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
+      const witness=await f.host.evaluate(el=>{const w=(el as WitnessNode).__qaSchoolWitness!;return {dropoffs:w.dropoffs,invalid:w.invalid,truncated:w.truncated};});
+      const dropoffs=witness.dropoffs.filter(d=>d.serverNow>=start&&d.alighted>Number(before.schoolBusAlighted));
       const deliveryElapsedMs = Number(state.roadEventServerNow) - deliveryStartedAt;
-      journeys.push({ episode, taskId, deliveryBudgetMs, deliveryElapsedMs, before, state });
+      journeys.push({ episode, taskId, deliveryBudgetMs, deliveryElapsedMs, before, state, witness,dropoffs });
       await writeFile(info.outputPath('school-bus-delivery-budget.json'), JSON.stringify(journeys, null, 2));
       expect(deliveryElapsedMs).toBeLessThanOrEqual(deliveryBudgetMs + 1000); await safe(f.host);
       if (Number(state.schoolBusArrived) > Number(before.schoolBusArrived)) {
+        expect(witness.invalid).toBe(false);expect(witness.truncated).toBe(false);expect(dropoffs.length).toBeGreaterThan(0);
+        const targets=new Set(dropoffs.map(d=>d.taskId));
+        if(targets.size!==1){progress.push({episode,reason:'overlapping-doorway-targets',dropoffs});continue;}
+        const destination=f.tasks.find(t=>targets.has(t.id));
+        expect(destination).toBeTruthy();expect(BUILDING_CATALOG.find(b=>b.key===destination!.visualAssetKey)?.educationKind).toMatch(/^(SCHOOL|KINDERGARTEN)$/);
         expect(Number(state.schoolBusBoarded)).toBeGreaterThan(Number(before.schoolBusBoarded));
         expect(Number(state.schoolBusAlighted)).toBeGreaterThan(Number(before.schoolBusAlighted));
-        expect(Number(state.schoolBusVisits)).toBeGreaterThan(0); deliveredTask = task;
-        await writeFile(info.outputPath('school-bus-doorway.json'), JSON.stringify(state, null, 2));
+        expect(Number(state.schoolBusVisits)).toBeGreaterThan(0); deliveredTask = destination;
+        await writeFile(info.outputPath('school-bus-doorway.json'), JSON.stringify({...state,witnessedSchoolTaskId:destination!.id,dropoffs}, null, 2));
       }
     }
     expect(deliveredTask, 'No child reached the real doorway in three scheduled school episodes').toBeTruthy();
     await page.screenshot({ path: info.outputPath('school-bus-doorway.png') });
     await f.service.activateDistrict(f.user.countryId, deliveredTask!.districtId, crypto.randomUUID());
     await f.call('task.delete', { taskId: deliveredTask!.id, confirmTitle: deliveredTask!.title }); await page.clock.runFor(500);
-    await expect(f.host).toHaveAttribute('data-school-bus-visits', '0'); await safe(f.host);
+    // MCP and cooperative scene publication finish outside the paused clock.
+    // Drive actual frames while keeping the original15s wall deadline.
+    const deletionSamples:Record<string,string|undefined>[]=[];
+    try{
+      await expect.poll(async()=>{
+        await page.clock.runFor(16);
+        const state=await f.host.evaluate(el=>{
+          const d=(el as HTMLElement).dataset;
+          return {schoolBusVisits:d.schoolBusVisits,schoolBusArrived:d.schoolBusArrived,canonicalSnapshotPending:d.canonicalSnapshotPending,
+            movementPreparing:d.movementPreparing,citySceneRevision:d.citySceneRevision,cinematicPhases:d.cinematicPhases,
+            everydayTask:d.everydayTask,transitRole:d.transitRole,mobilityFixedSteps:d.mobilityFixedSteps};
+        });
+        deletionSamples.push(state);if(deletionSamples.length>16)deletionSamples.shift();return state.schoolBusVisits;
+      },{timeout:15_000,intervals:[100]}).toBe('0');
+    }finally{await writeFile(info.outputPath('school-deletion-state.json'),JSON.stringify(deletionSamples,null,2));}
+    await safe(f.host);
   } finally { await f.cleanup(); }
 });
 

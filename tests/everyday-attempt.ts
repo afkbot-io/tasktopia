@@ -4,6 +4,7 @@ type Observation = Readonly<{
   arrivals: number; animals: number; fetched: boolean; scattered: boolean;
   activityArrivals: boolean; eligibleActivity: boolean; assetsUnavailable: boolean;
   invalidTelemetry: boolean; truncated: boolean; samples: readonly Sample[];
+  ended?: Readonly<{ episodeId: string; serverNow: number; nextEpisodeId: string }>;
 }>;
 
 function metric(value: string | undefined): number | undefined {
@@ -43,12 +44,22 @@ export function isEverydayAttemptExpiredWithoutArrival(input: {
   const initialPhase = initialNow === undefined ? undefined : phaseAt(initialNow - start);
   const initialSteps = count(initial.mobilityFixedSteps), terminalSteps = count(terminal.mobilityFixedSteps);
   const visitors = count(initial.everydayVisitors);
+  const empty = terminal.everydayEvent === '' && terminal.everydayPhase === '' && terminal.everydayTask === ''
+    && terminal.everydayEpisodeId === '' && terminal.everydaySkip === 'expired'
+    && count(terminal.everydayVisitors) === 0 && count(terminal.everydayArrived) === 0;
+  const end = observed.ended;
+  const successor = !!terminal.everydayEpisodeId && terminal.everydayEpisodeId !== initial.everydayEpisodeId
+    && ['SCHOOL','KINDERGARTEN','MARKET','SPORT','DOG','BIRDS'].includes(terminal.everydayEvent ?? '')
+    && terminal.everydayPhase === 'ARRIVE' && !!terminal.everydayTask?.trim()
+    && count(terminal.everydayVisitors) !== undefined && count(terminal.everydayArrived) !== undefined
+    && end?.episodeId === initial.everydayEpisodeId && Number.isFinite(end?.serverNow)
+    && end!.serverNow >= start + 44_000 && end!.serverNow <= (terminalNow ?? -Infinity)
+    && (end!.nextEpisodeId === '' || end!.nextEpisodeId === terminal.everydayEpisodeId);
   if (initialNow === undefined || terminalNow === undefined || terminalNow < start + 44_000
     || initial.everydayEvent !== kind || initial.everydayTask !== taskId || !initial.everydayEpisodeId?.trim()
     || initialPhase === undefined || initial.everydayPhase !== initialPhase || count(initial.everydayArrived) !== 0
-    || visitors === undefined || visitors === 0 || initialSteps === undefined || terminalSteps === undefined || terminalSteps <= initialSteps
-    || terminal.everydayEvent !== '' || terminal.everydayPhase !== '' || terminal.everydayTask !== '' || terminal.everydayEpisodeId !== ''
-    || terminal.everydaySkip !== 'expired' || count(terminal.everydayVisitors) !== 0 || count(terminal.everydayArrived) !== 0
+    || visitors === undefined || visitors === 0 || initialSteps === undefined || terminalSteps === undefined || terminalSteps - initialSteps < 500
+    || !empty && !successor
     || observed.arrivals !== 0 || observed.animals !== 0 || observed.fetched !== false || observed.scattered !== false
     || observed.activityArrivals !== false || observed.eligibleActivity !== false || observed.assetsUnavailable !== false
     || observed.invalidTelemetry !== false || observed.truncated !== false || !Array.isArray(observed.samples) || !observed.samples.length) return false;
@@ -61,5 +72,5 @@ export function isEverydayAttemptExpiredWithoutArrival(input: {
       || sample.serverNow < lastNow || sample.serverNow > terminalNow) return false;
     lastPhase = phase; lastNow = sample.serverNow;
   }
-  return lastPhase === phases.length - 1;
+  return lastPhase === phases.length - 1 && (!successor || lastNow <= end!.serverNow);
 }

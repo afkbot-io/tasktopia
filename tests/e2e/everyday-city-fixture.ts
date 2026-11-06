@@ -113,7 +113,10 @@ export async function everydayFixture(page: Page) {
     for (let index = 0; index < drags; index++) {
       await captureCameraDiagnostic('before-drag', index);
       await page.mouse.move(start.x, start.y); await page.mouse.down();
-      await page.mouse.move(start.x + dx / drags, start.y + dy / drags, { steps: 12 }); await page.mouse.up();
+      // Four real pointer moves preserve the gesture and its exact endpoint.
+      // Twelve synchronously rendered intermediate moves spent most of a
+      // real-time opening test's deadline on a hosted software GPU.
+      await page.mouse.move(start.x + dx / drags, start.y + dy / drags, { steps: 4 }); await page.mouse.up();
       await captureCameraDiagnostic('after-drag', index);
     }
     // Preserve the original controlled preparation horizon, including when

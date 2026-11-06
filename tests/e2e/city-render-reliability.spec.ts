@@ -563,10 +563,26 @@ test('a regular city bus opens halfway through a minute and its native pixels ex
   const host=await enterCity(page),canvas=host.locator('canvas');
   await expect(host).toHaveAttribute('data-mobility-ready','true');
   await expect(host).toHaveAttribute('data-transit-fleet','2');
+  await pauseInstalledClock(page);
+  // Pausing is an asynchronous browser RPC. A run seen before that boundary
+  // may legitimately finish during it. Select a live run after the pause,
+  // driving at most the original12s admission budget, with every physics step.
+  type BusEntry={role:string;phase:string;line:string;vehicle:string;physical:boolean;serverNow:number;observedAt:number};
+  const entry=async()=>host.evaluate(node=>{
+    const d=(node as HTMLElement).dataset,vehicles=JSON.parse(d.transitVehicles??'[]') as {id:string;role:string}[];
+    return {role:d.transitRole??'',phase:d.transitPhase??'',line:d.transitLine??'',vehicle:d.transitVehicle??'',
+      physical:vehicles.some(v=>v.id===d.transitVehicle&&v.role==='BUS'),serverNow:Number(d.roadEventServerNow),observedAt:Date.now()};
+  });
+  const attempts:BusEntry[]=[];let current=await entry();const admissionStart=current.observedAt;
+  for(let step=0;step<48&&!(current.role==='BUS'&&current.line&&current.physical);step++){
+    attempts.push(current);await page.clock.runFor(250);current=await entry();
+  }
+  await info.attach('bus-admission-after-pause',{body:JSON.stringify({admissionStart,attempts,current}),contentType:'application/json'});
+  expect(current.observedAt-admissionStart).toBeLessThanOrEqual(12_000);
   await expect(host).toHaveAttribute('data-transit-line',/.+/);
   await expect(host).toHaveAttribute('data-transit-role','BUS');
+  expect(current.physical).toBe(true);
   expect(Number(await host.getAttribute('data-road-event-server-now'))%60_000).toBeGreaterThan(4000);
-  await pauseInstalledClock(page);
   // This journey verifies native vehicle selection in its actual phase.
   // A legitimate repair can delay boarding, and a later school appointment
   // can preempt this run. Paused time already makes the moving bus clickable.
@@ -574,7 +590,7 @@ test('a regular city bus opens halfway through a minute and its native pixels ex
   await info.attach('bus-inspection-entry',{body:JSON.stringify(await host.evaluate(node=>{
     const d=(node as HTMLElement).dataset;return{phase:d.transitPhase,role:d.transitRole,line:d.transitLine,vehicle:d.transitVehicle};
   })),contentType:'application/json'});
-  const id=(await host.getAttribute('data-transit-vehicle'))!;
+  const id=current.vehicle;
   for(let pan=0;pan<12;pan++){
     const vehicles=JSON.parse((await host.getAttribute('data-transit-vehicles'))!) as {id:string;role:string;position:{x:number;y:number}}[];
     const bus=vehicles.find(bus=>bus.id===id)!;expect(bus.role).toBe('BUS');
@@ -587,12 +603,20 @@ test('a regular city bus opens halfway through a minute and its native pixels ex
     await page.mouse.move(box.x+box.width/2+dx,box.y+box.height/2+dy,{steps:4});await page.mouse.up();
     await page.clock.runFor(300);await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
   }
-  // Drag suppression lasts500ms. Let it expire while this bus is at its curb.
+  // Drag suppression lasts500ms. Let it expire before sampling the moving bus.
   await page.clock.runFor(600);
+  // Vehicle diagnostics publish every250ms. End on their actual publication
+  // frame so a moving bus is tapped at its rendered position, rather than a
+  // coordinate from an earlier physics frame, up to250ms old.
+  const publishedSteps=await host.getAttribute('data-mobility-fixed-steps');
+  for(let frame=0;frame<20&&await host.getAttribute('data-mobility-fixed-steps')===publishedSteps;frame++)await page.clock.runFor(16);
+  expect(await host.getAttribute('data-mobility-fixed-steps')).not.toBe(publishedSteps);
   const vehicles=JSON.parse((await host.getAttribute('data-transit-vehicles'))!) as {id:string;position:{x:number;y:number}}[];
   const bus=vehicles.find(bus=>bus.id===id)!,box=(await canvas.boundingBox())!,scale=Number(await host.getAttribute('data-render-scale'));
   const point={x:box.width/2+(bus.position.x-Number(await host.getAttribute('data-camera-world-x')))*8*scale,
     y:box.height/2+(bus.position.y-Number(await host.getAttribute('data-camera-world-y')))*8*scale};
+  await info.attach('bus-tap-frame',{body:JSON.stringify({id,point,position:bus.position,publishedSteps,
+    currentSteps:await host.getAttribute('data-mobility-fixed-steps'),phase:await host.getAttribute('data-transit-phase')}),contentType:'application/json'});
   if(hasTouch)await canvas.tap({position:point});else await canvas.click({position:point});
   const inspector=page.getByRole('complementary',{name:'Наблюдение за городом'});
   await expect(inspector).toHaveAttribute('data-world-vehicle',id);

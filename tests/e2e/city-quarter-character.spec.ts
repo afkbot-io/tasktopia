@@ -59,10 +59,13 @@ test('one real district renders three persistent quarter characters through norm
       for(let drag=0;drag<40;drag++){
         const before=await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale)};});
         const box=(await canvas.boundingBox())!,dx=(before.x-target.x)*8*before.scale,dy=(before.y-target.y)*8*before.scale;
-        if(Math.abs(dx)<16&&Math.abs(dy)<16)break;
+        // The evidence needs the whole building inside the native viewport.
+        // Repeated micro-drags to its exact centre add software-GPU work while
+        // proving no additional camera or artwork behaviour.
+        if(Math.abs(dx)<box.width/2-32&&Math.abs(dy)<box.height/2-64)break;
         const f=Math.min(1,box.width*.32/Math.max(1,Math.abs(dx)),box.height*.32/Math.max(1,Math.abs(dy)));
         await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
-        await page.mouse.move(box.x+box.width/2+dx*f,box.y+box.height/2+dy*f,{steps:6});await page.mouse.up();
+        await page.mouse.move(box.x+box.width/2+dx*f,box.y+box.height/2+dy*f,{steps:4});await page.mouse.up();
         await expect.poll(async()=>{const now=await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY)};});
           return Math.abs(now.x-before.x)+Math.abs(now.y-before.y);}).toBeGreaterThan(.1);
         await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
