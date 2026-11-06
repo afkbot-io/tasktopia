@@ -1772,7 +1772,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             && actor.position.y >= view.minY && actor.position.y <= view.maxY);
           const timing = populationSliceMetric.snapshot();
           host.dataset.populationLocalCars = String(local.filter(actor => actor.kind === 'CAR').length);
-          host.dataset.populationLocalWalkers = String(local.filter(actor => actor.kind === 'WALKER').length);
+          host.dataset.populationLocalWalkers = String(local.filter(actor => actor.kind === 'WALKER' && !actor.carrier && actor.activity!=='INSIDE').length);
           host.dataset.populationRetired = String(metrics.retired); host.dataset.populationSpawned = String(metrics.spawned);
           host.dataset.populationFullScans = String(metrics.graphCellsScanned); host.dataset.populationPending = String(metrics.pending);
           host.dataset.populationQueryWork = String(metrics.queryVisited); host.dataset.populationQueryBuckets = String(metrics.queryBuckets);

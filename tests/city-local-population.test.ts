@@ -37,6 +37,74 @@ it('keeps a small real group near distant transport doors without losing the loc
   expect(walkers.length).toBeLessThanOrEqual(32);
 });
 
+it('does not let hidden carried passengers mask a visible pedestrian deficit', () => {
+  const f=cityTransitGrid(16);
+  for(let elapsed=0;elapsed<90000&&!f.city.agents.some(actor=>actor.carrier);elapsed+=50){
+    f.controller.update(42000+elapsed,f.view,f.options);f.city.advance(50);
+  }
+  const passengers=f.city.agents.filter(actor=>actor.carrier),busId=passengers[0]?.carrier;
+  expect(busId).toBeDefined();
+  const initialScans=f.city.population.graphCellsScanned;
+  const view={minX:-12,minY:-8,maxX:28,maxY:37};
+  f.city.updatePopulation(view);
+  for(let step=0;step<16;step++){f.city.holdTransit(busId!);f.city.advance(50);}
+  const before=f.city.agents.filter(actor=>actor.kind==='WALKER');
+  const inView=before.filter(actor=>contains(view,actor.position));
+  expect(inView).toHaveLength(8);
+  expect(inView.filter(actor=>!actor.carrier&&actor.activity!=='INSIDE')).toHaveLength(7);
+  f.city.updatePopulation(view,{now:()=>0});
+  expect(before.filter(actor=>!f.city.agents.some(next=>next.id===actor.id)).length).toBeGreaterThan(0);
+  for(const passenger of passengers)expect(f.city.agents.find(actor=>actor.id===passenger.id)?.carrier).toBe(busId);
+  expect(f.city.population.graphCellsScanned).toBe(initialScans);
+});
+
+it('refreshes free offscreen residents after a modest viewport change even when they all remain in the old48-cell halo', () => {
+  const f=cityTransitGrid(0),wide={minX:-6,minY:-6,maxX:54,maxY:54};
+  const city=createCityMobility({...f.input,carLimit:8,walkerLimit:32,spawnRegion:wide});
+  const view={minX:18,minY:8,maxX:30,maxY:32};
+  const original=new Set(city.agents.map(actor=>actor.id)),born=new Map<string,number>(),entered=new Set<string>();
+  const graph=city.walkingCells as Map<string,Cell>;
+  graph.values=()=>{throw new Error('No full graph scan for a local density deficit');};
+  for(let step=0;step<400;step++){
+    const visible=city.agents.filter(actor=>contains(view,actor.position));
+    city.updatePopulation(view);city.advance(50);
+    for(const actor of city.agents)if(!original.has(actor.id)){
+      if(!born.has(actor.id))born.set(actor.id,step);
+      if(actor.kind==='WALKER'&&contains(view,actor.position))entered.add(actor.id);
+    }
+    for(const [id,at] of born)if(step-at<160)expect(city.agents.some(actor=>actor.id===id),'New arrivals need their8s entry grace').toBe(true);
+    for(const actor of visible){
+      const next=city.agents.find(next=>next.id===actor.id);expect(next).toBeDefined();
+      expect(Math.hypot(next!.position.x-actor.position.x,next!.position.y-actor.position.y)).toBeLessThan(.25);
+    }
+    expect(city.population.workStepsLast).toBeLessThanOrEqual(256);
+  }
+  expect(city.population.retired,'A buffer outside the visible neighbourhood must not exhaust its whole resident budget').toBeGreaterThan(0);
+  expect(entered.size,'New offscreen residents must physically enter the observed street').toBeGreaterThanOrEqual(2);
+  expect(city.population.graphCellsScanned).toBe(0);
+  expect(city.agents.filter(actor=>actor.kind==='WALKER').length).toBeLessThanOrEqual(32);
+  expect([city.metrics.vehicleUnsafeTotal,city.metrics.pedestrianUnsafeTotal,city.metrics.vehiclePedestrianUnsafeTotal]).toEqual([0,0,0]);
+});
+
+it('does not let a young offscreen cohort delay a second distant neighbourhood', () => {
+  const {input}=separatedRegions(),city=createCityMobility({...input,carLimit:0,walkerLimit:8});
+  const original=new Set(city.agents.map(actor=>actor.id));
+  const first={minX:12,minY:12,maxX:28,maxY:28};
+  for(let step=0;step<100;step++){city.updatePopulation(first,{now:()=>0});city.advance(50);}
+  const young=city.agents.filter(actor=>!original.has(actor.id)).map(actor=>actor.id);
+  expect(young.length).toBeGreaterThan(0);
+  const second={...first,minX:first.minX+256,maxX:first.maxX+256};
+  for(let step=0;step<40;step++){
+    city.updatePopulation(second,{now:()=>0});city.advance(50);
+    expect(city.population.workStepsLast).toBeLessThanOrEqual(256);
+  }
+  // Every member was born less than8s ago. Its entry grace belongs to the
+  // first view; free invisible bodies may drain after this distant move.
+  expect(young.some(id=>!city.agents.some(actor=>actor.id===id))).toBe(true);
+  expect(city.population.graphCellsScanned).toBe(0);
+  expect(city.agents.filter(actor=>actor.kind==='WALKER').length).toBeLessThanOrEqual(8);
+});
+
 it('repopulates a distant visible neighbourhood without moving or retiring visible and explicitly protected bodies', () => {
   const { input } = separatedRegions(), city = createCityMobility({ ...input, carLimit: 8, walkerLimit: 16 });
   const protectedId = city.agents.find(actor => actor.kind === 'CAR' && !actor.fleet)!.id;
@@ -96,10 +164,15 @@ it('keeps real boarded passengers, visits, a service call and an observed idle b
     expect(f.city.agents.some(actor => actor.id === observed)).toBe(true);
     expect(f.city.agents.find(actor => actor.id === visit[0])?.visit?.id).toBe('protected-visit');
   }
+  const beforeDowngrade=f.city.agents.filter(actor=>actor.kind==='WALKER');
+  const visibleAtDowngrade=beforeDowngrade.filter(actor=>contains(view,actor.position)).map(actor=>actor.id);
   f.city.updatePopulationLimits({ carLimit: 5, walkerLimit: 8 });
   for (const id of [...passengers.map(actor => actor.id), busId!, engine.id, observed, ...visit]) expect(f.city.agents.some(actor => actor.id === id)).toBe(true);
+  for(const id of visibleAtDowngrade)expect(f.city.agents.some(actor=>actor.id===id)).toBe(true);
   expect(f.city.agents.filter(actor => actor.kind === 'CAR').length).toBeLessThanOrEqual(5);
-  expect(f.city.agents.filter(actor => actor.kind === 'WALKER').length).toBeLessThanOrEqual(8);
+  // Visible and occupied bodies can drain above the new target, within the
+  // old bounded pool. The following test separately verifies eventual8/5.
+  expect(f.city.agents.filter(actor => actor.kind === 'WALKER').length).toBeLessThanOrEqual(beforeDowngrade.length);
   expect(f.city.metrics.networkBuilds).toBe(2);
   expect([f.city.metrics.vehicleUnsafeTotal, f.city.metrics.pedestrianUnsafeTotal, f.city.metrics.vehiclePedestrianUnsafeTotal]).toEqual([0, 0, 0]);
 });

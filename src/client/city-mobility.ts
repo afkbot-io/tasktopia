@@ -197,6 +197,8 @@ export function advanceCityMobilityFrame(city: Pick<CityMobility, 'advance'>, el
 
 type Agent = CityMobilityAgent & {
   transferResident?: boolean;
+  populationBornAt?: number;
+  populationBornRegion?: string;
   baseVariant: string; responseUntil?: number; responseStayMs?: number; responseTarget?: Cell; responseRetryAt?: number;
   visitStayMs?: number; visitUntil?: number; visitDeadline?: number; visitIndoors?: boolean; visitTarget?: Cell; visitRetryAt?: number;
   alightPending?: boolean;
@@ -598,6 +600,8 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
           baseVariant: kind === "CAR" ? MICRO_CAR_VARIANTS[count % MICRO_CAR_VARIANTS.length]! : MICRO_PERSON_VARIANTS[count % MICRO_PERSON_VARIANTS.length]!,
           fleet,
           transferResident: !!spawnRegion && !!priority,
+          populationBornAt: late ? clock : undefined,
+          populationBornRegion: late ? populationRegionKey : undefined,
           age: kind === 'WALKER' ? count % 4 === 0 ? 'CHILD' : 'ADULT' : undefined,
           current, next: current, progress: 0, position: { x: current.x + .5, y: current.y + .5 }, direction: "east",
           speed: kind === "CAR" ? .0021 + random() * .00045 : .0012 + random() * .00018,
@@ -607,6 +611,12 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         const stop=priority?.stop;
         const approach=stop&&network.transferCells.has(key(stop))?(yield* walkerRoutes.steps(current,undefined,stop,48)).routeTo(stop):[];
         if(approach.length>=2)beginRoute(actor,approach);else yield* planSteps(actor);
+        // Offscreen residents replenish this street, rather than immediately
+        // taking a random trip away from it. The actual native route must enter
+        // the view within a short approach; no pose or route is fabricated.
+        const arrivalRegion=spawnRegion;
+        if(late&&arrivalRegion&&kind==='WALKER'&&!populationContains(arrivalRegion,actor.position)
+          &&!actor.route.some((cell,index)=>index<=16&&populationContains(arrivalRegion,cell)))continue;
         if (actor.route.length < 2 || actors.some(other => overlap(actor, other, .35)) || actors.filter(other => other.kind === kind).length >= limits[kind]
           || late && spawnRegion && populationContains(populationHalo(spawnRegion, 2), actor.position)
             && !(kind === 'CAR' ? network.parkingBays : network.buildingEntrances).has(key(actor.current))) continue;
@@ -643,18 +653,25 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       const outer = populationHalo(view, 48), local = populationHalo(view, 16), retired = new Set<string>();
       for (const kind of ['CAR', 'WALKER'] as const) {
         const current = actors.filter(actor => actor.kind === kind), localCount = current.filter(actor => populationContains(local, actor.position)).length;
-        const target = kind === 'CAR' ? Math.max(2, Math.floor(limits.CAR * .7)) : Math.max(0, limits.WALKER - remoteTarget);
+        const visibleCount = current.filter(actor => !actor.carrier && actor.activity!=='INSIDE' && populationContains(view, actor.position)).length;
+        const target = kind === 'CAR' ? Math.min(limits.CAR, Math.max(2, Math.floor(limits.CAR * .7))) : Math.max(0, limits.WALKER - remoteTarget);
+        const visibleTarget = Math.min(kind === 'CAR' ? 4 : 8, target);
+        const deficit = Math.max(0,target-localCount,visibleTarget-visibleCount);
         const excess = Math.max(0, current.length - limits[kind]);
-        if (!excess && localCount >= target) continue;
+        if (!excess && !deficit) continue;
         if (!excess) {
           const approaches = spawnSites[kind].query(local, populationHalo(view, 2));
           const doors = spawnSites[kind === 'CAR' ? 'PARKING' : 'DOOR'].query(view);
           if (!approaches.cells.length && !doors.cells.length) continue;
         }
-        const margin = excess ? populationHalo(view, 2) : outer;
+        // A nearby buffer must not hide an empty visible street. Keep an
+        // eight-cell no-pop margin while freeing only unowned offscreen bodies.
+        const margin = excess ? populationHalo(view, 2) : visibleCount < visibleTarget ? populationHalo(view,8) : outer;
         let quota = excess ? Math.min(kind === 'CAR' ? 4 : 8, excess)
-          : Math.max(0, Math.min(kind === 'CAR' ? 4 : 8, target - localCount) - Math.max(0, limits[kind] - current.length));
+          : Math.max(0, Math.min(kind === 'CAR' ? 4 : 8, deficit) - Math.max(0, limits[kind] - current.length));
         for (const actor of current) if (quota > 0 && !protectedBody(actor) && !actor.transferResident
+          // New arrivals need actual time to enter from their offscreen source.
+          && (excess || actor.populationBornAt === undefined || actor.populationBornRegion!==populationRegionKey || clock-actor.populationBornAt>=8000)
           && actor.activity === 'NONE' && !populationContains(margin, actor.position) && !populationContains(margin, actor.next)) {
           retired.add(actor.id); quota--;
         }
