@@ -5,6 +5,9 @@ import { CityEventDirector, type CityEventLease } from './city-event-director';
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
 const distance = (a: Cell, b: Cell) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+const ARRIVAL_TIMEOUT_MS = 24_000;
+// Cosmetic appointments leave eight seconds for real crossings and queues.
+const ARRIVAL_ROUTE_BUDGET_MS = 16_000;
 type Running = { plan: CityLifePlan; city: CityMobility; actorIds: string[]; serviceId?: string;
   confirmed: boolean; phase: CityLifeScene['phase']; activityAt?: number; leavingAt?: number; departureOrigins?: ReadonlyMap<string, Cell> };
 
@@ -45,7 +48,7 @@ export function createNeighbourhoodController(mobility: () => CityMobility | und
       const city = mobility(), targets = city ? plan.route.toReversed().filter(cell => city.visitTargets.has(key(cell))).slice(0, 1) : [];
       return !active && !!city && !!targets.length && (rejectedUntil.get(plan.taskId) ?? 0) <= plan.start
         && city.agents.some(actor => actor.kind === 'WALKER' && actor.age !== 'CHILD' && !actor.visit && !actor.carrier
-          && actor.activity !== 'INSIDE' && targets.some(target => distance(actor.next, target) / actor.speed <= 24_000))
+          && actor.activity !== 'INSIDE' && targets.some(target => distance(actor.next, target) / actor.speed <= ARRIVAL_ROUTE_BUDGET_MS))
         && (plan.kind !== 'DRILL' || !!plan.responseCells?.length && city.agents.some(actor => actor.kind === 'CAR' && !actor.response && !actor.fleet))
         && director.canAcquire(lease(plan));
     },
@@ -53,6 +56,8 @@ export function createNeighbourhoodController(mobility: () => CityMobility | und
     start(plan: CityLifePlan, now: number): boolean {
       const city = mobility();
       if (active || !city || !Number.isFinite(now) || now < plan.start || now >= plan.start + plan.durationMs || plan.route.length < 2) return false;
+      const travelBudget = ARRIVAL_ROUTE_BUDGET_MS - (now-plan.start);
+      if (!(travelBudget>0)) return false;
       // These sites describe a single narrow approach, not an independent
       // multi-person activity pad. One resting worker leaves its own exit;
       // assigning a second target farther along can strand that visitor behind
@@ -60,7 +65,7 @@ export function createNeighbourhoodController(mobility: () => CityMobility | und
       const targets = plan.route.toReversed().filter(cell => city.visitTargets.has(key(cell))).slice(0,1);
       if (!targets.length || plan.kind === 'DRILL' && !plan.responseCells?.length || !director.acquire(lease(plan))) return false;
       const adults = city.agents.filter(actor => actor.kind === 'WALKER' && actor.age !== 'CHILD').map(actor => actor.id);
-      const actorIds = city.dispatchVisit(plan.id, targets, 1, 30_000, false, adults, 24_000);
+      const actorIds = city.dispatchVisit(plan.id, targets, 1, 30_000, false, adults, travelBudget);
       active = { plan, city, actorIds, confirmed: false, phase: 'ARRIVING' };
       if (!actorIds.length) { finish();return false; }
       if (plan.kind === 'DRILL') {
@@ -83,7 +88,7 @@ export function createNeighbourhoodController(mobility: () => CityMobility | und
       if (current.phase === 'ARRIVING') {
         if (people.every(actor => actor.visit?.arrived) && (!serviceId || engine && engine.activity === 'REST')) {
           current.phase = 'ACTIVITY';current.activityAt = now;metrics.activities++;
-        } else if (now - plan.start >= 24_000) { finish();return; }
+        } else if (now - plan.start >= ARRIVAL_TIMEOUT_MS) { finish();return; }
       } else if (current.phase === 'ACTIVITY' && now - current.activityAt! >= 12_000) {
         current.phase = 'LEAVING';current.leavingAt = now;
         current.departureOrigins = new Map([...people, ...(engine ? [engine] : [])].map(actor => [actor.id, { ...actor.position }]));

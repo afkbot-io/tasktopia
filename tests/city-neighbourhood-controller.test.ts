@@ -16,6 +16,29 @@ function fixture(kind: CityLifeKind = 'GARDEN') {
   return { ...f, director, start, plan, controller };
 }
 
+it('reserves waiting headroom instead of admitting an almost-deadline background approach', () => {
+  const input={...cityTransitGrid(0).input,carLimit:0,walkerLimit:2,
+    spawnRegion:{minX:-6,minY:-4,maxX:0,maxY:10}};
+  const target={x:14,y:-2},control=createCityMobility(input);
+  const adults=control.agents.filter(actor=>actor.age==='ADULT').map(actor=>actor.id);
+  // The real route is possible under the old full24s free-flow allowance.
+  // A cosmetic scene also needs room for normal crossing/traffic waits.
+  expect(control.dispatchVisit('direct',[target],1,30000,false,adults,24000)).toEqual(adults);
+  const city=createCityMobility(input),before=structuredClone(city.agents),director=new CityEventDirector(),start=42000;
+  director.update(start,options);
+  const controller=createNeighbourhoodController(()=>city,director);
+  const plan={id:'slow-background-approach',taskId:'garden',kind:'GARDEN',start,durationMs:75000,
+    route:Array.from({length:7},(_,i)=>({x:8+i,y:-2}))} satisfies CityLifePlan;
+  expect(controller.canStart(plan)).toBe(false);expect(controller.start(plan,start)).toBe(false);
+  expect(controller.state).toBeUndefined();expect(director.active).toEqual([]);expect(city.agents).toEqual(before);
+});
+
+it('rejects a stale approach window before claiming a real participant', () => {
+  const f=fixture(),before=structuredClone(f.city.agents);
+  expect(f.controller.start(f.plan,f.start+20000)).toBe(false);
+  expect(f.controller.state).toBeUndefined();expect(f.director.active).toEqual([]);expect(f.city.agents).toEqual(before);
+});
+
 it.each(['MOVING', 'DELIVERY', 'GARDEN', 'MUSIC', 'CELEBRATION', 'CLEANING', 'MAINTENANCE', 'DRILL'] as const)(
   '%s uses actual existing participants, works only after arrival, and completes after physical departure', kind => {
     const f = fixture(kind), before = f.city.agents.map(actor => actor.position);

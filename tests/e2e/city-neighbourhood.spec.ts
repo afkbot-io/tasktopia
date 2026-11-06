@@ -21,7 +21,10 @@ test('a completed neighbourhood uses real residents through arrival, activity an
   const bootstrap = await (await page.request.get('/api/bootstrap')).json();
   const scene = await (await page.request.get(`/api/countries/${bootstrap.country.id}/cities/${bootstrap.initialCity.id}/scene`)).json() as CitySceneDto;
   const g = sceneWalkGeometry(scene), sites = cityLifeSites(g.tasks, g.walkGraph, new Set([...g.blockedCells, ...g.roads.keys()]));
-  const task = g.tasks.find(task => !task.serviceRole && sites.some(site => site.taskId === task.id))!;expect(task).toBeTruthy();
+  // This positive journey observes a completed home's real arrival/work/exit.
+  // A large edge park may have no available nearby adult while a bus boards;
+  // unavailable/long approaches have separate public controller regressions.
+  const task = g.tasks.find(task => !task.serviceRole && task.visualKind!=='PARK' && sites.some(site => site.taskId === task.id))!;expect(task).toBeTruthy();
   const epoch = Math.floor(Date.UTC(2035, 0, 1) / 180_000) * 180_000 + 42_000;
   await page.route('**/api/**', async route => {
     const response = await route.fetch({ headers: { ...route.request().headers(), 'accept-encoding': 'identity' } });
@@ -49,7 +52,15 @@ test('a completed neighbourhood uses real residents through arrival, activity an
   if(await menu.isVisible()&&await menu.getAttribute('open')!==null){
     if(hasTouch)await menu.locator(':scope > summary').tap();else await menu.locator(':scope > summary').click();
   }
-  for (let step = 0; step < 24 && !await world.getAttribute('data-city-life-episode-id'); step++) await page.clock.runFor(500);
+  // Preserve the12s idle admission bound. A real higher-priority owner can
+  // defer this scene until its bounded30s response and the next retry finish.
+  let deferredByOwner=false;
+  for(let step=0;step<90&&!await world.getAttribute('data-city-life-episode-id');step++){
+    const owners=JSON.parse((await world.getAttribute('data-city-event-owners'))!) as {priority:number}[];
+    deferredByOwner ||= owners.some(owner=>owner.priority>1);
+    if(step===24)expect(deferredByOwner,'Delayed admission needs an observed shared owner').toBe(true);
+    await page.clock.runFor(500);
+  }
   await expect(world).toHaveAttribute('data-city-life-phase', /^(ARRIVING|ACTIVITY)$/);
   const plan = JSON.parse((await world.getAttribute('data-city-life-plan'))!) as CityLifePlan;
   const canonical = g.tasks.find(task => task.id === plan.taskId)!;expect(canonical.status).toBe('COMPLETED');expect(canonical.stage).toBe(5);
