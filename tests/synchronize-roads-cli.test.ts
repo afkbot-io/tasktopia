@@ -76,3 +76,28 @@ it('previews, publishes and repeats a version upgrade without changing accepted 
   expect(failure).toMatchObject({stdout:'',stderr:expect.stringContaining('road publication rollback fixture')});
   expect(await snapshot()).toEqual(beforeFault);
 },30_000);
+
+it('keeps the route checksum stable when a newly planned route round-trips through PostgreSQL JSONB',async()=>{
+  db=await createTestDb();const service=new AppService(db);
+  const {user}=await registerUser(db,{email:'fresh-road-cli@example.test',name:'Fresh road CLI',password:'password123'});
+  await db.prepare('UPDATE countries SET seed=1 WHERE id=?').run(user.countryId);
+  for(let i=0;i<2;i++){
+    const city=await service.createCity(user.countryId,{name:`Fresh road city ${i}`,idempotencyKey:`city-${i}`});
+    const district=await service.createDistrict(user.countryId,{cityId:city.id,name:'Fresh road district',activate:true,idempotencyKey:`district-${i}`});
+    await service.createTask(user.countryId,{cityId:city.id,districtId:district.id,title:`Fresh house ${i}`,estimate:1,idempotencyKey:`task-${i}`});
+  }
+  expect((await readCountryRoads(db,user.countryId))!.plan.routes).toHaveLength(1);
+  // Only this owned test's disposable snapshot is removed. Source geometry
+  // remains authoritative, so the first CLI must plan a genuinely new object.
+  await db.prepare('DELETE FROM country_road_snapshots_v1 WHERE country_id=?').run(user.countryId);
+  const schema=(await db.prepare('SELECT current_schema() AS name').get<{name:string}>())!.name;
+  const url=new URL(process.env.TEST_DATABASE_URL??'postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test');
+  url.searchParams.set('options',`-csearch_path=${schema}`);
+  const run=async(write=false)=>JSON.parse((await execute(process.execPath,
+    ['--import','tsx','src/server/synchronize-roads-cli.ts','--country',user.countryId,...write?['--write']:[]],
+    {env:{...process.env,DATABASE_URL:url.toString()},timeout:15000})).stdout.trim());
+  const preview=await run(),first=await run(true),saved=await readCountryRoads(db,user.countryId),repeat=await run(true);
+  expect(first).toMatchObject({changed:true,after:{routes:1},checksum:preview.checksum});
+  expect(repeat).toMatchObject({changed:false,checksum:first.checksum});
+  expect(await readCountryRoads(db,user.countryId)).toEqual(saved);
+},30000);

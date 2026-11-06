@@ -90,6 +90,10 @@ it('publishes the same immutable stops in CITY and viewport features through gro
   expect(await db.prepare('SELECT * FROM city_transit_stop_plans_v1').all()).not.toEqual(beforeRows);
   const layout = (await readActiveBlockLayout(db,city.id))!;
   await db.prepare('DELETE FROM city_transit_stop_plans_v1 WHERE layout_id=?').run(layout.id);
+  // This direct legacy-fixture edit must publish its source change, as a
+  // topology command does. An unchanged world version legitimately reuses
+  // the persisted scene from before the edit.
+  await db.prepare('UPDATE countries SET world_version=world_version+1 WHERE id=?').run(user.countryId);
   const legacy = await new AppService(db).getCityScene(user.countryId,city.id);
   expect(legacy.transitStops).toBeUndefined();
   expect(await store.readCityTransitStopPlan(db,user.countryId,layout.id)).toBeUndefined();

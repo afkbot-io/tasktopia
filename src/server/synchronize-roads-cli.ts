@@ -28,7 +28,11 @@ async function main() {
       }
       return {event:'roads.synchronization',mode:write?'write':'dry-run',countryId,changed,
         before:summary(before),after:summary(after),metrics:after.plan.metrics,
-        checksum:createHash('sha256').update(JSON.stringify(after.plan.routes)).digest('hex')};
+        // JSONB preserves values and array order, but reorders object keys.
+        // A preview and a persisted route must have the same receipt hash.
+        checksum:createHash('sha256').update(JSON.stringify(after.plan.routes,(_key,value:unknown) =>
+          value && typeof value==='object' && !Array.isArray(value)
+            ? Object.fromEntries(Object.entries(value).sort(([a],[b])=>a<b?-1:a>b?1:0)) : value)).digest('hex')};
     });
     console.log(JSON.stringify(report));
   } finally {await db.close();}

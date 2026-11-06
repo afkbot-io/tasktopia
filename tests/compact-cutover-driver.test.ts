@@ -8,3 +8,9 @@ it("preserves files, task content and every country across the cutover boundarie
     })).not.toThrow();
   }
 });
+
+it('prepares derived city infrastructure under strict source conservation and finite receipts', () => {
+  expect(() => execFileSync('python3', ['tests/living_city_preparation_test.py'], {
+    timeout:30_000,stdio:'pipe',
+  })).not.toThrow();
+});

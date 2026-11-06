@@ -4,7 +4,22 @@
 База: `7fbc3c82ffcecdff4a9297cd78e2f9f2492d22d3`.
 Цель охватывает все пункты обсуждённого плана, а не только первый PR.
 
-Текущий срез73: immutable run-геометрия хранится упакованной с WeakRef
+Текущий этап84 — итоговые масштабные проверки и управляемый выпуск1.28.0.
+Все функциональные срезы58–83 реализованы. Явный managed opt-in готовит
+transport→roads→scenes под frozen writers после strict migration conservation;
+PostgreSQL integration и негативные driver/receipt проверки проходят.
+Итоговый native mobile обнаружил54/57мс steady pauses: CPU trace локализовал
+линейный поиск всех conflict zones. Reservation теперь хранит свою зону;
+public probe108744→0 посещений, прежний signalSHA и safety сохранены.
+185уникальных mobility/transit cases,build/types/lint проходят. Финальный
+10000journey на этой сборке выполняется;200/1000,SCM CI и managed release
+ещё не завершены. Нельзя считать локальную подготовку выкладкой.
+Ориентир256МиБ не достигнут. [Релиз и ограничения](../tasks/84-managed-living-city-release.md),
+[модель угроз](../tasks/84-managed-living-city-threat-model.md).
+
+Ниже сохранены результаты промежуточных срезов, а не текущий статус релиза.
+
+Срез73: immutable run-геометрия хранится упакованной с WeakRef
 для прочитанных массивов; metadata-only patch не разворачивает её.
 После AI-review три аппаратные пары native10000 дают mainheap526,5→478,2МиБ,
 первый кадр4,399→4,403s и полную физику17,784→17,821s. Часть экономии

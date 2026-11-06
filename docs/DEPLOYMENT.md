@@ -319,7 +319,8 @@ PORT), не обходите его rollback guard. Для уже установ
 ```sh
 TASKTOPIA_EXPECTED_REVISION=<полный_merged_SHA> \
   /srv/tasktopia/app/deploy/update-server.sh compact-cutover prepare \
-  compact-living-<уникальная-дата> --previous-revision <прежний_SHA> --preserve-world
+  compact-living-<уникальная-дата> --previous-revision <прежний_SHA> \
+  --preserve-world --prepare-living-city
 ```
 
 Этот режим фиксируется в immutable binding и plan digest. Read-only preflight
@@ -333,6 +334,26 @@ append-only истории/миграций. Далее обязателен п�
 Любое отличие запрещает accept. `recover` и `accept` используют сохранённый
 режим без повторного флага. Восстановление БД+образа разрешено до открытия
 трафика; после новых записей — только совместимое исправление вперёд.
+
+Для кандидата живого города добавлен отдельный opt-in `--prepare-living-city`.
+Он допустим только вместе с `prepare --preserve-world`, входит в тот же
+immutable binding/plan digest и не меняет старый режим без этого флага.
+После полной проверки сохранности миграции, до world audit и активации,
+controller из точного candidate image последовательно запускает
+`synchronize-transport`, `synchronize-roads`, `synchronize-city-scenes` для
+каждой авторитетной страны: preview, write, повторный write. Все writers и
+трафик остаются закрыты; повторные запуски должны физически не менять БД.
+Проверяются scope, SHA, готовность всех городов, byte/chunk limits и общий
+deadline 1800 секунд. Сцены прогреваются после публикации дорог.
+
+Отдельная проверка этой фазы сохраняет все исходные строки и spatial-поля,
+кроме публикационного `countries.world_version`; закрытый перечень
+производных кэшей разрешено перестроить. В frozen airport/railway/stop tables
+разрешено только добавление строк, все старые строки сохраняются. Каждый
+старый принятый маршрут остаётся целиком неизменным. Любое отличие, включая
+неожиданную починку старого плана, требует штатного joint recovery до
+открытия трафика. Нельзя продолжать forward после ошибки или использовать
+image-only rollback. См. [границы и проверку](tasks/84-managed-living-city-release.md).
 
 ### Исполняемый первый переход tasktopia.online
 

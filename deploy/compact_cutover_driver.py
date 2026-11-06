@@ -21,6 +21,7 @@ from compact_cutover_database import CommandRunner, DatabaseBackup, fsync_direct
 from compact_cutover_files import FileBackup, file_hash, inventory
 from compact_cutover_host import DeploymentLock, NginxMaintenance, WriterFreeze
 from compact_cutover_state import CutoverError, Journal, accept, canonical, prepare, recover, require
+from living_city_preparation import ENTRIES, prepare_living_city, uuid as valid_uuid, validate_receipt
 
 APP = Path("/srv/tasktopia/app")
 STATIC = Path("/srv/tasktopia/static")
@@ -212,11 +213,32 @@ class HostDriver:
 
     def run_cli(self, entry, countries):
         require(entry in ("regenerate-worlds", "migrate-worlds", "audit-worlds"), "Unplanned application command")
+        output, log = self.execute_cli(entry, [], 1800, regeneration=True)
+        return {"log": log, **validate_cli_log(output, entry, countries)}
+
+    def run_living_cli(self, entry, country_id, write, timeout):
+        require(entry in ENTRIES and valid_uuid(country_id) and type(write) is bool
+                and type(timeout) in (int, float) and 0 < timeout <= 1800, "Unplanned living-city command")
+        args = ["--country", country_id] + (["--write"] if write else [])
+        output, log = self.execute_cli(entry, args, timeout)
+        return {"log": log, **validate_receipt(output, entry, country_id, write)}
+
+    def prepare_living_city(self, nginx):
+        require(self.b.get("preserveWorld") is True and self.b.get("prepareLivingCity") is True,
+                "Living-city preparation is not bound")
+        return prepare_living_city(self.db, self.run_living_cli, lambda: self.assert_frozen(nginx))
+
+    def execute_cli(self, entry, args, timeout, regeneration=False):
+        require((regeneration and entry in ("regenerate-worlds", "migrate-worlds", "audit-worlds") and not args)
+                or (not regeneration and entry in ENTRIES and len(args) in (2, 3)
+                    and args[0] == "--country" and valid_uuid(args[1])
+                    and (len(args) == 2 or args[2] == "--write")), "Unplanned application command")
         name = "tasktopia-compact-" + uuid.uuid4().hex
         env = read_json(self.r, self.b["candidateCompose"])["services"]["world"]["environment"]
         values = {"NODE_ENV": "production", "RUNTIME_ROLE": "world", "DATABASE_POOL_MAX": "4",
-                  "DATABASE_URL": env["DATABASE_URL"], "REDIS_URL": "", "REGENERATION_RUN_ID": self.j.plan["runId"],
-                  "REGENERATION_FORCE": "1", "REGENERATION_MAX_ATTEMPTS": "1"}
+                  "DATABASE_URL": env["DATABASE_URL"], "REDIS_URL": ""}
+        if regeneration:
+            values.update(REGENERATION_RUN_ID=self.j.plan["runId"], REGENERATION_FORCE="1", REGENERATION_MAX_ATTEMPTS="1")
         require(all("\n" not in str(v) and "\r" not in str(v) for v in values.values()), "Invalid command environment")
         env_name = "cli-" + uuid.uuid4().hex + ".env"
         fd = os.open(self.r.directory / env_name, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
@@ -224,20 +246,20 @@ class HostDriver:
             stream.write("".join(k + "=" + str(v) + "\n" for k, v in values.items()))
             stream.flush()
             os.fsync(stream.fileno())
-        self.r.publish_json(name + "-intent.json", {"image": self.j.plan["candidateImage"], "entry": entry})
+        self.r.publish_json(name + "-intent.json", {"image": self.j.plan["candidateImage"], "entry": entry, "args": args})
         ident = self.command(["create", "--name", name, "--label", "com.docker.compose.project=tasktopia-cutover-tools",
             "--label", "com.docker.compose.service=cli", "--label", "tasktopia.cutover-run=" + self.j.plan["runId"],
             "--network", self.b["network"], "--read-only", "--tmpfs", "/tmp:rw,nosuid,noexec,size=64m",
             "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "1536m", "--cpus", "2",
             "--pids-limit", "128", "--env-file", str(self.r.directory / env_name), "--entrypoint", "node",
-            self.j.plan["candidateImage"], "dist/" + entry + ".mjs"]).decode().strip()
+            self.j.plan["candidateImage"], "dist/" + entry + ".mjs", *args]).decode().strip()
         try:
-            output = self.command(["start", "--attach", ident], timeout=1800, max_bytes=32 * 1024 ** 2)
+            output = self.command(["start", "--attach", ident], timeout=timeout, max_bytes=32 * 1024 ** 2)
             info = json.loads(self.command(["inspect", ident]))[0]
             require(info["Image"] == self.j.plan["candidateImage"] and not info["State"]["Running"]
                     and info["State"]["ExitCode"] == 0 and not info["State"].get("OOMKilled"), "CLI failed")
             log = self.r.publish_json(entry + "-" + uuid.uuid4().hex + ".json", {"lines": output.decode().splitlines()})
-            return {"log": log, **validate_cli_log(output, entry, countries)}
+            return output, log
         finally:
             self.stop_run_commands()
 
@@ -364,6 +386,8 @@ class HostDriver:
                 backup = self.evidence(evidence, "backup")
                 before = read_json(self.r, backup["business"])
                 result = verify_business(before, capture_business(self.db, list(before), preserve_world=self.b.get("preserveWorld", False)))
+                if self.b.get("prepareLivingCity", False):
+                    result["livingCity"] = self.prepare_living_city(nginx)
                 result["audit"] = self.run_cli("audit-worlds", backup["countries"])
             elif operation == "activate_candidate_assets":
                 self.assert_frozen(nginx)
@@ -413,7 +437,8 @@ class HostDriver:
         return self.publish(result)
 
 
-def prepare_binding(runner, app, previous_revision, revision, run_id, preserve_world=False):
+def prepare_binding(runner, app, previous_revision, revision, run_id, preserve_world=False, prepare_living_city=False):
+    require(not prepare_living_city or preserve_world, "Living-city preparation requires preserve-world")
     docker = shutil.which("docker")
     if preserve_world:
         # This is a subsequent compatible-schema transition, never a way to
@@ -501,6 +526,8 @@ def prepare_binding(runner, app, previous_revision, revision, run_id, preserve_w
                   "domain": "tasktopia.online", "httpPort": 80, "httpsPort": 443, "caFile": None, "loopbackOnly": False}}
     if preserve_world:
         binding["preserveWorld"] = True
+    if prepare_living_city:
+        binding["prepareLivingCity"] = True
     plan = {"version": 1, "runId": run_id, "project": project, "appDir": str(app), "revision": revision,
             "previousImage": previous, "candidateImage": candidate, "previousStatic": previous_static,
             "database": "tasktopia", "targetId": hashlib.sha256(canonical(binding)).hexdigest()}
@@ -515,8 +542,11 @@ def main():
     parser.add_argument("--plan-digest")
     parser.add_argument("--recovery-revision")
     parser.add_argument("--preserve-world", action="store_true")
+    parser.add_argument("--prepare-living-city", action="store_true")
     args = parser.parse_args()
     require(not args.preserve_world or args.action == "prepare", "Preserve mode is bound at prepare only")
+    require(not args.prepare_living_city or args.action == "prepare" and args.preserve_world,
+            "Living-city preparation requires prepare --preserve-world")
     require(os.getuid() == 0 and Path(__file__).resolve().parent == APP / "deploy", "Use the installed managed target")
     require(re.fullmatch(r"compact-[a-z0-9-]{8,48}", args.run_id), "Invalid run ID")
     revision = os.environ.get("TASKTOPIA_EXPECTED_REVISION", "")
@@ -540,7 +570,8 @@ def main():
         if args.action == "prepare":
             require(args.previous_revision is not None and re.fullmatch(r"[a-f0-9]{40}", args.previous_revision), "Previous revision required")
             runner.run(["git", "-C", str(APP), "merge-base", "--is-ancestor", args.previous_revision, revision])
-            plan, binding = prepare_binding(runner, APP, args.previous_revision, revision, args.run_id, args.preserve_world)
+            plan, binding = prepare_binding(runner, APP, args.previous_revision, revision, args.run_id,
+                                            args.preserve_world, args.prepare_living_city)
             runner.publish_json("binding.json", binding)
             runner.publish_json("plan.json", plan)
         else:

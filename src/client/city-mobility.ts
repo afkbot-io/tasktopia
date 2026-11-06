@@ -211,7 +211,7 @@ type Agent = CityMobilityAgent & {
   // repair must never change the geometry under an already moving body.
   segmentStart: Cell; segmentEnd: Cell;
 };
-type Reservation = { owner: string; exit: Cell; axis: "H" | "V" | "P" };
+type Reservation = { owner: string; exit: Cell; axis: "H" | "V" | "P"; zone: MobilityZone };
 const STEP_MS = 50, EPSILON = 1e-8, WALK_INSET = .25;
 const heading = (from: Cell, to: Cell, fallback: MicroDirection): MicroDirection => to.x > from.x ? "east" : to.x < from.x ? "west" : to.y > from.y ? "south" : to.y < from.y ? "north" : fallback;
 const horizontal = (direction: MicroDirection) => direction === "east" || direction === "west";
@@ -809,7 +809,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
     }
     // Release only after the entire body has passed the last conflict tile.
     for (const [zoneId, reservation] of reservations) {
-      const owner = actors.find(actor => actor.id === reservation.owner), zone = network.zones.find(zone => zone.id === zoneId);
+      const owner = actors.find(actor => actor.id === reservation.owner), zone = reservation.zone;
       if (!owner || !zone) { reservations.delete(zoneId); continue; }
       if (owner.activity === 'INSIDE') { reservations.delete(zoneId); owner.zoneId = undefined; owner.requestedAt = undefined; continue; }
       const e = body(owner).half, center = bodyCenter(owner);
@@ -853,7 +853,9 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
         || [...reservations.values()].some(reservation => same(reservation.exit, exit))) {
         actor.yieldReason = "OCCUPIED_EXIT"; continue;
       }
-      reservations.set(zone.id, { owner: actor.id, exit, axis: actor.kind === "WALKER" ? "P" : horizontal(actor.direction) ? "H" : "V" });
+      // The admitted resource already owns its immutable topology zone.
+      // Keep this one reference instead of scanning every zone each frame.
+      reservations.set(zone.id, { owner: actor.id, exit, zone, axis: actor.kind === "WALKER" ? "P" : horizontal(actor.direction) ? "H" : "V" });
       actor.zoneId = zone.id;
     }
     const movements = new Map<string, number>();
@@ -1210,7 +1212,7 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
           let prefix = moving ? [actor.current] : [], preserveSegment = moving;
           if (!network.walkers.has(key(target)) || network.roads.has(key(target)) || walkClosures.has(key(target)) || !(safeDestination(target) || indoors && network.buildingEntrances.has(key(target)))) continue;
           if (actor.zoneId) {
-            const reservation = reservations.get(actor.zoneId), zone = network.zones.find(candidate => candidate.id === actor.zoneId);
+            const reservation = reservations.get(actor.zoneId), zone = reservation?.zone;
             if (!reservation || reservation.owner !== actor.id || !zone || actor.route.length < 2) continue;
             let exitIndex = mobilityPassageExitIndex(actor.route, zone);
             if (exitIndex < 0) {
