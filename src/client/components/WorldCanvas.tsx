@@ -34,7 +34,7 @@ import type { CityDevelopmentDto } from "../../shared/city-development";
 import { cityMapKeyAction } from "../city-map-keyboard";
 import { CityViewPublisher,CityViewRestoreQueue,readCityViewState,type CityViewState,type CityViewRestoreRequest,type CityViewChangeMeta } from "../city-view-state";
 export type {CityViewState,CityViewRestoreRequest,CityViewChangeMeta} from "../city-view-state";
-import { cityLifeSitesAsync, planCityLife, cityLifePlanFitsSite, type CityLifeSite, type CityLifePlan } from "../city-life";
+import { createCityLifeBlocker,cityLifeSitesAsync, planCityLife, cityLifePlanFitsSite, type CityLifeSite, type CityLifePlan } from "../city-life";
 import { createCityLifeView } from "../city-life-view";
 import { createNeighbourhoodController } from "../city-neighbourhood-controller";
 import { worldDetailProfile } from "../world-detail-profile";
@@ -1997,14 +1997,14 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       const cinematicEvents = new Map<string, { event: MapInvalidation; task: ChunkTaskDto }>();
       const pendingOpenings = new Map<string, { task: ChunkTaskDto; version: string; at: number }>();
       const cinematicView = createCityCinematicView({ layer: agentOverlayLayer, airLayer: flightLayer,
-        texture: developmentTexture, walk: () => {
-          const graph = new Map(mobilityWalkGraph);
+        texture: developmentTexture, walk:()=>mobilityWalkGraph,occupied: () => {
+          const occupied = new Set<string>();
           // A foreground crew does not appear underneath a nearby passer-by.
           // Future walking intentions yield to the crew's reserved paths.
           for (const actor of mobility?.agents ?? []) if (actor.kind === "WALKER" && actor.activity !== "INSIDE")
-            for (const cell of [actor.current, actor.next]) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) graph.delete(`${cell.x + dx},${cell.y + dy}`);
-          return graph;
-        }, roads: () => new Set(mobilityRoads.keys()), economy: () => economy,
+            for (const cell of [actor.current, actor.next]) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) occupied.add(`${cell.x + dx},${cell.y + dy}`);
+          return occupied;
+        }, roads: () => mobilityRoads, economy: () => economy,
         sound: cue => { if (activeRef.current && !reducedMotion) playCitySound(cue); },
         complete: (frame, bounds) => {
           const event = cinematicEvents.get(frame.taskId)?.event;
@@ -4071,7 +4071,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             });
             const everydayParking=new Set(parking.flatMap(plan=>plan.route.map(key)));
             const everydayPosts=new Set([...postOrigins.values()].map(key));
-            const lifeBlocked=new Set([...walk.blockedCells,...roads.keys(),...everydayParking]);
+            const lifeBlocked=createCityLifeBlocker(walk.blockedCells,roads,everydayParking);
             const prepareLife=(lifeSignal:AbortSignal,lifeGeometry:LifeGeometry)=>prepareLatestCityLife(
               ()=>({revision:latestMovement.life,state:latestCanonicalTasks}),async currentTasks=>{
                 const started=performance.now(),taskList=[...currentTasks.values()];

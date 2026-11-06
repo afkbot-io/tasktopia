@@ -11,6 +11,13 @@ export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[];context?:
 export type CityLifePlan=CityLifeSite & {id:string;start:number;durationMs:number;recipeId?:string};
 export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';position:Cell;actorIds:string[];serviceId?:string;arrived:number;activityAt?:number};
 const key=(cell:Cell)=>`${cell.x},${cell.y}`;
+/** These indexes belong to one completed physical snapshot. Life only asks
+ * membership; duplicating their city-wide union retains hundreds of thousands
+ * of hash entries without adding information. */
+export function createCityLifeBlocker(blocked:Pick<ReadonlySet<string>,'has'>,roads:Pick<ReadonlySet<string>,'has'>,
+  parking:Pick<ReadonlySet<string>,'has'>):Pick<ReadonlySet<string>,'has'>{
+  return {has:id=>blocked.has(id)||roads.has(id)||parking.has(id)};
+}
 export function cityLifeHash(value:string) {let h=2166136261;for(const char of value)h=Math.imul(h^char.charCodeAt(0),16777619);return h>>>0;}
 const directions=[{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
 const buildings=new Map(BUILDING_CATALOG.map(building=>[building.key,building]));

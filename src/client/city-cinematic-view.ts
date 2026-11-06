@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite, FederatedPointerEvent, EventBoundary, type
 import type { Cell, ChunkTaskDto, Rect } from "../shared/contracts";
 import { microDirection } from "../shared/micro-ambient";
 import { createCityCinematics, type CityCinematicFrame, type CityCinematicRequest } from "./city-cinematics";
-import { planCinematicCrew } from "./city-cinematic-crew";
+import { planCinematicCrew,type CrewWalkIndex,type CrewMembership } from "./city-cinematic-crew";
 import { incidentEffectPixels } from "./incident-pixels";
 
 type Capture = { task: ChunkTaskDto; building: Container; platform?: Container };
@@ -10,7 +10,7 @@ type Target = { task?: ChunkTaskDto; building?: Container; platform?: Container;
 type Shot = Capture & { x: number; y: number; platformX: number; platformY: number; bounds: Rect; visual: {x:number;y:number;width:number;height:number}; root: Container; pixels: Graphics; aircraft: Sprite;
   workers: { view: Sprite; path: Cell[] }[]; hidden: Set<Container>; target?: Target; sounded: Set<string> };
 type Options = { layer: Container; airLayer: Container; texture(key: string): Texture | undefined;
-  walk(): ReadonlyMap<string, Cell>; roads(): ReadonlySet<string>; economy(): boolean;
+  walk(): CrewWalkIndex; roads(): CrewMembership; occupied?(): ReadonlySet<string>; economy(): boolean;
   sound(cue: "hammer" | "blast" | "rotor" | "reveal"): void; complete(frame: CityCinematicFrame, bounds: Rect): void };
 
 /** Owns only captured presentation objects. Authoritative task records remain
@@ -49,6 +49,7 @@ export function createCityCinematicView(options: Options) {
       if (existing) { if (request.kind !== "CONSTRUCT") { existing.building.eventMode = "none"; existing.building.interactiveChildren = false; } return true; }
       if (!capture) return false;
       const occupied = new Set([...shots.values()].flatMap(shot => shot.workers.flatMap(w => w.path.map(c => `${c.x},${c.y}`))));
+      for(const id of options.occupied?.()??[])occupied.add(id);
       const paths = request.kind === "TRANSFER" ? [] : planCinematicCrew(capture.task, options.walk(), options.roads(), occupied, options.economy() ? 3 : 6);
       const root = new Container({ label: `cinematic-${request.taskId}`, eventMode: "none" });
       const pixels = new Graphics(), aircraft = new Sprite();

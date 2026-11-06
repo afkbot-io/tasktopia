@@ -35,7 +35,7 @@ it('prepares real canonical life sites cooperatively without changing route orde
   let ticks = 0, yields = 0;
   const result = await prepare(tasks, walk, blocked, { budgetMs: 1, now: () => ticks++, yieldTask: async () => { yields++; } });
   expect(yields).toBeGreaterThan(0);
-  expect(result).toEqual([{ taskId: 'shop', kind: 'DELIVERY', route: Array.from({ length: 7 }, (_, index) => ({ x: 6 - index, y: 0 })) }]);
+  expect(result).toEqual([{ taskId: 'shop', kind: 'DELIVERY', context:'SHOP',route: Array.from({ length: 7 }, (_, index) => ({ x: 6 - index, y: 0 })) }]);
   expect(result).toEqual(life.cityLifeSites(tasks, walk, blocked));
   expect({ tasks, walk, blocked }).toEqual(before);
 });

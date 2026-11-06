@@ -3,15 +3,25 @@ import { Container, Graphics, Texture } from 'pixi.js';
 import { createCityCinematicView } from '../src/client/city-cinematic-view';
 import type { ChunkTaskDto } from '../src/shared/contracts';
 
-function fixture(economy=false){
+function fixture(economy=false,occupied:ReadonlySet<string>=new Set()){
  const ground=new Container(),layer=new Container(),airLayer=new Container(),complete=vi.fn(),sound=vi.fn();
  const walk=new Map(Array.from({length:144},(_,i)=>({x:i%12,y:Math.floor(i/12)})).map(c=>[`${c.x},${c.y}`,c]));
  const task={id:'one',stage:1,footprint:[{x:4,y:4},{x:5,y:4},{x:4,y:5},{x:5,y:5}],accessPath:[{x:4,y:6}],siteBounds:{minX:4,minY:4,maxX:5,maxY:5}} as ChunkTaskDto;
  const building=new Container(),platform=new Container();building.addChild(new Graphics().rect(-8,-24,16,24).fill(0x81975b));building.position.set(40,48);platform.position.set(32,32);ground.addChild(platform,building);
- const view=createCityCinematicView({layer,airLayer,walk:()=>walk,roads:()=>new Set(),economy:()=>economy,texture:()=>Texture.EMPTY,complete,sound});
+ const view=createCityCinematicView({layer,airLayer,walk:()=>walk,roads:()=>new Set(),occupied:()=>occupied,economy:()=>economy,texture:()=>Texture.EMPTY,complete,sound});
  const target=new Container(),targetPlatform=new Container();target.position.set(100,120);targetPlatform.position.set(92,104);ground.addChild(targetPlatform,target);
  return{ground,layer,airLayer,complete,view,task,building,platform,target,targetPlatform,setEconomy:(value:boolean)=>{economy=value;}};
 }
+it('keeps current and future resident occupancy clear without mutating the shared walking graph',()=>{
+ const occupied=new Set(['3,4','3,5','3,6','4,6','5,6']),f=fixture(false,occupied);
+ try{
+  expect(f.view.begin({eventId:1,version:2,taskId:'one',kind:'CONSTRUCT',fromStage:1,toStage:2},
+   {task:f.task,building:f.building,platform:f.platform},0)).toBe(true);
+  expect(f.view.reservedCells().size).toBeGreaterThan(0);
+  for(const cell of f.view.reservedCells())expect(occupied.has(cell)).toBe(false);
+  expect(occupied).toEqual(new Set(['3,4','3,5','3,6','4,6','5,6']));
+ }finally{f.view.clear();f.ground.destroy({children:true});f.layer.destroy({children:true});f.airLayer.destroy({children:true});}
+});
 it('applies the current task filter to the captured building, crew and hidden destination without changing reveal ownership',()=>{
  const f=fixture();f.view.begin({eventId:1,version:2,taskId:'one',kind:'CONSTRUCT',fromStage:1,toStage:2},{task:f.task,building:f.building,platform:f.platform},0);
  f.view.target('one',{task:f.task,building:f.target,platform:f.targetPlatform,markers:[],version:2});

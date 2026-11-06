@@ -191,7 +191,9 @@ test('touch-sized комментарий в reduced motion статичен, и�
 });
 
 test('MCP/WebSocket keeps the old building through all stages, delivers a helicopter transfer and leaves ruins after demolition',async({page},info)=>{
- test.setTimeout(180000);await page.setViewportSize({width:1440,height:1100});
+ test.setTimeout(180000);
+ if(info.project.use.isMobile)expect(page.viewportSize()!.width).toBeLessThan(500);
+ else await page.setViewportSize({width:1440,height:1100});
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const f=await fixture(page);
  try{

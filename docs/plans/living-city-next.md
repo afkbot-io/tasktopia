@@ -22,6 +22,19 @@ MCP status browser на desktop/Android/iPhone,types/lint/build проходят
 характеры кварталов и не итоговый browser/SCM/release gate.
 Подробности: [местные службы](../tasks/74-local-city-services.md).
 
+Срез78 ограничивает crew lookup окрестностью native parcel, убирает полные
+копии walking/road indexes и retained lifeBlocked union. Все native формы
+совпадают с прежним oracle; локальная фаза341,7→0,364мс на507235walking cells.
+3native10000 пары дают478,49→469,64МиБ mainheap,8,85МиБ экономии. Первоначальный
+прогноз16МиБ не подтверждён: исходный FAILED gate сохранён, модель уточнена
+до8МиБ через task/brief v2.5%timing regression guard проходит;256МиБ всё ещё
+не достигнуты.62unit/11files,types/lint/build и6browser на desktop/Android/
+iPhone проходят; полный mobile lifecycle перепроверен в compact viewport
+после обнаружения принудительного desktop resize в старом тесте. Исходные
+неизменные performance inputs переиспользованы. Excessive mobile notices
+зафиксированы следующим UX boundary.
+[Границы и доказательства](../tasks/78-local-geometry-views.md).
+
 Срез75: новые кварталы получают TERRACOTTA/SLATE/GARDENS по world-зонам128,
 через подбор существующих approved семей без изменения геометрии и PNG.
 Минимум2/fallback и местный баланс предотвращают однообразие из-за далёкой
