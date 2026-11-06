@@ -35,6 +35,15 @@ iPhone проходят; полный mobile lifecycle перепроверен 
 зафиксированы следующим UX boundary.
 [Границы и доказательства](../tasks/78-local-geometry-views.md).
 
+Срез79 устраняет mobile stack повторных уведомлений одной задачи. Очередь
+хранит до3 canonical country/task групп, телефон показывает последнее
+короткое действие. Старый таймер не удаляет новое обновление; удалённая цель
+не оставляет ссылку. Убрано ложное утверждение о сохранении прежней площадки
+при переносе. Все world events и долговечные новости обрабатываются прежде.
+17unit/integration/4files,3actualMCP browser desktop/compactAndroid/iPhone,
+types/lint/build и fixed AI-review проходят. Полный WebPush envelope сохранён.
+[Поведение и границы](../tasks/79-compact-realtime-notices.md).
+
 Срез75: новые кварталы получают TERRACOTTA/SLATE/GARDENS по world-зонам128,
 через подбор существующих approved семей без изменения геометрии и PNG.
 Минимум2/fallback и местный баланс предотвращают однообразие из-за далёкой

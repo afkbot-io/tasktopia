@@ -13,7 +13,7 @@ import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSe
 import type { PlanetViewState } from "./components/PlanetAtlasCanvas";
 import type { CitySceneDto } from "../shared/city-scene-contract";
 import { countryOverviewEventImpact } from "../shared/country-overview-events";
-import { presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
+import { appendRealtimeNotice,presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
 import { CountryPanel } from "./components/CountryPanel";
@@ -660,7 +660,7 @@ export function App() {
     if (countryOverviewEventImpact(event) !== "NONE") setPlanetRevision((value) => value + 1);
     const notice = presentRealtimeNotice(event);
     if (notice) {
-      setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));
+      setNotices((current) => appendRealtimeNotice(current,notice));
       window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), notice.tone === "success" ? 10_000 : 7_000);
       if (notice.tone === "success") playCitySound("bell");
     }
@@ -911,13 +911,14 @@ export function App() {
       setPushOfferDismissed(true);
     }} />}
     <aside className="realtime-notices" aria-live="polite" aria-label="События страны">
-      {notices.map((notice) => <article key={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`}>
-        <button className="realtime-notice-content" type="button" disabled={!notice.target} onClick={() => {
+      {notices.map((notice) => <article key={notice.id} data-notice-id={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`}>
+        <button className="realtime-notice-content" type="button" aria-label={`${notice.title}${notice.actionLabel?`. ${notice.actionLabel}`:''}`} disabled={!notice.target} onClick={() => {
           if (!notice.target) return;
           void openCanonicalTask(new URLSearchParams({ id: notice.target.id }).toString());
           setNotices((current) => current.filter((item) => item.id !== notice.id));
         }}>
-          <strong>{notice.title}</strong>
+          <strong className="realtime-notice-full-title">{notice.title}</strong>
+          <strong className="realtime-notice-compact-title">{notice.compactTitle}</strong>
           <small>{notice.location}</small>
           {notice.actionLabel && <span>{notice.actionLabel} →</span>}
         </button>
