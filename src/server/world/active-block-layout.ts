@@ -210,7 +210,7 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
       compactReplay: reset, planPort,
       publicReservations: stopPlans.flatMap(plan => cityTransitStopReservations(plan)),
       countryId,cityId,seed:Number(city.seed),revision:(old?.revision ?? 0)+1,
-      origin:{x:Number(city.center_x),y:Number(city.center_y)},previous,
+      origin:{x:Number(city.center_x),y:Number(city.center_y)},previous,localServices:'DISTRIBUTED_V1',
       canPlaceBlock: (bounds) => {
         if (!stopsAllowBlock(bounds) || [...otherBounds,...historicalBounds,...railwayReservations,...portReservations,...airportReservations].some(other=>blockBoundsIntersect(bounds,other))) return false;
         // Compiler envelopes include two clearance cells. The block interior

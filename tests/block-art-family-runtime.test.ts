@@ -111,10 +111,10 @@ describe("authored service family live storage projection",()=>{
       expect(moved.serviceRole).toBeUndefined();
       const shape=getBuilding(moved.buildingType).footprint;
       expect(moved.footprint).toHaveLength(shape.width*shape.height);
-      expect(await service.listWorldFeatures(countryId)).toEqual([]);
+      expect((await service.listWorldFeatures(countryId)).filter(feature=>feature.siteMarker)).toEqual([]);
       await synchronizeCityBlocks(db,countryId,city.id);
       expect((await new AppService(db).getTask(countryId,fire.id)).buildingType).toBe(moved.buildingType);
-      expect(await service.listWorldFeatures(countryId)).toEqual([]);
+      expect((await service.listWorldFeatures(countryId)).filter(feature=>feature.siteMarker)).toEqual([]);
     } finally {await db.close();}
   },30_000);
 });

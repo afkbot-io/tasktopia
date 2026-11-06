@@ -94,6 +94,13 @@ HTML содержит серверные OG/Twitter-теги и абсолютн
 
 ## Чтение и производительность карты
 
+При world-командах allocator включает внутреннюю `DISTRIBUTED_V1`: местные
+EDUCATION/MEDICAL/FIRE/POLICE назначаются будущим задачам в128-клеточных
+зонах по центру кварталов. Пороги8/11/15/19, native family/access fit,
+резервации и исторические поколения не требуют новых таблиц или GET-записей.
+Первичные milestones/занятая геометрия сохранены, чистый compiler без опции
+совместим. Подробности и ограничения: [местные службы](tasks/74-local-city-services.md).
+
 Страна читается через компактный `GET /api/countries/:countryId/overview` schema 8: terrain представлен строкой кодов квадратной сетки `SQUARE_4`, а не массивом JSON-объектов. Endpoint публикует текущую версию без negotiation старого overview через `Accept`. PLANET schema 5 показывает доступные страны и их проекции; в текущем UI карта страны является частью планеты, отдельного Country canvas нет. Выбранный город читается одним scoped `GET /api/countries/:countryId/cities/:cityId/scene` schema 5, включающим все DETAIL-проекции внутри его bounds; pan/zoom не создают HTTP. Один server-side viewport snapshot и опубликованные chunk payload остаются внутренним способом materialization и инвалидации. Legacy `/viewport` и singleton chunk endpoints сохранены как внутренние/совместимые границы. Seeded terrain рисуется до подготовки authoritative overlay, а city loader скрывает промежуточные кварталы до coherent commit. Клиент и сервер новых CITY/PLANET контрактов выпускаются согласованно.
 
 Создание города, района, задачи и полный replay принимаются web/MCP runtime как идемпотентные команды в `world_generation_jobs_v1`; геометрию исполняет только `world` runtime. До INSERT и canonical-сравнения dispatcher один раз приводит payload к JSON-совместимой форме: `undefined` object-поля удаляются, явный `null` сохраняется, поэтому записанный JSONB и повтор команды сравниваются в одной системе представления. Единственное исключение — первый город публичного onboarding: account, country, session и initial city создаются одним синхронным bootstrap-commit, потому что worker не может получить job из ещё не зафиксированной registration-транзакции. Совместимый bounded wait возвращает обычный DTO, если операция успела завершиться. По истечении `GENERATION_WAIT_MS` HTTP возвращает `202 {status:"accepted",job}`, а MCP — успешный accepted-result; состояние доступно через `GET /api/world-generation-jobs/:jobId` и `world_generation.get`. Worker обновляет lease во время длинной транзакции, поэтому второй процесс не подхватывает живую команду.

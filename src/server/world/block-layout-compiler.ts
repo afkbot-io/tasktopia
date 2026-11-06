@@ -2,6 +2,7 @@ import type { PortSitePlan } from "../../shared/port-site";
 import { getBuilding } from "../../shared/catalog";
 import { nextInfrastructure, PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
 import { buildingProfile } from "../../shared/building-profiles";
+import {LocalCityServices,LOCAL_SERVICE_THRESHOLDS,type LocalServiceRole} from './local-city-services';
 import { createHash } from "node:crypto";
 import { BLOCK_WORLD_GENERATOR_VERSION, type BlockServiceRole, type BlockSlotKind, type BlockWorldBounds, type CityBlockV1,
   type CompiledBlockLayoutV1, type ConstructionStage, type DistrictLayoutV1, type TaskPlacementV1 } from "../../shared/block-world";
@@ -28,6 +29,8 @@ export type BlockLayoutCompilerInput = {
   countryId: string; cityId: string; origin?: { x: number; y: number }; seed: number; revision: number;
   districts: BlockLayoutDistrictInput[]; previous?: CompiledBlockLayoutV1;
   compactReplay?: boolean;
+  /** Trusted generation policy; legacy compiler callers keep their exact plan. */
+  localServices?:'DISTRIBUTED_V1';
   /** Trusted coastal allocator; never accepted from a task request. */
   planPort?: (terminal: BlockWorldBounds, blocks: readonly CityBlockV1[]) => PortSitePlan | null;
   canPlaceBlock?: (bounds: BlockWorldBounds) => boolean;
@@ -98,6 +101,7 @@ function assertCompilerInput(input: BlockLayoutCompilerInput): void {
 type InfrastructureState = {
   nonemptyBlocks: Set<string>; cityDistricts: Set<string>; triggers: Set<string>; hasPort: boolean;
   districtBlocks: Map<string, number>; districtBuildings: Map<string, number>; latestSequence: Map<string, number>;
+  local?:LocalCityServices;
 };
 /** Reserve only the next already-planned building parcel; never invent a task or block. */
 function reserveNextInfrastructure(district: BlockLayoutDistrictInput,
@@ -109,8 +113,23 @@ function reserveNextInfrastructure(district: BlockLayoutDistrictInput,
     districtBlocks: state.districtBlocks.get(district.id) ?? 0,
     cityBlocks: state.nonemptyBlocks.size, cityDistricts: state.cityDistricts.size,
   }, state.triggers);
-  if (!next) return;
   const candidates = requestedFamily ? slots.filter(({slot}) => familyFitsSlot(requestedFamily,slot)) : slots;
+  // Preserve primary infrastructure priority. Additional shops yield to a
+  // missing nearby school/service, only where its actual native art can fit.
+  if(state.local&&(!next||next.role==='SHOP')){
+    const localState=state.local;
+    for(const role of Object.keys(LOCAL_SERVICE_THRESHOLDS) as LocalServiceRole[]){
+      const local=candidates.find(({block,slot})=>localState.missing(block,role)
+        &&serviceFamilyForSlot(role,slot,family=>familyAccessFits(block,slot,family)));
+      if(!local)continue;
+      const {block,slot}=local,trigger=localState.reserve(block,role);
+      block.parameters={...block.parameters,
+        slotRoles:{...block.parameters.slotRoles as Record<string,BlockServiceRole>,[slot.key]:role},
+        slotRoleTriggers:{...block.parameters.slotRoleTriggers as Record<string,string>,[slot.key]:trigger}};
+      state.triggers.add(trigger);return;
+    }
+  }
+  if (!next) return;
   const suitable=candidates.find(({slot})=>serviceFamilyForSlot(next.role,slot));
   // A new airport must look like a terminal on its immutable parcel. Keep the
   // milestone pending when the requested parcel cannot fit either native art.
@@ -120,6 +139,7 @@ function reserveNextInfrastructure(district: BlockLayoutDistrictInput,
     slotRoles: { ...block.parameters.slotRoles as Record<string, BlockServiceRole>, [slot.key]: next.role },
     slotRoleTriggers: { ...block.parameters.slotRoleTriggers as Record<string, string>, [slot.key]: next.id } };
   state.triggers.add(next.id);
+  state.local?.addRole(block,next.role);
 }
 
 const familyFitsSlot = (family:string,slot:BlockSlot) => slot.kind === "BUILDING" && compactFamilyMatchesFootprint(family,
@@ -424,7 +444,11 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
     nonemptyBlocks: new Set(), cityDistricts: new Set(), districtBlocks: new Map(), districtBuildings: new Map(), latestSequence: new Map(),
     triggers: new Set([...durableTriggers, ...reservedBlocks.flatMap(block => Object.values(block.parameters.slotRoleTriggers as Record<string, string> ?? {}))]),
     hasPort: reservedBlocks.some(block => Object.values(block.parameters.slotRoles as Record<string, BlockServiceRole> ?? {}).includes("PORT")),
+    local:input.localServices==='DISTRIBUTED_V1'?new LocalCityServices([...durableTriggers,...reservedBlocks.flatMap(block=>Object.values(block.parameters.slotRoleTriggers as Record<string,string>??{}))]):undefined,
   };
+  const closedSlots=new Set(siteMarkers.map(marker=>`${marker.blockId}:${marker.slotKey}`));
+  if(infrastructure.local)for(const block of reservedBlocks)for(const [slot,role] of Object.entries(block.parameters.slotRoles as Record<string,BlockServiceRole>??{}))
+    if(!closedSlots.has(`${block.id}:${slot}`))infrastructure.local.addRole(block,role);
   const recordInfrastructure = (placement: TaskPlacementV1) => {
     const context = blockContext.get(placement.blockId)!;
     if (!infrastructure.nonemptyBlocks.has(placement.blockId)) {
@@ -432,8 +456,11 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       infrastructure.districtBlocks.set(context.districtId, (infrastructure.districtBlocks.get(context.districtId) ?? 0) + 1);
       infrastructure.latestSequence.set(context.districtId, Math.max(infrastructure.latestSequence.get(context.districtId) ?? -1, context.block.sequence));
     }
-    if (kinds.get(placement.taskId) === "BUILDING") infrastructure.districtBuildings.set(context.districtId,
-      (infrastructure.districtBuildings.get(context.districtId) ?? 0) + 1);
+    if (kinds.get(placement.taskId) === "BUILDING") {
+      infrastructure.districtBuildings.set(context.districtId,(infrastructure.districtBuildings.get(context.districtId) ?? 0) + 1);
+      infrastructure.local?.addBuilding(context.block);
+      if(placement.serviceRole)infrastructure.local?.addRole(context.block,placement.serviceRole);
+    }
   };
   for (const placement of activePlacements.values()) recordInfrastructure(placement);
   const frontierIndex = createBlockFrontierIndex(reservedBlocks, origin);
@@ -566,6 +593,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         slotRoleTriggers: { ...selected.block.parameters.slotRoleTriggers as Record<string,string>,
           [selected.slot.key]: trigger } };
         infrastructure.triggers.add(trigger);
+        infrastructure.local?.addRole(selected.block,task.serviceRole);
       }
       else if (!task.serviceRoleAssigned && !wantsPort) {
         reserveNextInfrastructure(district, available, occupied, infrastructure, requestedFamily);
