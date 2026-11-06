@@ -12,6 +12,18 @@ const dry = () => true;
 const input = { countryId: "country", seed: 73, cities: [city("a", 0), city("b", 96)], isBuildable: dry };
 
 describe("bounded canonical intercity roads", () => {
+  it("crosses an open Manhattan plateau inside the original route budget", () => {
+    const cities = [city('a',0),city('b',800,800)].map(value => ({ ...value,nodes: [value.nodes[0]!] }));
+    const request = { ...input,cities };
+    const result = planIntercityRoads(request);
+    expect(result.routes).toHaveLength(1);
+    expect(result.unreachable).toEqual([]);
+    expect(result.metrics.visited).toBeLessThanOrEqual(500);
+    const points = decodeOrthogonalRoadRuns(result.routes[0]!.geometry);
+    expect(points[0]).toEqual({x:0,y:0});expect(points.at(-1)).toEqual({x:800,y:800});
+    expect(points.length).toBe(1601);
+    expect(planIntercityRoads(request)).toEqual(result);
+  });
   it("audits only retained roads without searching for missing connections", () => {
     const previous = planIntercityRoads(input);
     const result = planIntercityRoads({ ...input, cities: [...input.cities, city("c", 192)], previous, validateOnly: true });

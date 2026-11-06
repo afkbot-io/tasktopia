@@ -9,6 +9,7 @@ export type { IntercityRoadRoute } from "../../shared/intercity-roads";
 const GRID = 8;
 const RADIUS = 2; // Three road cells and one clearance cell on either side.
 const BUCKET = 64;
+export const INTERCITY_ROAD_PLANNER_VERSION = 3;
 export type IntercityRoadCity = {
   id: string;
   /** Actual supplied layout nodes, not synthetic city-centre endpoints. */
@@ -21,7 +22,7 @@ export type IntercityRoadLimits = {
   maxTerrainSamples: number; maxEndpointNodes: number; maxGeometrySteps: number;
 };
 export type IntercityRoadPlan = {
-  countryId: string; seed: number; plannerVersion?: 2; routes: IntercityRoadRoute[]; unreachable: IntercityRoadFailure[];
+  countryId: string; seed: number; plannerVersion?: 2 | typeof INTERCITY_ROAD_PLANNER_VERSION; routes: IntercityRoadRoute[]; unreachable: IntercityRoadFailure[];
   /** Actual accepted connectivity, including isolated cities. Never implies a full country network. */
   components: string[][];
   metrics: { candidates: number; attemptedRoutes: number; retainedRoutes: number; visited: number; terrainSamples: number; edgeChecks: number };
@@ -51,7 +52,10 @@ type SearchNode = GridPoint & { heading: number; cost: number; score: number; or
 class Frontier {
   private items: SearchNode[] = [];
   get size() { return this.items.length; }
-  private before(a: SearchNode, b: SearchNode) { return a.score < b.score || a.score === b.score && a.order < b.order; }
+  // Prefer progress on an equal-f plateau; FIFO can spend the whole bounded
+  // search flooding dry Manhattan rectangles before reaching their far end.
+  private before(a: SearchNode, b: SearchNode) { return a.score < b.score || a.score === b.score
+    && (a.cost > b.cost || a.cost === b.cost && a.order < b.order); }
   push(node: SearchNode) {
     let i = this.items.length; this.items.push(node);
     while (i > 0) { const parent = (i - 1) >> 1;
@@ -217,7 +221,7 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     if (path.some(point => !bridgeCells.has(key(point)) && !pointOpen(point))) throw new Error(sampleBudgetExhausted ? "Previous intercity validation exceeds sample budget" : "Previous accepted road is obstructed; do not move it silently");
     join(route.fromCityId, route.toCityId);
   }
-  if (input.validateOnly) return { countryId: input.countryId, seed: input.seed, plannerVersion:2, routes,
+  if (input.validateOnly) return { countryId: input.countryId, seed: input.seed, plannerVersion: INTERCITY_ROAD_PLANNER_VERSION, routes,
     unreachable: [], components: components(), metrics };
   const centers = new Map(cities.map(city => [city.id, {
     x: city.nodes.reduce((sum, n) => sum + n.x, 0) / Math.max(1, city.nodes.length),
@@ -332,5 +336,5 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     join(a.id, b.id);
   }
   const unreachable = failures.filter(failure => root(failure.fromCityId) !== root(failure.toCityId));
-  return { countryId: input.countryId, seed: input.seed, plannerVersion:2, routes, unreachable, components: components(), metrics };
+  return { countryId: input.countryId, seed: input.seed, plannerVersion: INTERCITY_ROAD_PLANNER_VERSION, routes, unreachable, components: components(), metrics };
 }

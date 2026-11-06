@@ -14,7 +14,7 @@ const serverPort = new URL(baseURL).port || (baseURL.startsWith("https:") ? "443
 const webCommand = process.env.E2E_WEB_COMMAND
   ?? `${seedCommand} && npm run build && NODE_ENV=production PORT=${serverPort} SESSION_COOKIE_SECURE=false npm start`;
 
-const worldReviewMatch = /(?:task-card-paging|task-navigation-history|navigation-scope-recovery|socket-session-expiry|realtime-replay-recovery|city-album|task-catalog-navigation|news-feed-explicit|city-render-reliability|city-world-observation|city-neighbourhood|city-terrain-coverage|city-quarter-character)\.spec\.ts/;
+const worldReviewMatch = /(?:task-card-paging|task-navigation-history|navigation-scope-recovery|socket-session-expiry|realtime-replay-recovery|city-album|task-catalog-navigation|news-feed-explicit|city-render-reliability|city-world-observation|city-neighbourhood|city-terrain-coverage|city-quarter-character|city-road-continuity)\.spec\.ts/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
