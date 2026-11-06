@@ -168,7 +168,9 @@ test('реальные MCP комментарии и документы ожив
  } finally {
   let timer:ReturnType<typeof setTimeout>|undefined;
   try{
-   const frames=await Promise.race([f.host.evaluate(el=>{const record=(el as ActivityNode).__qaActivity;record?.observer.disconnect();return record?.records??null;}).catch(error=>({unavailable:String(error).slice(0,300)})),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:'public activity capture exceeded1000ms'}),1000);})]);
+   // A hosted native software frame can take over1s. Bound this diagnostic
+   // read separately, after the unchanged functional and native CPU assertions.
+   const frames=await Promise.race([f.host.evaluate(el=>{const record=(el as ActivityNode).__qaActivity;record?.observer.disconnect();return record?.records??null;}).catch(error=>({unavailable:String(error).slice(0,300)})),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:'public activity capture exceeded3000ms'}),3000);})]);
    await info.attach('comment-public-activity-history',{body:JSON.stringify(frames),contentType:'application/json'});
    await info.attach('comment-admission-contract',{body:JSON.stringify(admissionEvidence),contentType:'application/json'});
   }finally{if(timer)clearTimeout(timer);await f.cleanup();}

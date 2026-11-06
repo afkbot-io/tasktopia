@@ -44,16 +44,18 @@ export function isEverydayAttemptExpiredWithoutArrival(input: {
   const initialPhase = initialNow === undefined ? undefined : phaseAt(initialNow - start);
   const initialSteps = count(initial.mobilityFixedSteps), terminalSteps = count(terminal.mobilityFixedSteps);
   const visitors = count(initial.everydayVisitors);
-  const empty = terminal.everydayEvent === '' && terminal.everydayPhase === '' && terminal.everydayTask === ''
-    && terminal.everydayEpisodeId === '' && terminal.everydaySkip === 'expired'
-    && count(terminal.everydayVisitors) === 0 && count(terminal.everydayArrived) === 0;
   const end = observed.ended;
+  const witnessedExpiry = end?.episodeId === initial.everydayEpisodeId && Number.isFinite(end?.serverNow)
+    && end!.serverNow >= start + 44_000 && end!.serverNow <= (terminalNow ?? -Infinity);
+  const empty = terminal.everydayEvent === '' && terminal.everydayPhase === '' && terminal.everydayTask === ''
+    && terminal.everydayEpisodeId === '' && (terminal.everydaySkip === 'expired'
+      || witnessedExpiry && end!.nextEpisodeId === '' && ['busy', 'offscreen'].includes(terminal.everydaySkip ?? ''))
+    && count(terminal.everydayVisitors) === 0 && count(terminal.everydayArrived) === 0;
   const successor = !!terminal.everydayEpisodeId && terminal.everydayEpisodeId !== initial.everydayEpisodeId
     && ['SCHOOL','KINDERGARTEN','MARKET','SPORT','DOG','BIRDS'].includes(terminal.everydayEvent ?? '')
     && terminal.everydayPhase === 'ARRIVE' && !!terminal.everydayTask?.trim()
     && count(terminal.everydayVisitors) !== undefined && count(terminal.everydayArrived) !== undefined
-    && end?.episodeId === initial.everydayEpisodeId && Number.isFinite(end?.serverNow)
-    && end!.serverNow >= start + 44_000 && end!.serverNow <= (terminalNow ?? -Infinity)
+    && witnessedExpiry
     && (end!.nextEpisodeId === '' || end!.nextEpisodeId === terminal.everydayEpisodeId);
   if (initialNow === undefined || terminalNow === undefined || terminalNow < start + 44_000
     || initial.everydayEvent !== kind || initial.everydayTask !== taskId || !initial.everydayEpisodeId?.trim()

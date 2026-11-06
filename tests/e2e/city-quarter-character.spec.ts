@@ -65,7 +65,10 @@ test('one real district renders three persistent quarter characters through norm
         if(Math.abs(dx)<box.width/2-32&&Math.abs(dy)<box.height/2-64)break;
         const f=Math.min(1,box.width*.32/Math.max(1,Math.abs(dx)),box.height*.32/Math.max(1,Math.abs(dy)));
         await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
-        await page.mouse.move(box.x+box.width/2+dx*f,box.y+box.height/2+dy*f,{steps:4});await page.mouse.up();
+        // Two actual pointer moves cross the drag threshold and reach the
+        // same endpoint. Extra intermediate native phone rasters consumed
+        // the120s host budget after all three artwork captures already passed.
+        await page.mouse.move(box.x+box.width/2+dx*f,box.y+box.height/2+dy*f,{steps:2});await page.mouse.up();
         await expect.poll(async()=>{const now=await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY)};});
           return Math.abs(now.x-before.x)+Math.abs(now.y-before.y);}).toBeGreaterThan(.1);
         await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});

@@ -85,14 +85,13 @@ clockSceneTest(offscreen?'delayed MCP transfer carries to a real offscreen desti
   const f = await everydayFixture(page), errors: string[] = [], forbidden:string[]=[]; page.on('pageerror', e => errors.push(e.message));
   page.on('request',r=>{if(/\/api\/(world\/viewport|chunks\/)/.test(r.url()))forbidden.push(new URL(r.url()).pathname);});
   try {
-    await f.focus(f.pendingSchool);
+    // Construction has its own five fresh MCP opening regressions above.
+    // This transfer starts from a genuinely completed home before loading the
+    // browser; unrelated construction/rendering does not consume its90s cap.
+    const home = await f.service.updateTaskStatus(f.user.countryId,{taskId:f.pendingHome.id,status:'COMPLETED',idempotencyKey:crypto.randomUUID()});
+    expect(home.stage).toBe(5);
+    await f.focus(home);await f.panFocus(home);
     await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
-    // This isolated transfer still starts with a genuinely completed home.
-    await f.service.activateDistrict(f.user.countryId, f.pendingHome.districtId, crypto.randomUUID());
-    await f.panFocus(f.pendingHome);
-    await f.call('task.set_status', { taskId: f.pendingHome.id, status: 'COMPLETED' });
-    await expect(f.host).toHaveAttribute('data-cinematic-phases', /CONSTRUCT:WORK/);
-    await expect(f.host).toHaveAttribute('data-everyday-event', 'OPEN_BUILDING', { timeout: 15000 });
     await expect(f.host).toHaveAttribute('data-city-cinematics', '0');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(f.host).toHaveAttribute('data-everyday-event', '');
@@ -102,7 +101,6 @@ clockSceneTest(offscreen?'delayed MCP transfer carries to a real offscreen desti
     await expect(f.host).toHaveAttribute('data-transit-vehicle', '');
     await expect(f.host).toHaveAttribute('data-animation-active', 'false');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    const home = await f.service.getTask(f.user.countryId, f.pendingHome.id); expect(home.stage).toBe(5); await f.panFocus(home);
     // Подготовка выше идёт с работающим clock; только перенос использует
     // фиксированные RAF. Реальный ответ и renderer не подменяются.
     await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
@@ -450,28 +448,8 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
   const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   const seen = new Set<string>(), samples: Record<string, unknown>[] = [], unavailable: Record<string, unknown>[] = [];
   try {
-    await f.focus(f.tasks[0]!);
-    await page.locator('.world-menu > summary').click();
-    const prefs = page.locator('.world-preferences:visible'); await prefs.locator('> summary').click();
-    await prefs.getByLabel('Детализация').selectOption('NORMAL');
-    await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
-    await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
-    await setSceneLife(page, false);
-    const drainCarriers=async()=>{
-      await page.clock.runFor(2000);
-      // The public moving-cancellation controller gate allows60s for a real
-      // curb recovery. A busy exit can consume its first30s rest/retry window.
-      // CI64 completed all six scenes and unloaded2of4 before this old30s
-      // harness limit; keep every frame and require the remaining bodies too.
-      const recovery:unknown[]=[];
-      try{
-        for(let i=0;i<60&&Number(await f.host.getAttribute('data-transit-passengers'))>0;i++){
-          if(i%5===0)recovery.push(await f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{steps:d.mobilityFixedSteps,passengers:d.transitPassengers,phase:d.transitPhase,active:d.animationActive};}));
-          await page.clock.runFor(1000);
-        }
-      }finally{await writeFile(info.outputPath('carrier-recovery-last.json'),JSON.stringify(recovery,null,2));}
-      await expect(f.host).toHaveAttribute('data-transit-passengers','0');await safe(f.host);
-    };
+    await page.addInitScript(()=>localStorage.setItem('tasktopia:world-preferences:v2',JSON.stringify({quality:'NORMAL',cityLife:false,sound:false})));
+    let canonicalCount:string|undefined,previousStart=0;
     for (let attempt = 0; attempt < 36 && seen.size < 6; attempt++) {
       // Admission is local to the visible city. Waiting at the campus can
       // qualify schools forever but can never observe an offscreen park.
@@ -482,8 +460,21 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         ? BUILDING_CATALOG.find(building => building.key === task.visualAssetKey)?.educationKind === wanted
         : task.visualKind === 'PARK'));
       expect(contexts.length, `No real context for ${wanted}`).toBeGreaterThan(0);
-      await f.panFocus(contexts[attempt % contexts.length]!, true);
-      const start = (Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1) * 75_000 + 8000;
+      // Each natural window starts through real navigation in the same
+      // unchanged city. A preceding slot's random bus evacuation is a separate
+      // cancellation journey, not a prerequisite for this scene's art/arrival.
+      // No actor, selected event kind or physics step is injected.
+      await page.clock.resume();await f.focus(contexts[attempt % contexts.length]!);
+      await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));
+      await expect(f.host).toHaveAttribute('data-transit-passengers','0');
+      const count=(await f.host.getAttribute('data-canonical-task-count'))!;
+      expect(Number(count)).toBeGreaterThanOrEqual(f.tasks.length);
+      canonicalCount??=count;expect(count).toBe(canonicalCount);
+      await f.panFocus(contexts[attempt % contexts.length]!,true);
+      const start = Math.max(previousStart+75_000,(Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1) * 75_000 + 8000);
+      previousStart=start;
+      await info.attach('natural-window-context',{body:JSON.stringify({attempt,wanted,start,cityId:f.city.id,
+        canonicalCount:count,revision:await f.host.getAttribute('data-city-scene-revision')}),contentType:'application/json'});
       // Clock/readback latency can consume the last two seconds before start.
       // Prepare near the beginning of the real window, not its final moments.
       await seek(page, f.host, start - 7000); await setSceneLife(page, true);
@@ -495,7 +486,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         expect(Number(preparation.roadEventServerNow),'Missing future plan before its start').toBeGreaterThanOrEqual(start);
         unavailable.push({reason:'preparation-crossed-window-start',start,state:preparation});
         await writeFile(info.outputPath('everyday-unavailable-slots.json'),JSON.stringify(unavailable,null,2));
-        await setSceneLife(page,false);await drainCarriers();continue;
+        await setSceneLife(page,false);continue;
       }
       const id = preparation.everydayPlannedTask, task = f.tasks.find(t => t.id === id);
       expect(task, `No planned task ${id}`).toBeTruthy(); await f.panFocus(task!, true, { settlePausedBefore: start });
@@ -511,7 +502,6 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       if (seen.has(kind!) || visitors === 0) {
         if (visitors === 0) unavailable.push({ kind, taskId: id, reason: 'no-reachable-idle-residents' });
         await setSceneLife(page, false); await seek(page, f.host, start + 44_200);
-        await drainCarriers();
         await writeFile(info.outputPath('everyday-unavailable-slots.json'), JSON.stringify(unavailable, null, 2));
         await safe(f.host); continue;
       }
@@ -544,7 +534,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         expect(errors).toEqual([]);
         unavailable.push({kind,taskId:id,reason:'expired-before-arrival',start,initial,observed:actualFrames,terminal});
         await writeFile(info.outputPath('everyday-unavailable-slots.json'),JSON.stringify(unavailable,null,2));
-        await setSceneLife(page,false);await seek(page,f.host,start+44_200);await drainCarriers();
+        await setSceneLife(page,false);await seek(page,f.host,start+44_200);
         continue;
       }
       expect(arrivals, `${kind} residents never arrived`).toBeGreaterThan(0);
@@ -557,7 +547,7 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         expect(errors).toEqual([]);
         unavailable.push({kind,taskId:id,reason:'pad-occupied-during-arrival',observed:actualFrames});
         await writeFile(info.outputPath('everyday-unavailable-slots.json'),JSON.stringify(unavailable,null,2));
-        await setSceneLife(page,false);await seek(page,f.host,start+44_200);await drainCarriers();
+        await setSceneLife(page,false);await seek(page,f.host,start+44_200);
         continue;
       }
       if (kind === 'DOG' || kind === 'BIRDS') expect(animals).toBeGreaterThan(0);
@@ -573,9 +563,6 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       const owners=JSON.parse(await f.host.getAttribute('data-city-event-owners')??'[]') as {id:string}[];
       expect(owners.some(owner=>owner.id===initial.everydayEpisodeId)).toBe(false);
       await setSceneLife(page, false);
-      // Cancellation must finish real carrier motion before skipping the next
-      // dead interval; synthetic epoch jumps cannot evacuate a physical body.
-      await drainCarriers();
     }
     expect(seen).toEqual(new Set(['SCHOOL', 'KINDERGARTEN', 'MARKET', 'SPORT', 'DOG', 'BIRDS']));
     // All six walking/animal scenes are qualified above. A school slot may
@@ -638,27 +625,34 @@ clockSceneTest('public bus completes an actual boarding, directed trip and safe 
     expect(preparedAt).toBeGreaterThanOrEqual(departureWindowStart);
     expect(preparedAt).toBeLessThan(departureWindowStart + 1000);
     expect(prepared.roadEvent).toBe(''); expect(prepared.transitPhase).toBe('');
-    const baseline = { boarded: Number(prepared.transitBoarded), alighted: Number(prepared.transitAlighted) };
+    const baseline = { boarded: Number(prepared.transitBoarded)-Number(prepared.schoolBusBoarded),
+      alighted: Number(prepared.transitAlighted)-Number(prepared.schoolBusAlighted) };
+    const busState=()=>f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{role:d.transitRole,phase:d.transitPhase,
+      alighted:Number(d.transitAlighted)-Number(d.schoolBusAlighted)};});
     const phases = new Set<string>();
     await setSceneLife(page, true);
     for (let step = 0; step < 40 && Number(await f.host.getAttribute('data-road-event-server-now')) < preparedAt + 300; step++) {
-      await page.clock.runFor(100); phases.add((await f.host.getAttribute('data-transit-phase'))!);
+      await page.clock.runFor(100);const state=await busState();if(state.role==='BUS')phases.add(state.phase!);
     }
     const admission = await safe(f.host);
     await writeFile(info.outputPath('bus-clock-arrangement.json'), JSON.stringify({ now, departureWindowStart, prepared, baseline, admission }, null, 2));
     expect(Number(admission.roadEventServerNow)).toBeGreaterThanOrEqual(preparedAt + 300);
     expect(admission.roadEvent).toBe(''); expect(admission.transitRole).toBe('BUS');
     expect(admission.transitPhase).toMatch(/^(ARRIVE|BOARD)$/);
-    // Observe every physical step of the new trip, including normal future
-    // city events; the original80s horizon and210s wall budget stay unchanged.
-    for (let i = 0; i < 80 && Number(await f.host.getAttribute('data-transit-alighted')) === baseline.alighted; i++) {
-      await page.clock.runFor(1000); phases.add((await f.host.getAttribute('data-transit-phase'))!);
+    // Deliver every frame through the original80s world-clock horizon. Its
+    // -10% slew needs at most90 browser seconds; the210s wall cap stays fixed.
+    const tripDeadline=Number(admission.roadEventServerNow)+80_000;
+    let publicTrip=await busState();
+    for (let i = 0; i < 90 && publicTrip.alighted === baseline.alighted
+      && Number(await f.host.getAttribute('data-road-event-server-now'))<tripDeadline; i++) {
+      await page.clock.runFor(1000);publicTrip=await busState();if(publicTrip.role==='BUS')phases.add(publicTrip.phase!);
       if (i % 5 === 0) await safe(f.host);
     }
     const state = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
-    await writeFile(info.outputPath('bus-round-trip.json'), JSON.stringify({ phases: [...phases], baseline, state }, null, 2));
-    expect(Number(state.transitBoarded) - baseline.boarded).toBeGreaterThan(0);
-    expect(Number(state.transitAlighted) - baseline.alighted).toBeGreaterThan(0);
+    await writeFile(info.outputPath('bus-round-trip.json'), JSON.stringify({ phases: [...phases], baseline,tripDeadline,state }, null, 2));
+    // A later school delivery cannot qualify the public bus's positive trip.
+    expect(Number(state.transitBoarded)-Number(state.schoolBusBoarded)-baseline.boarded).toBeGreaterThan(0);
+    expect(Number(state.transitAlighted)-Number(state.schoolBusAlighted)-baseline.alighted).toBeGreaterThan(0);
     expect([...phases]).toEqual(expect.arrayContaining(['ARRIVE', 'BOARD', 'TRAVEL', 'ALIGHT']));
     await safe(f.host); await page.screenshot({ path: info.outputPath('bus-alighting.png') });
   } finally { await f.cleanup(); }

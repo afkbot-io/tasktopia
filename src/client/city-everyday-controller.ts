@@ -92,13 +92,14 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     players = []; fireVehicle = '';
     released = false; bell = false; areaReady = false;
   };
-  const endTransit = () => {
-    if (run) {
-      mobility()?.alightVisit(run.vehicleId, (run.destination ?? run.stop).queue);
-      mobility()?.clearVisits(run.id);
-      mobility()?.clearResponses([run.role], run.vehicleId, run.id);
+  const endTransit = (ending = run) => {
+    if (ending) {
+      mobility()?.alightVisit(ending.vehicleId, (ending.destination ?? ending.stop).queue);
+      mobility()?.clearVisits(ending.id);
+      mobility()?.clearResponses([ending.role], ending.vehicleId, ending.id);
     }
-    run = undefined; nextRegularAttempt = lastNow + 8000;
+    if (run === ending) run = undefined;
+    nextRegularAttempt = lastNow + 8000;
   };
   const clear = () => { transitPreparation?.abort();transitPreparation = undefined;transitRegion = '';endEpisode(); endTransit(); for (const id of schoolVisits.keys()) mobility()?.clearVisits(id); schoolVisits.clear(); mobility()?.clearVisits(`shelter:${lastRain}`); openings.length = 0; openingAttemptAt = 0; planned = undefined; rebuildReservations(false); };
   const refreshLocalTransit = (view: Rect) => {
@@ -134,7 +135,6 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     const lease = episodeLease(episode);
     if (!director.acquire(lease)) return false;
     active = episode; released = false; bell = false; areaReady = false; schoolBusAttemptAt = 0;
-    if ((episode.kind === 'SCHOOL' || episode.kind === 'KINDERGARTEN') && run?.role === 'BUS') endTransit();
     const indoors = ['SCHOOL', 'KINDERGARTEN', 'OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP'].includes(episode.kind);
     const target = episode.area.length ? episode.route[Math.max(0, episode.route.length - 3)]! : episode.route.at(-1)!;
     const targets = episode.targets?.length ? episode.targets : [target];
@@ -167,6 +167,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       ? Math.abs(a.lane.x - anchor.x) + Math.abs(a.lane.y - anchor.y) - Math.abs(b.lane.x - anchor.x) - Math.abs(b.lane.y - anchor.y)
       : a.id.localeCompare(b.id));
     const role = school && anchor && Math.abs(targetStops[0]!.lane.x - anchor.x) + Math.abs(targetStops[0]!.lane.y - anchor.y) < 24 ? 'SCHOOL_BUS' : 'BUS';
+    if (run && role !== 'SCHOOL_BUS') return;
     const destinations = role === 'SCHOOL_BUS' && anchor
       ? targetStops.filter(stop => Math.abs(stop.lane.x - anchor.x) + Math.abs(stop.lane.y - anchor.y) < 24) : [];
     const orderedLines = [...lines.slice(lineCursor), ...lines.slice(0, lineCursor)];
@@ -338,7 +339,11 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       const pose = everydayPose(active, now, view);
       if (pose?.kind === 'SPORT' && pose.phase === 'ACTIVITY' && now >= nextPlay && pose.playTargets && pose.playTargets.length >= 2) {
         const phase = Math.floor((now - pose.start) / 4000) % 2;
-        for (const [i, id] of players.entries()) city.dispatchVisit(pose.id, [pose.playTargets[(i + phase) % pose.playTargets.length]!], 1, 800, false, [id]);
+        const participants=city.agents;
+        // Retarget only after a real arrival. Moving the goal every four
+        // seconds can keep a late approaching player walking forever.
+        for (const [i, id] of players.entries()) if(participants.some(actor=>actor.id===id&&actor.visit?.id===pose.id&&actor.visit.arrived))
+          city.dispatchVisit(pose.id, [pose.playTargets[(i + phase) % pose.playTargets.length]!], 1, 800, false, [id]);
         nextPlay = now + 4000;
       }
       if (pose?.phase === 'LEAVE' && !released) { city.clearVisits(pose.id); released = true; }
@@ -353,11 +358,25 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
         && active!.area.some(c => Math.abs(a.position.x - c.x - .5) < .8 && Math.abs(a.position.y - c.y - .5) < .8));
       rebuildReservations(true);
       if (active && (active.kind === 'SCHOOL' || active.kind === 'KINDERGARTEN') && schoolBusEpisode !== active.id && !options.roadBusy && now >= schoolBusAttemptAt) {
-        schoolBusAttemptAt = now + 5000;
-        if (run?.role === 'BUS') endTransit();
         // The walking group gets its own residents. Retry after their short
         // indoor activity instead of consuming the episode's entire audience.
-        if (!run) { startTransit(now, options.economy); if (run) schoolBusEpisode = active.id; }
+        // Finish the regular bus's current stop, including actual alighting.
+        // A school attempt may replace it only at an empty curb after the
+        // normal6s door period, with real passengers and a separate vehicle.
+        const canStartSchool = !run || run.role === 'BUS' && run.phase === 'ALIGHT' && now-run.since>=6000
+          && !city.agents.some(actor=>actor.carrier===run!.vehicleId);
+        if (canStartSchool) {
+          schoolBusAttemptAt = now + 5000;
+          const previous = run;
+          startTransit(now, options.economy);
+          if (run && run !== previous) {
+            if (previous) {
+              if(previous.line){metrics.regularStops++;if(previous.stopsVisited+1>=previous.line.stops.length)metrics.regularCycles++;}
+              endTransit(previous);
+            }
+            schoolBusEpisode = active.id;
+          }
+        }
       }
       if (!run && !options.roadBusy && now >= nextRegularAttempt) { nextRegularAttempt = now + 5000; startTransit(now, options.economy); }
       updateTransit(now, options.economy);
