@@ -575,8 +575,15 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         if(!blockSlots(block).some(slot=>eligible({block,slot})))return false;
         prepared.block=block;return true;
         };
-        nextBlockSite(districtBlocks, districtLayoutId,
-          origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, canPlaceBlock, reservedBlocks, frontierIndex, task.parkSize, requestedFamily, input.compactReplay ? remainingTasks : undefined,canPlanSite);
+        try {
+          nextBlockSite(districtBlocks, districtLayoutId,
+            origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, canPlaceBlock, reservedBlocks, frontierIndex, task.parkSize, requestedFamily, input.compactReplay ? remainingTasks : undefined,canPlanSite);
+        } catch (error) {
+          // Exhausting coastal candidates keeps the public PORT_UNAVAILABLE
+          // contract; unexpected allocator failures must still propagate.
+          if (wantsPort && error instanceof BlockPlacementError) throw new PortPlacementError();
+          throw error;
+        }
         const block=prepared.block;
         if(!block)throw new BlockPlacementError('No prepared public-infrastructure site');
         districtBlocks.push(block); reservedBlocks.push(block);

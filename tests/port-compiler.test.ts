@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { compileBlockLayout, type BlockLayoutCompilerInput } from "../src/server/world/block-layout-compiler";
+import { compileBlockLayout, PortPlacementError, type BlockLayoutCompilerInput } from "../src/server/world/block-layout-compiler";
 import type { PortSitePlan } from "../src/shared/port-site";
 const input: BlockLayoutCompilerInput = {
   countryId: "country", cityId: "city", seed: 42, revision: 1,
@@ -18,6 +18,7 @@ const allocate: NonNullable<BlockLayoutCompilerInput["planPort"]> = terminal => 
 it("requires a validated allocator and persists only local geometry of a unique port", () => {
   expect(() => compileBlockLayout(input)).toThrow(/морского порта/);
   expect(() => compileBlockLayout({ ...input, planPort: () => null })).toThrow(/морского порта/);
+  expect(() => compileBlockLayout({ ...input, planPort: () => null })).toThrow(PortPlacementError);
   const result = compileBlockLayout({ ...input, planPort: allocate });
   const placement = result.placements[0]!;
   expect(placement).toMatchObject({ serviceRole: "PORT", buildingFamily: "compact-port-v1" });
@@ -29,6 +30,10 @@ it("requires a validated allocator and persists only local geometry of a unique 
     districts: [{ ...input.districts[0]!, tasks: [{ ...input.districts[0]!.tasks[0]!, constructionStage: 5 }] }] });
   expect(updated.blocks[0]!.parameters.slotPortPlans).toEqual(result.blocks[0]!.parameters.slotPortPlans);
   expect(updated.placements[0]!.constructionStage).toBe(5);
+});
+it('preserves an unexpected allocator failure instead of reporting an unavailable port',()=>{
+  const failure=new Error('Coastal allocator failed');
+  expect(()=>compileBlockLayout({...input,planPort:()=>{throw failure;}})).toThrow(failure);
 });
 it("rejects an allocator result for another country and a second port", () => {
   expect(() => compileBlockLayout({ ...input, planPort: terminal => {
