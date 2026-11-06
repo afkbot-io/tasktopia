@@ -1,22 +1,36 @@
+import type { BlockServiceRole } from '../shared/block-world';
 import type { Cell, ChunkTaskDto } from '../shared/contracts';
 import { incidentMode } from './task-incidents';
+import { BUILDING_CATALOG } from '../shared/catalog';
+import { cityEventRecipe, eligibleNeighbourhoodRecipes, type CityLifeContext } from './city-event-recipes';
 import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from '../shared/cooperative-preparation';
-export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'>;
+export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'> & Partial<Pick<ChunkTaskDto,'visualAssetKey'>>;
 
-export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL';
-export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[];responseCells?:readonly Cell[]};
-export type CityLifePlan=CityLifeSite & {id:string;start:number;durationMs:number};
-export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';position:Cell;actorIds:string[];serviceId?:string;arrived:number};
+export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL'|'READING'|'ART'|'CULTURE';
+export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[];context?:CityLifeContext;responseCells?:readonly Cell[]};
+export type CityLifePlan=CityLifeSite & {id:string;start:number;durationMs:number;recipeId?:string};
+export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';position:Cell;actorIds:string[];serviceId?:string;arrived:number;activityAt?:number};
 const key=(cell:Cell)=>`${cell.x},${cell.y}`;
 export function cityLifeHash(value:string) {let h=2166136261;for(const char of value)h=Math.imul(h^char.charCodeAt(0),16777619);return h>>>0;}
 const directions=[{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+const buildings=new Map(BUILDING_CATALOG.map(building=>[building.key,building]));
+const serviceContexts:Readonly<Record<BlockServiceRole,CityLifeContext>>={
+  EDUCATION:'EDUCATION',MEDICAL:'MEDICAL',FIRE:'FIRE',POLICE:'POLICE',RAILWAY:'RAILWAY',AIRPORT:'AIRPORT',CIVIC:'CIVIC',SHOP:'SHOP',PORT:'PORT',
+};
+function contextFor(task:CityLifeTask):CityLifeContext {
+  const role=task.serviceRole??buildings.get(task.visualAssetKey??'')?.serviceRole;
+  if(role&&Object.hasOwn(serviceContexts,role))return serviceContexts[role as BlockServiceRole];
+  if(task.visualKind==='PARK')return task.visualAssetKey==='urban-parking'?'PAVED':task.visualAssetKey==='urban-lake'?'WATER_EDGE':'GREEN';
+  return 'HOME';
+}
 
-function kindFor(task:CityLifeTask):CityLifeKind {
+function kindFor(task:CityLifeTask,context:CityLifeContext):CityLifeKind {
   const hash=cityLifeHash(task.id);
-  if(task.serviceRole==='FIRE')return 'DRILL';
-  if(task.serviceRole==='SHOP')return 'DELIVERY';
-  if(task.visualKind==='PARK')return (['GARDEN','MUSIC','CELEBRATION'] as const)[hash%3]!;
-  if(task.serviceRole)return hash%2?'MAINTENANCE':'CLEANING';
+  if(context==='FIRE')return 'DRILL';
+  if(context==='SHOP')return 'DELIVERY';
+  if(context==='PAVED'||context==='WATER_EDGE')return 'CLEANING';
+  if(context==='GREEN')return (['GARDEN','MUSIC','CELEBRATION'] as const)[hash%3]!;
+  if(context!=='HOME')return hash%2?'MAINTENANCE':'CLEANING';
   return (['MOVING','GARDEN','MAINTENANCE'] as const)[hash%3]!;
 }
 
@@ -44,12 +58,12 @@ export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:Read
       }
     }
     if(route.length<7)continue;
-    const kind = kindFor(task), responseCells: Cell[] = [];
+    const context=contextFor(task),kind = kindFor(task,context), responseCells: Cell[] = [];
     if (kind === 'DRILL' && roads) for (let y = entrance.y - 8; y <= entrance.y + 8; y++) for (let x = entrance.x - 8; x <= entrance.x + 8; x++) {
       const cell = roads.get(`${x},${y}`);if (cell) responseCells.push(cell);yield;
     }
     responseCells.sort((a,b)=>Math.abs(a.x-entrance.x)+Math.abs(a.y-entrance.y)-Math.abs(b.x-entrance.x)-Math.abs(b.y-entrance.y));
-    sites.push({taskId:task.id,kind,route:route.reverse(),...(kind === 'DRILL' ? {responseCells:responseCells.slice(0,16)} : {})});
+    sites.push({taskId:task.id,kind,context,route:route.reverse(),...(kind === 'DRILL' ? {responseCells:responseCells.slice(0,16)} : {})});
   }
   return sites;
 }
@@ -67,5 +81,20 @@ export function planCityLife(cityId:string,sites:readonly CityLifeSite[],now:num
   const window=Math.floor(now/180_000);
   const ordered=[...sites].sort((a,b)=>a.taskId.localeCompare(b.taskId));
   const site=ordered[cityLifeHash(`${cityId}:${window}`)%ordered.length]!;
-  return {...site,id:`${cityId}:${window}:${site.taskId}`,start:now,durationMs:75_000};
+  const recipes=site.context?eligibleNeighbourhoodRecipes(site.context):undefined;
+  if(recipes&&!recipes.length)return;
+  const recipe=recipes?.[cityLifeHash(`${cityId}:${window}:${site.taskId}:recipe`)%recipes.length];
+  return {...site,...(recipe?{kind:recipe.kind,recipeId:recipe.id}:{}),id:`${cityId}:${window}:${site.taskId}`,start:now,durationMs:75_000};
+}
+
+
+/** Retained work follows current eligibility and real geometry, not a site's
+ * legacy default kind when its selected recipe uses another action. */
+export function cityLifePlanFitsSite(site:CityLifeSite,plan:CityLifePlan):boolean {
+  if(site.taskId!==plan.taskId || site.route!==plan.route && (site.route.length!==plan.route.length
+    || site.route.some((cell,index)=>cell.x!==plan.route[index]!.x||cell.y!==plan.route[index]!.y)))return false;
+  if(!plan.recipeId)return site.kind===plan.kind;
+  const recipe=cityEventRecipe(plan.recipeId);
+  return !!recipe&&recipe.channel==='NEIGHBOURHOOD'&&recipe.kind===plan.kind&&!!site.context
+    &&eligibleNeighbourhoodRecipes(site.context).includes(recipe);
 }

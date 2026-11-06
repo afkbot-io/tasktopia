@@ -30,6 +30,19 @@ it('при позднем входе запускает видимую сцен�
   expect(f.controller.metrics.episodes).toBe(1);
 });
 
+it('истечение сцены освобождает именно её участников и позволяет другой площадке того же окна начать работу', () => {
+  const director=new CityEventDirector(),f=fixture(director);
+  f.controller.compile({...f.input,tasks:[f.task,{...f.task,id:'kindergarten',visualAssetKey:'compact-rose-kindergarten-v1'}]});
+  f.controller.update(0,f.view,f.options);
+  const first=f.controller.update(8001,f.view,f.options).pose!;expect(first).toBeDefined();
+  const next=f.controller.update(first.end,f.view,f.options).pose!;
+  expect(next).toBeDefined();expect(next.id).not.toBe(first.id);expect(next.kind).not.toBe(first.kind);
+  expect(next.start).toBe(first.end);expect(Math.floor(next.start/75000)).toBe(Math.floor(first.start/75000));
+  expect(director.active.some(owner=>owner.id===first.id)).toBe(false);
+  expect(f.city.agents.some(actor=>actor.visit?.id===first.id)).toBe(false);
+  f.controller.clear();expect(director.active).toEqual([]);expect(f.city.agents.some(actor=>actor.visit)).toBe(false);
+});
+
 it('повторяет непринятую занятую сцену с ограниченной частотой и освобождает её по приоритету дороги', () => {
   const director = new CityEventDirector(), f = fixture(director), busy = { ...f.options, busy: new Set(['3,0']) };
   f.controller.update(42_000, f.view, busy);

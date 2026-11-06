@@ -34,7 +34,7 @@ import type { CityDevelopmentDto } from "../../shared/city-development";
 import { cityMapKeyAction } from "../city-map-keyboard";
 import { CityViewPublisher,CityViewRestoreQueue,readCityViewState,type CityViewState,type CityViewRestoreRequest,type CityViewChangeMeta } from "../city-view-state";
 export type {CityViewState,CityViewRestoreRequest,CityViewChangeMeta} from "../city-view-state";
-import { cityLifeSitesAsync, planCityLife, type CityLifeSite, type CityLifePlan } from "../city-life";
+import { cityLifeSitesAsync, planCityLife, cityLifePlanFitsSite, type CityLifeSite, type CityLifePlan } from "../city-life";
 import { createCityLifeView } from "../city-life-view";
 import { createNeighbourhoodController } from "../city-neighbourhood-controller";
 import { worldDetailProfile } from "../world-detail-profile";
@@ -1801,10 +1801,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       const neighbourhoodController=createNeighbourhoodController(()=>mobility,eventDirector);
       const completedLifeView=createCityLifeView();
       let neighbourhoodTelemetryAt=0;
-      agentOverlayLayer.addChild(completedLifeView.root);
+      worldObjectLayer.addChild(registerWorldObject(completedLifeView.root,"AGENT"));
       const clearCompletedLife = () => {
         neighbourhoodController.clear();completedLifePlan = undefined;
         completedLifeView.update(undefined, 0);
+        host.dataset.cityLifeRecipe='';host.dataset.cityLifeAction='';host.dataset.cityLifeActionStep='';
       };
       startupDisposers.push(clearCompletedLife);
       const updateCompletedLife=()=>{
@@ -1827,7 +1828,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           host.dataset.cityLifeEpisodeId = completedLifePlan?.id ?? '';
           host.dataset.cityLifePlan = JSON.stringify(completedLifePlan ?? null);
         }
-        completedLifeView.update(pose,now);
+        const action=completedLifeView.update(pose,now);
+        const recipe=pose?.recipeId??'',actionName=action?.action??'',actionStep=action?String(action.step):'';
+        if(host.dataset.cityLifeRecipe!==recipe)host.dataset.cityLifeRecipe=recipe;
+        if(host.dataset.cityLifeAction!==actionName)host.dataset.cityLifeAction=actionName;
+        if(host.dataset.cityLifeActionStep!==actionStep)host.dataset.cityLifeActionStep=actionStep;
         if(now>=neighbourhoodTelemetryAt||host.dataset.cityLifePhase!==(pose?.phase??'')){
           neighbourhoodTelemetryAt=now+250;
           host.dataset.cityLifeActors=JSON.stringify(mobility?.agents.filter(actor=>pose?.actorIds.includes(actor.id)).map(actor=>({id:actor.id,position:actor.position,visit:actor.visit}))??[]);
@@ -2093,8 +2098,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           const task = tasks.get(completedLifePlan.taskId);
           const anchor = completedLifePlan.route.at(-1)!;
           const retained = neighbourhoodIndex.query({ minX: anchor.x, minY: anchor.y, maxX: anchor.x, maxY: anchor.y }).items
-            .some(site => site.taskId === completedLifePlan!.taskId && site.kind === completedLifePlan!.kind
-              && site.route.length === completedLifePlan!.route.length && site.route.every((cell, i) => key(cell) === key(completedLifePlan!.route[i]!)));
+            .some(site => cityLifePlanFitsSite(site,completedLifePlan!));
           if (!task || task.status !== 'COMPLETED' || task.stage !== 5 || incidentMode(task) !== 'NONE'
             || !retained || !completedLifePlan.route.every(cell => mobilityWalkGraph.has(key(cell)))) clearCompletedLife();
         }

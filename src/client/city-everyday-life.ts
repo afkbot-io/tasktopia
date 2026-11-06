@@ -3,6 +3,7 @@ import { BUILDING_CATALOG } from '../shared/catalog';
 import { roadBandRole } from '../shared/road-profile';
 import { cityLifeHash, cityLifeSitesSteps } from './city-life';
 import { completePreparation, stableSortPreparation } from '../shared/cooperative-preparation';
+import { EVERYDAY_EVENT_RECIPES } from './city-event-recipes';
 
 export type EverydayKind = 'SCHOOL' | 'KINDERGARTEN' | 'BUS' | 'MARKET' | 'SPORT' | 'DOG' | 'BIRDS'
   | 'OPEN_SCHOOL' | 'OPEN_KINDERGARTEN' | 'OPEN_SHOP' | 'OPEN_FIRE' | 'OPEN_BUILDING';
@@ -17,11 +18,8 @@ export type EverydayInput = { tasks: readonly EverydayTask[]; walk: ReadonlyMap<
 export type EverydayEpisode = EverydaySite & { start: number; end: number };
 export type EverydayPose = EverydayEpisode & { phase: 'ARRIVE' | 'ACTIVITY' | 'LEAVE'; elapsed: number; progress: number };
 export const EVERYDAY_WINDOW_MS = 75_000;
-export const EVERYDAY_LABEL: Record<EverydayKind, string> = {
-  SCHOOL: 'В школу', KINDERGARTEN: 'В детский сад', BUS: 'Городской автобус', MARKET: 'Ярмарка', SPORT: 'Игра во дворе',
-  DOG: 'Прогулка с собакой', BIRDS: 'Кормление птиц', OPEN_SCHOOL: 'Открытие школы', OPEN_KINDERGARTEN: 'Открытие детского сада',
-  OPEN_SHOP: 'Первые покупатели', OPEN_FIRE: 'Открытие пожарной части', OPEN_BUILDING: 'Новоселье',
-};
+export const EVERYDAY_LABEL = Object.fromEntries(EVERYDAY_EVENT_RECIPES.map(recipe => [recipe.kind, recipe.label])) as Readonly<Record<EverydayKind, string>>;
+const regularKinds = EVERYDAY_EVENT_RECIPES.filter(recipe => !recipe.freshCompletion).map(recipe => recipe.kind);
 export const cellKey = (cell: Cell) => `${cell.x},${cell.y}`;
 const buildings = new Map(BUILDING_CATALOG.map(entry => [entry.key, entry]));
 const directions = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }];
@@ -228,7 +226,9 @@ export function compileTransitStops(input: TransitStopInput): TransitStop[] {
 export function planEverydayEpisode(cityId: string, sites: readonly EverydaySite[], now: number): EverydayEpisode | undefined {
   if (!Number.isFinite(now) || !sites.length) return;
   const ordered = [...sites].sort((a, b) => a.id.localeCompare(b.id));
-  const kinds = [...new Set(ordered.map(site => site.kind))].sort(), window = Math.floor(now / EVERYDAY_WINDOW_MS);
+  const available = new Set(ordered.map(site => site.kind));
+  const kinds = regularKinds.filter(kind => available.has(kind)).sort(), window = Math.floor(now / EVERYDAY_WINDOW_MS);
+  if (!kinds.length) return;
   const kind = kinds[((window % kinds.length) + kinds.length) % kinds.length];
   const pool = ordered.filter(site => site.kind === kind), site = pool[cityLifeHash(`${cityId}:${window}`) % pool.length]!;
   const start = window * EVERYDAY_WINDOW_MS + 8_000;

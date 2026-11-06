@@ -421,6 +421,16 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       await expect(f.host).toHaveAttribute('data-transit-passengers','0');await safe(f.host);
     };
     for (let attempt = 0; attempt < 36 && seen.size < 6; attempt++) {
+      // Admission is local to the visible city. Waiting at the campus can
+      // qualify schools forever but can never observe an offscreen park.
+      // Visit the real context before asking for the next ordinary window;
+      // no event, participant or selected kind is forced by the test.
+      const wanted = ['SCHOOL','KINDERGARTEN','MARKET','SPORT','DOG','BIRDS'].find(kind => !seen.has(kind))!;
+      const contexts = f.tasks.filter(task => task.stage === 5 && (wanted === 'SCHOOL' || wanted === 'KINDERGARTEN'
+        ? BUILDING_CATALOG.find(building => building.key === task.visualAssetKey)?.educationKind === wanted
+        : task.visualKind === 'PARK'));
+      expect(contexts.length, `No real context for ${wanted}`).toBeGreaterThan(0);
+      await f.panFocus(contexts[attempt % contexts.length]!, true);
       const start = (Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1) * 75_000 + 8000;
       // Clock/readback latency can consume the last two seconds before start.
       // Prepare near the beginning of the real window, not its final moments.
@@ -504,7 +514,12 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       samples.push({ kind, arrivals, animals, fetched, scattered, state: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) });
       await writeFile(info.outputPath('everyday-scenes-progress.json'), JSON.stringify(samples, null, 2));
       await seek(page, f.host, start + 44_200);
-      await expect(f.host).toHaveAttribute('data-everyday-event', '');
+      // The director can admit another real site in this same window as soon
+      // as the observed scene expires. Qualify its owner cleanup, not an idle
+      // gap that the product does not promise between independent scenes.
+      await expect(f.host).not.toHaveAttribute('data-everyday-episode-id', initial.everydayEpisodeId!);
+      const owners=JSON.parse(await f.host.getAttribute('data-city-event-owners')??'[]') as {id:string}[];
+      expect(owners.some(owner=>owner.id===initial.everydayEpisodeId)).toBe(false);
       await setSceneLife(page, false);
       // Cancellation must finish real carrier motion before skipping the next
       // dead interval; synthetic epoch jumps cannot evacuate a physical body.

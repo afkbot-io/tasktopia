@@ -1,6 +1,7 @@
 import type { Cell, Rect } from '../shared/contracts';
 import type { CityMobility } from './city-mobility';
-import type { CityLifePlan, CityLifeScene } from './city-life';
+import { cityLifePlanFitsSite, type CityLifePlan, type CityLifeScene } from './city-life';
+import { CITY_RECIPE_WORK_MS } from './city-event-recipes';
 import { CityEventDirector, type CityEventLease } from './city-event-director';
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
@@ -40,11 +41,12 @@ export function createNeighbourhoodController(mobility: () => CityMobility | und
     const lead = people.find(actor => actor.visit?.id === plan.id && actor.visit.arrived) ?? people[0];
     if (!lead) return;
     return { ...plan, phase, actorIds: [...actorIds], serviceId, arrived: people.filter(actor => actor.visit?.id === plan.id && actor.visit.arrived).length,
-      position: { ...lead.position } };
+      position: { ...lead.position },...(active.activityAt===undefined?{}:{activityAt:active.activityAt}) };
   };
   return {
     metrics, get state() { return snapshot(); }, get plan() { return active?.plan; },
     canStart(plan: CityLifePlan) {
+      if(!cityLifePlanFitsSite(plan,plan))return false;
       const city = mobility(), targets = city ? plan.route.toReversed().filter(cell => city.visitTargets.has(key(cell))).slice(0, 1) : [];
       return !active && !!city && !!targets.length && (rejectedUntil.get(plan.taskId) ?? 0) <= plan.start
         && city.agents.some(actor => actor.kind === 'WALKER' && actor.age !== 'CHILD' && !actor.visit && !actor.carrier
@@ -55,7 +57,7 @@ export function createNeighbourhoodController(mobility: () => CityMobility | und
     clear: () => finish(),
     start(plan: CityLifePlan, now: number): boolean {
       const city = mobility();
-      if (active || !city || !Number.isFinite(now) || now < plan.start || now >= plan.start + plan.durationMs || plan.route.length < 2) return false;
+      if (active || !city || !Number.isFinite(now) || now < plan.start || now >= plan.start + plan.durationMs || plan.route.length < 2 || !cityLifePlanFitsSite(plan,plan)) return false;
       const travelBudget = ARRIVAL_ROUTE_BUDGET_MS - (now-plan.start);
       if (!(travelBudget>0)) return false;
       // These sites describe a single narrow approach, not an independent
@@ -89,7 +91,7 @@ export function createNeighbourhoodController(mobility: () => CityMobility | und
         if (people.every(actor => actor.visit?.arrived) && (!serviceId || engine && engine.activity === 'REST')) {
           current.phase = 'ACTIVITY';current.activityAt = now;metrics.activities++;
         } else if (now - plan.start >= ARRIVAL_TIMEOUT_MS) { finish();return; }
-      } else if (current.phase === 'ACTIVITY' && now - current.activityAt! >= 12_000) {
+      } else if (current.phase === 'ACTIVITY' && now - current.activityAt! >= CITY_RECIPE_WORK_MS) {
         current.phase = 'LEAVING';current.leavingAt = now;
         current.departureOrigins = new Map([...people, ...(engine ? [engine] : [])].map(actor => [actor.id, { ...actor.position }]));
         city.clearVisits(plan.id);

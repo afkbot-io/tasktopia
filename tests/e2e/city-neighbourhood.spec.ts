@@ -6,6 +6,7 @@ import { cityLifeSites, type CityLifePlan } from '../../src/client/city-life';
 import { installSceneClock } from './city-scene-clock';
 import { pauseInstalledClock } from './city-clock-control';
 import { sceneWalkGeometry } from './city-scene-walk-fixture';
+import { cityEventRecipe } from '../../src/client/city-event-recipes';
 
 test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 test.afterEach(async({page},info)=>{
@@ -63,6 +64,9 @@ test('a completed neighbourhood uses real residents through arrival, activity an
   }
   await expect(world).toHaveAttribute('data-city-life-phase', /^(ARRIVING|ACTIVITY)$/);
   const plan = JSON.parse((await world.getAttribute('data-city-life-plan'))!) as CityLifePlan;
+  const recipe=cityEventRecipe(plan.recipeId!);
+  expect(recipe?.channel).toBe('NEIGHBOURHOOD');
+  if(!recipe||recipe.channel!=='NEIGHBOURHOOD')throw new Error('A completed native site needs a registered neighbourhood recipe');
   const canonical = g.tasks.find(task => task.id === plan.taskId)!;expect(canonical.status).toBe('COMPLETED');expect(canonical.stage).toBe(5);
   type Participant = { id: string; position: Cell; visit?: { id: string; arrived: boolean } };
   const people = async () => JSON.parse((await world.getAttribute('data-city-life-actors'))!) as Participant[];
@@ -83,8 +87,16 @@ test('a completed neighbourhood uses real residents through arrival, activity an
   const arrived = await people();expect(arrived.map(actor => actor.id)).toEqual(initial.map(actor => actor.id));
   expect(arrived.every(actor => actor.visit?.id === plan.id && actor.visit.arrived)).toBe(true);
   await page.screenshot({ path: info.outputPath('physical-neighbourhood-activity.png') });
-  for (let step = 0; step < 28 && await world.getAttribute('data-city-life-phase') === 'ACTIVITY'; step++) await page.clock.runFor(500);
+  const actions:string[]=[];
+  for (let step = 0; step < 28 && await world.getAttribute('data-city-life-phase') === 'ACTIVITY'; step++) {
+    const cue=await world.evaluate(node=>{const d=(node as HTMLElement).dataset;return {recipe:d.cityLifeRecipe,action:d.cityLifeAction,step:Number(d.cityLifeActionStep)};});
+    expect(cue.recipe).toBe(recipe.id);
+    if(actions.length===cue.step)actions.push(cue.action!);
+    await page.clock.runFor(500);
+  }
+  expect(actions).toEqual(recipe.steps);
   await expect(world).toHaveAttribute('data-city-life-episode-id', plan.id);await expect(world).toHaveAttribute('data-city-life-phase', 'LEAVING');
+  await expect(world).toHaveAttribute('data-city-life-action','');
   const leaving = await people();
   for (let step = 0; step < 24 && await world.getAttribute('data-city-life-episode-id') === plan.id; step++) await page.clock.runFor(500);
   await expect(world).not.toHaveAttribute('data-city-life-episode-id', plan.id);
@@ -97,5 +109,5 @@ test('a completed neighbourhood uses real residents through arrival, activity an
   for (const metric of ['data-mobility-vehicle-unsafe-total', 'data-mobility-pedestrian-unsafe-total', 'data-mobility-vehicle-pedestrian-unsafe-total']) await expect(world).toHaveAttribute(metric, '0');
   expect(writes).toEqual([]);expect(errors).toEqual([]);
   expect(reads.filter(path => path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
-  await info.attach('physical-neighbourhood', { body: JSON.stringify({ plan, initial, arrived, leaving, owners, writes, reads, errors }), contentType: 'application/json' });
+  await info.attach('physical-neighbourhood', { body: JSON.stringify({ plan, actions, initial, arrived, leaving, owners, writes, reads, errors }), contentType: 'application/json' });
 });

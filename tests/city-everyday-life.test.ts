@@ -167,6 +167,17 @@ it('выбор и фазы устойчивы, событие не появля�
   expect(everydayPose(plan, NaN, view)).toBeUndefined();
 });
 
+it('обычное окно не создаёт открытия зданий: они требуют подтверждённого завершения', () => {
+  const site = compileEverydaySites(input)[0]!;
+  const openings = ['OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP', 'OPEN_FIRE', 'OPEN_BUILDING'] as const;
+  for (const kind of openings) {
+    const opening = { ...site, id: kind, kind };
+    expect(planEverydayEpisode('city', [opening], 0)).toBeUndefined();
+    for (let window = 0; window < 12; window++)
+      expect(planEverydayEpisode('city', [opening, { ...site, kind: 'SCHOOL' }], window * 75_000)?.kind).toBe('SCHOOL');
+  }
+});
+
 it('дождь имеет начало, основную фазу, высыхание и конечный срок, открытие соответствует роли здания', () => {
   expect(rainPose('city', 0).phase).toBe('DRY');
   const phases = new Set(Array.from({ length: 540 }, (_, s) => rainPose('city', s * 1000).phase));

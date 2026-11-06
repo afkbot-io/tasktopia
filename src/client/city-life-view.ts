@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { CityLifeScene } from './city-life';
+import { cityLifeCueFrame, type CityLifeCueFrame } from './city-life-cues';
 
 /** All actors reuse authored native people; only tiny activity cues are drawn.
  * This layer has no hit targets and can never consume task/map interaction. */
@@ -8,9 +9,21 @@ export function createCityLifeView() {
   const cue=new Graphics({eventMode:'none'});
   root.addChild(cue);root.visible=false;
   let identity='',lastFrame=-1;
-  return {root,update(scene:CityLifeScene|undefined,now:number) {
+  return {root,update(scene:CityLifeScene|undefined,now:number):CityLifeCueFrame|undefined {
     root.visible=Boolean(scene);if(!scene)return;
-    cue.position.set(Math.round(scene.position.x*8),Math.round(scene.position.y*8));
+    const x=Math.round(scene.position.x*8),y=Math.round(scene.position.y*8);
+    if(root.x!==x||root.y!==y)root.position.set(x,y);
+    if(scene.recipeId){
+      const state=cityLifeCueFrame(scene,now);cue.visible=!!state;
+      if(state){
+        const next=`${scene.id}:${scene.phase}:${state.action}:${state.step}`;
+        if(identity!==next||lastFrame!==state.frame){
+          identity=next;lastFrame=state.frame;cue.clear();
+          for(const pixel of state.pixels)cue.rect(pixel.x,pixel.y,pixel.width,pixel.height).fill(pixel.color);
+        }
+      }
+      return state;
+    }
     const frame=Math.floor(now/600)%2;
     if(identity!==scene.id||lastFrame!==frame) {
       identity=scene.id;lastFrame=frame;cue.clear();
