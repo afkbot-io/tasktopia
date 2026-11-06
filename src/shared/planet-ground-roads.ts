@@ -1,4 +1,4 @@
-import type { IntercityRoadRoute } from './intercity-roads';
+import { isIntercityRoadClass, type IntercityRoadRoute } from './intercity-roads';
 import type { OrthogonalRoadGeometry,OrthogonalDirection } from './semantic-road';
 
 export const PLANET_GROUND_ROAD_LIMITS=Object.freeze({routes:1024,routesPerCountry:100,runs:16_384,worldCells:300_000});
@@ -52,6 +52,7 @@ export function readPlanetGroundRoads(sources:readonly PlanetGroundRoadSource[])
       const raw=object(source.routes[index]);
       if(!raw||!identity(raw.id)||ids.has(raw.id)||!identity(raw.fromCityId)||!identity(raw.toCityId)
         ||raw.fromCityId===raw.toCityId||!identity(raw.fromNodeId)||!identity(raw.toNodeId)||raw.widthCells!==3){omit('INVALID_GEOMETRY');continue;}
+      if(raw.roadClass!==undefined&&!isIntercityRoadClass(raw.roadClass)){omit('INVALID_GEOMETRY');continue;}
       if(!source.cityIds.has(raw.fromCityId)||!source.cityIds.has(raw.toCityId)){omit('MISSING_CITY');continue;}
       const path=geometry(raw.geometry,PLANET_GROUND_ROAD_LIMITS.worldCells-worldCells);
       if(typeof path==='string'){omit(path);continue;}
@@ -70,6 +71,7 @@ export function readPlanetGroundRoads(sources:readonly PlanetGroundRoadSource[])
       ids.add(raw.id);worldCells+=path.length;
       target.routes.push({id:raw.id,fromCityId:raw.fromCityId,toCityId:raw.toCityId,
         fromNodeId:raw.fromNodeId,toNodeId:raw.toNodeId,widthCells:3,geometry:path.value,
+        ...(raw.roadClass!==undefined?{roadClass:raw.roadClass}:{}),
         ...(raw.bridges!==undefined?{bridges}:{})});
     }
   }

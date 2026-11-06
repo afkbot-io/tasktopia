@@ -11,6 +11,17 @@ const scene = (count = 3): CitySceneDto => {
     completedDistrictSnapshots:[{tasks}]} as unknown as CitySceneDto;
 };
 
+it('preserves narrow hierarchical road metadata through detachable and immutable scene storage',async()=>{
+  const input=scene();
+  input.chunks[0]!.roadRuns=[{start:{x:-8,y:0},end:{x:8,y:0},mask:10,structure:'ROAD',roadClass:'ARTERIAL',widthCells:3}];
+  for(const runStorage of [undefined,'PACKED_IMMUTABLE'] as const){
+    const packed=packCitySceneTransfer(input),received=structuredClone(packed,{transfer:[packed.coordinates.buffer,packed.metadataIndices.buffer]});
+    const restored=await hydrateCitySceneTransfer(received,{runStorage});
+    expect(restored.chunks[0]!.roadRuns).toEqual(input.chunks[0]!.roadRuns);
+    expect(JSON.stringify(restored)).toBe(JSON.stringify(input));
+  }
+});
+
 it("transfers50k runs through two genuinely detachable buffers without a plain start/end object forest",async()=>{
   const original=scene(50_000),packed=packCitySceneTransfer(original);
   expect(packed.coordinates.byteLength).toBe(50_000*4*8);

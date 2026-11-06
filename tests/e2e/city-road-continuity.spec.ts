@@ -6,8 +6,61 @@ import { createDb } from '../../src/server/db';
 import { registerUser } from '../../src/server/auth';
 import { AppService } from '../../src/server/app-service';
 import { readCountryRoads } from '../../src/server/world/intercity-road-store';
+import { INTERCITY_ROAD_PLANNER_VERSION } from '../../src/server/world/intercity-road-planner';
+import { expandRoadRuns,expandSurfaceRuns } from '../../src/shared/world-cell-runs';
+import { CityRoadPadding } from '../../src/client/city-road-padding';
+import { isBuildableTerrain,terrainAt } from '../../src/shared/world-terrain';
+import { roadAtlasTile } from '../../src/shared/road-atlas';
+import { roadMarkingAxis } from '../../src/shared/road-profile';
+import type { CitySceneDto } from '../../src/shared/city-scene-contract';
+import type { RoadCellDto } from '../../src/shared/contracts';
 import { decodeOrthogonalRoadRuns } from '../../src/shared/semantic-road';
 import { openMapPlanet } from './map-navigation';
+
+async function actualCityRoadPixels(page:Page,scene:CitySceneDto,seed:number){
+  const host=page.locator('.world-canvas'),canvas=host.locator('canvas');
+  for(let i=0;i<8&&Number(await host.getAttribute('data-render-scale'))<3;i++){
+    const before=Number(await host.getAttribute('data-render-scale'));
+    const box=(await canvas.boundingBox())!;
+    await canvas.dispatchEvent('wheel',{deltaY:-250,clientX:box.x+box.width/2,clientY:box.y+box.height/2,bubbles:true});
+    await expect.poll(async()=>Number(await host.getAttribute('data-render-scale'))).toBeGreaterThan(before);
+    await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
+  }
+  await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15000});
+  const view=await host.evaluate(el=>{const d=(el as HTMLElement).dataset,c=el.querySelector('canvas')!;
+    return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight};});
+  expect(view.scale).toBeGreaterThanOrEqual(3);
+  const padding=new CityRoadPadding(scene,p=>isBuildableTerrain(terrainAt(seed,p.x,p.y).terrain)),residents=new Map(scene.chunks.map(c=>[`${c.chunkX},${c.chunkY}`,c]));
+  const roads=new Map<string,RoadCellDto>(),crossings=new Set<string>();
+  const dx=view.width/(16*view.scale),dy=view.height/(16*view.scale),size=scene.chunkSize;
+  for(let y=Math.floor((view.y-dy)/size)-1;y<=Math.floor((view.y+dy)/size)+1;y++)for(let x=Math.floor((view.x-dx)/size)-1;x<=Math.floor((view.x+dx)/size)+1;x++){
+    const resident=residents.get(`${x},${y}`),extra=resident?undefined:padding.get(x,y);
+    for(const c of resident?expandRoadRuns(resident.roadRuns):extra?.roads??[])roads.set(`${c.x},${c.y}`,c);
+    for(const c of resident?expandSurfaceRuns(resident.surfaceRuns):extra?.surfaces??[])if(c.kind==='CROSSWALK')crossings.add(`${c.x},${c.y}`);
+  }
+  const candidates=[...roads.values()].filter(c=>c.roadClass===scene.intercityRoads[0]!.roadClass&&c.widthCells===3&&c.structure==='ROAD'
+    &&Math.abs(c.x+.5-view.x)<dx-2&&Math.abs(c.y+.5-view.y)<dy-2&&!crossings.has(`${c.x},${c.y}`)&&!roadMarkingAxis(roads,c))
+    .slice(0,64).map(cell=>({cell,tile:roadAtlasTile(process.env.E2E_ROAD_PIXEL_WRONG_CLASS==='true'?{...cell,roadClass:'LOCAL'}:cell),wrong:roadAtlasTile({...cell,roadClass:'LOCAL'})}));
+  expect(candidates.length).toBeGreaterThanOrEqual(2);
+  const shot=(await canvas.screenshot()).toString('base64');
+  return page.evaluate(async({shot,candidates,view})=>{
+    const decode=async(src:string)=>{const image=new Image();image.src=src;await image.decode();const c=document.createElement('canvas');c.width=image.width;c.height=image.height;
+      const ctx=c.getContext('2d')!;ctx.drawImage(image,0,0);return ctx.getImageData(0,0,c.width,c.height);};
+    const screen=await decode(`data:image/png;base64,${shot}`),atlas=await decode(`/game-assets/v5/${candidates[0]!.tile.url}`),sx=screen.width/view.width,sy=screen.height/view.height;
+    const samples=candidates.map(({cell,tile,wrong})=>{
+      let matches=0,wrongMatches=0;
+      for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+        const px=Math.floor((view.width/2+((cell.x-view.x)*8+x+.5)*view.scale)*sx),py=Math.floor((view.height/2+((cell.y-view.y)*8+y+.5)*view.scale)*sy),actual=(py*screen.width+px)*4;
+        for(const [frame,isWrong] of [[tile,false],[wrong,true]] as const){
+          const expected=((frame.sourceY+y)*atlas.width+frame.sourceX+x)*4;
+          if([0,1,2].every(c=>Math.abs(screen.data[actual+c]!-atlas.data[expected+c]!)<=1)){if(isWrong)wrongMatches++;else matches++;}
+        }
+      }
+      return{cell,matches,wrongMatches};
+    });
+    return{scale:view.scale,samples,best:[...samples].sort((a,b)=>b.matches-a.matches)[0]!};
+  },{shot,candidates,view});
+}
 
 async function actualRoadPixels(page:Page){
   const shot=(await page.screenshot()).toString('base64');
@@ -84,11 +137,14 @@ test('canonical road survives city growth, task close and planet return without 
       tasks.push(await service.createTask(user.countryId,{cityId:city.id,districtId:district.id,title:`Первый дом ${i+1}`,estimate:1,idempotencyKey:`task${i}`}));
     }
     const accepted=(await readCountryRoads(db,user.countryId))!;
-    expect(accepted.plan.plannerVersion).toBe(3);expect(accepted.plan.routes).toHaveLength(1);
+    expect(accepted.plan.plannerVersion).toBe(INTERCITY_ROAD_PLANNER_VERSION);expect(accepted.plan.routes).toHaveLength(1);
+    expect(['COLLECTOR','ARTERIAL']).toContain(accepted.plan.routes[0]!.roadClass);
     for(let i=0;i<35;i++)await service.createTask(user.countryId,{cityId:cities[0]!.id,districtId:districts[0]!.id,title:`Рост ${i}`,estimate:1,idempotencyKey:`growth${i}`});
     expect((await readCountryRoads(db,user.countryId))!.plan.routes).toEqual(accepted.plan.routes);
     const first=await service.getTask(user.countryId,tasks[0]!.id),scene=await service.getCityScene(user.countryId,cities[0]!.id);
     expect(scene.intercityRoads).toEqual(accepted.plan.routes);
+    expect(scene.chunks.flatMap(chunk=>expandRoadRuns(chunk.roadRuns))
+      .some(road=>road.roadClass===accepted.plan.routes[0]!.roadClass)).toBe(true);
     // Route orientation follows IDs, so its first outside point may belong
     // to the remote city. Review our local exit within the existing clamp.
     const distance=(p:{x:number;y:number})=>Math.max(scene.city.bounds.minX-p.x,0,p.x-scene.city.bounds.maxX)
@@ -98,6 +154,7 @@ test('canonical road survives city growth, task close and planet return without 
     expect(exit).toBeDefined();
     const canonical=await db.prepare('SELECT * FROM country_road_snapshots_v1 WHERE country_id=?').get(user.countryId);
     expect((await page.request.post('/api/auth/login',{data:{email:user.email,password:'password123'}})).ok()).toBe(true);
+    await page.addInitScript(()=>localStorage.setItem('tasktopia:world-preferences:v2',JSON.stringify({quality:'NORMAL',cityLife:false,sound:false})));
     if(process.env.E2E_ROAD_FAULT==='true'){
       // Fail the first PLANET load before CITY can warm the same PNG in the
       // browser's decoded image cache. A later route handler cannot evict it.
@@ -132,6 +189,10 @@ test('canonical road survives city growth, task close and planet return without 
     await expect.poll(async()=>host.evaluate((el,p)=>{const d=(el as HTMLElement).dataset,c=el.querySelector('canvas')!,s=8*Number(d.renderScale);
       return Math.abs((Number(d.cameraWorldX)-p.x)*s)<c.clientWidth/2-12&&Math.abs((Number(d.cameraWorldY)-p.y)*s)<c.clientHeight/2-80;},exit)).toBe(true);
     await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15_000});
+    const cityPixels=await actualCityRoadPixels(page,scene,1);
+    await writeFile(info.outputPath('city-road-pixels.json'),JSON.stringify(cityPixels));
+    expect(cityPixels.best.matches,JSON.stringify(cityPixels)).toBeGreaterThanOrEqual(60);
+    expect(cityPixels.best.wrongMatches).toBeLessThan(cityPixels.best.matches);
     await page.mouse.move(8,8);await page.screenshot({path:info.outputPath('city-road.png')});
     await openMapPlanet(page);
     await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready','true',{timeout:30_000});
@@ -191,7 +252,7 @@ test('canonical road survives city growth, task close and planet return without 
       expect(errors).toEqual([]);expect(failures).toEqual([]);expect(writes).toEqual([]);
       realtimeEvidence={calls,beforeRevision,afterRevision:updated.revision,routeIds:updated.plan.routes.map(route=>route.id)};
     }
-    const evidence=JSON.stringify({routes:accepted.plan.routes,exit,pixelProbe,roadBuilds,expectedFailures,realtimeEvidence,reads,errors,warnings,failures,writes});
+    const evidence=JSON.stringify({routes:accepted.plan.routes,exit,cityPixels,pixelProbe,roadBuilds,expectedFailures,realtimeEvidence,reads,errors,warnings,failures,writes});
     await writeFile(info.outputPath('road-continuity.json'),evidence);
     await info.attach('road-continuity',{body:evidence,contentType:'application/json'});
   } finally {

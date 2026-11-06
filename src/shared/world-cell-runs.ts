@@ -78,7 +78,7 @@ export function expandCellRuns(runs: readonly CellRunDto[]): Cell[] {
 }
 
 export function compactRoadRuns(roads: readonly RoadCellDto[]): RoadRunDto[] {
-  return compactRuns(roads, (road) => `${road.mask}:${road.structure}:${road.roadClass}`)
+  return compactRuns(roads, (road) => `${road.mask}:${road.structure}:${road.roadClass}:${road.widthCells ?? ""}`)
     .map(({ start, end, value }) => ({ start, end, ...value }));
 }
 

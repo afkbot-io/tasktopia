@@ -45,7 +45,7 @@ export function mobilityNetworkSignature(input: MobilityNetworkInput): string {
 }
 function* mobilityNetworkSignatureSteps(input: MobilityNetworkInput): Generator<void, string, void> {
   const roadKeys: string[] = [];
-  for (const [key, cell] of input.roads) { roadKeys.push(`${key}:${cell.roadClass}`); yield; }
+  for (const [key, cell] of input.roads) { roadKeys.push(`${key}:${cell.roadClass}${cell.widthCells === 3 ? ":3" : ""}`); yield; }
   const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
   const roads = yield* stableSortPreparation(roadKeys, compare);
   const walking = yield* stableSortPreparation(input.walkGraph.keys(), compare);

@@ -66,6 +66,21 @@ types/lint/build проходят.3pure10k пары~1,9s,география/до
 
 ## Общая приёмка
 
+Срез81 назначает только новым межгородским связям COLLECTOR/ARTERIAL по
+устойчивому размаху концов. Прежние LOCAL, IDs и геометрия сохранены.
+Planner4 сокращает native200 отказ с8 000 избыточных heading до4 855 и
+доказывает NO_PATH в прежнем окне; контроль13 824 и независимый Dijkstra
+на24 картах подтверждают результат. Лимиты/мосты/защита не ослаблены.
+Directed RED выявил связь класса материала с шириной: явная width3 в
+derived cells/runs и ключе кэша сохраняет прежний граф замкнутых улиц.
+150 unit/integration в22 файлах, types/lint/build и3 actualMCP browser на
+desktop/compactAndroid/iPhone проходят. Native CITY pixel control LOCAL
+даёт0/64; правильный класс минимум60/64 без подгонки RGB. Три CITY кадра
+просмотрены. Snapshot upgrade2/3→4, readonly preview/GET, CLI repeat/rollback
+проходят. Новые коридоры локально проверены; итоговые масштабы и выпуск
+общей цели остаются следующими шагами.
+[Контракт и доказательства](../tasks/81-intercity-road-hierarchy.md).
+
 Срез76 исправляет finite-budget отказ на открытой суше: 8000→301 состояния,
 версия3, readonly preview и явное идемпотентное обновление старых стран.
 79unit/13files, types/lint/build и3browser desktop/Android/iPhone проходят.

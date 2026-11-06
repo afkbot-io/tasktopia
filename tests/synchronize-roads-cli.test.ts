@@ -6,6 +6,7 @@ import { createTestDb,type Db } from '../src/server/db';
 import { registerUser } from '../src/server/auth';
 import { AppService } from '../src/server/app-service';
 import { readCountryRoads } from '../src/server/world/intercity-road-store';
+import { INTERCITY_ROAD_PLANNER_VERSION } from '../src/server/world/intercity-road-planner';
 
 const execute = promisify(execFile);
 let db: Db | undefined;
@@ -45,7 +46,7 @@ it('previews, publishes and repeats a version upgrade without changing accepted 
   });
   const before = await snapshot();expect(before.chunks!.total).toBeGreaterThan(0);expect(before.overview!.total).toBeGreaterThan(0);
   const preview = await run('--country',countryId);
-  expect(preview).toMatchObject({mode:'dry-run',changed:true,before:{plannerVersion:2},after:{plannerVersion:3,routes:1}});
+  expect(preview).toMatchObject({mode:'dry-run',changed:true,before:{plannerVersion:2},after:{plannerVersion:INTERCITY_ROAD_PLANNER_VERSION,routes:1}});
   expect(await snapshot()).toEqual(before);
   const written = await run('--country',countryId,'--write');
   expect(written).toMatchObject({mode:'write',changed:true,checksum:preview.checksum});
