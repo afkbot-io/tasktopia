@@ -120,6 +120,26 @@ test('transport boundary outside resident scene keeps visible terrain covered af
   const origin = new URL(baseURL!);
   expect(['127.0.0.1', 'localhost']).toContain(origin.hostname); expect(origin.protocol).toBe('http:');
   const errors: string[] = [], reads: string[] = [], deliveries: Promise<void>[] = [];
+  const network:Record<string,unknown>[]=[],record=(event:Record<string,unknown>)=>{if(network.length<32)network.push({at:Date.now(),...event});};
+  const isScene=(url:string)=>/\/api\/countries\/[^/]+\/cities\/[^/]+\/scene$/.test(new URL(url).pathname);
+  page.on('request',r=>{if(isScene(r.url()))record({event:'request',path:new URL(r.url()).pathname});});
+  page.on('response',r=>{if(isScene(r.url()))record({event:'response',status:r.status()});});
+  page.on('requestfinished',r=>{if(isScene(r.url()))record({event:'finished',timing:r.timing()});});
+  page.on('requestfailed',r=>{if(isScene(r.url()))record({event:'failed',error:r.failure()?.errorText,timing:r.timing()});});
+  // Observe the exact native signal without replacing its promise, changing
+  // cancellation or suppressing any request error. This distinguishes owner
+  // cancellation from an intercepted HTTP delivery failure in software CI.
+  await page.addInitScript(()=>{
+    const records:unknown[]=[],native=window.fetch;
+    Object.assign(window,{__qaSceneAborts:records});
+    window.fetch=new Proxy(native,{apply(target,receiver,args:Parameters<typeof fetch>){
+      const [url,init]=args;
+      if(typeof url==='string'&&/^\/api\/countries\/[^/]+\/cities\/[^/]+\/scene$/.test(url)&&init?.signal){
+        init.signal.addEventListener('abort',()=>{if(records.length<16)records.push({path:url,at:performance.timeOrigin+performance.now(),stack:new Error().stack?.slice(0,3000)});},{once:true});
+      }
+      return Reflect.apply(target,receiver,args);
+    }});
+  });
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('requestfailed', request => errors.push(`${new URL(request.url()).pathname}: ${request.failure()?.errorText}`));
@@ -174,6 +194,18 @@ test('transport boundary outside resident scene keeps visible terrain covered af
     expect(reads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
     expect(errors).toEqual([]);
   } finally {
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    try{
+      const lifecycle=await Promise.race([page.evaluate(()=>{
+        const d=document.querySelector<HTMLElement>('.world-canvas')?.dataset;
+        return {aborts:(window as unknown as {__qaSceneAborts?:unknown[]}).__qaSceneAborts,
+          resources:performance.getEntriesByType('resource').filter(r=>/\/api\/countries\/[^/]+\/cities\/[^/]+\/scene$/.test(new URL(r.name).pathname)).slice(-4)
+            .map(r=>{const p=r as PerformanceResourceTiming;return {path:new URL(p.name).pathname,start:p.startTime,end:p.responseEnd,decodedBytes:p.decodedBodySize,encodedBytes:p.encodedBodySize};}),
+          published:{commit:d?.citySceneCommit,revision:d?.citySceneRevision,pending:d?.canonicalSnapshotPending,loading:d?.loading}};
+      }).catch(()=>undefined),
+        new Promise(resolve=>{timer=setTimeout(()=>resolve('unavailable-within1000ms'),1000);})]);
+      await info.attach('scene-network-lifecycle',{body:JSON.stringify({network,lifecycle,strictErrors:errors}),contentType:'application/json'});
+    }finally{clearTimeout(timer);}
     await Promise.all(deliveries);
     await page.unroute(scenePattern, transportEnvelope);
   }

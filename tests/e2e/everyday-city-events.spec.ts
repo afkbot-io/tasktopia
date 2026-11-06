@@ -79,9 +79,11 @@ for (const kind of ['OPEN_SCHOOL', 'OPEN_KINDERGARTEN', 'OPEN_SHOP', 'OPEN_FIRE'
   });
 }
 
-clockSceneTest('delayed MCP transfer resumes a helicopter carry without replaying an opening on reload', async ({ page }, info) => {
+for(const offscreen of [false,true]){
+clockSceneTest(offscreen?'delayed MCP transfer carries to a real offscreen destination without replaying an opening':'delayed MCP transfer resumes a helicopter carry without replaying an opening on reload', async ({ page }, info) => {
   test.setTimeout(90000); await installSceneClock(page);
-  const f = await everydayFixture(page), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  const f = await everydayFixture(page), errors: string[] = [], forbidden:string[]=[]; page.on('pageerror', e => errors.push(e.message));
+  page.on('request',r=>{if(/\/api\/(world\/viewport|chunks\/)/.test(r.url()))forbidden.push(new URL(r.url()).pathname);});
   try {
     await f.focus(f.pendingSchool);
     await expect(f.host).toHaveAttribute('data-ambient-assets', 'ready');
@@ -118,7 +120,18 @@ clockSceneTest('delayed MCP transfer resumes a helicopter carry without replayin
       && state.oldVisible && !state.targetVisible && state.aircraftVisible));
     let beginSteps = 0, readinessSteps = 0;
     try {
-      await f.call('task.transfer', { taskId: home.id, targetDistrictId: f.pendingSchool.districtId });
+      const destination=offscreen?f.tasks.filter(task=>task.id!==home.id).sort((a,b)=>
+        Math.hypot(b.origin.x-home.origin.x,b.origin.y-home.origin.y)-Math.hypot(a.origin.x-home.origin.x,a.origin.y-home.origin.y))[0]!:f.pendingSchool;
+      await f.call('task.transfer', { taskId: home.id, targetDistrictId: destination.districtId });
+      const moved=await f.service.getTask(f.user.countryId,home.id);
+      const target=await f.host.evaluate((el,bounds)=>{
+        const d=(el as HTMLElement).dataset,c=el.querySelector('canvas')!,size=8*Number(d.renderScale),x=Number(d.cameraWorldX),y=Number(d.cameraWorldY);
+        return {bounds,camera:{x,y,scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight},
+          visible:bounds.minX<x+c.clientWidth/size/2&&bounds.maxX>x-c.clientWidth/size/2
+            &&bounds.minY<y+c.clientHeight/size/2&&bounds.maxY>y-c.clientHeight/size/2};
+      },{minX:Math.min(...moved.footprint.map(p=>p.x)),maxX:Math.max(...moved.footprint.map(p=>p.x)),minY:Math.min(...moved.footprint.map(p=>p.y)),maxY:Math.max(...moved.footprint.map(p=>p.y))});
+      await info.attach('transfer-destination',{body:JSON.stringify({offscreen,target}),contentType:'application/json'});
+      if(offscreen)expect(target.visible,'The regression needs a real destination outside the current viewport').toBe(false);
       await expect.poll(async () => {
         if ((await cinematicFrames.frames()).some(frame => frame.states.some(state => state.taskId === home.id && state.kind === 'TRANSFER'))) return true;
         if (beginSteps >= 32) return false;
@@ -141,6 +154,7 @@ clockSceneTest('delayed MCP transfer resumes a helicopter carry without replayin
       expect(JSON.parse((await f.host.getAttribute('data-cinematic-state')) ?? '[]')).toEqual(expect.arrayContaining([
         expect.objectContaining({ taskId: home.id, kind: 'TRANSFER', phase: 'CARRY', oldVisible: true, targetVisible: false, aircraftVisible: true }),
       ]));
+      if(offscreen)await page.screenshot({path:info.outputPath('offscreen-carry.png')});
       await page.clock.runFor(3200);
     } finally { await writeFile(info.outputPath('delayed-transfer-frames.json'),JSON.stringify(await cinematicFrames.frames(),null,2));releaseScene(); await page.unroute(scenePattern); }
     await expect(f.host).toHaveAttribute('data-city-cinematics', '0', { timeout: 10000 });
@@ -148,9 +162,10 @@ clockSceneTest('delayed MCP transfer resumes a helicopter carry without replayin
     await page.clock.resume();
     await page.reload(); await openMapCity(page); await expect(f.host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 });
     expect(await f.host.getAttribute('data-everyday-event')).not.toMatch(/^OPEN_/);
-    expect(errors).toEqual([]);
+    expect(errors).toEqual([]);expect(forbidden).toEqual([]);
   } finally { await f.cleanup(); }
 });
+}
 
 clockSceneTest('paused native pan shows two distant institutions without task navigation and spends exactly 400ms each', async ({ page }, info) => {
   test.setTimeout(90000); await page.setViewportSize({ width: 720, height: 640 }); await installSceneClock(page);
@@ -303,10 +318,13 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
         expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(3);
         const admitted = await safe(f.host), phases = new Set<string>();
         let arrived = false, loaded = false;
-        for (let i = 0; i < 31; i++) {
+        // The public server clock can slew backwards by10%. Deliver every
+        // physical frame until31s of that clock elapsed, within35 one-second
+        // browser steps; the service's30s lifetime and wall deadline stay fixed.
+        for (let i = 0; i < 35; i++) {
           await page.clock.runFor(1000); const state = await safe(f.host);
           if (state.roadEvent === kind) phases.add(state.roadEventPhase!);
-          if (frames.length < 31) frames.push({ step: i + 1, startedAt, serverNow: state.roadEventServerNow,
+          if (frames.length < 35) frames.push({ step: i + 1, startedAt, serverNow: state.roadEventServerNow,
             kind: state.roadEvent, phase: state.roadEventPhase, arrived: state.roadServiceArrived, loaded: state.roadCargoLoaded,
             closedCells: state.roadClosedCells, responders: state.roadResponders, trips: state.roadResponseTrips,
             fixedSteps: state.mobilityFixedSteps, safety: [state.mobilityVehicleUnsafeTotal, state.mobilityPedestrianUnsafeTotal,
@@ -314,7 +332,9 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
           arrived ||= state.roadServiceArrived === 'true';
           loaded ||= state.roadCargoLoaded === 'true';
           if (i === 12 || kind === 'BREAKDOWN' && loaded && i === 18) await page.screenshot({ path: info.outputPath(`${kind.toLowerCase()}-${i}.png`) });
+          if(Number(state.roadEventServerNow)>=startedAt+31_000)break;
         }
+        expect(Number(await f.host.getAttribute('data-road-event-server-now'))).toBeGreaterThanOrEqual(startedAt+31_000);
         if (!arrived) {
           // Dispatch admits a directed route, not a guaranteed travel time
           // through live traffic. A fully observed safe expiry is a negative

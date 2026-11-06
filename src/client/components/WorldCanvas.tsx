@@ -2069,7 +2069,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       };
       const syncCinematicTargets = (features: ReadonlyMap<string, WorldFeatureDto>, publishedTasks: ReadonlyMap<string, ChunkTaskDto>) => {
         for (const [id, { event, task: oldTask }] of cinematicEvents) {
-          const task = publishedTasks.get(id), building = taskBuildingViews.get(id)?.view;
+          const task = publishedTasks.get(id) ?? (event.type === 'task.transferred' ? attentionTasks.get(id) : undefined), building = taskBuildingViews.get(id)?.view;
           const markers = [...features.values()].filter(feature => cinematicMarkerMatches(event.type === "task.deleted" ? "DEMOLISH" : event.type === "task.transferred" ? "TRANSFER" : "CONSTRUCT", oldTask, feature))
             .flatMap(feature => { const view = featureViews.get(feature.id); return [view?.platform, view?.visual].filter((v): v is Container => !!v); });
           const bounds = event.newBounds;
@@ -2077,7 +2077,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             && Math.min(...task.footprint.map(c => c.y)) === bounds.minY && Math.max(...task.footprint.map(c => c.x)) === bounds.maxX
             && Math.max(...task.footprint.map(c => c.y)) === bounds.maxY;
           const ready = event.type === "task.deleted" ? !task && markers.length > 0
-            : !!building && !!task && (event.stage === undefined || task.stage === event.stage) && !!destinationReady;
+            : !!task && (event.type === 'task.transferred' || !!building) && (event.stage === undefined || task.stage === event.stage) && !!destinationReady;
           cinematicView.target(id, { task, building, platform: taskPlatformViews.get(id)?.view, markers,
             version: ready ? event.worldVersion : -1 });
         }
