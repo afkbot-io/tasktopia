@@ -7,6 +7,7 @@ import { installSceneClock } from './city-scene-clock';
 import { pauseInstalledClock } from './city-clock-control';
 import { sceneWalkGeometry } from './city-scene-walk-fixture';
 import { cityEventRecipe } from '../../src/client/city-event-recipes';
+import {everydayFixture} from './everyday-city-fixture';
 
 test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 test.afterEach(async({page},info)=>{
@@ -14,6 +15,30 @@ test.afterEach(async({page},info)=>{
   const state=await page.locator('.world-canvas').evaluate(node=>({...((node as HTMLElement).dataset)})).catch(()=>undefined);
   if(state){const path=info.outputPath('physical-final-state.json');await writeFile(path,JSON.stringify(state,null,2));
     await info.attach('physical-final-state',{path,contentType:'application/json'});}
+});
+test('a real MCP status update reaches rendered task metadata without breaking the retained city',async({page},info)=>{
+  test.setTimeout(120000);
+  const f=await everydayFixture(page),errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(request.method()==='GET'&&/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  try{
+    const task=f.pendingHome;await f.focus(task);
+    const canvas=await f.host.locator('canvas').elementHandle();expect(canvas).not.toBeNull();
+    const key=crypto.randomUUID();await f.call('task.set_status',{taskId:task.id,status:'COMPLETED'},key);
+    await expect.poll(async()=>JSON.parse(await f.host.getAttribute('data-realtime-rendered-tasks')??'[]') as {taskId:string;stage:number}[])
+      .toContainEqual({taskId:task.id,stage:5});
+    await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:20000});
+    expect((await f.service.getTask(f.user.countryId,task.id)).status).toBe('COMPLETED');
+    await expect(f.host).toHaveAttribute('data-mobility-ready','true',{timeout:30000});
+    await expect(f.host).toHaveAttribute('data-movement-preparing','false',{timeout:30000});
+    expect(await canvas!.evaluate(node=>node.isConnected)).toBe(true);
+    await f.call('task.set_status',{taskId:task.id,status:'COMPLETED'},key);
+    await expect(f.host).toHaveAttribute('data-city-cinematics','0');
+    for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total'])
+      await expect(f.host).toHaveAttribute(metric,'0');
+    expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+    await info.attach('real-mcp-metadata-update',{body:JSON.stringify({taskId:task.id,stage:5,canvasRetained:true,reads,errors}),contentType:'application/json'});
+  }finally{await f.cleanup();}
 });
 test('a completed neighbourhood uses real residents through arrival, activity and physical departure without task writes', async ({ page, hasTouch }, info) => {
   test.setTimeout(120_000);await installSceneClock(page);

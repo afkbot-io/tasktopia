@@ -49,6 +49,17 @@ it("delegates one whole scene read and removes the worker/listeners after succes
   expect(await outcome).toBe(scene);expect(worker.terminated).toBe(1);expect(worker.listeners).toBe(0);
 });
 
+it('adopts private packed run storage for a worker transfer without changing legacy replies',async()=>{
+  const input={schemaVersion:5,city:{id:'a'},lod:'DETAIL',chunks:[{roadRuns:[{start:{x:1,y:2},end:{x:3,y:2}}],
+    surfaceRuns:[],districts:[],decorationContext:{surfaceHaloRuns:[],blockedCellRuns:[],districts:[]}}]} as unknown as CitySceneDto;
+  const worker=new Worker(),pending=loadCitySceneResponse('/api/countries/c/cities/a/scene',new AbortController().signal,()=>worker,async()=>new Response('{}'));
+  await vi.waitFor(()=>expect(worker.posted).toHaveLength(1));
+  worker.message!({data:{transfer:packCitySceneTransfer(input)}} as MessageEvent<SceneResponseMessage>);
+  const received=await pending;
+  expect(Object.isFrozen(received.chunks[0]!.roadRuns)).toBe(true);
+  expect(received).toEqual(input);expect(worker.terminated).toBe(1);expect(worker.listeners).toBe(0);
+});
+
 it("preserves HTTP errors and cleans failed or disconnected response workers",async()=>{
   for(const failure of ["http","worker","abort"]){
     const worker=new Worker(),controller=new AbortController();

@@ -1,5 +1,6 @@
 import { expect, it, vi } from "vitest";
 import type { CitySceneDto } from "../src/shared/city-scene-contract";
+import type {RoadRunDto} from '../src/shared/contracts';
 import { packCitySceneTransfer, hydrateCitySceneTransfer } from "../src/client/city-scene-transfer";
 
 const scene = (count = 3): CitySceneDto => {
@@ -35,6 +36,84 @@ it("keeps legacy already-decoded scene replies compatible",async()=>{
   const original=scene();expect(await hydrateCitySceneTransfer(original)).toBe(original);
 });
 
+it("explicit packed storage owns immutable geometry while default hydration remains compatible",async()=>{
+  const input=scene(),packed=packCitySceneTransfer(input);
+  const restored=await hydrateCitySceneTransfer(packed,{runStorage:'PACKED_IMMUTABLE'});
+  // The private reader must own a snapshot, even if its original carrier is
+  // subsequently reused or changed before the first geometry read.
+  packed.coordinates[0]=999;packed.metadata[0]!.fields.orientation='changed';
+  packed.metadataIndices.fill(0xffff_ffff);packed.arrays[0]!.length=0;
+  const runs=restored.chunks[0]!.roadRuns;
+  expect(Object.isFrozen(runs)).toBe(true);
+  expect(Object.isFrozen(runs[0])).toBe(true);expect(Object.isFrozen(runs[0]!.start)).toBe(true);
+  expect(runs).toEqual(input.chunks[0]!.roadRuns);
+  expect(Object.is(runs[0]!.start.x,-0)).toBe(true);
+  expect(restored.chunks[0]!.surfaceRuns).toBe(runs);
+  expect(()=>{runs[0]!.start.x=17;}).toThrow(TypeError);
+  expect(JSON.stringify(restored)).toBe(JSON.stringify(input));
+  const eager=await hydrateCitySceneTransfer(packCitySceneTransfer(input));
+  expect(Object.isFrozen(eager.chunks[0]!.roadRuns)).toBe(false);
+  eager.chunks[0]!.roadRuns[0]!.start.x=17;
+  expect(eager.chunks[0]!.roadRuns[0]!.start.x).toBe(17);
+  expect(Object.is(input.chunks[0]!.roadRuns[0]!.start.x,-0)).toBe(true);
+});
+
+it('does not read or copy a private carrier after its packed owner is already cancelled',async()=>{
+  const packed=packCitySceneTransfer(scene()),controller=new AbortController();let reads=0;
+  Object.defineProperty(packed,'metadata',{enumerable:true,get(){reads++;return [];}});
+  controller.abort(new DOMException('owner cancelled','AbortError'));
+  await expect(hydrateCitySceneTransfer(packed,{runStorage:'PACKED_IMMUTABLE',signal:controller.signal})).rejects.toMatchObject({name:'AbortError'});
+  expect(reads).toBe(0);
+});
+
+it('rejects malformed packed buffers and uncloneable metadata through its promise boundary',async()=>{
+  for(const bad of ['buffer','metadata'] as const){
+    const packed=packCitySceneTransfer(scene());
+    if(bad==='buffer')packed.coordinates=undefined as unknown as Float64Array;
+    else packed.metadata[0]!.fields.extra=()=>undefined;
+    let pending:Promise<CitySceneDto>|undefined;
+    expect(()=>{pending=hydrateCitySceneTransfer(packed,{runStorage:'PACKED_IMMUTABLE'});}).not.toThrow();
+    await expect(pending!).rejects.toThrow();
+  }
+});
+
+it('rejects every invalid packed range, row, coordinate and reference before a scene can be adopted',async()=>{
+  for(const bad of ['range','index','coordinate','reference'] as const){
+    const packed=packCitySceneTransfer(scene());
+    if(bad==='range')packed.arrays[0]!.length++;
+    if(bad==='index')packed.metadataIndices[0]=999;
+    if(bad==='coordinate')packed.coordinates[0]=NaN;
+    if(bad==='reference')(packed.scene as CitySceneDto).chunks[0]!.roadRuns={runArray:999} as unknown as RoadRunDto[];
+    await expect(hydrateCitySceneTransfer(packed,{runStorage:'PACKED_IMMUTABLE'})).rejects.toThrow(/Invalid city run/);
+  }
+});
+
+it('rejects malformed lazy metadata before publication rather than on the first geometry read',async()=>{
+  for(const bad of ['missing-keys','duplicate-keys','shadowed-coordinate','non-record'] as const){
+    const packed=packCitySceneTransfer(scene()),meta=packed.metadata[0]!;
+    if(bad==='missing-keys'){meta.order=[];meta.canonicalOrder=false;}
+    if(bad==='duplicate-keys'){meta.startOrder=['x','x','y'];meta.canonicalOrder=false;}
+    if(bad==='shadowed-coordinate')meta.fields.start={x:999,y:999};
+    if(bad==='non-record')meta.fields='invalid' as unknown as Record<string,unknown>;
+    await expect(hydrateCitySceneTransfer(packed,{runStorage:'PACKED_IMMUTABLE'})).rejects.toThrow('Invalid city run metadata');
+  }
+});
+
+it('keeps packed nested metadata immutable and falls back safely when WeakRef is unavailable',async()=>{
+  for(const fallback of [false,true]){
+    const input=scene(1),run=input.chunks[0]!.roadRuns[0]! as unknown as {extra:{nested:number[]}};
+    run.extra={nested:[1,2]};const expected=structuredClone(input);
+    if(fallback)vi.stubGlobal('WeakRef',undefined);
+    try{
+      const packed=packCitySceneTransfer(input),restored=await hydrateCitySceneTransfer(packed,{runStorage:'PACKED_IMMUTABLE'});
+      (packed.metadata[0]!.fields.extra as {nested:number[]}).nested[0]=999;
+      const extra=(restored.chunks[0]!.roadRuns[0] as unknown as {extra:{nested:number[]}}).extra;
+      expect(extra.nested).toEqual([1,2]);expect(Object.isFrozen(extra)).toBe(true);expect(Object.isFrozen(extra.nested)).toBe(true);
+      expect(restored).toEqual(expected);
+    }finally{vi.unstubAllGlobals();}
+  }
+});
+
 it("preserves every run kind, extras, direction, empty arrays and absent versus undefined metadata",async()=>{
   const input=scene(),chunk=input.chunks[0]!;
   const road={start:{x:-13,y:-0,label:"start"},end:{x:-13,y:-11},mask:3,structure:"bridge",roadClass:undefined,orientation:"backward",extra:{active:false}};
@@ -42,8 +121,10 @@ it("preserves every run kind, extras, direction, empty arrays and absent versus 
   chunk.roadRuns=[road] as unknown as typeof chunk.roadRuns;
   chunk.surfaceRuns=[pavement,{...pavement,finish:undefined},{start:{x:0,y:0},end:{x:0,y:0},kind:"path"}] as typeof chunk.surfaceRuns;
   chunk.districts[0]!.cellRuns=[];chunk.decorationContext.districts[0]!.cellRuns=chunk.districts[0]!.cellRuns;
-  const before=structuredClone(input),packed=packCitySceneTransfer(input);
-  const restored=await hydrateCitySceneTransfer(structuredClone(packed,{transfer:[packed.coordinates.buffer,packed.metadataIndices.buffer]}));
+  const before=structuredClone(input);
+  for(const options of [{},{runStorage:'PACKED_IMMUTABLE' as const}]){
+  const packed=packCitySceneTransfer(input);
+  const restored=await hydrateCitySceneTransfer(structuredClone(packed,{transfer:[packed.coordinates.buffer,packed.metadataIndices.buffer]}),options);
   expect(restored).toEqual(before);expect(input).toEqual(before);
   expect(JSON.stringify(restored)).toBe(JSON.stringify(before));
   expect(Object.is(restored.chunks[0]!.roadRuns[0]!.start.y,-0)).toBe(true);
@@ -52,6 +133,7 @@ it("preserves every run kind, extras, direction, empty arrays and absent versus 
   expect(restored.chunks[0]!.districts[0]!.cellRuns).toBe(restored.chunks[0]!.decorationContext.districts[0]!.cellRuns);
   expect(restored.chunks[0]!.tasks).toBe(restored.completedDistrictSnapshots[0]!.tasks);
   expect(restored.chunks[0]!.tasks[0]!.footprint).toBe(restored.completedDistrictSnapshots[0]!.tasks[0]!.footprint);
+  }
 });
 
 it("yields through large hydration, aborts without returning a partial city, and permits an independent retry",async()=>{
@@ -78,10 +160,12 @@ it("retains legacy own-key order as well as canonical JSON and never changes the
   const input=scene(0),start={label:"old",y:-0,x:-5,missing:undefined},end={y:-4,x:2};
   const road={orientation:"reversed",end,mask:1,start,optional:undefined};
   input.chunks[0]!.roadRuns=[road] as unknown as typeof input.chunks[0]["roadRuns"];
-  const restored=await hydrateCitySceneTransfer(packCitySceneTransfer(input));
+  for(const options of [{},{runStorage:'PACKED_IMMUTABLE' as const}]){
+  const restored=await hydrateCitySceneTransfer(packCitySceneTransfer(input),options);
   expect(restored).toEqual(input);expect(JSON.stringify(restored)).toBe(JSON.stringify(input));
   expect(Object.keys(restored.chunks[0]!.roadRuns[0]!)).toEqual(Object.keys(road));
   expect(Object.keys(restored.chunks[0]!.roadRuns[0]!.start)).toEqual(Object.keys(start));
+  }
 });
 
 
