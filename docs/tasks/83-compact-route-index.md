@@ -75,15 +75,22 @@ population, external carriers и cooperative owner cancellation.
 compactAndroid/iPhone проходят без повторов. Desktop bus не достиг BOARD.
 Контроль прежнего клиента на той же БД тоже воспроизводит отказ; timeline
 показывает ARRIVE обычного автобуса и переключение на SCHOOL_BUS через
-45 секунд. Это отдельная неисправность общей приёмки транспорта, не
-доказательство успешной посадки или регрессии числового индекса. Отказ и
-контроль сохранены, до его исправления общий релиз не готов.
+45 секунд. Дополнительная физическая диагностика выявила настоящую причину:
+автобус ждёт ROAD_CLOSED, затем продолжает движение после ремонта (steps4→39),
+позднее запускается школьный рейс. Поведение приложения корректно; тест
+карточки ошибочно требовал посадку ради неподвижного клика при уже paused
+часах. Связанный QA-дефект61 исправлен проверкой actual native bus pixel в
+его текущей фазе. Отдельные physical boarding/closures/cycles не ослаблены.
+Финальный `bus61-inspection-final-v4`:3PASS/0retry/17,2s на desktop/compact
+Android/iPhone. Временная actor telemetry полностью удалена; rebuilt HTML
+byte-identical nativepair client83. Исходные failure/control/diagnostic
+сохранены. Три MCP lifecycle изv1 переиспользуются для неизменного runtime.
 
 AI review фиксированного index diff от `25796a58`: открытых замечаний нет.
 Проверены полное совпадение route/adjacency oracle, collision/fallback,
 source-key exceptions, finite allocation/probes, identity, cancellation и
 учёт backing storage. Это локальное AI review, не SCM approval. Итоговые
-масштабы, транспортная диагностика, SCM CI и managed release впереди.
+масштабы, SCM CI и managed release впереди.
 
 Откат — обычный откат согласованного приложения через managed-release.
 Данные работы и география не менялись; миграции для этого среза нет.

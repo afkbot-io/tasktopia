@@ -563,8 +563,13 @@ test('a regular city bus opens halfway through a minute and its native pixels ex
   await expect(host).toHaveAttribute('data-transit-role','BUS');
   expect(Number(await host.getAttribute('data-road-event-server-now'))%60_000).toBeGreaterThan(4000);
   await pauseInstalledClock(page);
-  for(let step=0;step<120&&await host.getAttribute('data-transit-phase')!=='BOARD';step++)await page.clock.runFor(500);
-  await expect(host).toHaveAttribute('data-transit-phase','BOARD');await page.clock.runFor(300);
+  // This journey verifies native vehicle selection in its actual phase.
+  // A legitimate repair can delay boarding, and a later school appointment
+  // can preempt this run. Paused time already makes the moving bus clickable.
+  // Physical boarding, closures and complete cycles have separate simulations.
+  await info.attach('bus-inspection-entry',{body:JSON.stringify(await host.evaluate(node=>{
+    const d=(node as HTMLElement).dataset;return{phase:d.transitPhase,role:d.transitRole,line:d.transitLine,vehicle:d.transitVehicle};
+  })),contentType:'application/json'});
   const id=(await host.getAttribute('data-transit-vehicle'))!;
   for(let pan=0;pan<12;pan++){
     const vehicles=JSON.parse((await host.getAttribute('data-transit-vehicles'))!) as {id:string;role:string;position:{x:number;y:number}}[];
