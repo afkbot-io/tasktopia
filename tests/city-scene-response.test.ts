@@ -36,8 +36,12 @@ it("keeps headers, binary body and worker return phases on the owning page clock
 });
 
 it("delegates one whole scene read and removes the worker/listeners after success",async()=>{
-  const worker=new Worker(),signal=new AbortController().signal;
-  const fetcher=vi.fn(async()=>new Response("{}"));
+  const worker=new Worker(),owner=new AbortController(),signal=owner.signal;
+  let responseSignal:AbortSignal|undefined,cancelled=0;
+  const fetcher=vi.fn(async(_path:RequestInfo|URL,options?:RequestInit)=>{
+    responseSignal=options?.signal??undefined;
+    return new Response(new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('{}'));controller.close();},cancel(){cancelled++;}}));
+  });
   const pending=loadCitySceneResponse("/api/countries/c/cities/a/scene",signal,()=>worker,fetcher);
   const outcome=pending.catch(error=>error as Error);
   const scene={schemaVersion:5,city:{id:"a"},lod:"DETAIL"} as CitySceneDto;
@@ -47,6 +51,10 @@ it("delegates one whole scene read and removes the worker/listeners after succes
   expect(worker.posted[0]!.body.byteLength).toBe(2);
   worker.message!({data:{scene}} as MessageEvent<SceneResponseMessage>);
   expect(await outcome).toBe(scene);expect(worker.terminated).toBe(1);expect(worker.listeners).toBe(0);
+  // Releasing the decoder or a later map owner must not turn a completely
+  // consumed200 response into an aborted network read.
+  expect(responseSignal?.aborted).toBe(false);expect(cancelled).toBe(0);
+  owner.abort();expect(responseSignal?.aborted).toBe(false);expect(cancelled).toBe(0);
 });
 
 it('adopts private packed run storage for a worker transfer without changing legacy replies',async()=>{

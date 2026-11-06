@@ -600,29 +600,26 @@ clockSceneTest('public bus completes an actual boarding, directed trip and safe 
   try {
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
     const now = Number(await f.host.getAttribute('data-road-event-server-now'));
-    // Skip only the dead interval with city life paused. A conservative seek
-    // can otherwise land in road admission12..16s and create WATER/BREAKDOWN
-    // across the intended bus window30..34s, postponing departure by a minute.
-    let minute = Math.floor(now / 60000) + 1;
-    while (minute % 3 !== 2 || ![30_000, 390_000].includes(minute * 60_000 % 450_000) || minute * 60000 - now < 5000) minute++;
-    const minuteStart = minute * 60000;
+    // ROAD and EVERYDAY permit late admission, so enabling life after their
+    // nominal start can dispatch a response immediately. Start in the first
+    // second of their common450s calendar, before either admission, and let
+    // ordinary later events interact with the actual trip below.
+    const departureWindowStart = (Math.floor(now / 450_000) + 1) * 450_000 + 1000;
     await setSceneLife(page, false);
-    // Two seconds before this minute is after everyday admission8..12s;
-    // enabling seven seconds before it could start a school ceremony instead.
-    await seek(page, f.host, minuteStart - 2000);
+    await seek(page, f.host, departureWindowStart);
     const prepared = await safe(f.host), preparedAt = Number(prepared.roadEventServerNow);
-    expect(preparedAt).toBeGreaterThanOrEqual(minuteStart - 2500);
-    expect(preparedAt).toBeLessThan(minuteStart);
+    expect(preparedAt).toBeGreaterThanOrEqual(departureWindowStart);
+    expect(preparedAt).toBeLessThan(departureWindowStart + 1000);
     expect(prepared.roadEvent).toBe(''); expect(prepared.transitPhase).toBe('');
     const baseline = { boarded: Number(prepared.transitBoarded), alighted: Number(prepared.transitAlighted) };
     const phases = new Set<string>();
     await setSceneLife(page, true);
-    for (let step = 0; step < 40 && Number(await f.host.getAttribute('data-road-event-server-now')) < minuteStart + 300; step++) {
+    for (let step = 0; step < 40 && Number(await f.host.getAttribute('data-road-event-server-now')) < preparedAt + 300; step++) {
       await page.clock.runFor(100); phases.add((await f.host.getAttribute('data-transit-phase'))!);
     }
     const admission = await safe(f.host);
-    await writeFile(info.outputPath('bus-clock-arrangement.json'), JSON.stringify({ now, minuteStart, prepared, baseline, admission }, null, 2));
-    expect(Number(admission.roadEventServerNow)).toBeGreaterThanOrEqual(minuteStart + 300);
+    await writeFile(info.outputPath('bus-clock-arrangement.json'), JSON.stringify({ now, departureWindowStart, prepared, baseline, admission }, null, 2));
+    expect(Number(admission.roadEventServerNow)).toBeGreaterThanOrEqual(preparedAt + 300);
     expect(admission.roadEvent).toBe(''); expect(admission.transitRole).toBe('BUS');
     expect(admission.transitPhase).toMatch(/^(ARRIVE|BOARD)$/);
     // Observe every physical step of the new trip, including normal future
@@ -662,7 +659,8 @@ clockSceneTest('school bus delivers children through the real school entrance in
   test.setTimeout(900000); await installSceneClock(page); const f = await everydayFixture(page);
   try {
     await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
-    const kinds = (await f.host.getAttribute('data-everyday-kinds'))!.split(',').sort();
+    const schools = f.tasks.filter(task => task.stage === 5 && BUILDING_CATALOG.find(b => b.key === task.visualAssetKey)?.educationKind === 'SCHOOL');
+    expect(schools.length).toBeGreaterThan(0);
     // Ordinary traffic can delay passengers beyond a finite boarding window.
     // Exercise up to three scheduled ceremonies in the same live city, recording
     // empty/cancelled trips too; never replace a real doorway arrival with a lease.
@@ -670,12 +668,19 @@ clockSceneTest('school bus delivers children through the real school entrance in
     const journeys: Record<string, unknown>[] = [], progress: Record<string, unknown>[] = [];
     let deliveredTask: typeof f.tasks[number] | undefined;
     for (let episode = 0; episode < 3 && !deliveredTask; episode++) {
-      let window = Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1;
-      while (window % kinds.length !== kinds.indexOf('SCHOOL')) window++;
-      const start = window * 75_000 + 8000;
       // Skip synthetic dead time with life disabled, preserving physical poses.
       // Clock jumps must not strand unrelated historical passengers.
-      await setSceneLife(page, false); await seek(page, f.host, start - 7000); await setSceneLife(page, true);
+      await setSceneLife(page, false); await f.panFocus(schools[episode % schools.length]!, true);
+      let start = 0, plannedKind = '';
+      // Planning rotates the kinds available in the visible context, rather
+      // than the global city inventory. Observe the real local plan first.
+      for(let slot=0;slot<6&&plannedKind!=='SCHOOL';slot++){
+        start = (Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1) * 75_000 + 8000;
+        await seek(page, f.host, start - 7000); await setSceneLife(page, true);
+        plannedKind = (await f.host.getAttribute('data-everyday-planned-kind'))!;
+        progress.push({episode,slot,start,plannedKind});
+        if(plannedKind!=='SCHOOL')await setSceneLife(page,false);
+      }
       expect(Number(await f.host.getAttribute('data-road-event-server-now')),'School preparation must remain before its scheduled start').toBeLessThan(start);
       await expect(f.host).toHaveAttribute('data-everyday-planned-kind', 'SCHOOL');
       const taskId = await f.host.getAttribute('data-everyday-planned-task'), task = f.tasks.find(t => t.id === taskId);

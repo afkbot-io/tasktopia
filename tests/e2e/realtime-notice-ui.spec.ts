@@ -4,6 +4,9 @@ import {Client,StreamableHTTPClientTransport} from '@modelcontextprotocol/client
 import {createDb} from '../../src/server/db';
 import {registerUser} from '../../src/server/auth';
 import {AppService} from '../../src/server/app-service';
+import {pauseInstalledClock} from './city-clock-control';
+
+test.use({trace:{mode:'retain-on-failure',snapshots:false,screenshots:false,sources:true}});
 
 test('real MCP notices coalesce, leave compact map space and preserve their latest expiry and task link',async({page},info)=>{
   test.setTimeout(90_000);
@@ -42,6 +45,7 @@ test('real MCP notices coalesce, leave compact map space and preserve their late
       await call('task.rename',{taskId:task.id,title});tasks[index]={...task,title};
     };
     await page.emulateMedia({reducedMotion:'reduce'});
+    await page.clock.install();
     await page.goto(`/?${new URLSearchParams({countryId:user.countryId,cityId:city.id})}`);
     const host=page.locator('.world-canvas'),cards=page.locator('.realtime-notice'),visible=page.locator('.realtime-notice:visible');
     await expect(host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30000});
@@ -52,6 +56,10 @@ test('real MCP notices coalesce, leave compact map space and preserve their late
     await expect(cards.locator('.realtime-notice-compact-title')).toHaveText(`№${tasks[0]!.taskNumber}: Приёмка`);
     const stageReads=reads.filter(p=>p.endsWith('/scene')).length;expect(stageReads).toBe(1);
     await status(2,'STARTED');
+    // Viewport resizing and screenshot capture must not consume a toast's
+    // seven-second lifetime on a hosted software renderer. Events remain real
+    // MCP calls; advance the browser clock explicitly for expiry assertions.
+    await pauseInstalledClock(page);
     // Structural status changes may legitimately take longer than the toast's
     // lifetime. Use actual lightweight MCP edits for the three-group burst.
     await rename(0,'Актуальное A');await rename(1,'Актуальное B');await rename(2,'Актуальное C');
@@ -99,13 +107,14 @@ test('real MCP notices coalesce, leave compact map space and preserve their late
     const fresh=page.locator('.realtime-notice').last();
     await expect(fresh.locator('.realtime-notice-compact-title')).toHaveText(`№${tasks[2]!.taskNumber}: Строительство`);
     const oldId=await fresh.getAttribute('data-notice-id');
-    await page.waitForTimeout(5500);
+    await page.clock.runFor(5500);
     await status(2,'TESTING');
     await expect(fresh.locator('.realtime-notice-compact-title')).toHaveText(`№${tasks[2]!.taskNumber}: Приёмка`);
     const newId=await fresh.getAttribute('data-notice-id');expect(newId).not.toBe(oldId);
-    await page.waitForTimeout(2000);
+    await page.clock.runFor(2000);
     await expect(page.locator(`[data-notice-id="${newId}"]`)).toBeVisible();
-    await expect(page.locator(`[data-notice-id="${newId}"]`)).toHaveCount(0,{timeout:6500});
+    await page.clock.runFor(5001);
+    await expect(page.locator(`[data-notice-id="${newId}"]`)).toHaveCount(0);
     expect(await retained!.evaluate(el=>el.isConnected)).toBe(true);
     expect(reads.filter(p=>/\/world\/viewport|\/chunks\//.test(p))).toEqual([]);
     expect(errors).toEqual([]);expect(failures).toEqual([]);expect(writes).toEqual([]);

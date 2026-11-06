@@ -16,6 +16,15 @@ import type { CitySceneDto } from '../../src/shared/city-scene-contract';
 import type { RoadCellDto } from '../../src/shared/contracts';
 import { decodeOrthogonalRoadRuns } from '../../src/shared/semantic-road';
 import { openMapPlanet } from './map-navigation';
+import {projectPlanetAtlas} from '../../src/shared/planet-atlas';
+import type {PlanetAtlasDto} from '../../src/shared/planet-atlas-contract';
+import {compactPlanetCities} from '../../src/client/planet-presentation';
+import {projectPlanetGroundRoads} from '../../src/shared/planet-ground-road-projection';
+import {planPlanetGroundRoadRaster} from '../../src/client/planet-ground-road-raster';
+
+// Pixel probes below capture the native raster explicitly. Repeated automatic
+// readbacks otherwise stall the hosted software GPU during ordinary gestures.
+test.use({trace:{mode:'retain-on-failure',snapshots:false,screenshots:false,sources:true}});
 
 async function actualCityRoadPixels(page:Page,scene:CitySceneDto,seed:number){
   const host=page.locator('.world-canvas'),canvas=host.locator('canvas');
@@ -108,9 +117,15 @@ test('canonical road survives city growth, task close and planet return without 
   let owner:Awaited<ReturnType<typeof registerUser>>['user']|undefined;
   let mcp:Client|undefined,injectAssetFailure=false;
   const expectedFailures:string[]=[];
+  const errors:string[]=[],warnings:string[]=[],failures:string[]=[],reads:string[]=[],writes:string[]=[];
+  const atlasReads:Promise<PlanetAtlasDto|undefined>[]=[];
+  page.on('response',response=>{
+    if(new URL(response.url()).pathname==='/api/planet-atlas'&&response.ok())atlasReads.push(response.json().catch(error=>{
+      errors.push(`Atlas evidence: ${String(error)}`);return undefined;
+    }));
+  });
   if(process.env.E2E_ROAD_FAULT==='true')await page.route('**/atlas/road-v2/surface.png',async route=>
     injectAssetFailure?route.fulfill({status:503,body:'Owned QA road material failure'}):route.continue());
-  const errors:string[]=[],warnings:string[]=[],failures:string[]=[],reads:string[]=[],writes:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{
     const expected=message.location().url.endsWith('/atlas/road-v2/surface.png')&&/503/.test(message.text());
@@ -169,13 +184,20 @@ test('canonical road survives city growth, task close and planet return without 
     const host=page.locator('.world-canvas');
     await expect(host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30_000});
     await expect(host).toHaveAttribute('data-intercity-road-routes','1');
-    const search=page.getByRole('combobox',{name:'Поиск здания по номеру или названию'});
-    await search.fill(`#${first.taskNumber}`);await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(1);await search.press('Enter');
-    await expect(page.locator('#task-title')).toContainText(first.title);
     await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15_000});
     const canvas=await host.locator('canvas').elementHandle();
     const pose=async()=>host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{x:d.cameraWorldX,y:d.cameraWorldY,scale:d.renderScale};});
-    const before=await pose();await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+    const search=page.getByRole('combobox',{name:'Поиск здания по номеру или названию'});
+    await search.fill(`#${first.taskNumber}`);await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(1);await search.press('Enter');
+    await expect(page.locator('#task-title')).toContainText(first.title);
+    // Card content paints before its deferred map focus. Observe that focus
+    // and its presentation before saving the pose that dismiss must preserve.
+    await expect(host).toHaveAttribute('data-focus-x',String(first.origin.x));
+    await expect(host).toHaveAttribute('data-focus-y',String(first.origin.y));
+    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+    await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15_000});
+    const before=await pose();
+    await page.getByRole('button',{name:'Закрыть',exact:true}).click();
     await expect.poll(pose).toEqual(before);
     for(let i=0;i<8;i++) {
       const current=await pose(),box=(await host.locator('canvas').boundingBox())!,scale=8*Number(current.scale);
@@ -197,6 +219,12 @@ test('canonical road survives city growth, task close and planet return without 
     await openMapPlanet(page);
     await expect(page.locator('.planet-atlas')).toHaveAttribute('data-planet-ready','true',{timeout:30_000});
     const planet=page.locator('.planet-atlas');
+    const atlas=(await atlasReads.at(-1)!)!;
+    expect(atlas).toBeDefined();
+    const projected=compactPlanetCities(projectPlanetAtlas(atlas,atlas.geography?.countries[user.countryId]?.sector??0));
+    const projectedRoads=projectPlanetGroundRoads(projected),rasterPlan=planPlanetGroundRoadRaster(projected,projectedRoads);
+    await writeFile(info.outputPath('planet-road-projection.json'),JSON.stringify({atlas,projectedRoads,
+      rejectedRouteIds:rasterPlan.rejectedRouteIds,pixelCount:rasterPlan.pixelCount}));
     await expect(planet).toHaveAttribute('data-ground-road-routes','1');
     await expect(planet).toHaveAttribute('data-ground-road-unavailable','0');
     await expect(planet).toHaveAttribute('data-ground-road-omitted','0');

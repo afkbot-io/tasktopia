@@ -35,6 +35,25 @@ it('retains the order of canonical bends and detours only through inherited dry 
   expect(cells.findIndex(p=>p.x===4&&p.y===0)).toBeLessThan(cells.findIndex(p=>p.x===4&&p.y===2));
   for(let i=1;i<cells.length;i++)expect(Math.abs(cells[i]!.x-cells[i-1]!.x)+Math.abs(cells[i]!.y-cells[i-1]!.y)).toBe(1);
 });
+it('keeps a saved connection when coarse source samples enter and leave a dry peninsula',()=>{
+  const atlas=fixture(),country=atlas.countries[0]!;
+  country.worldBounds={minX:0,minY:0,maxX:32,maxY:32};
+  country.cells=[[0,2],[1,2],[2,2],[2,1],[3,1],[2,0],[1,0],[0,0]].map(([q,r])=>({id:`c${q}${r}`,q:q!,r:r!,terrain:'grass'}));
+  country.cityAnchors={a:{x:4,y:20},b:{x:4,y:4}};
+  country.groundRoads!.routes[0]!.geometry={start:{x:32,y:32},runs:[{direction:'N',length:32}]};
+  const before=structuredClone(atlas),result=projectPlanetGroundRoads(atlas);
+  expect(result.unavailable).toEqual([]);expect(result.routes).toHaveLength(1);
+  // The only dry ordered walk must cross the peninsula's neck twice. Reusing
+  // that proven cell must not erase the accepted road or cut through water.
+  expect(result.routes[0]!.cells).toEqual([[0,2],[1,2],[2,2],[2,1],[3,1],[2,1],[2,0],[1,0],[0,0]].map(([x,y])=>({x,y})));
+  expect(result.routes[0]!.points[0]).toEqual({x:4,y:20});
+  expect(result.routes[0]!.points.at(-1)).toEqual({x:4,y:4});
+  expect(atlas).toEqual(before);
+  const limited=projectPlanetGroundRoads(atlas,{maxSearchCells:24});
+  expect(limited.routes).toEqual([]);
+  expect(limited.unavailable).toContainEqual(expect.objectContaining({reason:'TOTAL_BUDGET'}));
+  expect(limited.metrics.searchCellsCharged).toBeLessThanOrEqual(24);
+});
 it('omits a disconnected crossing or missing anchor without a water chord or a synthetic endpoint',()=>{
   const atlas=fixture();atlas.countries[0]!.cells=atlas.countries[0]!.cells.filter(c=>c.q===0||c.q===4);
   const disconnected=projectPlanetGroundRoads(atlas);expect(disconnected.routes).toEqual([]);

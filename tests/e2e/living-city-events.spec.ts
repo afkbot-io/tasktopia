@@ -400,6 +400,21 @@ clockSceneTest('all seven road scenes dispatch moving services, close and reopen
  try{
   // Protocol/trace latency must not advance a second calendar window.
   await f.focus(f.task);await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));const kinds=new Set<string>();
+  // Do not adopt a late episode already active when the map opened: its
+  // remaining calendar window may admit the next kind during the35s sample.
+  // Arrange the first future window through the ordinary preference control.
+  const life=async(on:boolean)=>{
+   await page.locator('.world-menu > summary').click();const prefs=page.locator('.world-preferences:visible');await prefs.locator('> summary').click();
+   await prefs.getByLabel('Жизнь города').setChecked(on);await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.clock.runFor(100);
+  };
+  await life(false);
+  const first=Number(await f.host.getAttribute('data-road-event-next-start'));
+  for(let step=0;step<4;step++){
+   const now=Number(await f.host.getAttribute('data-road-event-server-now'));if(now>=first-2000)break;
+   await page.clock.fastForward(sceneClockStepTowardStart(now,first-2000));await page.clock.runFor(100);
+  }
+  expect(Number(await f.host.getAttribute('data-road-event-server-now'))).toBeLessThan(first);
+  await life(true);
   for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    await expect(f.host).toHaveAttribute('data-road-event-server-now',/\d{13}/);
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){

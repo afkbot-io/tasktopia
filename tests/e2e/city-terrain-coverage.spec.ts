@@ -6,6 +6,10 @@ import { decodeCitySceneWire, encodeCitySceneWire } from '../../src/shared/city-
 import { cameraTerrainPadding } from '../../src/client/camera-terrain-padding';
 import { openMapCity } from './map-navigation';
 
+// Coverage below inspects explicit native screenshots. Avoid automatic GPU
+// readbacks on each presentation/network assertion in software-rendered CI.
+test.use({trace:{mode:'retain-on-failure',snapshots:false,screenshots:false,sources:true}});
+
 const cellPixels = 8;
 const key = (x: number, y: number) => `${x},${y}`;
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');

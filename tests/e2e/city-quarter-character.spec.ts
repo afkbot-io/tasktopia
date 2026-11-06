@@ -8,6 +8,10 @@ import {BUILDING_CATALOG} from '../../src/shared/catalog';
 import {taskLink} from '../../src/client/task-navigation';
 import {quarterCharacterFor} from '../../src/shared/city-quarter-character';
 
+// Automatic canvas snapshots read back the full native phone raster on every
+// assertion. Keep native DPR and the explicit artwork captures below instead.
+test.use({trace:{mode:'retain-on-failure',snapshots:false,screenshots:false,sources:true}});
+
 test('one real district renders three persistent quarter characters through normal camera gestures',async({page},info)=>{
   test.setTimeout(120000);
   const database=process.env.E2E_DATABASE_URL!,origin=process.env.E2E_BASE_URL!;

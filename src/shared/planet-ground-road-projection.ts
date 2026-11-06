@@ -147,8 +147,17 @@ export function* planetGroundRoadProjectionSteps(atlas:ProjectedPlanetAtlas,over
         metrics.searchCellsCharged+=charge;
         // Consecutive source samples usually occupy adjacent inherited cells.
         // That proven edge needs no copy/filter of the whole country's land.
-        const leg=adjacent?[start,goal]:atlasGridPath(start,new Set([key(goal)]),
+        let leg=adjacent?[start,goal]:atlasGridPath(start,new Set([key(goal)]),
           new Set([...dry].filter(id=>(!used.has(id)||id===key(start))&&!future.has(id))));
+        // A coarse source sample can sit on a dry peninsula. Preserve the
+        // ordered walk by returning over its proven neck, rather than hiding
+        // the accepted connection. Keep future samples blocked and charge
+        // this second bounded search before doing any work.
+        if(!leg.length){
+          if(metrics.searchCellsCharged+dry.size>limits.maxSearchCells){error='TOTAL_BUDGET';break;}
+          metrics.searchCellsCharged+=dry.size;
+          leg=atlasGridPath(start,new Set([key(goal)]),new Set([...dry].filter(id=>!future.has(id))));
+        }
         if(!leg.length){error='NO_ORDERED_CORRIDOR';break;}
         for(const cell of leg.slice(1)){path.push(cell);used.add(key(cell));}
       }
