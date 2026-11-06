@@ -57,11 +57,28 @@ export async function everydayFixture(page: Page) {
     return JSON.parse((result.content as { type: string; text: string }[]).find(c => c.type === 'text')!.text);
   };
   const host = page.locator('.world-canvas');
-  const ready = async () => { await expect(host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 }); await expect(host).toHaveAttribute('data-mobility-ready', 'true', { timeout: 30000 }); };
+  const ready = async () => {
+    try { await expect(host).toHaveAttribute('data-city-scene-commit', 'atomic', { timeout: 30000 }); await expect(host).toHaveAttribute('data-mobility-ready', 'true', { timeout: 30000 }); }
+    catch(error){
+      let timer:ReturnType<typeof setTimeout>|undefined;
+      try{
+        const state=await Promise.race([host.evaluate(node=>{
+          const d=(node as HTMLElement).dataset,fields=['loading','loadError','citySceneCommit','citySceneRevision','canonicalTaskCount','canonicalSnapshotPending',
+            'cityFirstFrameRendered','cityCriticalGroundReady','cityHaloGroundPending','cameraPresentationPending','cameraPaddingTargetUnbaked',
+            'cameraPaddingTerrainPending','cameraPaddingTreePending','groundCache','groundBakeQueue','ambientAssets','mobilityReady',
+            'movementPreparing','movementPreparationCommits','movementRebuilds','movementPrepareMs','movementCommitMs','mobilityNetworkBuilds','worldQuality','worldPixelRatio'];
+          return {values:Object.fromEntries(fields.map(key=>[key,d[key]??null])),alerts:[...document.querySelectorAll('[role="alert"]')].map(el=>el.textContent?.slice(0,500))};
+        }).catch(()=>({unavailable:'public-state-read-failed'})),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:'public-state-read-exceeded1000ms'}),1000);})]);
+        await test.info().attach('fixture-ready-failure',{body:JSON.stringify(state),contentType:'application/json'});
+      }catch{/* Diagnostic failure must preserve the original readiness assertion. */}
+      finally{if(timer)clearTimeout(timer);}
+      throw error;
+    }
+  };
   const open = async () => { await page.goto('/'); await openMapCity(page); await ready(); };
   const focus = async (task: TaskDto) => { await page.goto(taskLink(user.countryId, task)); await expect(page.locator('#task-title')).toContainText(task.title);
     await page.getByRole('button', { name: 'Закрыть', exact: true }).click(); await ready(); };
-  const panFocus = async (task: TaskDto, pausedClock = false, options?: { settlePausedBefore: number }) => {
+  const panFocus = async (task: TaskDto, pausedClock = false, options?: { settlePausedBefore?: number; center?: boolean }) => {
     // Bounded public camera diagnostics; no renderer or clock mutation.
     const cameraDiagnostic: Array<Record<string, unknown>> = [];
     let diagnosticTruncated = false;
@@ -105,7 +122,7 @@ export async function everydayFixture(page: Page) {
       && (bounds.maxX + 1 - camera.x) * tilePixels + camera.width / 2 <= camera.width - 24
       && (bounds.minY - camera.y) * tilePixels + camera.height / 2 >= 24
       && (bounds.maxY + 1 - camera.y) * tilePixels + camera.height / 2 <= camera.height - 24;
-    const drags = alreadyVisible ? 0 : Math.ceil(Math.max(Math.abs(dx) / (box!.width * .3), Math.abs(dy) / (box!.height * .3)));
+    const drags = alreadyVisible && !options?.center ? 0 : Math.ceil(Math.max(Math.abs(dx) / (box!.width * .3), Math.abs(dy) / (box!.height * .3)));
     expect(drags, 'Native scene pan must fit a bounded sequence of viewport gestures').toBeLessThanOrEqual(12);
     const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
     // Accumulate the intended delta. With paused RAF the renderer deliberately
@@ -122,9 +139,10 @@ export async function everydayFixture(page: Page) {
     // Preserve the original controlled preparation horizon, including when
     // the target was already visible. Never await a paused RAF before this.
     if (pausedClock) await page.clock.runFor(400);
-    if (options) {
+    const settleBefore=options?.settlePausedBefore;
+    if (settleBefore !== undefined) {
       expect(pausedClock, 'Readiness frame progress requires the paused scene clock').toBe(true);
-      expect(Number.isFinite(options.settlePausedBefore)).toBe(true);
+      expect(Number.isFinite(settleBefore)).toBe(true);
       const started = wallClock.now(), deadline = started + 15_000;
       let extraFrames = 0, last: Record<string, unknown> | undefined, readyAt: number | undefined;
       try {
@@ -144,7 +162,7 @@ export async function everydayFixture(page: Page) {
           // include native work; it is never reset by another frame or field.
           if (wallClock.now() >= deadline) return false;
           expect(state.loadError, 'A real map failure must remain a failure').not.toBe('true');
-          expect(state.serverNow, 'Camera preparation must finish before the selected event starts').toBeLessThan(options.settlePausedBefore);
+          expect(state.serverNow, 'Camera preparation must finish before the selected event starts').toBeLessThan(settleBefore);
           if (state.commit === 'atomic' && state.mobility === 'true' && state.loading === 'false'
             && state.pending === 'false' && state.visible) { readyAt = wallClock.now(); return true; }
           await page.clock.runFor(16); extraFrames++;
@@ -153,7 +171,7 @@ export async function everydayFixture(page: Page) {
       } finally {
         await test.info().attach('paused-camera-readiness', { body: JSON.stringify({ taskId: task.id,
           fixedPreparationMs: 400, extraFrames, extraSimulationMs: extraFrames * 16,
-          wallElapsedMs: (readyAt ?? wallClock.now()) - started, beforeEventStart: options.settlePausedBefore, last }), contentType: 'application/json' });
+          wallElapsedMs: (readyAt ?? wallClock.now()) - started, beforeEventStart: settleBefore, last }), contentType: 'application/json' });
       }
       return { fixedPreparationMs: 400, extraFrames, extraSimulationMs: extraFrames * 16, wallElapsedMs: readyAt! - started, last };
     }

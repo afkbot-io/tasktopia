@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {writeFile} from 'node:fs/promises';
 import type {ChunkTaskDto} from '../../src/shared/contracts';
 import type {CitySceneDto} from '../../src/shared/city-scene-contract';
 import {planCityParking} from '../../src/client/city-parking';
@@ -11,7 +12,10 @@ test('машина заезжает на существующий мощёный
  test.setTimeout(110000);
  await page.setViewportSize({width:800,height:600});
  await page.addInitScript(()=>{
-  localStorage.setItem('tasktopia:world-preferences:v1',JSON.stringify({quality:'ECONOMY'}));
+  // Keep the initial traffic pool for this positive parking journey; calendar
+  // closures, bus leases and population rebalancing have separate journeys.
+  // Cars still use the real resolver, density and physical clock.
+  localStorage.setItem('tasktopia:world-preferences:v2',JSON.stringify({quality:'ECONOMY',cityLife:false,sound:false}));
   // Replay the traffic seed captured in the Linux CI failure.
   const random=crypto.getRandomValues.bind(crypto);
   Object.defineProperty(crypto,'getRandomValues',{value:(array:ArrayBufferView<ArrayBuffer>)=>{
@@ -36,13 +40,22 @@ test('машина заезжает на существующий мощёный
  await expect(page.locator('#task-title')).toBeVisible();await page.getByRole('button',{name:'Закрыть',exact:true}).click();
  const host=page.locator('.world-canvas');await expect(host).toHaveAttribute('data-loading','false',{timeout:45000});
  await expect.poll(async()=>Number(await host.getAttribute('data-parking-lots'))).toBeGreaterThan(0);
+ await expect(host).toHaveAttribute('data-mobility-ready','true');
+ await expect.poll(async()=>await host.getAttribute('data-road-event')??'').toBe('');
+ await expect(host).toHaveAttribute('data-city-event-leases','0');await expect(host).toHaveAttribute('data-transit-role','');
+ expect(Number(await host.getAttribute('data-cars'))).toBeGreaterThan(0);
  const state=()=>host.evaluate(el=>({steps:Number(el.dataset.mobilityFixedSteps),parked:el.dataset.parkedCarIds?.split(',').filter(Boolean)??[],road:el.dataset.roadCarIds?.split(',')??[],alive:el.dataset.agentIds?.split(',')??[]}));
  const arrivalStarted=(await state()).steps;
  // Entry uses the same simulation clock as the stop below: the CI trace had
  // advanced only 10.4 simulation seconds in 45 wall seconds, still en route.
  // Keep a 45-second simulation bound and the original whole-test deadline.
  await expect.poll(async()=>{const s=await state();return s.parked.length>0||s.steps-arrivalStarted>=900;},{timeout:75000}).toBe(true);
- const arrival=await state();expect(arrival.parked.length).toBeGreaterThan(0);
+ const arrival=await state();
+ await writeFile(info.outputPath('parking-arrival-state.json'),JSON.stringify({arrivalStarted,arrival,parking,
+  state:await host.evaluate(el=>Object.fromEntries(['cars','parkingLots','trafficMaxWaitMs','mobilityPeakVehicleWaitMs','roadEvent','roadEventGeometry','roadClosedCells',
+   'trafficBlockedVehicles','trafficMovingVehicles','mobilityTrips','cameraWorldX','cameraWorldY','populationLocalCars','worldQuality','worldPixelRatio',
+   'transitRole','populationRetired','populationSpawned','mobilityReady','mobilityFixedSteps','agentIds'].map(k=>[k,el.dataset[k]??null])))},null,2));
+ expect(arrival.parked.length).toBeGreaterThan(0);
  const parkedId=arrival.parked[0]!;
  expect(parkedId).toBeTruthy();
  const parkedAt=Number(await host.getAttribute('data-mobility-fixed-steps'));

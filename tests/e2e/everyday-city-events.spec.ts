@@ -303,14 +303,19 @@ clockSceneTest('paused scene preparation advances a released renderer frame befo
 for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
   clockSceneTest(`${targetKind} service waits for actual arrival, drives and reopens safely`, async ({ page }, info) => {
     test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
-    const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [], frames: Record<string, unknown>[] = [];
+    const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [], frames: Record<string, unknown>[] = [], windows:Record<string,unknown>[]=[];
     try {
       await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
-      for (let attempt = 0; attempt < 9 && seen.size < 1; attempt++) {
+      // Nine calendar windows may contain only one target kind. Observe up
+      // to three genuine target dispatches within the original180s wall bound.
+      let targetAttempts=0;
+      for (let attempt = 0; attempt < 21 && targetAttempts<3 && seen.size < 1; attempt++) {
         const next = Number(await f.host.getAttribute('data-road-event-next-start')); await seek(page, f.host, next + 300);
         const kind = (await f.host.getAttribute('data-road-event'))!;
         const startedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
+        windows.push({attempt,startedAt,kind});
         if (kind !== targetKind) { await page.clock.fastForward(35000); await page.clock.runFor(100); continue; }
+        targetAttempts++;
         expect(await f.host.getAttribute('data-road-service-arrived')).toBe('false');
         expect(await f.host.getAttribute('data-road-cargo-loaded')).toBe('false');
         expect(Number(await f.host.getAttribute('data-road-closed-cells'))).toBe(3);
@@ -322,7 +327,7 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
         for (let i = 0; i < 35; i++) {
           await page.clock.runFor(1000); const state = await safe(f.host);
           if (state.roadEvent === kind) phases.add(state.roadEventPhase!);
-          if (frames.length < 35) frames.push({ step: i + 1, startedAt, serverNow: state.roadEventServerNow,
+          if (frames.length < 105) frames.push({ attempt, targetAttempt:targetAttempts, step: i + 1, startedAt, serverNow: state.roadEventServerNow,
             kind: state.roadEvent, phase: state.roadEventPhase, arrived: state.roadServiceArrived, loaded: state.roadCargoLoaded,
             closedCells: state.roadClosedCells, responders: state.roadResponders, trips: state.roadResponseTrips,
             fixedSteps: state.mobilityFixedSteps, safety: [state.mobilityVehicleUnsafeTotal, state.mobilityPedestrianUnsafeTotal,
@@ -336,7 +341,7 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
         if (!arrived) {
           // Dispatch admits a directed route, not a guaranteed travel time
           // through live traffic. A fully observed safe expiry is a negative
-          // attempt; still require a genuine arrival within these nine slots.
+          // attempt; still require a genuine arrival within these bounded target attempts.
           const expired = await safe(f.host);
           expect(phases).toEqual(new Set(['ARRIVE', 'WORK', 'CLEAR']));
           expect(expired.roadEvent).toBe(''); expect(expired.roadClosedCells).toBe('0');
@@ -356,7 +361,7 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
       expect(seen).toEqual(new Set([targetKind]));
       await writeFile(info.outputPath('road-service-arrivals.json'), JSON.stringify(evidence, null, 2));
     } finally {
-      try { await info.attach(`${targetKind.toLowerCase()}-service-frames`, { body: JSON.stringify({ targetKind, frames, evidence }), contentType: 'application/json' }); }
+      try { await info.attach(`${targetKind.toLowerCase()}-service-frames`, { body: JSON.stringify({ targetKind, windows, frames, evidence }), contentType: 'application/json' }); }
       finally { await f.cleanup(); }
     }
   });
@@ -470,7 +475,16 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       const count=(await f.host.getAttribute('data-canonical-task-count'))!;
       expect(Number(count)).toBeGreaterThanOrEqual(f.tasks.length);
       canonicalCount??=count;expect(count).toBe(canonicalCount);
-      await f.panFocus(contexts[attempt % contexts.length]!,true);
+      const context=contexts[attempt % contexts.length]!;
+      // A visible parcel at the edge can leave its activity pad outside the
+      // admission area. Center the real context through the normal camera pan.
+      const centerBefore=(Math.floor(Number(await f.host.getAttribute('data-road-event-server-now'))/75_000)+1)*75_000+8000;
+      await f.panFocus(context,true,{center:true,settlePausedBefore:centerBefore});
+      const bounds=context.siteBounds??{minX:Math.min(...context.footprint.map(c=>c.x)),maxX:Math.max(...context.footprint.map(c=>c.x)),
+        minY:Math.min(...context.footprint.map(c=>c.y)),maxY:Math.max(...context.footprint.map(c=>c.y))};
+      const centered=await f.host.evaluate(el=>({x:Number((el as HTMLElement).dataset.cameraWorldX),y:Number((el as HTMLElement).dataset.cameraWorldY)}));
+      expect(Math.abs(centered.x-(bounds.minX+bounds.maxX+1)/2)).toBeLessThan(.5);
+      expect(Math.abs(centered.y-(bounds.minY+bounds.maxY+1)/2)).toBeLessThan(.5);
       const start = Math.max(previousStart+75_000,(Math.floor(Number(await f.host.getAttribute('data-road-event-server-now')) / 75_000) + 1) * 75_000 + 8000);
       previousStart=start;
       await info.attach('natural-window-context',{body:JSON.stringify({attempt,wanted,start,cityId:f.city.id,
@@ -736,6 +750,13 @@ clockSceneTest('school bus delivers children through the real school entrance in
       await expect(f.host).toHaveAttribute('data-everyday-planned-kind', 'SCHOOL');
       const taskId = await f.host.getAttribute('data-everyday-planned-task'), task = f.tasks.find(t => t.id === taskId);
       expect(task).toBeTruthy(); await f.panFocus(task!, true, {settlePausedBefore:start});
+      // Finish preparation with life off. Clearing the incidental regular run
+      // keeps its ordinary8s retry gap across the school start, so this positive
+      // school journey does not spend most of its wall budget on an unrelated
+      // regular route. Actual late BUS handoff has separate public/live coverage.
+      await setSceneLife(page,false);await seek(page,f.host,start-1500);await setSceneLife(page,true);
+      expect(Number(await f.host.getAttribute('data-road-event-server-now'))).toBeLessThan(start);
+      await expect(f.host).toHaveAttribute('data-transit-role','');
       await seek(page, f.host, start + 300);
       await expect(f.host).toHaveAttribute('data-everyday-event', 'SCHOOL');
       const deliveryStartedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
