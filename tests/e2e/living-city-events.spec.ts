@@ -482,10 +482,24 @@ test('native road captures cover every scene without adding standalone props or 
  test.setTimeout(90000);await page.setViewportSize({width:1440,height:1100});await installSceneClock(page);const f=await fixture(page),kinds=new Set<string>(),errors:string[]=[],standalone:string[]=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/\/props\/[^/]+\.png/.test(request.url()))standalone.push(request.url());});
  try{
   await f.focus(f.task);await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));
+  // A late episode gets its full duration at admission and can overlap the
+  // next calendar window. Start before a fresh window, as the physics case does.
+  const life=async(on:boolean)=>{
+   await page.locator('.world-menu > summary').click();const prefs=page.locator('.world-preferences:visible');await prefs.locator('> summary').click();
+   await prefs.getByLabel('Жизнь города').setChecked(on);await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.clock.runFor(100);
+  };
+  await life(false);
+  const first=Number(await f.host.getAttribute('data-road-event-next-start'));
+  for(let step=0;step<4;step++){
+   const now=Number(await f.host.getAttribute('data-road-event-server-now'));if(now>=first-2000)break;
+   await page.clock.fastForward(sceneClockStepTowardStart(now,first-2000));await page.clock.runFor(100);
+  }
+  expect(Number(await f.host.getAttribute('data-road-event-server-now'))).toBeLessThan(first);
+  await life(true);
   for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
     const now=Number(await f.host.getAttribute('data-road-event-server-now')),next=Number(await f.host.getAttribute('data-road-event-next-start'));
-    await page.clock.fastForward(Math.max(100,next-now+300));await page.clock.runFor(100);
+    await page.clock.fastForward(sceneClockStepTowardStart(now,next));await page.clock.runFor(100);
    }
    const kind=await f.host.getAttribute('data-road-event');if(!kind)continue;
    await page.clock.fastForward(4500);await page.clock.runFor(100);await page.screenshot({path:info.outputPath(`road-${kind.toLowerCase()}.png`)});kinds.add(kind);

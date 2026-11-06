@@ -696,7 +696,7 @@ clockSceneTest('school bus delivers children through the real school entrance in
         if(out<alighted||next<serial||serial>=0&&next>serial+1)w.invalid=true;
         if(next!==serial){
           serial=next;
-          if(d.transitRole==='SCHOOL_BUS'&&['SCHOOL','KINDERGARTEN'].includes(d.everydayEvent??'')&&d.everydayTask)admissions.set(serial,d.everydayTask);
+          if(d.transitRole==='SCHOOL_BUS'&&d.schoolBusTask)admissions.set(serial,d.schoolBusTask);
           if(admissions.size>16){w.truncated=true;admissions.delete(admissions.keys().next().value!);}
         }
         if(out>alighted){
@@ -710,7 +710,7 @@ clockSceneTest('school bus delivers children through the real school entrance in
         alighted=out;
       };
       const observer=new MutationObserver(read);node.__qaSchoolWitness={dropoffs:[],invalid:false,truncated:false,observer};
-      observer.observe(node,{attributes:true,attributeFilter:['data-school-buses','data-school-bus-alighted','data-transit-role','data-transit-phase']});read();
+      observer.observe(node,{attributes:true,attributeFilter:['data-school-buses','data-school-bus-alighted','data-transit-role','data-transit-phase','data-school-bus-task']});read();
     });
     // Ordinary traffic can delay passengers beyond a finite boarding window.
     // Exercise up to three scheduled ceremonies in the same live city, recording
@@ -741,12 +741,17 @@ clockSceneTest('school bus delivers children through the real school entrance in
       const deliveryStartedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
       const before = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
       let sample = before, observedSchoolBus = before.transitRole === 'SCHOOL_BUS';
-      for (let i = 0; i < deliveryBudgetMs / 1000 && Number(sample.schoolBusArrived) === Number(before.schoolBusArrived); i++) {
-        await page.clock.runFor(1000);
+      // The original184s budget belongs to the world clock. Its -10% slew
+      // needs up to205 browser seconds plus two telemetry samples, not184.
+      const deliveryDeadline = deliveryStartedAt + deliveryBudgetMs;
+      const maximumSteps = Math.ceil(deliveryBudgetMs / .9 / 1000) + 2;
+      for (let i = 0; i < maximumSteps && Number(sample.roadEventServerNow) < deliveryDeadline
+        && Number(sample.schoolBusArrived) === Number(before.schoolBusArrived); i++) {
+        await page.clock.runFor(Math.min(1000,Math.max(100,deliveryDeadline-Number(sample.roadEventServerNow))));
         sample = await f.host.evaluate(el => {
           const d = (el as HTMLElement).dataset;
           return { roadEventServerNow: d.roadEventServerNow, transitRole: d.transitRole, schoolBusVisits: d.schoolBusVisits,
-            schoolBusArrived: d.schoolBusArrived, schoolBuses: d.schoolBuses };
+            schoolBusArrived: d.schoolBusArrived, schoolBuses: d.schoolBuses, schoolBusPendingTask: d.schoolBusPendingTask };
         });
         observedSchoolBus ||= sample.transitRole === 'SCHOOL_BUS';
         if (i % 5 === 0) {
@@ -756,7 +761,8 @@ clockSceneTest('school bus delivers children through the real school entrance in
         // Stop an observed cancelled/empty trip only after its scheduled ceremony
         // ended. Keep every physics step for a live bus or a walking child.
         if (isSchoolBusAttemptTerminal({ scheduledStartMs: start, before, current: sample, observedSchoolBus })
-          || i >= (44_000 + 80_000) / 1000 && sample.transitRole !== 'SCHOOL_BUS' && Number(sample.schoolBusVisits) === 0) break;
+          || Number(sample.roadEventServerNow) >= deliveryStartedAt + 44_000 + 80_000
+            && sample.transitRole !== 'SCHOOL_BUS' && Number(sample.schoolBusVisits) === 0 && sample.schoolBusPendingTask === '') break;
       }
       const state = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
       const witness=await f.host.evaluate(el=>{const w=(el as WitnessNode).__qaSchoolWitness!;return {dropoffs:w.dropoffs,invalid:w.invalid,truncated:w.truncated};});

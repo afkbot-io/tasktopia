@@ -5,6 +5,107 @@ import type { Cell, ChunkTaskDto, RoadCellDto } from '../src/shared/contracts';
 import { CityEventDirector } from '../src/client/city-event-director';
 import { cityTransitGrid } from './fixtures/city-transit-grid';
 
+function delayedSchoolFixture() {
+  const f=cityTransitGrid(32),actors=f.city.agents.map(actor=>({...actor}));
+  Object.defineProperty(f.city,'agents',{get:()=>actors});
+  const regular=actors.find(actor=>actor.fleet==='BUS')!,schoolBus=actors.find(actor=>actor.fleet==='SCHOOL_BUS')!;
+  const child=actors.find(actor=>actor.age==='CHILD')!;
+  const task={id:'late-school',status:'COMPLETED',stage:5,visualKind:'BUILDING',visualAssetKey:'compact-modern-school-v1',
+    accessPath:[{x:3,y:-2}],footprint:[{x:3,y:-3}],workItemType:'TASK'} as ChunkTaskDto;
+  const at=(actor:typeof regular,target:Cell)=>{actor.current=target;actor.next=target;actor.activity='REST';actor.position={x:target.x+.5,y:target.y+.5};};
+  vi.spyOn(f.city,'canDrive').mockReturnValue(true);
+  vi.spyOn(f.city,'dispatchResponse').mockImplementation((role,targets,_stay,_id,owner)=>{
+    const vehicle=role==='BUS'?regular:schoolBus;
+    vehicle.response=role;vehicle.responseOwner=owner;
+    if(role==='BUS'&&f.controller.transit)vehicle.activity='NONE';else at(vehicle,targets[0]!);
+    return true;
+  });
+  vi.spyOn(f.city,'clearResponses').mockImplementation((roles,id,owner)=>{
+    for(const actor of actors)if(actor.id===id&&actor.response&&roles?.includes(actor.response)&&actor.responseOwner===owner){actor.response=undefined;actor.responseOwner=undefined;}
+  });
+  vi.spyOn(f.city,'dispatchVisit').mockImplementation(id=>{
+    if(!id.includes(':bus:'))return[];
+    child.visit={id,arrived:!id.endsWith(':school')};return[child.id];
+  });
+  vi.spyOn(f.city,'clearVisits').mockImplementation(id=>{for(const actor of actors)if(actor.visit?.id===id)actor.visit=undefined;});
+  vi.spyOn(f.city,'boardVisit').mockImplementation((id,vehicleId)=>{if(child.carrier||child.visit?.id!==id)return 0;child.carrier=vehicleId;return 1;});
+  vi.spyOn(f.city,'alightVisit').mockImplementation(vehicleId=>{if(child.carrier!==vehicleId)return 0;child.carrier=undefined;return 1;});
+  f.controller.compile({...f.lifeInput,tasks:[task]});
+  const update=(now:number)=>f.controller.update(now,f.view,f.options);
+  // Physical arrival signals are supplied at the controller seam. The live
+  // browser gate separately requires real routes, alighting and a doorway.
+  const arriveRegular=()=>at(regular,f.controller.transit!.destination!.lane);
+  return{...f,task,child,regular,schoolBus,update,arriveRegular};
+}
+
+it('школьный выезд сохраняется после сценки и ждёт безопасной поздней высадки обычного автобуса',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.child.carrier).toBe(f.regular.id);
+  expect(f.update(53000).pose).toBeUndefined();
+  expect(f.child.carrier).toBe(f.regular.id);
+  f.arriveRegular();f.update(60000);expect(f.child.carrier).toBeUndefined();
+  f.update(65999);expect(f.controller.transit?.role).toBe('BUS');
+  f.update(66000);
+  expect(f.controller.transit?.role).toBe('SCHOOL_BUS');
+  expect(f.controller.transit?.school?.taskId).toBe(f.task.id);
+  expect(f.controller.metrics.regularStops).toBe(1);
+  expect(f.regular.response).toBeUndefined();expect(f.schoolBus.response).toBe('SCHOOL_BUS');
+  expect(f.child.carrier).toBe(f.schoolBus.id);
+  f.controller.clear();
+});
+
+it.each(['delete','entrance','incident','role','stage','educationKind'] as const)('ожидающий школьный выезд проверяет актуальную школу (%s) до отправления',cause=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);f.update(53000);
+  expect(f.controller.pendingSchool?.taskId).toBe(f.task.id);
+  const changed=cause==='delete'?[]:[{...f.task,...(cause==='entrance'?{accessPath:[{x:8,y:-2}]}
+    :cause==='incident'?{defectSummary:{active:1,open:1,inProgress:0,verifying:0}}
+      :cause==='role'?{serviceRole:'SHOP' as const}:cause==='educationKind'?{visualAssetKey:'compact-color-kindergarten-v1'}:{stage:4 as const,status:'TESTING' as const})}];
+  f.controller.compile({...f.lifeInput,tasks:changed});
+  expect(f.controller.pendingSchool).toBeUndefined();
+  // A new kindergarten ceremony may legitimately create its own request.
+  // The old school's queued request must already have been invalidated.
+  if(cause==='educationKind'){f.controller.clear();return;}
+  // This legacy derived-stop fixture may legitimately lose a stop when the
+  // geometry changes. A retained regular run still owns its passengers.
+  if(f.controller.transit){expect(f.child.carrier).toBe(f.regular.id);f.arriveRegular();}
+  f.update(60000);f.update(66000);
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.controller.metrics.schoolBuses).toBe(0);
+  f.controller.clear();
+});
+
+it('хранит только первую ожидающую школьную заявку, ограничивает срок и освобождает её при очистке',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);
+  const first=f.controller.pendingSchool;expect(first?.taskId).toBe(f.task.id);
+  f.options.roadBusy=true;
+  const later=f.update(84000);expect(later.pose?.kind).toBe('SCHOOL');expect(later.pose?.id).not.toBe(first!.episodeId);
+  expect(f.controller.pendingSchool).toBe(first);
+  f.update(first!.until+1);expect(f.controller.pendingSchool).toBeUndefined();
+  expect(f.controller.metrics.schoolBuses).toBe(0);
+  f.controller.clear();
+  const fresh=delayedSchoolFixture();fresh.update(7000);fresh.update(8300);
+  expect(fresh.controller.pendingSchool).toBeDefined();fresh.controller.clear();
+  expect(fresh.controller.pendingSchool).toBeUndefined();expect(fresh.controller.transit).toBeUndefined();
+});
+
+it('далёкий pan освобождает ожидающую заявку и сохраняет уже едущий обычный автобус',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);
+  expect(f.controller.pendingSchool).toBeDefined();
+  f.controller.update(9000,{minX:1000,minY:1000,maxX:1070,maxY:1070},f.options);
+  expect(f.controller.pendingSchool).toBeUndefined();
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.child.carrier).toBe(f.regular.id);
+  f.controller.clear();
+});
+
+it('ожидающий школьный выезд уступает занятый вход настоящей работе и отправляется после освобождения',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);f.update(53000);
+  f.arriveRegular();f.update(60000);
+  f.options.busy.add('3,-2');f.update(66000);
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.controller.pendingSchool?.taskId).toBe(f.task.id);
+  f.options.busy.clear();f.update(72000);f.arriveRegular();f.update(73000);f.update(79000);
+  expect(f.controller.transit?.role).toBe('SCHOOL_BUS');expect(f.controller.transit?.school?.taskId).toBe(f.task.id);
+  f.controller.clear();
+});
+
 it.each(['passengers','vehicle'] as const)('не отменяет обычный автобус, если для школьной сцены недоступен %s', unavailable => {
   const f=cityTransitGrid(), dispatch=f.city.dispatchVisit.bind(f.city);
   const actors=f.city.agents.map(actor=>({...actor}));Object.defineProperty(f.city,'agents',{get:()=>actors});

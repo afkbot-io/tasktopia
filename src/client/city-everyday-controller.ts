@@ -41,6 +41,9 @@ export type TransitRun = { id: string; vehicleId: string; role: 'BUS' | 'SCHOOL_
   lineId?: string; lineIndex?: number; stopsVisited: number; legStart: number; routeRetryAt: number; stopBoarded: number; recentAlighted: string[];
   school?: { taskId: string; entrance: { x: number; y: number } };
   phase: 'ARRIVE' | 'BOARD' | 'TRAVEL' | 'ALIGHT'; since: number; start: number; boarded: number; alighted: number; arrivedAt?: number };
+type SchoolRequest = NonNullable<TransitRun['school']> & { episodeId: string; kind: 'SCHOOL' | 'KINDERGARTEN'; until: number };
+const schoolNearView = (entrance: Cell, view: Rect) => entrance.x >= view.minX - 24 && entrance.x <= view.maxX + 24
+  && entrance.y >= view.minY - 24 && entrance.y <= view.maxY + 24;
 export type EverydayState = { pose?: EverydayPose; visitors: readonly CityMobilityAgent[]; areaReady: boolean;
   stops: readonly TransitStop[]; transit?: TransitRun; rain: RainPose; sheltered: ReadonlySet<string> };
 
@@ -54,6 +57,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
   let siteIndex = createCityEventSiteIndex<EverydaySite>([], site => site.route.at(-1)!, site => site.id);
   let tasksById: ReadonlyMap<string, EverydayTask> = new Map();
   let active: EverydayEpisode | undefined, run: TransitRun | undefined;
+  let schoolRequest: SchoolRequest | undefined;
   let planned: EverydayEpisode | undefined;
   let players: string[] = [], nextPlay = 0, fireVehicle = '';
   let window = -1, nextRegularAttempt = 0, transitSerial = 0, lineCursor = 0, lastRain = '', schoolBusEpisode = '', schoolBusAttemptAt = 0, released = false, bell = false, enabledLast = false;
@@ -101,7 +105,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     if (run === ending) run = undefined;
     nextRegularAttempt = lastNow + 8000;
   };
-  const clear = () => { transitPreparation?.abort();transitPreparation = undefined;transitRegion = '';endEpisode(); endTransit(); for (const id of schoolVisits.keys()) mobility()?.clearVisits(id); schoolVisits.clear(); mobility()?.clearVisits(`shelter:${lastRain}`); openings.length = 0; openingAttemptAt = 0; planned = undefined; rebuildReservations(false); };
+  const clear = () => { transitPreparation?.abort();transitPreparation = undefined;transitRegion = '';schoolRequest=undefined;endEpisode(); endTransit(); for (const id of schoolVisits.keys()) mobility()?.clearVisits(id); schoolVisits.clear(); mobility()?.clearVisits(`shelter:${lastRain}`); openings.length = 0; openingAttemptAt = 0; planned = undefined; rebuildReservations(false); };
   const refreshLocalTransit = (view: Rect) => {
     if (!stopIndex || lastNow<nextTransitRetry) return;
     const center = { x:(view.minX+view.maxX)/2,y:(view.minY+view.maxY)/2 }, region = `${Math.floor(center.x/64)},${Math.floor(center.y/64)}`;
@@ -159,14 +163,14 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     if (!director.claimActors(lease.id, [...ids, ...(fireVehicle ? [fireVehicle] : [])])) { endEpisode(); return false; }
     metrics.visitors += ids.length; metrics.episodes++; return true;
   };
-  const startTransit = (now: number, economy: boolean) => {
+  const startTransit = (now: number, economy: boolean, school?: SchoolRequest) => {
     const city = mobility(); if (!city || stops.length < 2) return;
-    const school = active && (active.kind === 'SCHOOL' || active.kind === 'KINDERGARTEN') ? active : undefined;
-    const anchor = school?.route.at(-1);
+    const anchor = school?.entrance;
     const targetStops = [...stops].sort((a, b) => anchor
       ? Math.abs(a.lane.x - anchor.x) + Math.abs(a.lane.y - anchor.y) - Math.abs(b.lane.x - anchor.x) - Math.abs(b.lane.y - anchor.y)
       : a.id.localeCompare(b.id));
-    const role = school && anchor && Math.abs(targetStops[0]!.lane.x - anchor.x) + Math.abs(targetStops[0]!.lane.y - anchor.y) < 24 ? 'SCHOOL_BUS' : 'BUS';
+    if (school && anchor && Math.abs(targetStops[0]!.lane.x - anchor.x) + Math.abs(targetStops[0]!.lane.y - anchor.y) >= 24) return;
+    const role = school ? 'SCHOOL_BUS' : 'BUS';
     if (run && role !== 'SCHOOL_BUS') return;
     const destinations = role === 'SCHOOL_BUS' && anchor
       ? targetStops.filter(stop => Math.abs(stop.lane.x - anchor.x) + Math.abs(stop.lane.y - anchor.y) < 24) : [];
@@ -252,6 +256,8 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     if (lineCursor >= lines.length) lineCursor = 0;
     if (first) window = -1;
     if (active && !validEpisode(active)) { lastSkip = 'invalidated'; endEpisode(); metrics.cancellations++; }
+    if (schoolRequest && (!validSchool(schoolRequest)
+      || openingKind(tasksById.get(schoolRequest.taskId)!) !== `OPEN_${schoolRequest.kind}`)) schoolRequest = undefined;
     if (planned && !validEpisode(planned)) planned = undefined;
     for (const [id, school] of schoolVisits) if (!validSchool(school)) { mobility()?.clearVisits(id); schoolVisits.delete(id); }
     const retained = (stop: TransitStop) => stopIndex ? stopIndex.byId.has(stop.id) : stops.some(current => current.id===stop.id);
@@ -293,6 +299,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     get transitStopCount() { return stopIndex?.size??stops.length; },
     get transitLines():readonly TransitLine[] {return lines;},
     get transit():Readonly<TransitRun>|undefined {return run;},
+    get pendingSchool():Readonly<SchoolRequest>|undefined {return schoolRequest;},
     get kinds() { return kinds; },
     get planned() { return planned; },
     get lastSkip() { return lastSkip; },
@@ -357,7 +364,14 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
         && !(active!.kind === 'SPORT' && a.visit?.id === active!.id)
         && active!.area.some(c => Math.abs(a.position.x - c.x - .5) < .8 && Math.abs(a.position.y - c.y - .5) < .8));
       rebuildReservations(true);
-      if (active && (active.kind === 'SCHOOL' || active.kind === 'KINDERGARTEN') && schoolBusEpisode !== active.id && !options.roadBusy && now >= schoolBusAttemptAt) {
+      if (schoolRequest && (now >= schoolRequest.until || !schoolNearView(schoolRequest.entrance, view))) schoolRequest = undefined;
+      // One bounded request survives the street ceremony. Keep its actual
+      // doorway until a safe handoff; later ceremonies cannot replace it.
+      if (!schoolRequest && active?.taskId && (active.kind === 'SCHOOL' || active.kind === 'KINDERGARTEN') && schoolBusEpisode !== active.id) {
+        const school = { taskId: active.taskId, entrance: active.route.at(-1)! };
+        if (schoolNearView(school.entrance, view) && validSchool(school)) schoolRequest = { ...school, episodeId: active.id, kind: active.kind, until: active.end + 80_000 };
+      }
+      if (schoolRequest && !options.roadBusy && !options.busy.has(cellKey(schoolRequest.entrance)) && now >= schoolBusAttemptAt) {
         // The walking group gets its own residents. Retry after their short
         // indoor activity instead of consuming the episode's entire audience.
         // Finish the regular bus's current stop, including actual alighting.
@@ -367,18 +381,19 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
           && !city.agents.some(actor=>actor.carrier===run!.vehicleId);
         if (canStartSchool) {
           schoolBusAttemptAt = now + 5000;
-          const previous = run;
-          startTransit(now, options.economy);
+          const previous = run, request = schoolRequest;
+          startTransit(now, options.economy, request);
           if (run && run !== previous) {
             if (previous) {
               if(previous.line){metrics.regularStops++;if(previous.stopsVisited+1>=previous.line.stops.length)metrics.regularCycles++;}
               endTransit(previous);
             }
-            schoolBusEpisode = active.id;
+            schoolBusEpisode = request.episodeId;
+            schoolRequest = undefined;
           }
         }
       }
-      if (!run && !options.roadBusy && now >= nextRegularAttempt) { nextRegularAttempt = now + 5000; startTransit(now, options.economy); }
+      if (!run && !schoolRequest && !options.roadBusy && now >= nextRegularAttempt) { nextRegularAttempt = now + 5000; startTransit(now, options.economy); }
       updateTransit(now, options.economy);
       const rain = rainPose(cityId, now), sheltered = new Set<string>();
       if (rain.phase === 'RAIN' && lastRain !== rain.id) {

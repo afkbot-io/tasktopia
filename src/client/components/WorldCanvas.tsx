@@ -2267,6 +2267,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host.dataset.schoolBusAlighted = String(everydayMetrics.schoolAlighted);
         host.dataset.schoolBusArrived = String(everydayMetrics.schoolArrived);
         host.dataset.schoolBusVisits = String(everydayMetrics.schoolVisits);
+        const schoolTask = state.transit?.role === 'SCHOOL_BUS' ? state.transit.school?.taskId ?? '' : '';
+        const pendingSchoolTask = everydayController.pendingSchool?.taskId ?? '';
+        if (host.dataset.schoolBusTask !== schoolTask) host.dataset.schoolBusTask = schoolTask;
+        if (host.dataset.schoolBusPendingTask !== pendingSchoolTask) host.dataset.schoolBusPendingTask = pendingSchoolTask;
         host.dataset.cityWeather = state.rain.phase; host.dataset.cityUmbrellas = String(views.umbrellas);
         host.dataset.everydayAnimals = String(views.animals);
         host.dataset.birdsScattered = String(views.birdsScattered);

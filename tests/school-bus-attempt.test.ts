@@ -3,10 +3,15 @@ import { isSchoolBusAttemptTerminal } from './school-bus-attempt';
 
 const start = 100_000;
 const before = { schoolBusArrived: '0', schoolBuses: '0', transitRole: '' };
-const ended = { roadEventServerNow: String(start + 63_000), transitRole: '', schoolBusVisits: '0', schoolBusArrived: '0', schoolBuses: '1' };
+const ended = { roadEventServerNow: String(start + 63_000), transitRole: '', schoolBusVisits: '0', schoolBusArrived: '0', schoolBuses: '1', schoolBusPendingTask: '' };
 const terminal = (current = ended, observedSchoolBus = true) => isSchoolBusAttemptTerminal({ scheduledStartMs: start, before, current, observedSchoolBus });
 
 describe('school bus attempt termination from published state', () => {
+  it('сохраняет физические шаги для ожидающей заявки после завершения уличной сценки',()=>{
+    expect(terminal({...ended,schoolBusPendingTask:'school'})).toBe(false);
+    const missing:Partial<typeof ended>={...ended};delete missing.schoolBusPendingTask;
+    expect(isSchoolBusAttemptTerminal({scheduledStartMs:start,before,current:missing,observedSchoolBus:true})).toBe(false);
+  });
   it('recognizes an observed trip cancelled by a road response after the ceremony', () => {
     expect(terminal({ ...ended, transitRole: 'SCHOOL_BUS', roadEventServerNow: String(start + 58_507) })).toBe(false);
     expect(terminal()).toBe(true);
