@@ -1,6 +1,6 @@
 import type { Cell, ChunkTaskDto } from '../shared/contracts';
 import { incidentMode } from './task-incidents';
-import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from './cooperative-preparation';
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from '../shared/cooperative-preparation';
 export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'>;
 
 export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL';

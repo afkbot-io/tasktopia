@@ -14,7 +14,7 @@ export const ROAD_WIDTH: Record<RoadCellDto["roadClass"], number> = {
 
 /** Canonical paved road envelope shared by resident chunks and clipped city exits. */
 export function buildRoadSurfaces(input: {
-  roads: ReadonlyMap<string, RoadCellDto>; blocked: ReadonlySet<string>;
+  roads: ReadonlyMap<string, RoadCellDto>; blocked: Pick<ReadonlySet<string>, 'has'>;
   isSurfaceTerrain: (cell: Cell) => boolean; isInsideCity: (cell: Cell) => boolean;
 }): Map<string, SurfaceCellDto> {
   const surfaces = new Map<string, SurfaceCellDto>();

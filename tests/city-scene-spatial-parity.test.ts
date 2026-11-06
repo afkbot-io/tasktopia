@@ -19,11 +19,11 @@ it("keeps the exact full-city wire content when replacing repeated global scans 
   await db.prepare(`INSERT INTO tasks_v3 SELECT (jsonb_populate_record(NULL::tasks_v3,to_jsonb(t)||jsonb_build_object(
     'id',gen_random_uuid()::text,'task_number',0,'title','Parity '||n,
     'service_role',NULL,'service_trigger',NULL,'service_role_assigned',false))).*
-    FROM tasks_v3 t CROSS JOIN generate_series(2,100) n WHERE t.id=?`).run(first.id);
+    FROM tasks_v3 t CROSS JOIN generate_series(2,200) n WHERE t.id=?`).run(first.id);
   await synchronizeCityBlocks(db, countryId, city.id);
   const indexed = await new AppService(db).getCityScene(countryId, city.id);
   expect(indexed.chunks.length).toBeGreaterThan(4);
-  expect(new Set(indexed.chunks.flatMap(chunk => chunk.tasks.map(task => task.id))).size).toBe(100);
+  expect(new Set(indexed.chunks.flatMap(chunk => chunk.tasks.map(task => task.id))).size).toBe(200);
   // The previous implementation passed the whole snapshot into every page.
   // Reuse that public projection to compare complete wire content, including
   // surfaces, paths, planned parcels, plaques, hashes and decoration halos.

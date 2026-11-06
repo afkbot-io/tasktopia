@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as walking from '../src/client/city-walk-network';
 import * as mobility from '../src/client/city-mobility';
 import type { CityMobilityInput, CityMobility } from '../src/client/city-mobility';
-import * as cooperative from '../src/client/cooperative-preparation';
+import * as cooperative from '../src/shared/cooperative-preparation';
 import { CityMovementPreparation } from '../src/client/city-movement-preparation';
 import * as routeSearch from '../src/client/mobility-route-search';
 import * as mobilityNetwork from '../src/client/city-mobility-network';

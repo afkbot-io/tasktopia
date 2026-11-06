@@ -1,6 +1,6 @@
 import type { Cell, Rect } from '../shared/contracts';
 import { cityLifeHash } from './city-life';
-import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from './cooperative-preparation';
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from '../shared/cooperative-preparation';
 
 const inside = (x: number, y: number, view: Rect, halo = 0) => x >= view.minX - halo && x <= view.maxX + halo
   && y >= view.minY - halo && y <= view.maxY + halo;

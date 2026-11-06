@@ -5,7 +5,7 @@ import { MICRO_CAR_VARIANTS, MICRO_PERSON_VARIANTS, microAmbientSprite, type Mic
 import { nextSeededRandom } from "./agent-routing";
 import { buildMobilityNetworkSteps, mobilityCellKey as key, mobilityNetworkSignature, type MobilityNetwork, type MobilityNetworkInput, type MobilityZone } from "./city-mobility-network";
 import { createMobilityRouteSearchSteps, type MobilityRouteSearch } from "./mobility-route-search";
-import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "./cooperative-preparation";
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
 import { prepareRoadEventGeometrySteps, type PreparedRoadEventGeometry } from "./city-road-event-geometry";
 import { transitVehicleArt, type TransitFleetRole } from '../shared/transit-vehicle-art';
 import { populationCellIndexSteps, type PopulationCellIndex } from './city-population-cell-index';

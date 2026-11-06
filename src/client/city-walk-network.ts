@@ -2,7 +2,7 @@ import type { Cell, ChunkDto, ChunkTaskDto, WorldFeatureDto, SurfaceCellDto, Ter
 import { PROP_CATALOG } from "../shared/catalog";
 import { taskParkDecorLayout } from "../shared/task-park";
 import { greenAreaSurfaceLayout } from "../shared/green-area";
-import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "./cooperative-preparation";
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
 
 export type CityWalkInput = {
   terrain: Array<Pick<ChunkDto["terrain"][number], "x" | "y" | "terrain">>;
@@ -60,6 +60,14 @@ function* buildCityWalkNetworkSteps(input: CityWalkInput) {
     else for (const cell of greenAreaSurfaceLayout(feature.footprint, feature.developmentStage, feature.assetKey)) {
       if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; }
       if (cell.role === "WATER" || cell.role === "BASIN") blocked.add(key(cell));
+    }
+    if (feature.kind==='BUS_STOP' && feature.accessPath.length>=11) {
+      const [first,second] = feature.accessPath, dx = second!.x-first!.x, dy = second!.y-first!.y;
+      if (Math.abs(dx)+Math.abs(dy)===1 && feature.accessPath.slice(0,11).every((p,i) => p.x===first!.x+i*dx && p.y===first!.y+i*dy)) {
+        // The reserved public verge separates a waiting corridor from an
+        // adjoining park. Short-gap infill must not invent side branches here.
+        for (const p of feature.accessPath.slice(1,10)) { blocked.add(key({x:p.x-dy,y:p.y+dx}));if (++work === WALK_CHECKPOINT_BATCH) { work = 0; yield; } }
+      }
     }
   }
   for (const decoration of input.decorations) {

@@ -10,6 +10,7 @@ import { createEverydayView } from '../city-everyday-view';
 import { createCloudShadowView } from '../city-cloud-shadow-view';
 import { prepareWetCellIndexAsync } from '../city-weather';
 import { createTransitStopView } from '../city-transit-stop-view';
+import { prepareTransitStopIndexAsync,type TransitStopIndex } from '../city-transit-stop-index';
 import { CityEventDirector, type CityEventLease } from '../city-event-director';
 import { createCityEventSiteIndex, prepareCityEventSiteIndexAsync, type CityEventSiteIndex } from '../city-event-site-index';
 import { cityBusInspection } from '../city-bus-inspection';
@@ -107,7 +108,7 @@ import { advanceCityMobilityFrame,createCityMobility,createCityMobilityAsync,pre
 import { CITY_MOBILITY_SIGNAL_STATE_ENCODING,encodeCityMobilitySignalState } from "../city-mobility-signal-telemetry";
 import { CityMovementPreparation,prepareLatestCityLife } from "../city-movement-preparation";
 import { cityMovementTimeoutMs } from "../city-movement-deadline";
-import { yieldPreparationTask } from "../cooperative-preparation";
+import { yieldPreparationTask } from "../../shared/cooperative-preparation";
 import { buildCityWalkNetworkAsync } from "../city-walk-network";
 import { placeCityMobilitySignalPosts } from "../city-mobility-signal-posts";
 import { createCitySignalPresentation } from "../city-signal-presentation";
@@ -754,6 +755,9 @@ function drawWorldFeature(
   parent?: WorldFeatureDto,
 ): { platform?: Container; visual?: Container } | null {
   if (!includePlatform) return null;
+  // The stop registry owns viewport-bounded native sprites. Features still
+  // supply permanent collision, paving and furniture exclusions to the scene.
+  if (feature.kind==='BUS_STOP') return null;
   if (feature.kind === "RUIN") {
     if (feature.footprint.length === 0) return null;
     const visual = new Container();
@@ -2166,6 +2170,39 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         mobility?.setWalkClosures(new Set([...crew, ...everyday]));
       }
       let stopGeometrySource: typeof everydayController.transitStops | undefined;
+      let permanentStopSource: CitySceneDto['transitStops'],permanentStopCity='',permanentStopIndex:TransitStopIndex|undefined;
+      let permanentStopPreparation:AbortController|undefined;
+      const noPermanentStops:typeof everydayController.transitStops=[];
+      startupDisposers.push(()=>permanentStopPreparation?.abort());
+      function updatePermanentTransitStops(legacyStops=everydayController.transitStops) {
+        const source=cityScene?.transitStops,cityId=cityScene?.city.id??'';
+        if(source!==permanentStopSource){
+          permanentStopPreparation?.abort();permanentStopPreparation=undefined;
+          if(cityId!==permanentStopCity||source===undefined)permanentStopIndex=undefined;
+          permanentStopSource=source;permanentStopCity=cityId;
+          if(source!==undefined){
+            const controller=new AbortController();permanentStopPreparation=controller;
+            host!.dataset.transitStopPreparation='preparing';
+            void prepareTransitStopIndexAsync(source,{signal:controller.signal}).then(index=>{
+              if(controller.signal.aborted||cityScene?.transitStops!==source)return;
+              permanentStopIndex=index;permanentStopPreparation=undefined;
+              host!.dataset.transitStopPreparation='ready';
+              updatePermanentTransitStops();sortWorldObjects();
+              if(paintedFrame&&activeRef.current)app.render();
+            }).catch(error=>{
+              if(controller.signal.aborted)return;
+              host!.dataset.transitStopPreparation='failed';
+              setMapLoadError(error instanceof Error?error.message:'Не удалось подготовить остановки');
+            });
+          }
+        }
+        const stops=permanentStopIndex?.visible(populationRegion())??(source===undefined?legacyStops:noPermanentStops);
+        const views=transitStopView.update(stops);
+        host!.dataset.transitStops=String(permanentStopIndex?.size??(source===undefined?everydayController.transitStopCount:source.length));
+        host!.dataset.transitStopViews=String(views.total);host!.dataset.transitStopVisible=String(views.visible);
+        if(stopGeometrySource!==stops){stopGeometrySource=stops;
+          host!.dataset.transitStopGeometry=JSON.stringify(stops.map(({id,shelter})=>({id,shelter})));}
+      }
       const updateEveryday = () => {
         const now = readServerWorldTime() ?? Date.now(), size = CELL_SIZE * world.scale.x;
         for (const [id, opening] of pendingOpenings) {
@@ -2188,11 +2225,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host.dataset.weatherWetCells = String(views.wetCells); host.dataset.weatherWetVisited = String(views.wetVisited);
         host.dataset.weatherWetBuckets = String(views.wetBuckets); host.dataset.weatherRainStreaks = String(views.rainStreaks);
         host.dataset.weatherRainWork = String(views.rainVisited);
-        const stopViews = transitStopView.update(state.stops);
-        if (stopGeometrySource !== state.stops) {
-          stopGeometrySource = state.stops;
-          host.dataset.transitStopGeometry = JSON.stringify(state.stops.map(({ id, shelter }) => ({ id, shelter })));
-        }
+        updatePermanentTransitStops(state.stops);
         const everydayMetrics = everydayController.metrics;
         applyWalkReservations();
         host.dataset.everydayEvent = state.pose?.kind ?? ''; host.dataset.everydayPhase = state.pose?.phase ?? '';
@@ -2207,11 +2240,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         host.dataset.everydayNextStart = String(planned?.start ?? (Math.floor(now / 75_000) + 1) * 75_000 + 8000);
         host.dataset.everydayPlannedAnchor = JSON.stringify(planned?.route.at(-1) ?? null);
         host.dataset.everydayGeometry = JSON.stringify(state.pose ? { route: state.pose.route, area: state.pose.area } : null);
-        host.dataset.transitStops = String(state.stops.length); host.dataset.transitRole = state.transit?.role ?? '';
+        host.dataset.transitRole = state.transit?.role ?? '';
         host.dataset.transitLines = String(everydayController.transitLines.length);
         host.dataset.transitLine = state.transit?.lineId ?? ''; host.dataset.transitStopsVisited = String(state.transit?.stopsVisited ?? 0);
         host.dataset.transitFleet = String(mobility?.agents.filter(agent => agent.fleet).length ?? 0);
-        host.dataset.transitStopViews = String(stopViews.total); host.dataset.transitStopVisible = String(stopViews.visible);
         host.dataset.transitPhase = state.transit?.phase ?? ''; host.dataset.transitVehicle = state.transit?.vehicleId ?? '';
         host.dataset.transitBoarded = String(everydayMetrics.boarded); host.dataset.transitAlighted = String(everydayMetrics.alighted);
         host.dataset.transitPassengers = String(mobility?.agents.filter(a => a.carrier).length ?? 0);
@@ -2559,6 +2591,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         const before = adaptiveQuality.economy;
         adaptiveQuality.sample(app.ticker.elapsedMS, host.dataset.loading !== "true" && !document.hidden, 1000 / worldDetailProfile(economy).fps);
         if (before !== adaptiveQuality.economy) applyPreferences();
+        updatePermanentTransitStops();
         if (reducedMotion) return;
         const elapsed = Math.min(50, app.ticker.deltaMS);
         simulationTimeMs += elapsed;
@@ -3489,6 +3522,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
 
       function renderEntities(rebuildMovement: boolean): void {
         syncCityRailway();
+        updatePermanentTransitStops();
         const sourceChunks = [...entityChunks].filter(([id]) => entityChunkLods.get(id) === currentLod).map(([, chunk]) => chunk);
         const completedTasks = residentCompletedTasks();
         const collected = collectCityEntities(sourceChunks,completedTasks,currentLod === "DETAIL");
@@ -4035,6 +4069,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
               ()=>({revision:latestMovement.life,state:latestCanonicalTasks}),async currentTasks=>{
                 const started=performance.now(),taskList=[...currentTasks.values()];
                 const everyday=await prepareEverydayAsync({tasks:taskList,walk:lifeGeometry.walkingCells,safeTargets:lifeGeometry.visitTargets,roads,
+                  transitStops: cityScene?.transitStops,transitView: populationRegion(),
                   blocked:{has:id=>walk.blockedCells.has(id)||everydayParking.has(id)||everydayPosts.has(id)},
                   ground:{has:id=>{const cell=terrain.get(id);return !!cell&&(cell.terrain==='GRASS'||cell.terrain==='MEADOW'||cell.terrain==='DIRT');}},
                   decorations:[...decorations.values()]},lifeGeometry.canDrive,{signal:lifeSignal});
@@ -4244,6 +4279,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           throw new Error("Сервер вернул несовместимую сцену города");
         }
         cityScene = scene;
+        updatePermanentTransitStops();
         exposeSceneResponse(scene);
         if(initialViewRef.current){const pose=initialViewRef.current;
           world.scale.set(pose.scale);cameraTargetScale=pose.scale;cameraZoomAnchor=undefined;

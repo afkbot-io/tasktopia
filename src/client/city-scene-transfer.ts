@@ -1,6 +1,6 @@
 import type { CitySceneDto } from "../shared/city-scene-contract";
 import type { CellRunDto } from "../shared/contracts";
-import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "./cooperative-preparation";
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
 
 type Fields = Record<string, unknown>;
 type RunMetadata = { fields: Fields; start: Fields; end: Fields;

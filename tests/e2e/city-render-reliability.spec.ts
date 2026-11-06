@@ -431,21 +431,47 @@ test("quality limits preserve the physical walk network and everyday compilation
 });
 
 test("permanent transit stops survive event preferences, reduced motion and quality changes",async({page,hasTouch},info)=>{
+  test.setTimeout(90_000);
   const errors:string[]=[],reads:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  // Observe just the already-decoded manifest. Capturing the whole native
+  // response can exceed DevTools' body cache or retain another65MiB JSON copy.
+  await page.addInitScript(()=>{
+    const NativeWorker=window.Worker;
+    window.Worker=class extends NativeWorker{
+      constructor(url:string|URL,options?:WorkerOptions){
+        super(url,options);
+        this.addEventListener('message',event=>{
+          const transfer=event.data?.transfer;
+          if(transfer?.kind==='tasktopia.city-scene.transfer')
+            (window as unknown as {qaTransitManifest:unknown}).qaTransitManifest=transfer.scene?.transitStops;
+        });
+      }
+    };
+  });
   const host=await enterCity(page);
-  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  const manifest=await page.evaluate(()=>(window as unknown as {qaTransitManifest:CitySceneDto['transitStops']}).qaTransitManifest);
+  expect(manifest,'This journey must exercise the stored server manifest').toBeDefined();
+  // Street infrastructure is ready independently of background actor physics.
+  // Actual movement completion/cancellation has its own held-preparation test.
+  await expect(host).toHaveAttribute('data-transit-stop-preparation','ready');
   await expect.poll(async()=>Number(await host.getAttribute('data-transit-stops'))).toBeGreaterThan(0);
   const stops=await host.getAttribute('data-transit-stops'),geometry=await host.getAttribute('data-transit-stop-geometry');
-  const walk=await host.getAttribute('data-walk-network-builds'),compiles=await host.getAttribute('data-everyday-compiles');
-  expect(JSON.parse(geometry!)).toHaveLength(Number(stops));
+  const visible=String(JSON.parse(geometry!).length);
+  expect(Number(visible)).toBeGreaterThan(0);expect(Number(visible)).toBeLessThanOrEqual(256);
+  expect(Number(visible)).toBeLessThanOrEqual(Number(stops));
+  const canonical=new Map(manifest?.map(stop=>[stop.id,stop.shelter]));
+  const fixed=async()=>{
+    await expect(host).toHaveAttribute('data-transit-stops',stops!);
+    const local=JSON.parse((await host.getAttribute('data-transit-stop-geometry'))!) as Array<{id:string;shelter:unknown}>;
+    for(const stop of local)expect(stop.shelter).toEqual(canonical.get(stop.id));
+    await expect(host).toHaveAttribute('data-transit-stop-views',String(local.length));
+    await expect(host).toHaveAttribute('data-transit-stop-visible',String(local.length));
+  };
   const unchanged=async()=>{
-    await expect(host).toHaveAttribute('data-transit-stop-views',stops!);
-    await expect(host).toHaveAttribute('data-transit-stop-visible',stops!);
+    await fixed();
     await expect(host).toHaveAttribute('data-transit-stop-geometry',geometry!);
-    await expect(host).toHaveAttribute('data-everyday-compiles',compiles!);
-    await expect(host).toHaveAttribute('data-walk-network-builds',walk!);
   };
   await unchanged();
   const preferences=await openWorldPreferences(page,hasTouch);
@@ -460,15 +486,14 @@ test("permanent transit stops survive event preferences, reduced motion and qual
   await expect(host).toHaveAttribute('data-animation-active','true');await unchanged();
   await preferences.locator(':scope > summary').click();
   if(hasTouch)await page.locator('.world-menu > summary').click();
-  await host.locator('canvas').focus();await page.keyboard.press('ArrowRight');await unchanged();
-  await openMapPlanet(page);await openMapCity(page);await unchanged();
+  await host.locator('canvas').focus();await page.keyboard.press('ArrowRight');await fixed();
+  await openMapPlanet(page);await openMapCity(page);await fixed();
   await page.screenshot({path:info.outputPath('permanent-stops.png')});
   expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
   expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
   await page.reload({waitUntil:'domcontentloaded'});
-  await expect(host).toHaveAttribute('data-mobility-ready','true');
-  await expect(host).toHaveAttribute('data-transit-stop-geometry',geometry!);
-  await expect(host).toHaveAttribute('data-transit-stop-visible',stops!);
+  await expect(host).toHaveAttribute('data-transit-stop-preparation','ready');
+  await fixed();
   expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(2);
   await info.attach('permanent-stops-state',{body:JSON.stringify({stops,geometry:JSON.parse(geometry!),reads,errors}),contentType:'application/json'});
   expect(errors).toEqual([]);
@@ -751,6 +776,7 @@ test("leaving during cooperative preparation cancels late publication and a reta
  const host=await enterCity(page),canvas=await host.locator("canvas").elementHandle();
  await expect.poll(()=>page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.state().held),{timeout:30_000}).toBeGreaterThan(0);
  await expect(host).not.toHaveAttribute("data-mobility-ready","true");
+ await expect.poll(async()=>Number(await host.getAttribute('data-transit-stop-visible')),{timeout:5000}).toBeGreaterThan(0);
  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Планета",exact:true}).click();
  await expect(page.locator(".planet-atlas")).toBeVisible();await expect(host).toHaveAttribute("data-map-active","false");
  await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());

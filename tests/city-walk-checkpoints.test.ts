@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { buildCityWalkNetworkAsync, type CityWalkInput } from '../src/client/city-walk-network';
-import { prepareCooperatively } from '../src/client/cooperative-preparation';
+import { prepareCooperatively } from '../src/shared/cooperative-preparation';
 
 function terrainWork(size: number) {
   const terrain: CityWalkInput['terrain'] = Array.from({ length: size }, (_, x) => ({ x, y: 0, terrain: 'MEADOW' }));

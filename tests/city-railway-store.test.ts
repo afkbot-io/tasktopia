@@ -1,14 +1,19 @@
-import { afterEach,expect,it } from "vitest";
+import { afterEach,expect,it,vi } from "vitest";
 import { createTestDb,type Db } from "../src/server/db";
 import { blockSlots } from "../src/shared/block-templates";
 import { registerUser } from "../src/server/auth";
 import { AppService } from "../src/server/app-service";
 import { readActiveBlockLayout,blockBoundsIntersect } from "../src/server/world/active-block-layout";
 import { cityRailwayReservations, countryRailwayReservations } from "../src/server/world/city-railway-store";
+import * as stopStore from '../src/server/world/city-transit-stop-store';
 let db:Db|undefined;
-afterEach(async()=>{await db?.close();});
+afterEach(async()=>{vi.restoreAllMocks();await db?.close();});
 it("freezes the corridor before city growth and only changes train readiness with the station stage",async()=>{
   db=await createTestDb();
+  // Build a real pre-stop city for the legacy corridor import below. Current
+  // cities may already have a rail position selected around permanent stops.
+  const freezeStops=vi.spyOn(stopStore,'freezeCityTransitStops').mockImplementation(async(_db,layout)=>({schemaVersion:1,layoutId:layout.id,processedBlockIds:[],stops:[]}));
+  const freezeMissingStops=vi.spyOn(stopStore,'freezeMissingCountryTransitStops').mockResolvedValue(0);
   const service=new AppService(db);
   const {user}=await registerUser(db,{email:"rail-store@example.test",name:"Rail",password:"password123"});
   const country=user.countryId;
@@ -46,6 +51,7 @@ it("freezes the corridor before city growth and only changes train readiness wit
   await db.prepare("DELETE FROM city_railway_corridors_v1 WHERE layout_id=?").run(layout.id);
   const legacy=await new AppService(db).getCityScene(country,city.id);
   expect(frozen(legacy.railway!)).toEqual(frozen(before.railway!));
+  freezeStops.mockRestore();freezeMissingStops.mockRestore();
   const neighbour=await service.createCity(country,{name:"Neighbour",idempotencyKey:"neighbour"});
   const imported=await db.prepare("SELECT geometry_json FROM city_railway_corridors_v1 WHERE layout_id=?")
     .get<{geometry_json:NonNullable<typeof before.railway>}>(layout.id);

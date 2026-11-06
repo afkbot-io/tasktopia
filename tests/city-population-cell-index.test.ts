@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { populationCellIndexSteps } from '../src/client/city-population-cell-index';
-import { completePreparation, prepareCooperatively } from '../src/client/cooperative-preparation';
+import { completePreparation, prepareCooperatively } from '../src/shared/cooperative-preparation';
 
 it('queries only bounded nearby spawn buckets after compiling a large sparse network', () => {
   const cells = [...Array.from({ length: 10_000 }, (_, i) => ({ x: 10_000 + i * 32, y: 0 })), { x: -1, y: -1 }];

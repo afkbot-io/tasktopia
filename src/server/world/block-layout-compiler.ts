@@ -31,6 +31,9 @@ export type BlockLayoutCompilerInput = {
   /** Trusted coastal allocator; never accepted from a task request. */
   planPort?: (terminal: BlockWorldBounds, blocks: readonly CityBlockV1[]) => PortSitePlan | null;
   canPlaceBlock?: (bounds: BlockWorldBounds) => boolean;
+  /** Trusted immutable public infrastructure. New parcels and doors route
+   * around it; existing block/task geography is never repacked. */
+  publicReservations?: readonly BlockWorldBounds[];
 };
 
 /** A valid plan has no remaining connected, buildable rectangle on its grid. */
@@ -201,9 +204,11 @@ function createBlockFrontierIndex(allBlocks: CityBlockV1[], origin: { x: number;
   } };
 }
 type BlockFrontierIndex = ReturnType<typeof createBlockFrontierIndex>;
+type BlockSiteCandidate = {template:BlockTemplate;origin:{x:number;y:number};separator?:DistrictSeparator};
 
 function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origin: { x: number; y: number }, kind: BlockSlotKind,
-  sequence: number, canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], frontierIndex: BlockFrontierIndex, parkSize?: BlockLayoutTaskInput["parkSize"], requestedFamily?: string, remainingTasks?: number) {
+  sequence: number, canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], frontierIndex: BlockFrontierIndex, parkSize?: BlockLayoutTaskInput["parkSize"], requestedFamily?: string, remainingTasks?: number,
+  canPlanSite?: (site:BlockSiteCandidate)=>boolean) {
   const shapeKey = requestedFamily ? compactBuildingShapeFamily(requestedFamily) : undefined;
   if (requestedFamily && !shapeKey) throw new BlockPlacementError(`Unknown building geometry: ${requestedFamily}`);
   const templates = kind === "BUILDING"
@@ -228,7 +233,7 @@ function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origi
   // manufacture a bridge or make an otherwise valid existing city unusable.
   const separationModes = !ownBlocks.length && allBlocks.length ? [true, false] : [false];
   for (const separated of separationModes) for (const frontier of frontiers) for (const template of templates) {
-    try { return { template, ...nextBlockOrigin(frontier, districtLayoutId, origin, template, canPlace, allBlocks, separated, frontierIndex) }; }
+    try { return { template, ...nextBlockOrigin(frontier, districtLayoutId, origin, template, canPlace, allBlocks, separated, frontierIndex,canPlanSite) }; }
     catch (error) { if (!(error instanceof BlockPlacementError)) throw error; failure = error; }
   }
   throw failure!;
@@ -236,7 +241,8 @@ function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origi
 
 /** Compact edge-adjacent rectangle on the fixed city grid; only actual blocks reserve land. */
 function nextBlockOrigin(frontierBlocks: CityBlockV1[], districtLayoutId: string, origin: { x: number; y: number }, template: BlockTemplate,
-  canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], separated: boolean, frontierIndex: BlockFrontierIndex): { origin: { x: number; y: number }; separator?: DistrictSeparator } {
+  canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], separated: boolean, frontierIndex: BlockFrontierIndex,
+  canPlanSite?: (site:BlockSiteCandidate)=>boolean): { origin: { x: number; y: number }; separator?: DistrictSeparator } {
   const frontier = frontierIndex.candidates(frontierBlocks, template, separated);
   const extent = frontierIndex.extent;
   const separators = readDistrictSeparators(allBlocks);
@@ -274,7 +280,9 @@ function nextBlockOrigin(frontierBlocks: CityBlockV1[], districtLayoutId: string
       const b = candidate.separator.bounds;
       if (!canPlace({ minX: b.minX - 2, minY: b.minY - 2, maxX: b.maxX + 2, maxY: b.maxY + 2 })) continue;
     }
-    return { origin: { x: candidate.x, y: candidate.y }, ...(candidate.separator ? { separator: candidate.separator } : {}) };
+    const site={origin:{x:candidate.x,y:candidate.y},...(candidate.separator?{separator:candidate.separator}:{})};
+    if(canPlanSite&&!canPlanSite({...site,template}))continue;
+    return site;
   }
   throw new BlockPlacementError("No buildable connected rectangle on the selected city frontier");
 }
@@ -492,10 +500,10 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       let selected = preferred() ?? pocketSite();
       if (!selected) {
         const sequence = districtBlocks.reduce((high, block) => Math.max(high, block.sequence), -1) + 1;
-        const site = nextBlockSite(districtBlocks, districtLayoutId,
-          origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, canPlaceBlock, reservedBlocks, frontierIndex, task.parkSize, requestedFamily, input.compactReplay ? remainingTasks : undefined);
-        const template = site.template;
-        const block: CityBlockV1 = { id: deterministicId(`${identity}:district:${district.id}:block:${sequence}`), districtLayoutId, sequence,
+        const prepared:{block?:CityBlockV1}={};
+        const canPlanSite=(site:BlockSiteCandidate)=>{
+          const template=site.template;
+          const block: CityBlockV1 = { id: deterministicId(`${identity}:district:${district.id}:block:${sequence}`), districtLayoutId, sequence,
           kind: template.kind === "BUILDING" ? "RESIDENTIAL" : template.kind === "PARKING" ? "TRANSPORT" : template.kind,
           templateKey: template.key, templateVersion: BLOCK_TEMPLATE_VERSION, variant: "south", seed: input.seed + sequence,
           origin: site.origin,
@@ -506,8 +514,26 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         // A port's coastal allocator chooses its terminal independently; its
         // existing south-centre access does not need a provisional art alias.
         const firstAuthoredFamily = wantsPort ? undefined : requestedFamily;
-        block.parameters.sitePlan = createBlockSitePlan(block, firstAuthoredFamily);
+        const reservedPublic = (input.publicReservations??[]).map(r => ({
+          minX: Math.max(0,r.minX-block.origin.x),minY: Math.max(0,r.minY-block.origin.y),
+          maxX: Math.min(block.width,r.maxX-block.origin.x),maxY: Math.min(block.height,r.maxY-block.origin.y),
+        })).filter(r => r.minX<=r.maxX && r.minY<=r.maxY);
+        if (reservedPublic.length) block.parameters.publicReservations = reservedPublic;
+        try{block.parameters.sitePlan = createBlockSitePlan(block, firstAuthoredFamily);}
+        catch(error){
+          // The terrain/site envelope may fit while an inherited public pad
+          // consumes the smallest template's usable parcel. Keep searching
+          // the connected frontier instead of publishing a failed allocation.
+          if(reservedPublic.length&&error instanceof Error&&/No (?:public )?parcel fits around (?:public )?infrastructure|(?:Invalid|Blocked|Unreachable) planned entrance/.test(error.message))return false;
+          throw error;
+        }
         if (firstAuthoredFamily) block.parameters.slotFamilies = { "slot-0": firstAuthoredFamily };
+        prepared.block=block;return true;
+        };
+        nextBlockSite(districtBlocks, districtLayoutId,
+          origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, canPlaceBlock, reservedBlocks, frontierIndex, task.parkSize, requestedFamily, input.compactReplay ? remainingTasks : undefined,canPlanSite);
+        const block=prepared.block;
+        if(!block)throw new BlockPlacementError('No prepared public-infrastructure site');
         districtBlocks.push(block); reservedBlocks.push(block);
         blockContext.set(block.id, { block, districtId: district.id });
         const slots = blockSlots(block);

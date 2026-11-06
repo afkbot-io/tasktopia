@@ -2,7 +2,7 @@ import type { Cell, ChunkTaskDto, Rect, RoadCellDto } from '../shared/contracts'
 import { BUILDING_CATALOG } from '../shared/catalog';
 import { roadBandRole } from '../shared/road-profile';
 import { cityLifeHash, cityLifeSitesSteps } from './city-life';
-import { completePreparation, stableSortPreparation } from './cooperative-preparation';
+import { completePreparation, stableSortPreparation } from '../shared/cooperative-preparation';
 
 export type EverydayKind = 'SCHOOL' | 'KINDERGARTEN' | 'BUS' | 'MARKET' | 'SPORT' | 'DOG' | 'BIRDS'
   | 'OPEN_SCHOOL' | 'OPEN_KINDERGARTEN' | 'OPEN_SHOP' | 'OPEN_FIRE' | 'OPEN_BUILDING';
@@ -11,6 +11,7 @@ export type EverydayTask = Pick<ChunkTaskDto, 'id' | 'status' | 'stage' | 'servi
 export type EverydaySite = { id: string; taskId?: string; kind: EverydayKind; route: Cell[]; area: Cell[]; targets?: Cell[]; playTargets?: Cell[]; stopId?: string };
 export type TransitStop = { id: string; lane: Cell; shelter: Cell[]; queue: Cell[]; route: Cell[]; direction: 'horizontal' | 'vertical' };
 export type EverydayInput = { tasks: readonly EverydayTask[]; walk: ReadonlyMap<string, Cell>; blocked: Pick<ReadonlySet<string>, 'has'>;
+  transitStops?: readonly import('../shared/city-transit-stops').CanonicalTransitStop[]; transitView?: Rect;
   safeTargets?: ReadonlyMap<string, Cell>;
   roads: ReadonlyMap<string, RoadCellDto>; ground?: Pick<ReadonlyMap<string, Cell>, 'has'>; decorations: readonly unknown[] };
 export type EverydayEpisode = EverydaySite & { start: number; end: number };

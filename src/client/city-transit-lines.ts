@@ -1,6 +1,6 @@
 import type { Cell } from '../shared/contracts';
 import type { TransitStop } from './city-everyday-life';
-import { completePreparation, stableSortPreparation } from './cooperative-preparation';
+import { completePreparation, stableSortPreparation } from '../shared/cooperative-preparation';
 
 export type TransitLine = { id: string; stops: readonly TransitStop[] };
 const distance = (a: Cell, b: Cell) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);

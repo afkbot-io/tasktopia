@@ -223,8 +223,20 @@ export function buildSurfaceMap(input: {
     for (const cell of feature.accessPath) {
       const key = cellKey(cell);
       if (!input.roads.has(key) && !blocked.has(key) && surfaces.get(key)?.kind !== "SIDEWALK") {
-        const kind = feature.kind === "PARK" || feature.kind === "GROVE" ? "PATH" : "DRIVEWAY";
+        const kind = feature.kind === "PARK" || feature.kind === "GROVE" || feature.kind==='BUS_STOP' ? "PATH" : "DRIVEWAY";
         surfaces.set(key, { ...cell, kind, finish: kind === "PATH" ? finish : undefined });
+      }
+    }
+    if (feature.kind==='BUS_STOP' && feature.accessPath.length>=11) {
+      const front = feature.accessPath.slice(0,11), [a,b] = front, dx = b!.x-a!.x, dy = b!.y-a!.y;
+      if (Math.abs(dx)+Math.abs(dy)===1 && front.every((p,i)=>p.x===a!.x+i*dx&&p.y===a!.y+i*dy)) {
+        // A stop is a mid-block curb. Remove the complete local zebra width
+        // beside its queue, even when chunk cropping chose another crossing
+        // phase. Adjacent corners and actual road junctions keep their signals.
+        for (const p of front) for (const across of [1,2,3]) {
+          const road = {x:p.x+dy*across,y:p.y-dx*across}, id = cellKey(road), value = input.roads.get(id);
+          if (value?.roadClass==='LOCAL' && value.structure==='ROAD' && surfaces.get(id)?.kind==='CROSSWALK') surfaces.delete(id);
+        }
       }
     }
   }

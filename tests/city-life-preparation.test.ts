@@ -4,7 +4,7 @@ import * as everyday from '../src/client/city-everyday-controller';
 import { createCityMobility } from '../src/client/city-mobility';
 import type { EverydayInput, EverydayTask } from '../src/client/city-everyday-life';
 import type { CityLifeTask } from '../src/client/city-life';
-import type { CooperativePreparationOptions } from '../src/client/cooperative-preparation';
+import type { CooperativePreparationOptions } from '../src/shared/cooperative-preparation';
 import type { Cell, RoadCellDto } from '../src/shared/contracts';
 import { compileTransitStops, cellKey } from '../src/client/city-everyday-life';
 import { cityLifeHash } from '../src/client/city-life';

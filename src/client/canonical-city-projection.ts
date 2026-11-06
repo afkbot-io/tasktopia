@@ -1,5 +1,5 @@
 import type { ChunkDto, ChunkPayloadDto, ChunkTaskDto } from "../shared/contracts";
-import { yieldPreparationTask } from "./cooperative-preparation";
+import { yieldPreparationTask } from "../shared/cooperative-preparation";
 
 export type CanonicalPhysicalSnapshot = {chunks: readonly ChunkDto[];completed: readonly ChunkTaskDto[]};
 

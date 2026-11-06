@@ -1,5 +1,5 @@
 import type { Cell } from "../shared/contracts";
-import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "./cooperative-preparation";
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
 
 export type MobilityRouteResult = { cells: Cell[]; routeTo(target: Cell): Cell[] };
 export type MobilityRouteSearch = {

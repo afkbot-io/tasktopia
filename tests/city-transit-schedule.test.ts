@@ -1,5 +1,33 @@
 import { expect, it, vi } from 'vitest';
 import { cityTransitGrid } from './fixtures/city-transit-grid';
+import { canonicalTransitStop } from '../src/shared/city-transit-stops';
+import { roadBandRole } from '../src/shared/road-profile';
+
+it('uses the stored manifest, distinguishes ready-empty, and retains an occupied line across a remote neighbourhood refresh', () => {
+  const f = cityTransitGrid();
+  const canonical = f.controller.transitStops.map(stop => {
+    const role = roadBandRole(f.lifeInput.roads,stop.lane);
+    if (role.kind!=='TRAVEL') throw new Error('Fixture must use real travel lanes');
+    return canonicalTransitStop('block',stop.lane,role.dx ? role.dx>0?'E':'W' : role.dy>0?'S':'N');
+  });
+  f.controller.compile({ ...f.lifeInput,transitStops: [] });expect(f.controller.transitStops).toEqual([]);
+  f.controller.compile({ ...f.lifeInput,transitStops: canonical,transitView: f.view });
+  expect(f.controller.transitStops.length).toBe(canonical.length);
+  let now = 42_000;const state = f.controller.update(now,f.view,f.options);
+  const bus = state.transit!;expect(bus.role).toBe('BUS');
+  // A distant viewport has no local line. The real bus already on its route
+  // keeps its own stops and passengers until that route completes.
+  f.controller.compile({ ...f.lifeInput,transitStops: canonical,transitView: { minX: 1000,minY: 1000,maxX: 1100,maxY: 1100 } });
+  expect(f.controller.transitLines).toEqual([]);
+  expect(f.controller.transit?.vehicleId).toBe(bus.vehicleId);
+  for (let step=0; step<4800 && !f.controller.metrics.regularCycles; step++) {
+    now+=50;f.city.advance(50);f.controller.update(now,{ minX:1000,minY:1000,maxX:1100,maxY:1100 },f.options);
+    expect(f.city.metrics.vehicleUnsafeTotal+f.city.metrics.pedestrianUnsafeTotal+f.city.metrics.vehiclePedestrianUnsafeTotal).toBe(0);
+  }
+  expect(f.controller.metrics.regularCycles).toBeGreaterThan(0);
+  expect(f.controller.metrics.boarded).toBeGreaterThan(0);expect(f.controller.metrics.alighted).toBeGreaterThan(0);
+  f.controller.clear();
+});
 
 it('admits a real regular line when the city first opens halfway through a minute', () => {
   const f = cityTransitGrid(), state = f.controller.update(42_000, f.view, f.options);

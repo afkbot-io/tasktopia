@@ -1,6 +1,7 @@
 import { countryAirportReservations } from "./city-airport-site-store";
 import { countryPortReservations } from "./port-reservations";
 import { countryRailwayReservations } from "./city-railway-store";
+import { countryTransitStopReservations } from './city-transit-stop-store';
 import { createHash } from "node:crypto";
 import type { CityBlockV1 } from "../../shared/block-world";
 import type { SemanticRoadNode } from "../../shared/semantic-road";
@@ -51,7 +52,7 @@ export async function synchronizeCountryRoads(db: Db, countryId: string, planner
     const plan = planner({ countryId, seed: Number(country.seed), allowBridges:true,
       terrainProfile: parseWorldTerrainProfile(country.terrain_profile_json),
       cities: developed.map(row => ({ id: row.city_id, nodes: row.nodes_json, blocks: row.blocks })),
-      protectedSites: [...await permanentSiteBounds(db, countryId, true),...await countryRailwayReservations(db,countryId,undefined,"ROAD"),...await countryPortReservations(db,countryId),...await countryAirportReservations(db,countryId,"ROAD")],
+      protectedSites: [...await permanentSiteBounds(db, countryId, true),...await countryRailwayReservations(db,countryId,undefined,"ROAD"),...await countryPortReservations(db,countryId),...await countryAirportReservations(db,countryId,"ROAD"),...await countryTransitStopReservations(db,countryId,'ROAD')],
       ...(previous ? { previous: { countryId, seed: previous.plan.seed, routes: retained! } } : {}),
     });
     const revision = (previous?.revision ?? 0) + 1;

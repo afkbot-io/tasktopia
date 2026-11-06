@@ -1,6 +1,7 @@
 import { BUILDING_PROFILES, buildingProfile } from "./building-profiles";
 import { getBuilding } from "./catalog";
 import { buildingEntranceCell, ENTRANCE_NORMAL } from "./building-access";
+import type { Rect } from './contracts';
 import { BLOCK_SERVICE_ROLES, type BlockServiceRole, type BlockSlotKind, type BlockWorldBounds, type CityBlockV1 } from "./block-world";
 import { COMPACT_BUILDING_SHAPES, STRUCTURAL_BUILDING_FAMILIES, STRUCTURAL_BUILDING_FAMILIES_V2, compactBuildingShapeFamily, compactFamilyMatchesFootprint, type CompactBuildingFamily } from "./compact-building-families";
 import { buildingShapeFitsBlock, packBuildingParcels, readBlockSitePlan, type BlockSitePlan, type PackingCorner, type ParcelShape } from "./block-parcel-plan";
@@ -57,6 +58,8 @@ function choice(seed: number, column: number, row: number): number {
 function connectSidewalks(slots: BlockSlot[], block: CityBlockV1): BlockSlot[] {
   const stride = block.width + 1; const size = stride * (block.height + 1);
   const blocked = new Uint16Array(size);
+  for (const rect of blockPublicReservations(block)) for (let y=rect.minY; y<=rect.maxY; y++)
+    for (let x=rect.minX; x<=rect.maxX; x++) blocked[y*stride+x] = 65535;
   for (const [i, slot] of slots.entries()) for (let y = slot.siteBounds.minY; y <= slot.siteBounds.maxY; y++) {
     for (let x = slot.siteBounds.minX; x <= slot.siteBounds.maxX; x++) blocked[(y - block.origin.y) * stride + x - block.origin.x] = i + 1;
   }
@@ -110,11 +113,22 @@ export function createBlockSitePlan(block: CityBlockV1, firstAuthoredFamily?: st
   const preferred: readonly string[] = profile ? BUILDING_PROFILES[profile].shapes : [];
   const profileShapes = preferred.length ? approvedShapes.filter(shape => preferred.includes(shape.family)
     || shape.family === block.parameters.firstFamily) : approvedShapes;
+  const publicReservations = blockPublicReservations(block);
+  let publicSite: Rect[] = [{ minX: 3,minY: 3,maxX: block.width-3,maxY: block.height-3 }];
+  if (template.kind!=='BUILDING') for (const r of publicReservations) publicSite = publicSite.flatMap(b => {
+    if (r.minX>b.maxX || r.maxX<b.minX || r.minY>b.maxY || r.maxY<b.minY) return [b];
+    const x0 = Math.max(r.minX,b.minX), x1 = Math.min(r.maxX,b.maxX), y0 = Math.max(r.minY,b.minY), y1 = Math.min(r.maxY,b.maxY);
+    return [{ ...b,maxY: y0-1 },{ ...b,minY: y1+1 },{ ...b,minY: y0,maxY: y1,maxX: x0-1 },{ ...b,minY: y0,maxY: y1,minX: x1+1 }]
+      .filter(rect => rect.maxX-rect.minX>=3 && rect.maxY-rect.minY>=3);
+  });
+  publicSite.sort((a,b) => (b.maxX-b.minX+1)*(b.maxY-b.minY+1)-(a.maxX-a.minX+1)*(a.maxY-a.minY+1) || a.minY-b.minY || a.minX-b.minX);
+  const park = publicSite[0];
+  if (!park && template.kind!=='BUILDING') throw new Error('No public parcel fits around infrastructure');
   const initial: BlockSitePlan = { version: 1, parcels: template.kind === "BUILDING"
     ? packBuildingParcels({ width: block.width, height: block.height, seed: block.seed,
       corner: (block.parameters.packingCorner ?? "NW") as PackingCorner, shapes: profileShapes,
-      firstFamily: block.parameters.firstFamily as string | undefined })
-    : [{ x: 3, y: 3, width: block.width - 7, height: block.height - 7, clearance: 1, kind: template.kind }] };
+      firstFamily: block.parameters.firstFamily as string | undefined,publicReservations })
+    : [{ x: park!.minX, y: park!.minY, width: park!.maxX-park!.minX-1, height: park!.maxY-park!.minY-1, clearance: 1, kind: template.kind }] };
   // Protect the actual first entrance before public-space infill consumes the
   // remaining cells. Reserving only the structural shape's south-centre path
   // can seal a requested edge or rear entrance in a narrow new quarter.
@@ -145,6 +159,7 @@ export function createBlockSitePlan(block: CityBlockV1, firstAuthoredFamily?: st
 }
 
 function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[] {
+  const publicReservations = blockPublicReservations(block);
   const template = blockTemplate(block.templateKey);
   if (![2, BLOCK_TEMPLATE_VERSION].includes(block.templateVersion) || block.width !== template.widthModules * BLOCK_MODULE_CELLS
     || block.height !== template.heightModules * BLOCK_MODULE_CELLS) throw new Error(`Invalid block ${block.id}`);
@@ -172,6 +187,8 @@ function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[]
     }
     const sequence = slots.length;
     const origin = { x: block.origin.x + siteX + clearance, y: block.origin.y + siteY + clearance };
+    if (publicReservations.some(r => siteX<=r.maxX && siteX+width+2*clearance-1>=r.minX
+      && siteY<=r.maxY && siteY+height+2*clearance-1>=r.minY)) throw new Error(`Parcel overlaps public infrastructure ${block.id}`);
     const key = `slot-${sequence}`;
     const override = kinds?.[key];
     if (override !== undefined) {
@@ -240,6 +257,7 @@ function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[]
     // every planned house (not only occupied houses) and its route first.
     const stride = block.width + 1;
     const reserved = new Uint8Array(stride * (block.height + 1));
+    for (const r of publicReservations) for (let y=r.minY; y<=r.maxY; y++) for (let x=r.minX; x<=r.maxX; x++) reserved[y*stride+x] = 1;
     const index = (x: number, y: number) => y * stride + x;
     const protect = () => {
       for (const slot of slots) {
@@ -258,7 +276,8 @@ function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[]
       while (y + height <= block.height - 3 && Array.from({ length: width }, (_, dx) => reserved[index(x + dx, y + height)]).every(v => !v)) height++;
       // Keep a south gate corridor when the next row is already a site.
       const gateX = x + Math.floor(width / 2);
-      const blockedGate = slots.some(s => block.origin.x + gateX >= s.siteBounds.minX && block.origin.x + gateX <= s.siteBounds.maxX
+      const blockedGate = publicReservations.some(r => gateX>=r.minX && gateX<=r.maxX && y+height>=r.minY && y+height<=r.maxY)
+        || slots.some(s => block.origin.x + gateX >= s.siteBounds.minX && block.origin.x + gateX <= s.siteBounds.maxX
         && block.origin.y + y + height >= s.siteBounds.minY && block.origin.y + y + height <= s.siteBounds.maxY);
       if (blockedGate) height--;
       // Only new durable plans exclude thin leftovers. Replaying legacy v2
@@ -270,4 +289,15 @@ function materializeSlots(block: CityBlockV1, fillNewPlan: boolean): BlockSlot[]
     }
   }
   return slots;
+}
+
+/** Local coordinates are bounded before allocating or traversing any cells.
+ * This mask belongs to new immutable blocks, never retrofits occupied ones. */
+function blockPublicReservations(block: CityBlockV1): readonly Rect[] {
+  const value = block.parameters.publicReservations;
+  if (value===undefined) return [];
+  if (!Array.isArray(value) || value.length>64) throw new Error('Invalid block public reservations');
+  for (const r of value) if (!r || typeof r!=='object' || ![r.minX,r.minY,r.maxX,r.maxY].every(Number.isSafeInteger)
+    || r.minX<0 || r.minY<0 || r.maxX>block.width || r.maxY>block.height || r.minX>r.maxX || r.minY>r.maxY) throw new Error('Invalid block public reservations');
+  return value;
 }

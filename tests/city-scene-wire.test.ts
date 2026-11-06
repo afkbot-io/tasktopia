@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CitySceneDto } from "../src/shared/city-scene-contract";
 import type { ChunkTaskDto } from "../src/shared/contracts";
 import { acceptsCompactCityScene, CITY_SCENE_COMPACT_ACCEPT, decodeCitySceneWire, encodeCitySceneWire } from "../src/shared/city-scene-wire";
+import { canonicalTransitStop } from '../src/shared/city-transit-stops';
 
 function fixture(): CitySceneDto {
   const task = { id: "task", taskNumber: 1, cityId: "city", districtId: "district", title: "Дом", stage: 5,
@@ -18,6 +19,16 @@ function fixture(): CitySceneDto {
 }
 
 describe("negotiated compact city transport", () => {
+  it('preserves legacy absence and ready-empty stops and rejects malformed manifests in full and compact responses', () => {
+    const scene = fixture();scene.transitStops = [canonicalTransitStop('b',{x:10,y:20},'E')];
+    expect(decodeCitySceneWire(encodeCitySceneWire(scene)).transitStops).toEqual(scene.transitStops);
+    expect(decodeCitySceneWire({ ...scene,transitStops:[] }).transitStops).toEqual([]);
+    for (const value of [scene,encodeCitySceneWire(scene)]) {
+      const malformed = JSON.parse(JSON.stringify(value));malformed.transitStops[0].queue[0].x++;
+      expect(() => decodeCitySceneWire(malformed)).toThrow();
+      malformed.transitStops = null;expect(() => decodeCitySceneWire(malformed)).toThrow();
+    }
+  });
   it("requires an explicit supported encoding and respects a zero or invalid quality", () => {
     expect(acceptsCompactCityScene(CITY_SCENE_COMPACT_ACCEPT)).toBe(true);
     expect(acceptsCompactCityScene(`application/json, ${CITY_SCENE_COMPACT_ACCEPT}; q=0.9`)).toBe(true);

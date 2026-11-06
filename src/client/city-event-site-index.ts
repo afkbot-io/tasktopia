@@ -1,5 +1,5 @@
 import type { Cell, Rect } from '../shared/contracts';
-import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from './cooperative-preparation';
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from '../shared/cooperative-preparation';
 
 export type CityEventSiteIndex<T> = { query: (view: Rect) => { items: T[]; visited: number; buckets: number } };
 export function* cityEventSiteIndexSteps<T>(sites: Iterable<T>, anchor: (site: T) => Cell, identity: (site: T) => string): Generator<void, CityEventSiteIndex<T>, void> {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCityMobility, prepareCityMobilityNetworkAsync } from "../src/client/city-mobility";
 import { buildMobilityNetwork } from "../src/client/city-mobility-network";
 import { prepareRoadEventGeometrySteps } from "../src/client/city-road-event-geometry";
-import { prepareCooperatively } from "../src/client/cooperative-preparation";
+import { prepareCooperatively } from "../src/shared/cooperative-preparation";
 import type { Cell, RoadCellDto } from "../src/shared/contracts";
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;

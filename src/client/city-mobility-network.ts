@@ -1,5 +1,5 @@
 import { createMobilityRouteSearch } from "./mobility-route-search";
-import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from "./cooperative-preparation";
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
 import type { CityParkingPlan } from "./city-parking";
 import type { Cell, RoadCellDto } from "../shared/contracts";
 import { roadBandRole } from "../shared/road-profile";

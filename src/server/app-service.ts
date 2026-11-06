@@ -37,6 +37,7 @@ ASSET_REVISION,
 BUILDING_CATALOG
 } from "../shared/catalog";
 import { CITY_SCENE_SCHEMA_VERSION,type CitySceneDto } from "../shared/city-scene-contract";
+import { cityTransitStopFeatures, countryTransitStopReservations, freezeMissingCountryTransitStops, readCityTransitStopPlan, readCityTransitStopFeatures } from './world/city-transit-stop-store';
 import { transportEndpointFromPlacementRow, readCityAirportConnections } from "./world/city-airport-connections";
 import {
 STATUS_PROGRESS_RANGE,
@@ -547,6 +548,7 @@ export class AppService {
 
   private chunkInvalidationScope(event: RealtimeEvent): "NONE" | "ALL" | Rect {
     if (mapInvalidationImpact(eventInvalidation(event)) === "NONE") return "NONE";
+    if (event.payload.transportTopologyChanged===true || event.payload.groundRoadTopologyChanged===true) return 'ALL';
     const candidate = event.payload.affectedBounds as Partial<Rect> | undefined;
     const hasBounds = candidate
       && [candidate.minX, candidate.minY, candidate.maxX, candidate.maxY].every(Number.isFinite);
@@ -748,6 +750,11 @@ export class AppService {
                                     after: await readCityDevelopmentFacts(this.db, countryId, cityId) ?? null };
                                 }
                                 if(transportBefore && await synchronizeCountryTransportNetworks(this.db,countryId,transportBefore))result.eventPayload.transportTopologyChanged=true;
+                                if (transportMutation || result.eventType==='district.created') {
+                                  const changedStops = await this.db.prepare(`SELECT 1 FROM city_transit_stop_plans_v1 s
+                                    JOIN city_layouts_v1 l ON l.id=s.layout_id WHERE l.country_id=? AND s.updated_at=transaction_timestamp() LIMIT 1`).get(countryId);
+                                  if (changedStops) result.eventPayload.transportTopologyChanged = true;
+                                }
                                 if (["city.created", "city.deleted", "district.created", "district.deleted", "task.created", "task.deleted", "task.transferred", "country.regenerated"].includes(result.eventType)) {
                                   // A newly connected remote city also needs a
                                   // fresh scene. Ordinary task changes must not
@@ -1403,6 +1410,8 @@ export class AppService {
       return plan ? [{ taskId: p.taskId, stage: p.constructionStage, plan }] : [];
     });
     const airports=layout.placements.some(p=>p.serviceRole==="AIRPORT")?(await readCountryAirportSites(this.db,countryId)).get(cityId)??[]:[];
+    const transitStopPlan = await readCityTransitStopPlan(this.db,countryId,layout.id);
+    const transitStops = transitStopPlan?.stops;
     const sceneBounds = ports.flatMap(port => [...port.plan.approach, ...port.plan.pier, ...port.plan.waterPath, port.plan.berth]).reduce((bounds, p) => ({
       minX: Math.min(bounds.minX, p.x - 2), minY: Math.min(bounds.minY, p.y - 2),
       maxX: Math.max(bounds.maxX, p.x + 2), maxY: Math.max(bounds.maxY, p.y + 2),
@@ -1418,6 +1427,7 @@ export class AppService {
     const scopedSnapshot = await this.loadViewportSpatialSnapshot(countryId, viewportBounds, "DETAIL", {
       city,
       layout,
+      transitStopFeatures: transitStopPlan ? cityTransitStopFeatures(transitStopPlan,city.id) : [],
       roads: rasterizeBlockRoads({ schemaVersion: 1, nodes: [], segments: [
         ...roadContext.segments,
         ...intercityRoadRasterNetwork(citySceneIntercityRoads(groundRoadSnapshot?.plan.routes ?? [], cityId, viewportBounds)).segments,
@@ -1475,7 +1485,7 @@ export class AppService {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       cityId,
       bounds: sceneBounds,
-      ports,airports,
+      ports,airports,transitStops,
       airportConnections,
       railway,
       intercityRoads,
@@ -1486,7 +1496,7 @@ export class AppService {
       schemaVersion: CITY_SCENE_SCHEMA_VERSION,
       sceneRevision: stableHash(sceneIdentity),
       city: { id: city.id, name: city.name, center: city.center, bounds: sceneBounds },
-      ports,airports,
+      ports,airports,transitStops,
       lod: "DETAIL",
       chunkSize: CHUNK_SIZE,
       chunks: sceneChunks,
@@ -1639,11 +1649,13 @@ export class AppService {
   }
 
   private async featuresInBounds(countryId: string, bounds: Rect): Promise<WorldFeatureDto[]> {
-    return readPermanentSiteFeatures(this.db,countryId,bounds);
+    const [sites,stops] = await Promise.all([readPermanentSiteFeatures(this.db,countryId,bounds),readCityTransitStopFeatures(this.db,countryId,bounds)]);
+    return [...sites,...stops];
   }
 
   async listWorldFeatures(countryId: string): Promise<WorldFeatureDto[]> {
-    return readPermanentSiteFeatures(this.db,countryId);
+    const [sites,stops] = await Promise.all([readPermanentSiteFeatures(this.db,countryId),readCityTransitStopFeatures(this.db,countryId)]);
+    return [...sites,...stops];
   }
 
 
@@ -2020,11 +2032,12 @@ export class AppService {
   }
   private async nextCityCenter(countryId: string, seed: number, existingCities?: CityDto[], terrainProfile?: BootstrapDto["worldManifest"]["terrainProfile"]): Promise<Cell> {
     await freezeMissingCountryRailways(this.db,countryId);
+    await freezeMissingCountryTransitStops(this.db,countryId);
     const cities = existingCities ?? await this.listCities(countryId);
     if (cities.length >= 100) throw new DomainError("CAPACITY_EXCEEDED", "В стране уже 100 городов. Создайте другую страну для дальнейшего расширения.");
     const historical = await permanentSiteBounds(this.db,countryId,true);
     const roads = intercityRoadCorridors((await readCountryRoads(this.db, countryId))?.plan.routes ?? []);
-    const site = findCompactCitySite(seed, [...cities.map(city => city.bounds),...historical], [...roads,...await countryRailwayReservations(this.db,countryId),...await countryPortReservations(this.db,countryId),...await countryAirportReservations(this.db,countryId)], terrainProfile);
+    const site = findCompactCitySite(seed, [...cities.map(city => city.bounds),...historical], [...roads,...await countryRailwayReservations(this.db,countryId),...await countryPortReservations(this.db,countryId),...await countryAirportReservations(this.db,countryId),...await countryTransitStopReservations(this.db,countryId,'ROAD')], terrainProfile);
     if (site) return site;
     throw new DomainError("PLACEMENT_UNAVAILABLE","Не удалось найти сухую площадку для квартальной сетки города");
   }
@@ -2746,7 +2759,7 @@ export class AppService {
     countryId: string,
     viewportBounds: Rect,
     lod: ChunkLod,
-    scope?: { city: CityDto; roads: RoadCellDto[]; layout: CompiledBlockLayoutV1 },
+    scope?: { city: CityDto; roads: RoadCellDto[]; layout: CompiledBlockLayoutV1; transitStopFeatures: WorldFeatureDto[] },
   ): Promise<ViewportSpatialSnapshot> {
     const surfaceScope = lod === "DETAIL" ? expandRect(viewportBounds, 4) : viewportBounds;
     const [roadRows, districts, cities, tasks, features] = await Promise.all([
@@ -2756,7 +2769,8 @@ export class AppService {
       scope ? this.readDistricts(countryId, scope.city.id, surfaceScope, scope.layout) : this.districtsInBounds(countryId, surfaceScope),
       scope ? Promise.resolve([scope.city]) : lod === "DETAIL" ? this.citiesInBounds(countryId, expandRect(viewportBounds, 96)) : Promise.resolve([]),
       this.tasksInBounds(countryId, surfaceScope, lod === "DETAIL", scope?.city.id),
-      readPermanentSiteFeatures(this.db, countryId, surfaceScope, scope?.city.id),
+      Promise.all([readPermanentSiteFeatures(this.db, countryId, surfaceScope, scope?.city.id),
+        scope ? Promise.resolve(scope.transitStopFeatures) : readCityTransitStopFeatures(this.db,countryId,surfaceScope)]).then(groups => groups.flat()),
     ]);
     const defectSummaryByTask = new Map<string, ChunkDefectSummary>();
     if (lod === "DETAIL" && tasks.length > 0) {

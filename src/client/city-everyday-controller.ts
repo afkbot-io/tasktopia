@@ -4,18 +4,22 @@ import type { CityMobility, CityMobilityAgent } from './city-mobility';
 import { approachRoute, cellKey, compileEverydaySitesSteps, compileTransitStopsSteps, everydayPose, EVERYDAY_WINDOW_MS,
   openingKind, planEverydayEpisode, rainPose, type EverydayEpisode, type EverydayInput, type EverydayPose, type EverydaySite,
   type EverydayTask, type RainPose, type TransitStop } from './city-everyday-life';
-import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from './cooperative-preparation';
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from '../shared/cooperative-preparation';
 import { compileTransitLinesSteps, type TransitLine } from './city-transit-lines';
 import { CityEventDirector, type CityEventLease } from './city-event-director';
 import { cityEventSiteIndexSteps, createCityEventSiteIndex, type CityEventSiteIndex } from './city-event-site-index';
+import { transitStopIndexSteps, type TransitStopIndex } from './city-transit-stop-index';
 
 const everydayPreparation = Symbol('prepared-everyday-sites');
-type EverydayPreparation = { input: EverydayInput; sites: EverydaySite[]; stops: TransitStop[]; lines: TransitLine[]; kinds: string;
+type EverydayPreparation = { input: EverydayInput; sites: EverydaySite[]; stops: TransitStop[]; stopIndex?: TransitStopIndex; lines: TransitLine[]; kinds: string;
   siteIndex: CityEventSiteIndex<EverydaySite>; tasksById: ReadonlyMap<string, EverydayTask> };
 export type PreparedEveryday = { readonly [everydayPreparation]: EverydayPreparation };
 function* prepareEverydaySteps(input: EverydayInput, canDrive: ((from: Cell, to: Cell) => boolean) | undefined): Generator<void, PreparedEveryday, void> {
   const sites = yield* compileEverydaySitesSteps(input);
-  const stops = yield* compileTransitStopsSteps({ ...input, canDrive });
+  const stopIndex = input.transitStops!==undefined ? yield* transitStopIndexSteps(input.transitStops) : undefined;
+  const anchor = input.transitView ? { x: (input.transitView.minX+input.transitView.maxX)/2,y: (input.transitView.minY+input.transitView.maxY)/2 }
+    : input.transitStops?.[0]?.lane ?? { x:0,y:0 };
+  const stops = stopIndex ? stopIndex.nearby(anchor) : yield* compileTransitStopsSteps({ ...input, canDrive });
   const lines = canDrive ? yield* compileTransitLinesSteps(stops, canDrive) : [];
   const kinds = new Set<EverydaySite['kind']>();
   for (const site of sites) { kinds.add(site.kind); yield; }
@@ -23,7 +27,7 @@ function* prepareEverydaySteps(input: EverydayInput, canDrive: ((from: Cell, to:
   const siteIndex = yield* cityEventSiteIndexSteps(sites, site => site.route.at(-1)!, site => site.id);
   const tasksById = new Map<string, EverydayTask>();
   for (const task of input.tasks) { tasksById.set(task.id, task); yield; }
-  return { [everydayPreparation]: { input, sites, stops, lines, kinds: ordered.join(','), siteIndex, tasksById } };
+  return { [everydayPreparation]: { input, sites, stops, stopIndex, lines, kinds: ordered.join(','), siteIndex, tasksById } };
 }
 /** Only canonical sites/curbs are prepared. Actors, visits and reservations are
  * read by the synchronous guarded commit, never captured across an await. */
@@ -33,6 +37,7 @@ export function prepareEverydayAsync(input: EverydayInput, canDrive: ((from: Cel
 }
 
 export type TransitRun = { id: string; vehicleId: string; role: 'BUS' | 'SCHOOL_BUS'; stop: TransitStop; destination?: TransitStop;
+  line?: TransitLine;
   lineId?: string; lineIndex?: number; stopsVisited: number; legStart: number; routeRetryAt: number; stopBoarded: number; recentAlighted: string[];
   school?: { taskId: string; entrance: { x: number; y: number } };
   phase: 'ARRIVE' | 'BOARD' | 'TRAVEL' | 'ALIGHT'; since: number; start: number; boarded: number; alighted: number; arrivedAt?: number };
@@ -44,6 +49,7 @@ export type EverydayState = { pose?: EverydayPose; visitors: readonly CityMobili
 export function createEverydayController(cityId: string, mobility: () => CityMobility | undefined, sound: (cue: 'bell' | 'chirp' | 'whistle') => void,
   director = new CityEventDirector()) {
   let input: EverydayInput | undefined, sites: EverydaySite[] = [], stops: TransitStop[] = [], lines: TransitLine[] = [];
+  let stopIndex: TransitStopIndex | undefined, transitRegion = '', transitPreparation: AbortController | undefined, nextTransitRetry = 0;
   let kinds = '';
   let siteIndex = createCityEventSiteIndex<EverydaySite>([], site => site.route.at(-1)!, site => site.id);
   let tasksById: ReadonlyMap<string, EverydayTask> = new Map();
@@ -73,7 +79,9 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       && cellKey(current.accessPath[0]) === cellKey(school.entrance);
   };
   const rebuildReservations = (enabled: boolean) => {
-    const cells = [...stops.flatMap(stop => stop.shelter), ...(enabled ? active?.area.filter(c => !input?.walk.has(cellKey(c))) ?? [] : [])];
+    // Canonical shelters already belong to the native blocked geometry. Do
+    // not scan every permanent stop during the animation's reservation pass.
+    const cells = [...(stopIndex ? [] : stops.flatMap(stop => stop.shelter)), ...(enabled ? active?.area.filter(c => !input?.walk.has(cellKey(c))) ?? [] : [])];
     const signature = cells.map(cellKey).sort().join(';');
     if (signature !== reservedSignature) { reservedSignature = signature; reservations = new Set(cells.map(cellKey)); }
   };
@@ -92,7 +100,25 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     }
     run = undefined; nextRegularAttempt = lastNow + 8000;
   };
-  const clear = () => { endEpisode(); endTransit(); for (const id of schoolVisits.keys()) mobility()?.clearVisits(id); schoolVisits.clear(); mobility()?.clearVisits(`shelter:${lastRain}`); openings.length = 0; openingAttemptAt = 0; planned = undefined; rebuildReservations(false); };
+  const clear = () => { transitPreparation?.abort();transitPreparation = undefined;transitRegion = '';endEpisode(); endTransit(); for (const id of schoolVisits.keys()) mobility()?.clearVisits(id); schoolVisits.clear(); mobility()?.clearVisits(`shelter:${lastRain}`); openings.length = 0; openingAttemptAt = 0; planned = undefined; rebuildReservations(false); };
+  const refreshLocalTransit = (view: Rect) => {
+    if (!stopIndex || lastNow<nextTransitRetry) return;
+    const center = { x:(view.minX+view.maxX)/2,y:(view.minY+view.maxY)/2 }, region = `${Math.floor(center.x/64)},${Math.floor(center.y/64)}`;
+    if (region===transitRegion) return;
+    transitRegion = region;transitPreparation?.abort();
+    const index = stopIndex, local = index.nearby(center);
+    if (local.length===stops.length && local.every((stop,i) => stop.id===stops[i]!.id)) return;
+    const controller = new AbortController();transitPreparation = controller;
+    const canDrive = mobility()?.canPlanDrive;
+    void prepareCooperatively(compileTransitLinesSteps(local,canDrive??(()=>false)),{ signal:controller.signal }).then(prepared => {
+      if (controller.signal.aborted || stopIndex!==index || transitPreparation!==controller) return;
+      stops = local;lines = prepared;lineCursor = 0;transitPreparation = undefined;
+    }).catch(error => {
+      if (controller.signal.aborted) return;
+      if (transitPreparation===controller) { transitPreparation = undefined;transitRegion = '';nextTransitRetry = lastNow+5000; }
+      lastSkip = `transit-preparation:${error instanceof Error ? error.name : 'failed'}`;
+    });
+  };
   const episodeLease = (episode: EverydayEpisode): CityEventLease => ({ id: episode.id, channel: 'EVERYDAY', priority: episode.kind.startsWith('OPEN_') ? 4 : 2,
       cells: [...episode.route, ...episode.area], actors: [], until: episode.end,
       replayUntil: Math.max(episode.end, (Math.floor(episode.start / EVERYDAY_WINDOW_MS) + 1) * EVERYDAY_WINDOW_MS + 44_000),
@@ -160,7 +186,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       if (!city.dispatchResponse(role, [stop.lane], 30_000, undefined, id)) { city.clearVisits(id); continue; }
       const vehicle = city.agents.find(a => a.response === role && !responders.has(a.id))!;
       run = { id, vehicleId: vehicle.id, role, stop, destination: next, phase: 'ARRIVE', since: now, start: now, boarded: 0, alighted: 0,
-        lineId: line?.id, lineIndex: index, stopsVisited: 0, legStart: now, routeRetryAt: 0, stopBoarded: 0, recentAlighted: [],
+        line, lineId: line?.id, lineIndex: index, stopsVisited: 0, legStart: now, routeRetryAt: 0, stopBoarded: 0, recentAlighted: [],
         school: school?.taskId && anchor ? { taskId: school.taskId, entrance: anchor } : undefined };
       if (line) lineCursor = (lines.indexOf(line) + 1) % lines.length;
       if (role === 'SCHOOL_BUS') metrics.schoolBuses++; else metrics.regularBuses++;
@@ -201,7 +227,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
         if (assigned.length) schoolVisits.set(visit, { ...school, until: now + 60_000 });
       }
       if (now - run.since >= 6000 && !city.agents.some(a => a.carrier === run!.vehicleId)) {
-        const line = lines.find(line => line.id === run!.lineId);
+        const line = run.line;
         if (line) metrics.regularStops++;
         if (line && ++run.stopsVisited < line.stops.length) {
           city.clearVisits(run.id);
@@ -219,14 +245,17 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     const next = prepared[everydayPreparation];
     if (!next) throw new TypeError('Invalid everyday preparation');
     const first = !input;
+    transitPreparation?.abort();transitPreparation = undefined;transitRegion = '';nextTransitRetry = 0;
     input = next.input; sites = next.sites; stops = next.stops; lines = next.lines; kinds = next.kinds; siteIndex = next.siteIndex; tasksById = next.tasksById;
+    stopIndex = next.stopIndex;
     if (lineCursor >= lines.length) lineCursor = 0;
     if (first) window = -1;
     if (active && !validEpisode(active)) { lastSkip = 'invalidated'; endEpisode(); metrics.cancellations++; }
     if (planned && !validEpisode(planned)) planned = undefined;
     for (const [id, school] of schoolVisits) if (!validSchool(school)) { mobility()?.clearVisits(id); schoolVisits.delete(id); }
-    if (run && (run.school && !validSchool(run.school) || run.lineId && !lines.some(line => line.id === run!.lineId)
-      || !stops.some(stop => stop.id === run!.stop.id) || run.destination && !stops.some(stop => stop.id === run!.destination!.id))) endTransit();
+    const retained = (stop: TransitStop) => stopIndex ? stopIndex.byId.has(stop.id) : stops.some(current => current.id===stop.id);
+    if (run && (run.school && !validSchool(run.school) || !retained(run.stop) || run.destination && !retained(run.destination)
+      || run.line?.stops.some(stop => !retained(stop)))) endTransit();
     rebuildReservations(enabledLast);
     return true;
   };
@@ -260,6 +289,7 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     reservedCells: () => reservations,
     get sites() { return sites; },
     get transitStops():readonly TransitStop[] {return stops;},
+    get transitStopCount() { return stopIndex?.size??stops.length; },
     get transitLines():readonly TransitLine[] {return lines;},
     get transit():Readonly<TransitRun>|undefined {return run;},
     get kinds() { return kinds; },
@@ -273,12 +303,13 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
       if (!options.enabled || !city || !input || !Number.isFinite(now)) {
         if (enabledLast) { clear(); window = windowNow; }
         enabledLast = false;
-        return { visitors: [], stops, areaReady: false, rain: { phase: 'DRY', intensity: 0, puddles: 0, id: '' }, sheltered: new Set() };
+        return { visitors: [], stops: stopIndex?.visible(view)??stops, areaReady: false, rain: { phase: 'DRY', intensity: 0, puddles: 0, id: '' }, sheltered: new Set() };
       }
       // Availability may return before this window starts (e.g. an LOD
       // transition). Preserve that future event; never replay a past window.
       if (!enabledLast && now < windowNow * EVERYDAY_WINDOW_MS + 8000) window = -1;
       enabledLast = true;
+      refreshLocalTransit(view);
       for (const [id, school] of schoolVisits) if (now >= school.until) { city.clearVisits(id); schoolVisits.delete(id); }
       for (const actor of city.agents) if (actor.visit?.arrived && schoolVisits.has(actor.visit.id)) {
         const arrival = `${actor.visit.id}:${actor.id}`;
@@ -335,8 +366,9 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
         lastRain = rain.id;
         if (stops[0]) city.dispatchVisit(`shelter:${rain.id}`, stops[0].queue, options.economy ? 2 : 4, 14_000, false);
       }
-      for (const actor of city.agents) if (stops.some(stop => stop.queue.some(c => Math.hypot(actor.position.x - c.x - .5, actor.position.y - c.y - .5) < 1))) sheltered.add(actor.id);
-      return { pose, visitors, areaReady, stops, transit: run && { ...run }, rain, sheltered };
+      for (const actor of city.agents) if (stopIndex ? stopIndex.isSheltered(actor.position)
+        : stops.some(stop => stop.queue.some(c => Math.hypot(actor.position.x - c.x - .5, actor.position.y - c.y - .5) < 1))) sheltered.add(actor.id);
+      return { pose, visitors, areaReady, stops: stopIndex?.visible(view)??stops, transit: run && { ...run }, rain, sheltered };
     },
   };
 }
