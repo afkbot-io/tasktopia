@@ -82,35 +82,54 @@ clockSceneTest('a completed neighbourhood uses real residents through arrival, a
   if(await menu.isVisible()&&await menu.getAttribute('open')!==null){
     if(hasTouch)await menu.locator(':scope > summary').tap();else await menu.locator(':scope > summary').click();
   }
-  // Preserve the12s idle admission bound. A real higher-priority owner can
-  // defer this scene until its bounded30s response and the next retry finish.
-  let deferredByOwner=false;
-  for(let step=0;step<90&&!await world.getAttribute('data-city-life-episode-id');step++){
-    const owners=JSON.parse((await world.getAttribute('data-city-event-owners'))!) as {priority:number}[];
-    deferredByOwner ||= owners.some(owner=>owner.priority>1);
-    if(step===24)expect(deferredByOwner,'Delayed admission needs an observed shared owner').toBe(true);
-    await page.clock.runFor(500);
-  }
-  await expect(world).toHaveAttribute('data-city-life-phase', /^(ARRIVING|ACTIVITY)$/);
-  const plan = JSON.parse((await world.getAttribute('data-city-life-plan'))!) as CityLifePlan;
-  const recipe=cityEventRecipe(plan.recipeId!);
-  expect(recipe?.channel).toBe('NEIGHBOURHOOD');
-  if(!recipe||recipe.channel!=='NEIGHBOURHOOD')throw new Error('A completed native site needs a registered neighbourhood recipe');
-  const canonical = g.tasks.find(task => task.id === plan.taskId)!;expect(canonical.status).toBe('COMPLETED');expect(canonical.stage).toBe(5);
   type Participant = { id: string; position: Cell; visit?: { id: string; arrived: boolean } };
   const people = async () => JSON.parse((await world.getAttribute('data-city-life-actors'))!) as Participant[];
-  const initial = await people();expect(initial.length).toBeGreaterThan(0);
-  for (const actor of initial) expect((await world.getAttribute('data-agent-ids'))!.split(',')).toContain(actor.id);
-  // Deliver every frame; fastForward would skip physical travel and must never
-  // be used to manufacture the evidence of arrival or departure.
-  const approach:unknown[]=[];
-  for (let step = 0; step < 64 && await world.getAttribute('data-city-life-phase') === 'ARRIVING'; step++) {
-    approach.push(await world.evaluate(node=>{const d=(node as HTMLElement).dataset;return{now:d.roadEventServerNow,steps:d.mobilityFixedSteps,
-      phase:d.cityLifePhase,actors:d.cityLifeActors,active:d.animationActive,preparing:d.movementPreparing,cancelled:d.cityLifeCancelled};}));
-    await page.clock.runFor(500);
+  let plan!:CityLifePlan,initial:Participant[]=[];
+  const approach:unknown[]=[],attempts:unknown[]=[],episodeIds=new Set<string>();
+  // A real crossing may safely cancel an appointment at24s. Observe up to
+  // three natural admissions in this same city, without replaying an ID or
+  // treating any cancellation as a positive journey. Keep the whole deadline.
+  for(let attempt=0;attempt<3;attempt++){
+    // Preserve the12s idle admission bound. A real higher-priority owner can
+    // defer this scene until its bounded30s response and the next retry finish.
+    let deferredByOwner=false;
+    for(let step=0;step<90&&!await world.getAttribute('data-city-life-episode-id');step++){
+      const owners=JSON.parse((await world.getAttribute('data-city-event-owners'))!) as {priority:number}[];
+      deferredByOwner ||= owners.some(owner=>owner.priority>1);
+      if(step===24)expect(deferredByOwner,'Delayed admission needs an observed shared owner').toBe(true);
+      await page.clock.runFor(500);
+    }
+    await expect(world).toHaveAttribute('data-city-life-phase', /^(ARRIVING|ACTIVITY)$/);
+    plan=JSON.parse((await world.getAttribute('data-city-life-plan'))!) as CityLifePlan;
+    expect(episodeIds.has(plan.id),'A cancelled episode must not replay').toBe(false);episodeIds.add(plan.id);
+    const canonical=g.tasks.find(task=>task.id===plan.taskId)!;expect(canonical.status).toBe('COMPLETED');expect(canonical.stage).toBe(5);
+    initial=await people();expect(initial.length).toBeGreaterThan(0);
+    for(const actor of initial)expect((await world.getAttribute('data-agent-ids'))!.split(',')).toContain(actor.id);
+    const before=await world.evaluate(node=>{const d=(node as HTMLElement).dataset;return{cancelled:Number(d.cityLifeCancelled),completed:Number(d.cityLifeCompleted),steps:Number(d.mobilityFixedSteps)};});
+    // Deliver every frame; fastForward cannot manufacture physical travel.
+    for(let step=0;step<64&&await world.getAttribute('data-city-life-episode-id')===plan.id&&await world.getAttribute('data-city-life-phase')==='ARRIVING';step++){
+      approach.push(await world.evaluate(node=>{const d=(node as HTMLElement).dataset;return{now:d.roadEventServerNow,steps:d.mobilityFixedSteps,
+        phase:d.cityLifePhase,actors:d.cityLifeActors,active:d.animationActive,preparing:d.movementPreparing,cancelled:d.cityLifeCancelled};}));
+      await page.clock.runFor(500);
+    }
+    const current=await world.evaluate(node=>({...((node as HTMLElement).dataset)}));
+    attempts.push({plan,initial,before,current});
+    await writeFile(info.outputPath('physical-attempts.json'),JSON.stringify(attempts,null,2));
+    if(current.cityLifeEpisodeId===plan.id)break;
+    expect(Number(current.cityLifeCancelled)).toBeGreaterThan(before.cancelled);
+    expect(Number(current.cityLifeCompleted)).toBe(before.completed);
+    expect(Number(current.mobilityFixedSteps)).toBeGreaterThan(before.steps);
+    expect(current.animationActive).toBe('true');expect(current.movementPreparing).toBe('false');
+    for(const metric of ['mobilityVehicleUnsafeTotal','mobilityPedestrianUnsafeTotal','mobilityVehiclePedestrianUnsafeTotal','wrongWayCars','walkerOffPath'])expect(current[metric]).toBe('0');
+    await page.clock.runFor(250);
+    const owners=JSON.parse(await world.getAttribute('data-city-event-owners')??'[]') as {id:string}[];
+    expect(owners.some(owner=>owner.id===plan.id)).toBe(false);
   }
   const approachPath=info.outputPath('physical-approach.json');await writeFile(approachPath,JSON.stringify(approach,null,2));
   await info.attach('physical-approach',{path:approachPath,contentType:'application/json'});
+  const recipe=cityEventRecipe(plan.recipeId!);
+  expect(recipe?.channel).toBe('NEIGHBOURHOOD');
+  if(!recipe||recipe.channel!=='NEIGHBOURHOOD')throw new Error('A completed native site needs a registered neighbourhood recipe');
   await expect(world).toHaveAttribute('data-city-life-episode-id', plan.id);
   await expect(world).toHaveAttribute('data-city-life-phase', 'ACTIVITY');
   const arrived = await people();expect(arrived.map(actor => actor.id)).toEqual(initial.map(actor => actor.id));

@@ -414,9 +414,9 @@ async function setSceneLife(page: Page, on: boolean) {
 type EverydaySample={kind:string;phase:string;areaReady:boolean;arrivals:number;animals:number;fetched:boolean;scattered:boolean;serverNow:number};
 type EverydayObservedNode=HTMLElement&{__qaEveryday?:{arrivals:number;animals:number;fetched:boolean;scattered:boolean;
   activityArrivals:boolean;eligibleActivity:boolean;assetsUnavailable:boolean;invalidTelemetry:boolean;truncated:boolean;samples:EverydaySample[];observer:MutationObserver;
-  episodeId?:string;ended?:{episodeId:string;serverNow:number;nextEpisodeId:string}}};
-async function observeEveryday(host:Locator,taskId:string){
-  await host.evaluate((el,taskId)=>{
+  taskId?:string;episodeId?:string;ended?:{episodeId:string;serverNow:number;nextEpisodeId:string}}};
+async function observeEveryday(host:Locator,scheduledStartMs:number){
+  await host.evaluate((el,scheduledStartMs)=>{
     const node=el as EverydayObservedNode;node.__qaEveryday?.observer.disconnect();
     let signature='';
     const read=()=>{const d=node.dataset,record=node.__qaEveryday!;
@@ -424,7 +424,11 @@ async function observeEveryday(host:Locator,taskId:string){
       if(record.episodeId&&d.everydayEpisodeId!==record.episodeId){
         record.ended??={episodeId:record.episodeId,serverNow:Number(d.roadEventServerNow),nextEpisodeId:d.everydayEpisodeId??''};return;
       }
-      if(d.everydayTask!==taskId||!d.everydayEvent)return;
+      // Panning changes the local candidate set. Bind the actual admission,
+      // not the earlier camera's planned task, and retain only that episode.
+      const now=Number(d.roadEventServerNow);
+      if(!d.everydayTask||!d.everydayEvent||now<scheduledStartMs||now>=scheduledStartMs+44_000)return;
+      record.taskId??=d.everydayTask;
       record.episodeId??=d.everydayEpisodeId;
       record.invalidTelemetry||=!['true','false'].includes(d.everydayAreaReady??'')
         ||!Number.isFinite(Number(d.everydayArrived))||!Number.isFinite(Number(d.everydayAnimals));
@@ -442,8 +446,8 @@ async function observeEveryday(host:Locator,taskId:string){
     node.__qaEveryday={arrivals:0,animals:0,fetched:false,scattered:false,activityArrivals:false,eligibleActivity:false,assetsUnavailable:false,invalidTelemetry:false,truncated:false,samples:[],observer};
     observer.observe(node,{attributes:true,attributeFilter:['data-everyday-event','data-everyday-episode-id','data-everyday-task','data-everyday-phase','data-everyday-area-ready','data-everyday-arrived','data-everyday-animals','data-dog-carrying','data-birds-scattered','data-ambient-assets']});
     read();
-  },taskId);
-  return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered,
+  },scheduledStartMs);
+  return ()=>host.evaluate(el=>{const r=(el as EverydayObservedNode).__qaEveryday!;return {taskId:r.taskId,episodeId:r.episodeId,arrivals:r.arrivals,animals:r.animals,fetched:r.fetched,scattered:r.scattered,
     activityArrivals:r.activityArrivals,eligibleActivity:r.eligibleActivity,assetsUnavailable:r.assetsUnavailable,invalidTelemetry:r.invalidTelemetry,truncated:r.truncated,samples:r.samples,ended:r.ended};});
 }
 
@@ -505,14 +509,17 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
         await writeFile(info.outputPath('everyday-unavailable-slots.json'),JSON.stringify(unavailable,null,2));
         await setSceneLife(page,false);continue;
       }
-      const id = preparation.everydayPlannedTask, task = f.tasks.find(t => t.id === id);
-      expect(task, `No planned task ${id}`).toBeTruthy(); await f.panFocus(task!, true, { settlePausedBefore: start });
-      const observed=await observeEveryday(f.host,id!);
+      const plannedId = preparation.everydayPlannedTask, task = f.tasks.find(t => t.id === plannedId);
+      expect(task, `No planned task ${plannedId}`).toBeTruthy(); await f.panFocus(task!, true, { settlePausedBefore: start });
+      const observed=await observeEveryday(f.host,start);
       await seek(page, f.host, start + 350); await page.clock.runFor(1000);
       const kind = await f.host.getAttribute('data-everyday-event');
       if (!kind) await writeFile(info.outputPath('missing-scene.json'), JSON.stringify({ start, task, data: await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset })) }, null, 2));
       expect(kind).toBeTruthy();
       const initial = await safe(f.host), visitors = Number(initial.everydayVisitors);
+      const admission=await observed(),id=initial.everydayTask;
+      expect(f.tasks.some(task=>task.id===id&&task.stage===5)).toBe(true);
+      expect(admission.taskId).toBe(id);expect(admission.episodeId).toBe(initial.everydayEpisodeId);
       // A calendar slot can choose a campus without reachable idle children.
       // Try a later real slot, as the school-bus test does; each of the six
       // kinds still must complete with actual visitors and physical arrivals.
@@ -528,9 +535,11 @@ clockSceneTest('six everyday scenes use actual residents and approaches', async 
       // a real arrival near the end of the 34-second approach/activity period.
       for (let i = 0; i < 20; i++) {
         await page.clock.runFor(2000); const state = await safe(f.host);
-        arrivals = Math.max(arrivals, Number(state.everydayArrived));
-        animals = Math.max(animals, Number(state.everydayAnimals));
-        fetched ||= state.dogCarrying === 'true'; scattered ||= state.birdsScattered === 'true';
+        if(state.everydayEpisodeId===initial.everydayEpisodeId){
+          arrivals = Math.max(arrivals, Number(state.everydayArrived));
+          animals = Math.max(animals, Number(state.everydayAnimals));
+          fetched ||= state.dogCarrying === 'true'; scattered ||= state.birdsScattered === 'true';
+        }
         if (i === 8) await page.screenshot({ path: info.outputPath(`everyday-${kind!.toLowerCase()}.png`) });
       }
       // Complete the real physical steps only until the published event end.
