@@ -2,9 +2,10 @@ import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 import { everydayFixture } from './everyday-city-fixture';
 
-// Match the mobility benchmark: avoid continuous WebGL readback while timing
-// native frames. Keep DOM/call/source traces and the failure screenshot.
-test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: true, sources: true } });
+// Avoid continuous WebGL readback and DOM snapshot work while timing native
+// frames. Keep call/source traces, explicit DOM samples and the failure
+// screenshot; full DOM snapshots add observation work to the timed workload.
+test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 
 test('everyday real-clock paired CPU and retained heap stay bounded after lifecycle changes', async ({ page, browserName }, info) => {
   test.skip(browserName !== 'chromium', 'CDP heap measurement requires Chromium'); test.setTimeout(120000);
@@ -25,6 +26,7 @@ test('everyday real-clock paired CPU and retained heap stay bounded after lifecy
           everydayPreparationWallMs: Number(d.everydayPlanningMs), everydayPlanningMode: d.everydayPlanningMode,
           cars: Number(d.cars), walkers: Number(d.walkers), stops: Number(d.transitStops), visitors: Number(d.everydayVisitors) };
       }, label));
+      await writeFile(info.outputPath('everyday-performance-progress.json'), JSON.stringify({ samples }, null, 2));
     };
     await enabled.uncheck();
     // Populate the real 120-frame CPU ring before paired sampling. A hosted
@@ -45,6 +47,8 @@ test('everyday real-clock paired CPU and retained heap stay bounded after lifecy
     }
     await sample('after eight motion cancellation cycles');
     await cdp.send('HeapProfiler.collectGarbage'); const after = await cdp.send('Runtime.getHeapUsage');
+    await writeFile(info.outputPath('everyday-performance-progress.json'), JSON.stringify({ samples, before, after,
+      heapGrowth: after.usedSize - before.usedSize, rendererRead: 'pending' }, null, 2));
     const renderer = await page.locator('.world-canvas canvas').evaluate(el => { const gl = (el as HTMLCanvasElement).getContext('webgl2');
       const ext = gl?.getExtension('WEBGL_debug_renderer_info'); return ext ? gl!.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'unavailable'; });
     const report = { workload: 'Изолированный город: шесть школ/садиков, два парка, пять объектов стадии4; общая mobility, реальное время без page.clock. Парные3×2.5s окна off/on, одно открытие через MCP/WS, восемь отмен reduced-motion.',

@@ -81,9 +81,7 @@ export async function everydayFixture(page: Page) {
   const panFocus = async (task: TaskDto, pausedClock = false, options?: { settlePausedBefore?: number; center?: boolean }) => {
     // Bounded public camera diagnostics; no renderer or clock mutation.
     const cameraDiagnostic: Array<Record<string, unknown>> = [];
-    let diagnosticTruncated = false;
-    const captureCameraDiagnostic = async (phase: string, drag?: number) => {
-      if (cameraDiagnostic.length >= 28) { diagnosticTruncated = true; return; }
+    const captureCameraDiagnostic = async (phase: string) => {
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
         const sample = await Promise.race([
@@ -95,9 +93,9 @@ export async function everydayFixture(page: Page) {
           }, ["citySceneCommit", "cityFirstFrameRendered", "cityCriticalGroundReady", "cityCriticalGroundCount", "cityHaloGroundPending", "mobilityReady", "ambientAssets", "loading", "loadError", "chunkRange", "mapLod", "skippedReconciles", "cameraPresentationPending", "cameraPresentationCommits", "cameraWorldX", "cameraWorldY", "renderScale", "groundCache", "groundBakeQueue", "interactiveGroundBakeFrames", "cameraPaddingChunks", "cameraPaddingTargetUnbaked", "cameraPaddingVisibleUnbaked", "cameraPaddingVisibleUntextured", "cameraPaddingTerrainPending", "cameraPaddingTreePending", "cameraPaddingRoadPending", "cameraPaddingNativeDeferred", "cameraPaddingBakes", "movementPreparing", "movementPreparationCommits", "movementRebuilds", "movementPrepareMs", "movementCommitMs", "mobilityNetworkBuilds", "canonicalSnapshotPending", "canonicalTaskCount", "taskBuildingViews", "entityReadyPublishes", "entityReplacements", "citySceneRevision"]),
           new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Diagnostic public read exceeded1000ms')), 1000); }),
         ]);
-        cameraDiagnostic.push({ phase, drag: drag ?? null, ...sample });
+        cameraDiagnostic.push({ phase, ...sample });
       } catch (error) {
-        cameraDiagnostic.push({ phase, drag: drag ?? null, unavailable: String(error).slice(0, 400) });
+        cameraDiagnostic.push({ phase, unavailable: String(error).slice(0, 400) });
       } finally { if (timer) clearTimeout(timer); }
     };
     await captureCameraDiagnostic('before-pan');
@@ -128,13 +126,12 @@ export async function everydayFixture(page: Page) {
     // Accumulate the intended delta. With paused RAF the renderer deliberately
     // retains its old presented pose until terrain for the pending pose is ready.
     for (let index = 0; index < drags; index++) {
-      await captureCameraDiagnostic('before-drag', index);
       await page.mouse.move(start.x, start.y); await page.mouse.down();
-      // Four real pointer moves preserve the gesture and its exact endpoint.
-      // Twelve synchronously rendered intermediate moves spent most of a
-      // real-time opening test's deadline on a hosted software GPU.
-      await page.mouse.move(start.x + dx / drags, start.y + dy / drags, { steps: 4 }); await page.mouse.up();
-      await captureCameraDiagnostic('after-drag', index);
+      // One native pointer move preserves this gesture's exact endpoint.
+      // Intermediate moves and per-drag diagnostic RPCs consumed the120s
+      // lifecycle deadline on a hosted software renderer. Camera/visibility
+      // assertions and the bounded number of real gestures remain unchanged.
+      await page.mouse.move(start.x + dx / drags, start.y + dy / drags); await page.mouse.up();
     }
     // Preserve the original controlled preparation horizon, including when
     // the target was already visible. Never await a paused RAF before this.
@@ -189,7 +186,7 @@ export async function everydayFixture(page: Page) {
       // Attachment failure must not replace the original readiness failure.
       await test.info().attach('camera-presentation-diagnostic', { body: JSON.stringify({ taskId: task.id,
         taskNumber: task.taskNumber, pausedClock, target: task.siteBounds ?? task.footprint,
-        samples: cameraDiagnostic, truncated: diagnosticTruncated, maximumSamples: 28,
+        samples: cameraDiagnostic, maximumSamples: 2,
         publicReadTimeoutMs: 1000, limitation: 'Extra read RPCs affect timing; this is diagnostic, not performance qualification.' }),
         contentType: 'application/json' }).catch(() => {});
     }

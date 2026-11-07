@@ -338,16 +338,18 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
           if(Number(state.roadEventServerNow)>=startedAt+31_000)break;
         }
         expect(Number(await f.host.getAttribute('data-road-event-server-now'))).toBeGreaterThanOrEqual(startedAt+31_000);
-        if (!arrived) {
+        if (!arrived || kind === 'BREAKDOWN' && !loaded) {
           // Dispatch admits a directed route, not a guaranteed travel time
           // through live traffic. A fully observed safe expiry is a negative
-          // attempt; still require a genuine arrival within these bounded target attempts.
+          // attempt. A tow truck arriving in CLEAR may also lack its required
+          // four physical loading seconds. Neither partial case is a success;
+          // still require arrival AND loading within the bounded target attempts.
           const expired = await safe(f.host);
           expect(phases).toEqual(new Set(['ARRIVE', 'WORK', 'CLEAR']));
           expect(expired.roadEvent).toBe(''); expect(expired.roadClosedCells).toBe('0');
           expect(expired.roadResponders).toBe('0');
           expect(Number(expired.mobilityFixedSteps) - Number(admitted.mobilityFixedSteps)).toBeGreaterThanOrEqual(500);
-          evidence.push({ kind, arrived: false, loaded, reason: 'expired-before-arrival', admitted, expired });
+          evidence.push({ kind, arrived, loaded, reason: arrived ? 'expired-before-loading' : 'expired-before-arrival', admitted, expired });
           await writeFile(info.outputPath('road-service-arrivals.json'), JSON.stringify(evidence, null, 2));
           continue;
         }
