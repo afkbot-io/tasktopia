@@ -67,6 +67,12 @@ async function attachCinematicCapture(host:Locator,info:TestInfo,name:string,fra
  finally{if(timer)clearTimeout(timer);}
 }
 
+async function expectConstructionWork(frames: () => Promise<CineSample[]>, taskId: string, fromStage: number, toStage: number) {
+ await expect.poll(async () => (await frames()).flatMap(frame => frame.states).find(state =>
+  state.taskId === taskId && state.kind === 'CONSTRUCT' && state.phase === 'WORK'))
+  .toMatchObject({taskId,kind:'CONSTRUCT',phase:'WORK',fromStage,toStage,oldVisible:true,targetVisible:false});
+}
+
 test('реальные MCP комментарии и документы оживляют вход без чтения сцены, серия объединяется, стадия сохраняет дымок', async ({ page }, info) => {
  test.setTimeout(120000); await page.setViewportSize({width:1440,height:1000}); const f=await fixture(page,true);
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
@@ -80,6 +86,14 @@ test('реальные MCP комментарии и документы ожив
   const attemptComment=async()=>{
    await f.focus(f.task);
    await page.locator('.world-menu > summary').click();const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+   // This is the steady interactive CPU gate. Initial preparation is covered
+   // separately; begin MCP work after a full native timing window and prewarm.
+   // Keep NORMAL, DPR, native clocks, the8ms budget and the120s whole-test cap.
+   await expect.poll(()=>f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return {
+    samples:Number(d.livingWorldFrameSamples),terrainPending:Number(d.cameraPaddingTerrainPending),
+    treePending:Number(d.cameraPaddingTreePending),targetUnbaked:Number(d.cameraPaddingTargetUnbaked),
+    preparing:d.movementPreparing,quality:d.worldQuality,
+   };}),{timeout:30000}).toMatchObject({samples:120,terrainPending:0,treePending:0,targetUnbaked:0,preparing:'false',quality:'NORMAL'});
    await f.host.evaluate(el=>{
     const node=el as ActivityNode,records:NonNullable<ActivityNode['__qaActivity']>['records']=[];
     const read=()=>{
@@ -185,12 +199,14 @@ test('реальные MCP комментарии и документы ожив
    admissionEvidence.expiredWithoutReplay=true;
   }
   expect(reads.slice(baseline)).toEqual([]);
+  const construction=await observeCinematics(f.host);
   await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});
   await f.call('task.add_comment',{taskId:f.task.id,body:'Комментарий во время стройки'});
   await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT',phase:'SIGNAL',visitors:0})]));
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);
+  await expectConstructionWork(construction.frames,f.task.id,1,2);
   await page.screenshot({path:info.outputPath('status-work-smoke.png')});
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:10000});
+  await attachCinematicCapture(f.host,info,'status-observed-frames',construction.frames);
   for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total','data-wrong-way-cars','data-walker-off-path'])await expect(f.host).toHaveAttribute(metric,'0');
   const cpu=await f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return {
    p95:Number(d.livingWorldFrameCpuP95Ms),max:Number(d.livingWorldFrameCpuMaxMs),samples:Number(d.livingWorldFrameSamples),
@@ -201,7 +217,7 @@ test('реальные MCP комментарии и документы ожив
   };});
   // Preserve the actual measured workload even when the unchanged budget fails.
   await info.attach('feedback-frame-cpu',{body:JSON.stringify({...cpu,activityBranch:admissionEvidence.branch}),contentType:'application/json'});
-  expect(cpu.p95).toBeLessThanOrEqual(8);
+  expect(cpu.samples).toBe(120);expect(cpu.p95).toBeLessThanOrEqual(8);
   expect(errors).toEqual([]);
  } catch (error) {
   await captureOwnedCityFailure(info, f.service, f.user.countryId, f.city.id); throw error;
@@ -299,7 +315,10 @@ test('MCP/WebSocket keeps the old building through all stages, delivers a helico
 test('delayed artwork, rapid stage coalescing, rollback, map departure and reduced motion keep the latest state',async({page},info)=>{
  test.setTimeout(120000);const f=await fixture(page);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  try{
-  await f.focus(f.task);await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  await f.focus(f.task);const observed=await observeCinematics(f.host);
+  await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});await expectConstructionWork(observed.frames,f.task.id,1,2);
+  await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  await observed.clear();
   let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});let blocked=false;
   await page.route('**/stage-3.png',async route=>{blocked=true;await gate;await route.continue();});
   await f.call('task.set_status',{taskId:f.task.id,status:'IN_PROGRESS',progress:40});
@@ -308,12 +327,14 @@ test('delayed artwork, rapid stage coalescing, rollback, map departure and reduc
   expect(JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0]).toMatchObject({fromStage:2,toStage:3,oldVisible:true,targetVisible:false});
   await page.screenshot({path:info.outputPath('delayed-art-cover.png')});release();await page.unrouteAll({behavior:'wait'});
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  await attachCinematicCapture(f.host,info,'delayed-art-observed-frames',observed.frames);await observed.clear();
   await f.call('task.set_status',{taskId:f.task.id,status:'TESTING'});
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  await expectConstructionWork(observed.frames,f.task.id,3,4);await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  await attachCinematicCapture(f.host,info,'testing-observed-frames',observed.frames);await observed.clear();
   await f.call('task.set_status',{taskId:f.task.id,status:'IN_PROGRESS',progress:40,comment:'Возврат из тестирования после замечания QA'});
-  await expect(f.host).toHaveAttribute('data-cinematic-phases',new RegExp(`${f.task.id}:CONSTRUCT:WORK`));
-  expect(JSON.parse((await f.host.getAttribute('data-cinematic-state'))!)[0]).toMatchObject({fromStage:4,toStage:3,oldVisible:true,targetVisible:false});
+  await expectConstructionWork(observed.frames,f.task.id,4,3);
   await expect(f.host).toHaveAttribute('data-city-cinematics','0',{timeout:9000});
+  await attachCinematicCapture(f.host,info,'rollback-observed-frames',observed.frames);
   const fresh=f.tasks.find(t=>t.id!==f.task.id&&t.stage===1&&t.visualKind==='BUILDING'&&!['AIRPORT','PORT','RAILWAY'].includes(t.serviceRole??''))!;
   expect(fresh).toBeTruthy();await f.focus(fresh);
   for(const [status,progress] of [['STARTED',undefined],['IN_PROGRESS',60],['TESTING',undefined]] as const)

@@ -15,6 +15,42 @@ function fixture(costs: number[]) {
 }
 
 describe("initial atomic CITY ground frame budget", () => {
+  it("keeps invisible work queued while physics prepares and admits a newly visible job immediately", () => {
+    let preparing = true, visible = false;
+    const results: string[] = [];
+    const work = (name: string, runnable?: () => boolean): GroundBakeWork<string> => ({
+      valid: () => true, runnable, task: () => name,
+      resolve: value => { if (value) results.push(value); }, reject: error => { throw error; },
+    });
+    const queue = [
+      { ...work("halo", () => visible || !preparing), priority: () => 0 },
+      { ...work("visible"), priority: () => 1 },
+    ];
+    expect(drainGroundBakeFrame(queue, false, () => 0).completed).toBe(1);
+    expect(results).toEqual(["visible"]);
+    expect(queue).toHaveLength(1);
+    expect(drainGroundBakeFrame(queue, false, () => 0)).toEqual({ completed: 0, elapsedMs: 0 });
+    visible = true;
+    drainGroundBakeFrame(queue, false, () => 0);
+    expect(results).toEqual(["visible", "halo"]);
+    visible = false;
+    queue.push({ ...work("later", () => !preparing), priority: () => 0 });
+    preparing = false;
+    drainGroundBakeFrame(queue, false, () => 0);
+    expect(results.at(-1)).toBe("later");
+    expect(queue).toEqual([]);
+  });
+  it("releases cancelled held work without drawing or reading a disposed eligibility predicate", () => {
+    const task = vi.fn(() => 1), resolve = vi.fn();
+    const queue: GroundBakeWork<number>[] = [{
+      valid: () => false, runnable: () => { throw new Error("disposed owner"); },
+      task, resolve, reject: error => { throw error; },
+    }];
+    drainGroundBakeFrame(queue, false, () => 0);
+    expect(task).not.toHaveBeenCalled();
+    expect(resolve).toHaveBeenCalledWith(undefined);
+    expect(queue).toEqual([]);
+  });
   it("completes newly ready visible material before queued halo captures, with one interactive job per frame", () => {
     const result: string[] = [];
     const queue: Array<GroundBakeWork<string> & { priority: () => number }> = [];

@@ -2845,11 +2845,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         });
       };
       const scheduleGroundBake = <T,>(requestKey: string, valid: () => boolean, task: () => T,
-        priority?: () => number): Promise<T | undefined> => {
+        priority?: () => number, runnable?: () => boolean): Promise<T | undefined> => {
         const pending = pendingGroundBakes.get(requestKey);
         if (pending) return pending as Promise<T | undefined>;
         const promise = new Promise<T | undefined>((resolve, reject) => {
-          groundBakeQueue.push({ key: requestKey, valid, task, priority, resolve: value => resolve(value as T | undefined), reject });
+          groundBakeQueue.push({ key: requestKey, valid, task, priority, runnable, resolve: value => resolve(value as T | undefined), reject });
           host.dataset.groundBakeQueueMax = String(Math.max(
             Number(host.dataset.groundBakeQueueMax ?? 0),
             groundBakeQueue.length,
@@ -2964,6 +2964,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         paddingWork.set(work, id);
         void work.then(() => paddingWork.delete(work), () => paddingWork.delete(work));
       };
+      // Offscreen prewarming shares the main thread with physical preparation.
+      // A pan promotes work immediately; visible terrain never waits for physics.
+      const paddingBakeRunnable = (id: string) => () => visiblePaddingKeys.has(id) || !cityScene || !movementPreparation.busy;
       const ensurePaddingTerrain = (id: string, record: PaddingGround, x: number, y: number) => {
         if (!cityTerrainPadding || record.terrainView || record.terrainPending || record.terrainFailed) return;
         const provider = cityTerrainPadding;
@@ -2976,7 +2979,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           const material = provider.get(x, y);
           host.dataset.cameraPaddingSampleMaxMs = Math.max(Number(host.dataset.cameraPaddingSampleMaxMs ?? 0), performance.now() - sampledAt).toFixed(2);
           return material;
-        }, () => mapPaddingWorkPriority("terrain-sample", visiblePaddingKeys.has(id))).then(async material => {
+        }, () => mapPaddingWorkPriority("terrain-sample", visiblePaddingKeys.has(id)), paddingBakeRunnable(id)).then(async material => {
           if (!material || !valid()) return;
           await assetLease.load(requiredGroundAssets([material.chunk], "DETAIL"), loadTextureAssets);
           if (!valid()) return;
@@ -2987,7 +2990,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
               host.dataset.cameraPaddingBakeMaxMs = Math.max(Number(host.dataset.cameraPaddingBakeMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
               host.dataset.cameraPaddingBakes = String(Number(host.dataset.cameraPaddingBakes ?? 0) + 1);
               return { terrainView };
-            }, () => mapPaddingWorkPriority("terrain-bake", visiblePaddingKeys.has(id)));
+            }, () => mapPaddingWorkPriority("terrain-bake", visiblePaddingKeys.has(id)), paddingBakeRunnable(id));
           if (!prepared?.terrainView) return;
           if (!valid()) { destroyGroundView(prepared.terrainView); return; }
           record.terrainView = prepared.terrainView;
@@ -3016,7 +3019,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           const trees = provider.get(x, y);
           host.dataset.cameraPaddingTreeSampleMaxMs = Math.max(Number(host.dataset.cameraPaddingTreeSampleMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
           return trees;
-        }, () => mapPaddingWorkPriority("tree-sample", visiblePaddingKeys.has(id))).then(async trees => {
+        }, () => mapPaddingWorkPriority("tree-sample", visiblePaddingKeys.has(id)), paddingBakeRunnable(id)).then(async trees => {
           if (!trees || !valid()) return;
           record.trees = trees;
           if (!trees.length) { record.treeViews = []; record.treeComplete = true; return; }
@@ -3052,7 +3055,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             for (const band of bands) band.children.sort((left, right) => left.x - right.x);
             record.treeViews = views; record.treeComplete = true; sortWorldObjects();
             host.dataset.cameraPaddingTreeCreateMaxMs = Math.max(Number(host.dataset.cameraPaddingTreeCreateMaxMs ?? 0), performance.now() - startedAt).toFixed(2);
-          }, () => mapPaddingWorkPriority("tree-create", visiblePaddingKeys.has(id)));
+          }, () => mapPaddingWorkPriority("tree-create", visiblePaddingKeys.has(id)), paddingBakeRunnable(id));
         }).catch(() => {
           if (!valid()) return;
           record.treeComplete = true; record.treeFailed = true; host.dataset.loadError = "true";
@@ -3073,7 +3076,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         const work = scheduleGroundBake(`padding:${++nextPaddingBakeId}:${cityScene!.sceneRevision}:${id}`, valid, () => ({
           overlayView: createInfrastructureOverlayView({ chunkX: x, chunkY: y, size: chunkSize,
             roads: roads.roads, surfaces: roads.surfaces }, "DETAIL", roads),
-        }), () => mapPaddingWorkPriority("road-bake", visiblePaddingKeys.has(id))).then(prepared => {
+        }), () => mapPaddingWorkPriority("road-bake", visiblePaddingKeys.has(id)), paddingBakeRunnable(id)).then(prepared => {
           if (!prepared?.overlayView) return;
           if (!valid()) { destroyGroundView(prepared.overlayView); return; }
           record.overlayView = prepared.overlayView;

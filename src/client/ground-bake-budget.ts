@@ -4,6 +4,8 @@ export const INITIAL_GROUND_BAKE_JOB_LIMIT = 3;
 export type GroundBakeWork<T> = {
   /** Lower values run first; equal priorities keep FIFO. May reflect a moved camera. */
   priority?: () => number;
+  /** A retained optional job can wait for higher-priority preparation. */
+  runnable?: () => boolean;
   valid: () => boolean;
   task: () => T;
   resolve: (value: T | undefined) => void;
@@ -20,10 +22,14 @@ export function drainGroundBakeFrame<T>(queue: GroundBakeWork<T>[], initialAtomi
   let completed = 0;
   while (queue.length && completed < limit) {
     if (completed > 0 && clock() - startedAt >= INITIAL_GROUND_BAKE_BUDGET_MS) break;
-    let selected = 0;
-    for (let index = 1; index < queue.length; index++) {
-      if ((queue[index]!.priority?.() ?? 0) < (queue[selected]!.priority?.() ?? 0)) selected = index;
+    let selected = -1;
+    for (let index = 0; index < queue.length; index++) {
+      const request = queue[index]!;
+      // Cancelled owners still drain and resolve. Do not inspect their state.
+      if (request.runnable && request.valid() && !request.runnable()) continue;
+      if (selected < 0 || (request.priority?.() ?? 0) < (queue[selected]!.priority?.() ?? 0)) selected = index;
     }
+    if (selected < 0) break;
     const request = queue.splice(selected, 1)[0]!;
     completed += 1;
     try { request.resolve(request.valid() ? request.task() : undefined); }
