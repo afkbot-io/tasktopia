@@ -20,3 +20,26 @@ it('начинает текущую линию с ближайшей досту�
   expect(f.city.agents.map(a=>a.id)).toEqual(ids);
   expect([f.city.metrics.vehicleUnsafeTotal,f.city.metrics.pedestrianUnsafeTotal,f.city.metrics.vehiclePedestrianUnsafeTotal]).toEqual([0,0,0]);
 });
+
+it('отмена занятого рейса сохраняет пассажиров до физической высадки и не обещает мгновенный новый допуск',()=>{
+  const f=cityTransitGrid();let now=42_000,state=f.controller.update(now,f.view,f.options);
+  for(let step=0;step<1600;step++){
+    const bus=state.transit&&f.city.agents.find(a=>a.id===state.transit!.vehicleId);
+    if(state.transit?.phase==='TRAVEL'&&bus&&f.city.agents.some(a=>a.carrier===bus.id)
+      &&Math.hypot(bus.position.x-state.transit.stop.lane.x-.5,bus.position.y-state.transit.stop.lane.y-.5)>4)break;
+    now+=50;f.city.advance(50);state=f.controller.update(now,f.view,f.options);
+  }
+  expect(state.transit?.phase).toBe('TRAVEL');
+  const busId=state.transit!.vehicleId,ids=f.city.agents.map(a=>a.id);
+  expect(f.city.agents.some(a=>a.carrier===busId)).toBe(true);
+  f.controller.update(now,f.view,{...f.options,enabled:false});
+  for(let step=0;step<6;step++){now+=50;f.city.advance(50);state=f.controller.update(now,f.view,f.options);}
+  expect(f.city.agents.some(a=>a.carrier===busId)).toBe(true);
+  expect(state.transit).toBeUndefined();
+  for(let step=0;step<1200&&f.city.agents.some(a=>a.carrier===busId);step++){
+    now+=50;f.city.advance(50);state=f.controller.update(now,f.view,f.options);
+  }
+  expect(f.city.agents.some(a=>a.carrier===busId)).toBe(false);
+  expect(f.city.agents.map(a=>a.id)).toEqual(ids);
+  expect([f.city.metrics.vehicleUnsafeTotal,f.city.metrics.pedestrianUnsafeTotal,f.city.metrics.vehiclePedestrianUnsafeTotal]).toEqual([0,0,0]);
+});
