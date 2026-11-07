@@ -1242,7 +1242,11 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
  expect(rebuilds).toBeLessThan(budget);
  const actualTaskIds=new Set([...scene.chunks.flatMap(chunk=>chunk.tasks),...scene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)].map(task=>task.id));
  expect(actualTaskIds.size).toBe(1000);expect(Number(data.canonicalTaskCount)).toBe(actualTaskIds.size);
- expect(Number(data.canonicalDecodedChunks)).toBe(scene.chunks.length);expect(data.canonicalSnapshotPending).toBe("false");
+ // The atomic visible frame intentionally does not wait for offscreen physics.
+ // Its independent worker gate above proves that ordering explicitly.
+ expect(Number(data.canonicalDecodedChunks)).toBeGreaterThanOrEqual(0);
+ expect(Number(data.canonicalDecodedChunks)).toBeLessThanOrEqual(scene.chunks.length);
+ expect(["true","false"]).toContain(data.canonicalSnapshotPending);
  expect(data.cityCriticalGroundReady).toBe("true");expect(Number(data.cityCriticalGroundCount)).toBeGreaterThan(0);
  expect(first!.canvas).not.toBeNull();
  const scale=Number(data.renderScale),centerX=Number(data.cameraWorldX),centerY=Number(data.cameraWorldY);
@@ -1265,6 +1269,9 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
  expect(data.worldQuality).toBe("NORMAL");expect(first!.canvas).not.toBeNull();
  expect(first!.canvas!.width).toBeGreaterThan(0);expect(first!.canvas!.height).toBeGreaterThan(0);
  expect(first!.canvas!.touchAction).toBe("none");
+ await expect(host).toHaveAttribute("data-canonical-decoded-chunks",String(scene.chunks.length),{timeout:30_000});
+ await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false");
+ await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
  await expect(host).toHaveAttribute("data-city-halo-ground-pending","0");
  await expect(host).toHaveAttribute("data-ground-bake-queue","0");
  await expect(host).toHaveAttribute("data-loading","false");
