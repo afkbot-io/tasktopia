@@ -1298,6 +1298,70 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
 });
 
 
+for (const viewport of [
+ {name:"compact",size:{width:390,height:844}}, {name:"tall desktop",size:{width:1440,height:1100}},
+]) test(`a native city pan publishes its complete visible frame before baking newly resident invisible ground: ${viewport.name}`,async({page},info)=>{
+ test.skip(process.env.E2E_CITY_200!=="true"||Number(process.env.WORLD_RENDER_TASK_COUNT??200)!==1000,"Requires the owned1000-task dense-city fixture");
+ test.setTimeout(90_000);await page.setViewportSize(viewport.size);
+ const reads:string[]=[],errors:string[]=[];
+ page.on("pageerror",error=>errors.push(error.message));
+ page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+ const response=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith("/scene"));
+ const host=await enterCity(page),scene=decodeCitySceneWire(await(await response).json());
+ await expect(host).toHaveAttribute("data-loading","false");
+ await expect(host).toHaveAttribute("data-ground-bake-queue","0",{timeout:30_000});
+ const before=await host.evaluate(node=>{const d=(node as HTMLElement).dataset,c=node.querySelector('canvas')!;return {
+   x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight,
+   ground:Number(d.groundRebuilds),commits:Number(d.cameraPresentationCommits??0),budget:Number(d.cityResidentChunkBudget),
+ };});
+ // Independent screen intersection plus the existing one-page residency halo.
+ // At these fractional poses no boundary lies in the subpixel tolerance strip.
+ const residentKeys=(pose:typeof before)=>{
+   const halfX=pose.width/(16*pose.scale),halfY=pose.height/(16*pose.scale),size=scene.chunkSize;
+   const visible=scene.chunks.filter(chunk=>chunk.chunkX*size<pose.x+halfX&&(chunk.chunkX+1)*size>pose.x-halfX
+     &&chunk.chunkY*size<pose.y+halfY&&(chunk.chunkY+1)*size>pose.y-halfY);
+   const minX=Math.min(...visible.map(c=>c.chunkX))-1,maxX=Math.max(...visible.map(c=>c.chunkX))+1;
+   const minY=Math.min(...visible.map(c=>c.chunkY))-1,maxY=Math.max(...visible.map(c=>c.chunkY))+1;
+   return new Set(scene.chunks.filter(c=>c.chunkX>=minX&&c.chunkX<=maxX&&c.chunkY>=minY&&c.chunkY<=maxY).map(c=>`${c.chunkX},${c.chunkY}`));
+ };
+ const initialKeys=residentKeys(before);expect(initialKeys.size).toBe(before.budget);expect(before.ground).toBe(before.budget);
+ const canvas=host.locator('canvas'),retained=await canvas.elementHandle();
+ await host.evaluate((node,baseline)=>{
+   type Snapshot={x:number;y:number;scale:number;width:number;height:number;ground:number;commits:number;budget:number;loading:string|undefined;pending:string|undefined;untextured:string|undefined;unbaked:string|undefined;entities:number};
+   const el=node as HTMLElement&{__qaFirstPan?:Snapshot};
+   const observer=new MutationObserver(()=>{
+     const d=el.dataset,c=el.querySelector('canvas')!;
+     if(Number(d.cameraPresentationCommits??0)<=baseline||d.cameraPresentationPending!=='false')return;
+     el.__qaFirstPan={x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight,
+       ground:Number(d.groundRebuilds),commits:Number(d.cameraPresentationCommits),budget:Number(d.cityResidentChunkBudget),loading:d.loading,pending:d.cameraPresentationPending,
+       untextured:d.cameraPaddingVisibleUntextured,unbaked:d.cameraPaddingTargetUnbaked,entities:Number(d.citySceneEntityChunks)};observer.disconnect();
+   });
+   observer.observe(el,{attributes:true,attributeFilter:['data-camera-presentation-commits']});
+ },before.commits);
+ const box=(await canvas.boundingBox())!,direction=scene.city.bounds.maxX-before.x>=before.x-scene.city.bounds.minX?1:-1;
+ await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+ await page.mouse.move(box.x+box.width/2-direction*900,box.y+box.height/2,{steps:1});await page.mouse.up();
+ const first=async()=>host.evaluate(node=>(node as HTMLElement&{__qaFirstPan?:typeof before&{loading?:string;pending?:string;untextured?:string;unbaked?:string;entities:number}}).__qaFirstPan);
+ await expect.poll(first,{timeout:15_000}).toBeTruthy();
+ const published=(await first())!,nextKeys=residentKeys(published),newKeys=[...nextKeys].filter(key=>!initialKeys.has(key));
+ const halfX=published.width/(16*published.scale),halfY=published.height/(16*published.scale),size=scene.chunkSize;
+ const newVisibleKeys=newKeys.filter(key=>{const [x,y]=key.split(',').map(Number) as [number,number];
+   return x*size<published.x+halfX&&(x+1)*size>published.x-halfX&&y*size<published.y+halfY&&(y+1)*size>published.y-halfY;});
+ await info.attach('first-presented-pan',{body:JSON.stringify({before,published,newKeys,newVisibleKeys,initialKeys:[...initialKeys],nextKeys:[...nextKeys]}),contentType:'application/json'});
+ expect(Math.abs(published.x-before.x)).toBeGreaterThan(10);expect(newKeys.length).toBeGreaterThan(0);
+ expect(nextKeys.size).toBe(published.budget);expect(published.entities).toBe(nextKeys.size);
+ expect(published.untextured).toBe('0');expect(published.unbaked).toBe('0');expect(published.loading).toBe('false');
+ expect(newVisibleKeys.length).toBeGreaterThan(0);
+ expect(published.ground-before.ground,'Every newly visible page must have real ground before the camera commits').toBeGreaterThanOrEqual(newVisibleKeys.length);
+ expect(published.ground-before.ground,'Invisible new resident ground must not hold the coherent pan frame').toBeLessThan(newKeys.length);
+ await expect(host).toHaveAttribute('data-loading','false');await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:30_000});
+ await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+ await expect(host).toHaveAttribute('data-canonical-task-count','1000');await expect(host).toHaveAttribute('data-world-quality','NORMAL');
+ expect(await retained!.evaluate(node=>node===document.querySelector('.world-canvas canvas'))).toBe(true);
+ expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+ expect(errors).toEqual([]);await page.screenshot({path:info.outputPath('foreground-pan.png')});
+});
+
 test('leaving during real physical read-ahead destroys only its workers and retries the retained city',async({page},info)=>{
   test.skip(process.env.E2E_CITY_200!=="true","Requires the owned dense fixture");test.setTimeout(90_000);
   const errors:string[]=[],reads:string[]=[];

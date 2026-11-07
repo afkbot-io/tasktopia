@@ -90,10 +90,13 @@ test('реальные MCP комментарии и документы ожив
    // separately; begin MCP work after a full native timing window and prewarm.
    // Keep NORMAL, DPR, native clocks, the8ms budget and the120s whole-test cap.
    await expect.poll(()=>f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return {
-    samples:Number(d.livingWorldFrameSamples),terrainPending:Number(d.cameraPaddingTerrainPending),
+    terrainPending:Number(d.cameraPaddingTerrainPending),
     treePending:Number(d.cameraPaddingTreePending),targetUnbaked:Number(d.cameraPaddingTargetUnbaked),
     preparing:d.movementPreparing,quality:d.worldQuality,
-   };}),{timeout:30000}).toMatchObject({samples:120,terrainPending:0,treePending:0,targetUnbaked:0,preparing:'false',quality:'NORMAL'});
+   };}),{timeout:30000}).toMatchObject({terrainPending:0,treePending:0,targetUnbaked:0,preparing:'false',quality:'NORMAL'});
+   // Background preparation and collecting the native timing window are
+   // distinct phases. A slow software raster need not fit both into one30s wait.
+   await expect(f.host).toHaveAttribute('data-living-world-frame-samples','120',{timeout:30000});
    await f.host.evaluate(el=>{
     const node=el as ActivityNode,records:NonNullable<ActivityNode['__qaActivity']>['records']=[];
     const read=()=>{

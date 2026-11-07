@@ -4803,15 +4803,19 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         }
         return true;
       };
+      const commitPreparedCamera = (): boolean => {
+        if (!cityCamera.pending) return true;
+        const pose = cityCamera.commitPending(cityCameraReady);
+        if (!pose) return false;
+        world.position.set(pose.x, pose.y); world.scale.set(pose.scale); clampCamera();
+        host!.dataset.cameraPresentationCommits = String(Number(host!.dataset.cameraPresentationCommits ?? 0) + 1);
+        return true;
+      };
       const presentFirstCityFrame = (): void => {
         if (paintedFrame) return;
         // An initial navigation pose may have been staged while preparation
         // awaited. Present its fully prepared viewport before hiding the cover.
-        const pose=cityCamera.commitPending(cityCameraReady);
-        if (pose) {
-          world.position.set(pose.x,pose.y);world.scale.set(pose.scale);clampCamera();
-          host!.dataset.cameraPresentationCommits=String(Number(host!.dataset.cameraPresentationCommits??0)+1);
-        }
+        commitPreparedCamera();
         const atomicRenderStarted=performance.now();
         app.render();
         firstCityAtomicPresented=true;
@@ -4846,12 +4850,13 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             const initialGroundSplit = Boolean(cityScene && !paintedFrame);
             const cinematicRefresh = Boolean(cityScene && paintedFrame && cinematicEvents.size
               && !cityCamera.pending && !lodTransition);
-            const splitGround = initialGroundSplit || cinematicRefresh;
+            const cameraGroundSplit = Boolean(cityScene && paintedFrame && cityCamera.pending && !lodTransition);
+            const splitGround = initialGroundSplit || cinematicRefresh || cameraGroundSplit;
             const initialCamera = cityCamera.pending ?? {x:world.x,y:world.y,scale:world.scale.x};
             const groundPlan = splitGround
               ? planCityGroundReadiness(wanted,cityGroundRangeForViewport(initialCamera,initialCamera.scale,app.screen,cityScene!.city.bounds,CELL_SIZE,chunkSize))
               : {critical:wanted,halo:[]};
-            const cinematicCriticalKeys = cinematicRefresh
+            const foregroundCriticalKeys = cinematicRefresh || cameraGroundSplit
               ? new Set(groundPlan.critical.map(coordinate => chunkKey(...coordinate))) : undefined;
             let iterationActive = true;
             const iterationCurrent = () => iterationActive && !disposed && generation === loadGeneration && desiredLod === lod;
@@ -4934,7 +4939,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
                       terrainView: ground?.lod === lod ? undefined : createTerrainView(chunk, lod),
                       overlayView: createInfrastructureOverlayView(chunk, lod),
                     }),
-                    cinematicCriticalKeys?.has(cacheKey) ? () => -1 : undefined,
+                    foregroundCriticalKeys?.has(cacheKey) ? () => -1 : undefined,
                   );
                   if (!prepared) return;
                   if (!residentCurrent(cacheKey)) {
@@ -5080,6 +5085,29 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
                 }
                 host!.dataset.cityHaloGroundPending = "0";
               }
+              if (cameraGroundSplit) {
+                if (!await waitForCityPadding(iterationCurrent)) {
+                  discardPreparedGrounds();
+                  if (!iterationCurrent()) continue;
+                  break;
+                }
+                if (!iterationCurrent()) { discardPreparedGrounds(); continue; }
+                const latestCamera = cityCamera.pending ?? { x: world.x, y: world.y, scale: world.scale.x };
+                if (latestCamera.x !== initialCamera.x || latestCamera.y !== initialCamera.y
+                  || latestCamera.scale !== initialCamera.scale || !cityCameraReady(initialCamera) || !commitPreparedCamera()) {
+                  discardPreparedGrounds(); desiredRange = ""; loadVisible({ isRetry: true }); continue;
+                }
+                // All visible ground and the complete resident entity halo are
+                // coherent. Publish the pan/history before baking hidden ground.
+                presentedCityBounds = cityResidentBounds;
+                presentedCityKeys = new Set(active);
+                app.render();
+                host!.dataset.loading = "false";
+                publishSettledView();
+                endStreamingFeedback();
+                await Promise.all(groundPlan.halo.map(prepareResident));
+                if (!iterationCurrent()) { discardPreparedGrounds(); continue; }
+              }
               if (cinematicRefresh) {
                 if (!cinematicHaloPrepared) await Promise.all(groundPlan.halo.map(prepareResident));
                 if (!iterationCurrent()) { discardPreparedGrounds(); continue; }
@@ -5136,12 +5164,8 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
               presentFirstCityFrame();
             }
             if (cityCamera.pending) {
-              const pose = cityCamera.commitPending(cityCameraReady);
-              if (!pose) { desiredRange = ""; loadVisible({isRetry:true}); continue; }
-              world.position.set(pose.x,pose.y); world.scale.set(pose.scale);
-              clampCamera();
+              if (!commitPreparedCamera()) { desiredRange = ""; loadVisible({isRetry:true}); continue; }
               if (reducedMotion) app.render();
-              host!.dataset.cameraPresentationCommits = String(Number(host!.dataset.cameraPresentationCommits ?? 0)+1);
             }
             presentedCityBounds = cityResidentBounds;
             presentedCityKeys = new Set(active);
