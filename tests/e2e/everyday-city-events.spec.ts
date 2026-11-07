@@ -638,12 +638,23 @@ test('everyday live lifecycle clears hidden, map exit, reconnect and deleted ins
 clockSceneTest('public bus completes an actual boarding, directed trip and safe alighting', async ({ page }, info) => {
   test.setTimeout(210000); await installSceneClock(page); const f = await everydayFixture(page);
   try {
+    // Every independent opening starts before its first service. Otherwise
+    // loading with life enabled dispatches a trip before the controlled start,
+    // retaining that vehicle's route/position even after service cancellation.
+    await page.addInitScript(()=>localStorage.setItem('tasktopia:world-preferences:v2',JSON.stringify({quality:'NORMAL',cityLife:false,sound:false})));
     const attempts:Record<string,unknown>[]=[];let completed=false,previousWindowStart=0;
     // Keep the original80s observation and210s whole-test cap. Three actual
     // admissions may include safe cancellations, but only a real positive
     // boarding/travel/alighting journey can pass this test.
     for(let attempt=0;attempt<3&&!completed;attempt++){
       await page.clock.resume(); await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
+      if(attempt===0){
+        // Capture the real owned HTTP scene before the journey; a whole-test
+        // timeout cannot run the failure-only attachment reliably.
+        const scene=await page.request.get(`/api/countries/${f.user.countryId}/cities/${f.city.id}/scene`,{timeout:5000});
+        expect(scene.status()).toBe(200);
+        await info.attach('bus-native-scene',{body:await scene.body(),contentType:'application/json'});
+      }
       const now = Number(await f.host.getAttribute('data-road-event-server-now'));
       // ROAD and EVERYDAY permit late admission, so enabling life after their
       // nominal start can dispatch a response immediately. Start in the first
@@ -654,9 +665,13 @@ clockSceneTest('public bus completes an actual boarding, directed trip and safe 
       await setSceneLife(page, false);
       await seek(page, f.host, departureWindowStart);
       const prepared = await safe(f.host), preparedAt = Number(prepared.roadEventServerNow);
+      expect(prepared.regularBuses,'The controlled first trip must not inherit an earlier bus service').toBe('0');
+      expect(prepared.schoolBuses).toBe('0');
       expect(preparedAt).toBeGreaterThanOrEqual(departureWindowStart);
       expect(preparedAt).toBeLessThan(departureWindowStart + 1000);
-      expect(prepared.roadEvent).toBe(''); expect(prepared.transitPhase).toBe('');
+      // No road director frame has run when life starts disabled; its absent
+      // attribute and a cleared attribute both mean no admitted road event.
+      expect(prepared.roadEvent??'').toBe(''); expect(prepared.transitPhase).toBe('');
       const baseline = { boarded: Number(prepared.transitBoarded)-Number(prepared.schoolBusBoarded),
         alighted: Number(prepared.transitAlighted)-Number(prepared.schoolBusAlighted) };
       const busState=()=>f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{role:d.transitRole,phase:d.transitPhase,
