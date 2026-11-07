@@ -1077,7 +1077,12 @@ function* createCityMobilitySteps(input: CityMobilityInput): Generator<void, Cit
       for (const actor of actors) if (actor.kind === "CAR" && actor.route.some((cell, i) => i > 0 && closures.has(key(cell)))) {
         // Finish a physical edge already in progress; only future intentions
         // are replaced. An empty lane is selected before a new episode closes it.
-        if (closures.has(key(actor.next)) && actor.progress === 0) {
+        const nextZone = network.zoneByCell.get(key(actor.next));
+        // У ожидающего въезда маршрута должен сохраниться выход из зоны.
+        // Одна оставленная внутренняя клетка не получает разрешение на проезд
+        // и не достигается, поэтому планирование больше не запускалось.
+        const needsPassage = nextZone && nextZone.id !== actor.zoneId;
+        if (actor.progress === 0 && (closures.has(key(actor.next)) || needsPassage)) {
           actor.route = [actor.current]; actor.next = actor.current;
         } else actor.route = actor.route.slice(0, 2);
       }

@@ -175,9 +175,18 @@ export function createEverydayController(cityId: string, mobility: () => CityMob
     const destinations = role === 'SCHOOL_BUS' && anchor
       ? targetStops.filter(stop => Math.abs(stop.lane.x - anchor.x) + Math.abs(stop.lane.y - anchor.y) < 24) : [];
     const orderedLines = [...lines.slice(lineCursor), ...lines.slice(0, lineCursor)];
+    const buses = city.agents.filter(a => a.kind === 'CAR' && !a.response && a.fleet === 'BUS');
+    const approachDistance = (stop: TransitStop) => Math.min(...buses.map(bus =>
+      Math.abs(stop.lane.x + .5 - bus.position.x) + Math.abs(stop.lane.y + .5 - bus.position.y)));
     const pairs: { stop: TransitStop; next: TransitStop; line?: TransitLine; index?: number }[] = destinations.length
       ? destinations.flatMap(destination => targetStops.filter(stop => stop.id !== destination.id).map(stop => ({ stop, next: destination })))
-      : orderedLines.flatMap(line => line.stops.map((stop, index) => ({ stop, next: line.stops[(index + 1) % line.stops.length]!, line, index })));
+      : orderedLines.flatMap(line => {
+        const stops = line.stops.map((stop, index) => ({ stop, next: line.stops[(index + 1) % line.stops.length]!, line, index }));
+        // Сохраняем очередность линий и направление их остановок, но начинаем
+        // с ближайшего подхода. Реальный dispatch ниже проверяет путь и тело.
+        if (buses.length) stops.sort((a, b) => approachDistance(a.stop) - approachDistance(b.stop) || a.index - b.index);
+        return stops;
+      });
     const id = `${cityId}:bus:${now}:${++transitSerial}`;
     const riders = role === 'SCHOOL_BUS' ? city.agents.filter(a => a.age === 'CHILD').map(a => a.id) : undefined;
     for (const { stop, next, line, index } of pairs) {
