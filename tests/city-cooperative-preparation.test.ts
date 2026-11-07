@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as walking from '../src/client/city-walk-network';
 import * as mobility from '../src/client/city-mobility';
 import type { CityMobilityInput, CityMobility } from '../src/client/city-mobility';
-import * as cooperative from '../src/client/cooperative-preparation';
+import * as cooperative from '../src/shared/cooperative-preparation';
 import { CityMovementPreparation } from '../src/client/city-movement-preparation';
 import * as routeSearch from '../src/client/mobility-route-search';
 import * as mobilityNetwork from '../src/client/city-mobility-network';
@@ -566,15 +566,18 @@ describe('cooperative canonical city preparation', () => {
     const terrain = Array.from({ length: 32768 }, (_, x) => ({ x, y: 100, terrain: 'MEADOW' as const }));
     let read = 0, ticks = 0;
     input.terrain = new Proxy(terrain, { get(target, property, receiver) {
-      if (property === Symbol.iterator) return function* () { for (const cell of target) { read++; yield cell; } };
+      // Model time spent processing cells, independently of how often a
+      // batched builder samples the clock. A clock-read counter would turn
+      // reduced measurement overhead into fictitious extra execution time.
+      if (property === Symbol.iterator) return function* () { for (const cell of target) { read++; ticks++; yield cell; } };
       return Reflect.get(target, property, receiver);
     } });
     const controller = new AbortController();
-    await expect(walking.buildCityWalkNetworkAsync(input, { signal: controller.signal, now: () => ticks++,
+    await expect(walking.buildCityWalkNetworkAsync(input, { signal: controller.signal, now: () => ticks,
       yieldTask: async () => { controller.abort(); },
     })).rejects.toMatchObject({ name: 'AbortError' });
     expect(read).toBeGreaterThan(0);
-    expect(read).toBeLessThan(16); // elapsed time takes precedence over the fallback work cap
+    expect(read).toBeLessThanOrEqual(16); // one small batch, long before the8192-unit fallback cap
   });
 
   it('bounds scheduler overhead while preparing a full protected walking network', async () => {

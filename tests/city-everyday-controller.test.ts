@@ -2,8 +2,141 @@ import { expect, it, vi } from 'vitest';
 import { createEverydayController } from '../src/client/city-everyday-controller';
 import { createCityMobility } from '../src/client/city-mobility';
 import type { Cell, ChunkTaskDto, RoadCellDto } from '../src/shared/contracts';
+import { CityEventDirector } from '../src/client/city-event-director';
+import { cityTransitGrid } from './fixtures/city-transit-grid';
 
-function fixture() {
+function delayedSchoolFixture() {
+  const f=cityTransitGrid(32),actors=f.city.agents.map(actor=>({...actor}));
+  Object.defineProperty(f.city,'agents',{get:()=>actors});
+  const regular=actors.find(actor=>actor.fleet==='BUS')!,schoolBus=actors.find(actor=>actor.fleet==='SCHOOL_BUS')!;
+  const child=actors.find(actor=>actor.age==='CHILD')!;
+  const task={id:'late-school',status:'COMPLETED',stage:5,visualKind:'BUILDING',visualAssetKey:'compact-modern-school-v1',
+    accessPath:[{x:3,y:-2}],footprint:[{x:3,y:-3}],workItemType:'TASK'} as ChunkTaskDto;
+  const at=(actor:typeof regular,target:Cell)=>{actor.current=target;actor.next=target;actor.activity='REST';actor.position={x:target.x+.5,y:target.y+.5};};
+  vi.spyOn(f.city,'canDrive').mockReturnValue(true);
+  vi.spyOn(f.city,'dispatchResponse').mockImplementation((role,targets,_stay,_id,owner)=>{
+    const vehicle=role==='BUS'?regular:schoolBus;
+    vehicle.response=role;vehicle.responseOwner=owner;
+    if(role==='BUS'&&f.controller.transit)vehicle.activity='NONE';else at(vehicle,targets[0]!);
+    return true;
+  });
+  vi.spyOn(f.city,'clearResponses').mockImplementation((roles,id,owner)=>{
+    for(const actor of actors)if(actor.id===id&&actor.response&&roles?.includes(actor.response)&&actor.responseOwner===owner){actor.response=undefined;actor.responseOwner=undefined;}
+  });
+  vi.spyOn(f.city,'dispatchVisit').mockImplementation(id=>{
+    if(!id.includes(':bus:'))return[];
+    child.visit={id,arrived:!id.endsWith(':school')};return[child.id];
+  });
+  vi.spyOn(f.city,'clearVisits').mockImplementation(id=>{for(const actor of actors)if(actor.visit?.id===id)actor.visit=undefined;});
+  vi.spyOn(f.city,'boardVisit').mockImplementation((id,vehicleId)=>{if(child.carrier||child.visit?.id!==id)return 0;child.carrier=vehicleId;return 1;});
+  vi.spyOn(f.city,'alightVisit').mockImplementation(vehicleId=>{if(child.carrier!==vehicleId)return 0;child.carrier=undefined;return 1;});
+  f.controller.compile({...f.lifeInput,tasks:[task]});
+  const update=(now:number)=>f.controller.update(now,f.view,f.options);
+  // Physical arrival signals are supplied at the controller seam. The live
+  // browser gate separately requires real routes, alighting and a doorway.
+  const arriveRegular=()=>at(regular,f.controller.transit!.destination!.lane);
+  return{...f,task,child,regular,schoolBus,update,arriveRegular};
+}
+
+it('школьный выезд сохраняется после сценки и ждёт безопасной поздней высадки обычного автобуса',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.child.carrier).toBe(f.regular.id);
+  expect(f.update(53000).pose).toBeUndefined();
+  expect(f.child.carrier).toBe(f.regular.id);
+  f.arriveRegular();f.update(60000);expect(f.child.carrier).toBeUndefined();
+  f.update(65999);expect(f.controller.transit?.role).toBe('BUS');
+  f.update(66000);
+  expect(f.controller.transit?.role).toBe('SCHOOL_BUS');
+  expect(f.controller.transit?.school?.taskId).toBe(f.task.id);
+  expect(f.controller.metrics.regularStops).toBe(1);
+  expect(f.regular.response).toBeUndefined();expect(f.schoolBus.response).toBe('SCHOOL_BUS');
+  expect(f.child.carrier).toBe(f.schoolBus.id);
+  f.controller.clear();
+});
+
+it.each(['delete','entrance','incident','role','stage','educationKind'] as const)('ожидающий школьный выезд проверяет актуальную школу (%s) до отправления',cause=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);f.update(53000);
+  expect(f.controller.pendingSchool?.taskId).toBe(f.task.id);
+  const changed=cause==='delete'?[]:[{...f.task,...(cause==='entrance'?{accessPath:[{x:8,y:-2}]}
+    :cause==='incident'?{defectSummary:{active:1,open:1,inProgress:0,verifying:0}}
+      :cause==='role'?{serviceRole:'SHOP' as const}:cause==='educationKind'?{visualAssetKey:'compact-color-kindergarten-v1'}:{stage:4 as const,status:'TESTING' as const})}];
+  f.controller.compile({...f.lifeInput,tasks:changed});
+  expect(f.controller.pendingSchool).toBeUndefined();
+  // A new kindergarten ceremony may legitimately create its own request.
+  // The old school's queued request must already have been invalidated.
+  if(cause==='educationKind'){f.controller.clear();return;}
+  // This legacy derived-stop fixture may legitimately lose a stop when the
+  // geometry changes. A retained regular run still owns its passengers.
+  if(f.controller.transit){expect(f.child.carrier).toBe(f.regular.id);f.arriveRegular();}
+  f.update(60000);f.update(66000);
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.controller.metrics.schoolBuses).toBe(0);
+  f.controller.clear();
+});
+
+it('хранит только первую ожидающую школьную заявку, ограничивает срок и освобождает её при очистке',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);
+  const first=f.controller.pendingSchool;expect(first?.taskId).toBe(f.task.id);
+  f.options.roadBusy=true;
+  const later=f.update(84000);expect(later.pose?.kind).toBe('SCHOOL');expect(later.pose?.id).not.toBe(first!.episodeId);
+  expect(f.controller.pendingSchool).toBe(first);
+  f.update(first!.until+1);expect(f.controller.pendingSchool).toBeUndefined();
+  expect(f.controller.metrics.schoolBuses).toBe(0);
+  f.controller.clear();
+  const fresh=delayedSchoolFixture();fresh.update(7000);fresh.update(8300);
+  expect(fresh.controller.pendingSchool).toBeDefined();fresh.controller.clear();
+  expect(fresh.controller.pendingSchool).toBeUndefined();expect(fresh.controller.transit).toBeUndefined();
+});
+
+it('далёкий pan освобождает ожидающую заявку и сохраняет уже едущий обычный автобус',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);
+  expect(f.controller.pendingSchool).toBeDefined();
+  f.controller.update(9000,{minX:1000,minY:1000,maxX:1070,maxY:1070},f.options);
+  expect(f.controller.pendingSchool).toBeUndefined();
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.child.carrier).toBe(f.regular.id);
+  f.controller.clear();
+});
+
+it('ожидающий школьный выезд уступает занятый вход настоящей работе и отправляется после освобождения',()=>{
+  const f=delayedSchoolFixture();f.update(7000);f.update(8300);f.update(14000);f.update(53000);
+  f.arriveRegular();f.update(60000);
+  f.options.busy.add('3,-2');f.update(66000);
+  expect(f.controller.transit?.role).toBe('BUS');expect(f.controller.pendingSchool?.taskId).toBe(f.task.id);
+  f.options.busy.clear();f.update(72000);f.arriveRegular();f.update(73000);f.update(79000);
+  expect(f.controller.transit?.role).toBe('SCHOOL_BUS');expect(f.controller.transit?.school?.taskId).toBe(f.task.id);
+  f.controller.clear();
+});
+
+it.each(['passengers','vehicle'] as const)('не отменяет обычный автобус, если для школьной сцены недоступен %s', unavailable => {
+  const f=cityTransitGrid(), dispatch=f.city.dispatchVisit.bind(f.city);
+  const actors=f.city.agents.map(actor=>({...actor}));Object.defineProperty(f.city,'agents',{get:()=>actors});
+  const school={id:'unavailable-school',status:'COMPLETED',stage:5,visualKind:'BUILDING',visualAssetKey:'compact-modern-school-v1',
+    accessPath:[{x:3,y:-2}],footprint:[{x:3,y:-3}],workItemType:'TASK'} as ChunkTaskDto;
+  f.controller.compile({...f.lifeInput,tasks:[school]});
+  vi.spyOn(f.city,'dispatchVisit').mockImplementation((id,targets,count,stay,inside,allowed,budget)=>
+    allowed ? unavailable==='passengers' ? [] : allowed.slice(0,1) : dispatch(id,targets,count,stay,inside,allowed,budget));
+  // Supply physical curb-arrival signals at this controller seam. Real
+  // route movement is exercised by schedule/mobility and browser checks.
+  const responses=vi.spyOn(f.city,'dispatchResponse').mockImplementation((role,targets)=>{
+    const actor=actors.find(candidate=>candidate.fleet===role);if(!actor||role==='SCHOOL_BUS')return false;
+    actor.response=role;actor.current=targets[0]!;actor.next=actor.current;actor.activity='REST';
+    actor.position={x:actor.current.x+.5,y:actor.current.y+.5};return true;
+  });
+  const initial=f.controller.update(0,f.view,f.options).transit;
+  expect(initial?.role).toBe('BUS');
+  const cleared=vi.spyOn(f.city,'clearResponses');
+  for(const now of [8001,13001,14001,18001]){
+    const state=f.controller.update(now,f.view,f.options);
+    expect(state.pose?.kind).toBe('SCHOOL');
+    expect(state.transit?.id).toBe(initial!.id);
+    expect(f.city.agents.find(actor=>actor.id===initial!.vehicleId)?.response).toBe('BUS');
+  }
+  expect(cleared).not.toHaveBeenCalledWith(['BUS'],initial!.vehicleId,initial!.id);
+  expect(f.controller.metrics.regularBuses).toBe(1);expect(f.controller.metrics.schoolBuses).toBe(0);
+  if(unavailable==='vehicle')expect(responses.mock.calls.some(([role])=>role==='SCHOOL_BUS')).toBe(true);
+  f.controller.clear();
+});
+
+function fixture(director?: CityEventDirector) {
   const walk = new Map<string, Cell>();
   for (let i = 0; i <= 12; i++) for (const c of [{ x: i, y: 0 }, { x: i, y: 12 }, { x: 0, y: i }, { x: 12, y: i }]) walk.set(`${c.x},${c.y}`, c);
   const task = { id: 'school', status: 'COMPLETED', stage: 5, visualKind: 'BUILDING', visualAssetKey: 'compact-modern-school-v1',
@@ -11,11 +144,50 @@ function fixture() {
   const input = { tasks: [task], walk, roads: new Map<string, RoadCellDto>(), blocked: new Set<string>(), decorations: [] };
   const city = createCityMobility({ roads: input.roads, walkGraph: walk, crosswalks: new Set(), activityCells: new Set(),
     buildingEntrances: new Set(['3,0']), seed: 19, carLimit: 0, walkerLimit: 6 });
-  const sounds: string[] = [], controller = createEverydayController('city', () => city, sound => sounds.push(sound));
+  const sounds: string[] = [], controller = createEverydayController('city', () => city, sound => sounds.push(sound), director);
   controller.compile(input);
   const view = { minX: -5, minY: -5, maxX: 15, maxY: 15 }, options = { enabled: true, economy: false, busy: new Set<string>(), roadBusy: false };
   return { city, task, input, sounds, controller, view, options };
 }
+
+it('при позднем входе запускает видимую сцену после короткой паузы и не повторяет принятый ID', () => {
+  const director = new CityEventDirector(), f = fixture(director);
+  expect(f.controller.update(42_000, f.view, f.options).pose).toBeUndefined();
+  const state = f.controller.update(43_200, f.view, f.options);
+  expect(state.pose?.kind).toBe('SCHOOL');expect(state.pose?.start).toBe(43_200);
+  expect(state.visitors.length).toBeGreaterThan(0);
+  expect(director.active.map(lease => lease.channel)).toEqual(['EVERYDAY']);
+  f.controller.clear();expect(director.active).toEqual([]);
+  expect(f.controller.update(50_000, f.view, f.options).pose).toBeUndefined();
+  expect(f.controller.metrics.episodes).toBe(1);
+});
+
+it('истечение сцены освобождает именно её участников и позволяет другой площадке того же окна начать работу', () => {
+  const director=new CityEventDirector(),f=fixture(director);
+  f.controller.compile({...f.input,tasks:[f.task,{...f.task,id:'kindergarten',visualAssetKey:'compact-rose-kindergarten-v1'}]});
+  f.controller.update(0,f.view,f.options);
+  const first=f.controller.update(8001,f.view,f.options).pose!;expect(first).toBeDefined();
+  const next=f.controller.update(first.end,f.view,f.options).pose!;
+  expect(next).toBeDefined();expect(next.id).not.toBe(first.id);expect(next.kind).not.toBe(first.kind);
+  expect(next.start).toBe(first.end);expect(Math.floor(next.start/75000)).toBe(Math.floor(first.start/75000));
+  expect(director.active.some(owner=>owner.id===first.id)).toBe(false);
+  expect(f.city.agents.some(actor=>actor.visit?.id===first.id)).toBe(false);
+  f.controller.clear();expect(director.active).toEqual([]);expect(f.city.agents.some(actor=>actor.visit)).toBe(false);
+});
+
+it('повторяет непринятую занятую сцену с ограниченной частотой и освобождает её по приоритету дороги', () => {
+  const director = new CityEventDirector(), f = fixture(director), busy = { ...f.options, busy: new Set(['3,0']) };
+  f.controller.update(42_000, f.view, busy);
+  expect(f.controller.update(43_200, f.view, busy).pose).toBeUndefined();
+  for (let now = 43_250; now < 45_200; now += 50) f.controller.update(now, f.view, busy);
+  expect(director.metrics.attempts).toBe(1);
+  expect(f.controller.update(45_200, f.view, f.options).pose?.kind).toBe('SCHOOL');
+  expect(director.acquire({ id: 'road', channel: 'ROAD', priority: 3, cells: [{ x: 3, y: 0 }], actors: [],
+    until: 60_000, replayUntil: 90_000, onRelease: () => {} })).toBe(true);
+  expect(f.city.agents.some(actor => actor.visit)).toBe(false);
+  expect(f.controller.update(45_250, f.view, f.options).pose).toBeUndefined();
+  expect(director.active.map(lease => lease.id)).toEqual(['road']);
+});
 
 it('спортивная площадка не закрывает проходы между своими конечными точками', () => {
   const f = fixture();
@@ -31,6 +203,29 @@ it('спортивная площадка не закрывает проходы
   expect([...f.controller.reservedCells()].some(id => walk.has(id))).toBe(false);
 });
 
+it('игрок сначала приходит на площадку и только затем меняет цель игры', () => {
+  const f=fixture(),footprint=Array.from({length:100},(_,i)=>({x:i%10,y:1+Math.floor(i/10)}));
+  const park={...f.task,id:'sports',visualKind:'PARK',visualAssetKey:'urban-formal',footprint} as ChunkTaskDto;
+  const walk=new Map([...f.input.walk,...footprint.map(c=>[`${c.x},${c.y}`,c] as const)]);
+  const actor={...f.city.agents[0]!};Object.defineProperty(f.city,'agents',{get:()=>[actor]});
+  // This controller seam supplies the mobility arrival signal. Actual path
+  // movement and public arrivals remain covered by the live browser journey.
+  const dispatch=vi.spyOn(f.city,'dispatchVisit').mockImplementation((id,targets)=>{
+    if(targets.length!==2)return[];
+    actor.visit={id,arrived:false};return[actor.id];
+  });
+  f.controller.compile({...f.input,tasks:[park],walk,safeTargets:walk});
+  const kinds=[...new Set(f.controller.sites.map(s=>s.kind))].sort(),start=kinds.indexOf('SPORT')*75000+8000;
+  f.controller.update(start-1000,f.view,f.options);
+  const state=f.controller.update(start+1,f.view,f.options);expect(state.pose?.kind).toBe('SPORT');expect(actor.visit).toBeDefined();
+  dispatch.mockClear();f.controller.update(start+11000,f.view,f.options);
+  expect(dispatch,'Still approaching players must keep their original destination').not.toHaveBeenCalled();
+  actor.visit!.arrived=true;
+  f.controller.update(start+15000,f.view,f.options);
+  expect(dispatch).toHaveBeenCalledWith(state.pose!.id,expect.any(Array),1,800,false,[actor.id]);
+  f.controller.clear();
+});
+
 it('открытие использует адресные проверки занятости и не копирует все клетки города', () => {
   const f = fixture();
   class LocalBlocked extends Set<string> {
@@ -40,6 +235,25 @@ it('открытие использует адресные проверки за
   f.controller.update(0, f.view, f.options);
   expect(f.controller.open(f.task, 'local-blocked', 1)).toBe(true);
   expect(f.controller.update(2, f.view, f.options).pose?.kind).toBe('OPEN_SCHOOL');
+});
+
+it('открытие по MCP ждёт освобождения строительной площадки и не теряется из очереди', () => {
+  const f = fixture();f.controller.update(0, f.view, f.options);
+  expect(f.controller.open(f.task, 'pending-construction', 1)).toBe(true);
+  expect(f.controller.update(2, f.view, { ...f.options, busy: new Set(['3,0']) }).pose).toBeUndefined();
+  expect(f.controller.update(300, f.view, f.options).pose?.kind).toBe('OPEN_SCHOOL');
+  expect(f.controller.metrics.episodes).toBe(1);
+  expect(f.controller.open(f.task, 'pending-construction', 301)).toBe(false);
+});
+
+it('не ищет задачу полным перебором 10000 записей при каждом кадре ожидающего открытия', () => {
+  const f = fixture(), tasks = [...Array.from({ length: 10_000 }, (_, i) => ({ ...f.task, id: `remote:${i}`, accessPath: [{ x: 10_000 + i, y: 10_000 }] })), f.task];
+  f.controller.compile({ ...f.input, tasks });
+  tasks.find = () => { throw new Error('Full task scan'); };
+  f.controller.update(0, f.view, f.options);
+  expect(f.controller.open(f.task, 'indexed-opening', 1)).toBe(true);
+  for (let now = 2; now < 250; now += 16) f.controller.update(now, f.view, { ...f.options, busy: new Set(['3,0']) });
+  expect(f.controller.update(300, f.view, f.options).pose?.kind).toBe('OPEN_SCHOOL');
 });
 
 it('открывает школу только по свежему подтверждённому событию, звонит после прихода и не повторяет версию', () => {
@@ -113,8 +327,11 @@ it('церемония управляет своим новым пожарным
   vi.spyOn(f.city, 'dispatchResponse').mockImplementation(() => { agents.push({ ...other, id: 'opening-engine' }); return true; });
   const clear = vi.spyOn(f.city, 'clearResponses');
   f.controller.update(0, f.view, f.options); f.controller.open(task, 'fire', 1); f.controller.update(2, f.view, f.options);
-  f.controller.clear(); expect(clear).toHaveBeenCalledWith(['FIRE'], 'opening-engine');
-  expect(clear).not.toHaveBeenCalledWith(['FIRE'], 'other-engine');
+  f.controller.preemptRoadResponse(2);
+  f.controller.update(3, f.view, { ...f.options, roadBusy: true });
+  expect(clear).not.toHaveBeenCalledWith(['FIRE'], 'opening-engine', 'opening:fire');
+  f.controller.clear(); expect(clear).toHaveBeenCalledWith(['FIRE'], 'opening-engine', 'opening:fire');
+  expect(clear).not.toHaveBeenCalledWith(['FIRE'], 'other-engine', expect.anything());
 });
 
 it('рейс не занимает машину, пока к выбранной очереди не назначены настоящие доступные пассажиры', () => {
@@ -145,25 +362,38 @@ it.each(['delete', 'entrance', 'incident', 'role', 'stage'] as const)('изме�
   }
   const entrance = { x: 3, y: -2 }, task = { ...fixture().task, accessPath: [entrance], footprint: [{ x: 3, y: -3 }] };
   const city = createCityMobility({ roads, walkGraph: walk, crosswalks: new Set(), activityCells: new Set(), buildingEntrances: new Set(['3,-2']), seed: 37, carLimit: 6, walkerLimit: 32 });
-  const actors = city.agents.map(a => ({ ...a })), vehicle = actors.find(a => a.kind === 'CAR')!, child = actors.find(a => a.age === 'CHILD')!;
+  const actors = city.agents.map(a => ({ ...a })), vehicles = actors.filter(a => a.kind === 'CAR'), vehicle = vehicles[1]!, regular = vehicles[0]!, child = actors.find(a => a.age === 'CHILD')!;
   Object.defineProperty(city, 'agents', { get: () => actors });
   vi.spyOn(city, 'canDrive').mockReturnValue(true);
   // Route/body physics is qualified separately. This director test supplies
   // actual-arrival signals and checks ownership of the subsequent school visit.
   vi.spyOn(city, 'dispatchResponse').mockImplementation((role, targets) => {
-    vehicle.response = role; vehicle.current = targets[0]!; vehicle.next = vehicle.current;
-    vehicle.position = { x: vehicle.current.x + .5, y: vehicle.current.y + .5 }; vehicle.activity = 'REST'; return true;
+    const assigned=role==='BUS'?regular:vehicle;
+    assigned.response = role; assigned.current = targets[0]!; assigned.next = assigned.current;
+    assigned.position = { x: assigned.current.x + .5, y: assigned.current.y + .5 }; assigned.activity = 'REST'; return true;
+  });
+  // Regular service can now precede the school episode. This director seam
+  // must model release as well as assignment of its explicit actor snapshot.
+  vi.spyOn(city, 'clearResponses').mockImplementation((roles, id) => {
+    for (const actor of actors) if ((!id || actor.id === id) && actor.response && (!roles || roles.includes(actor.response))) actor.response = undefined;
   });
   vi.spyOn(city, 'dispatchVisit').mockImplementation(id => {
     if (!id.includes(':bus:')) return [];
     child.visit = { id, arrived: !id.endsWith(':school') }; return [child.id];
   });
-  vi.spyOn(city, 'boardVisit').mockImplementation(() => { if (child.carrier) return 0; child.carrier = vehicle.id; return 1; });
-  vi.spyOn(city, 'alightVisit').mockImplementation(() => { if (!child.carrier) return 0; child.carrier = undefined; return 1; });
+  vi.spyOn(city, 'boardVisit').mockImplementation((_id,vehicleId) => { if (child.carrier) return 0; child.carrier = vehicleId; return 1; });
+  vi.spyOn(city, 'alightVisit').mockImplementation(vehicleId => { if (child.carrier!==vehicleId) return 0; child.carrier = undefined; return 1; });
   const controller = createEverydayController('city', () => city, () => undefined), input = { tasks: [task], roads, walk, ground, blocked: new Set<string>(), decorations: [] };
   controller.compile(input); const view = { minX: -10, minY: -10, maxX: 70, maxY: 70 }, options = { enabled: true, economy: false, busy: new Set<string>(), roadBusy: false };
   controller.update(7000, view, options);
-  controller.update(8300, view, options); controller.update(14000, view, options);
+  controller.update(8300, view, options);
+  expect(controller.transit?.role).toBe('BUS');expect(child.carrier).toBe(regular.id);
+  controller.update(14000, view, options);
+  expect(controller.transit?.phase).toBe('ALIGHT');expect(child.carrier).toBeUndefined();
+  controller.update(19999,view,options);expect(controller.transit?.role).toBe('BUS');
+  controller.update(20000,view,options);controller.update(26000,view,options);
+  expect(regular.response).toBeUndefined();expect(vehicle.response).toBe('SCHOOL_BUS');
+  expect(controller.metrics.regularStops).toBe(1);
   const visit = child.visit?.id; expect(visit).toMatch(/:school$/);
   const changed = cause === 'delete' ? [] : [{ ...task, ...(cause === 'entrance' ? { accessPath: [{ x: 8, y: -2 }] }
     : cause === 'incident' ? { defectSummary: { active: 1, open: 1, inProgress: 0, verifying: 0 } }

@@ -90,7 +90,11 @@ test('touch: отказ ленты убирает старые карточки 
   const panel = await open(page); await expect(panel.locator('li')).toHaveCount(1); fail = true;
   await panel.getByRole('combobox', { name: 'Тип уведомлений' }).selectOption('COMMENT'); await expect(panel.getByRole('alert')).toContainText('Не удалось получить новости.'); await expect(panel.locator('li')).toHaveCount(0);
   fail = false; await panel.getByRole('button', { name: 'Повторить', exact: true }).focus(); await page.keyboard.press('Enter'); await expect(panel.locator('li')).toHaveCount(1);
-  await page.keyboard.press('Escape'); await expect(panel).toHaveCount(0); await expect(page.getByLabel('Уведомления', { exact: true })).toBeFocused();
+  await page.keyboard.press('Escape'); await expect(panel).toHaveCount(0);
+  // A closed native details hides its region before React removes that DOM.
+  // The summary has a unique title; the region shares only its accessible name.
+  await expect(page.getByTitle('Уведомления', { exact: true })).toBeFocused();
+  await expect(page.locator('.world-digest > .news-feed')).toHaveCount(0);
 });
 
 test('touch: новый комментарий остаётся непрочитанным, пока сохраняется прочтение предыдущей серии', async ({ page }) => {

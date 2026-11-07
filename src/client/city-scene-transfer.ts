@@ -1,6 +1,7 @@
 import type { CitySceneDto } from "../shared/city-scene-contract";
 import type { CellRunDto } from "../shared/contracts";
-import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "./cooperative-preparation";
+import { completePreparation, prepareCooperatively, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
+import { bindCitySceneRunField } from './city-scene-run-owner';
 
 type Fields = Record<string, unknown>;
 type RunMetadata = { fields: Fields; start: Fields; end: Fields;
@@ -28,10 +29,15 @@ function signature(value: unknown): string {
  * aliases remain in the same structured-clone graph, without another walk. */
 function* mapRunContainers(scene: CitySceneDto, map: (value: unknown) => unknown): Generator<void, CitySceneDto, void> {
   const memo = new WeakMap<object, object>();
+  const assign=(target:object,key:string,value:unknown)=>{
+    const next=map(value);
+    if(next instanceof PackedRunArray)bindCitySceneRunField(target,key,next);
+    else (target as Fields)[key]=next;
+  };
   function district(value: Fields): Fields {
     const cached = memo.get(value); if (cached) return cached as Fields;
     const next = { ...value }; memo.set(value, next);
-    if (Object.hasOwn(value, "cellRuns")) next.cellRuns = map(value.cellRuns);
+    if (Object.hasOwn(value, "cellRuns")) assign(next,'cellRuns',value.cellRuns);
     return next;
   }
   const chunks: CitySceneDto["chunks"] = [];
@@ -39,8 +45,8 @@ function* mapRunContainers(scene: CitySceneDto, map: (value: unknown) => unknown
     const cached = memo.get(chunk);
     if (cached) { chunks.push(cached as typeof chunk); yield; continue; }
     const next = { ...chunk }; memo.set(chunk, next);
-    next.roadRuns = map(chunk.roadRuns) as typeof chunk.roadRuns;
-    next.surfaceRuns = map(chunk.surfaceRuns) as typeof chunk.surfaceRuns;
+    assign(next,'roadRuns',chunk.roadRuns);
+    assign(next,'surfaceRuns',chunk.surfaceRuns);
     if (chunk.districts) {
       const districts = [];
       for (const value of chunk.districts) { districts.push(district(value)); yield; }
@@ -50,8 +56,8 @@ function* mapRunContainers(scene: CitySceneDto, map: (value: unknown) => unknown
       let context = memo.get(chunk.decorationContext) as typeof chunk.decorationContext | undefined;
       if (!context) {
         context = { ...chunk.decorationContext }; memo.set(chunk.decorationContext, context);
-        context.surfaceHaloRuns = map(context.surfaceHaloRuns) as typeof context.surfaceHaloRuns;
-        context.blockedCellRuns = map(context.blockedCellRuns) as typeof context.blockedCellRuns;
+        assign(context,'surfaceHaloRuns',context.surfaceHaloRuns);
+        assign(context,'blockedCellRuns',context.blockedCellRuns);
         if (context.districts) {
           const districts = [];
           for (const value of context.districts) { districts.push(district(value)); yield; }
@@ -121,10 +127,70 @@ export function packCitySceneTransfer(scene: CitySceneDto): CitySceneTransfer {
   return { kind: KIND, version: 1, scene: skeleton, coordinates, metadataIndices, arrays, metadata };
 }
 
-function* hydrate(value: CitySceneTransfer): Generator<void, CitySceneDto, void> {
+type RunStorage=Pick<CitySceneTransfer,'coordinates'|'metadataIndices'|'metadata'>;
+function decodedRun(value:RunStorage,index:number):CellRunDto {
+  const meta=value.metadata[value.metadataIndices[index]!];
+  if(!meta)throw new Error('Invalid city run metadata');
+  const offset=index*4;
+  const x1=value.coordinates[offset]!,y1=value.coordinates[offset+1]!,x2=value.coordinates[offset+2]!,y2=value.coordinates[offset+3]!;
+  if(meta.canonicalOrder)return {start:{x:x1,y:y1,...meta.start},end:{x:x2,y:y2,...meta.end},...meta.fields};
+  const point=(order:string[],fields:Fields,x:number,y:number)=>Object.fromEntries(order.map(key=>[key,key==='x'?x:key==='y'?y:fields[key]]));
+  const start=point(meta.startOrder,meta.start,x1,y1),end=point(meta.endOrder,meta.end,x2,y2);
+  return Object.fromEntries(meta.order.map(key=>[key,key==='start'?start:key==='end'?end:meta.fields[key]])) as CellRunDto;
+}
+function freezeRun(run:CellRunDto):CellRunDto{Object.freeze(run.start);Object.freeze(run.end);return Object.freeze(run);}
+class PackedRunArray {
+  #cache:WeakRef<CellRunDto[]>|undefined;
+  constructor(private readonly storage:RunStorage,private readonly offset:number,private readonly length:number){}
+  read():CellRunDto[]{
+    let runs=this.#cache?.deref();if(runs)return runs;
+    runs=Array.from({length:this.length},(_,index)=>freezeRun(decodedRun(this.storage,this.offset+index)));
+    Object.freeze(runs);this.#cache=new WeakRef(runs);return runs;
+  }
+}
+function freezeMetadata(value:unknown,seen=new WeakSet<object>()):void{
+  if(!value||typeof value!=='object'||seen.has(value))return;
+  seen.add(value);for(const child of Object.values(value))freezeMetadata(child,seen);Object.freeze(value);
+}
+const record=(value:unknown):value is Fields=>!!value&&typeof value==='object'&&!Array.isArray(value);
+function validFieldOrder(order:unknown,fields:unknown,coordinates:readonly [string,string]):boolean{
+  if(!Array.isArray(order)||!record(fields)||order.length!==Object.keys(fields).length+2
+    ||coordinates.some(key=>Object.hasOwn(fields,key)))return false;
+  const seen=new Set<string>();
+  for(const key of order){
+    if(typeof key!=='string'||seen.has(key)||!coordinates.includes(key)&&!Object.hasOwn(fields,key))return false;
+    seen.add(key);
+  }
+  return coordinates.every(key=>seen.has(key));
+}
+function validRunMetadata(value:unknown):value is RunMetadata{
+  if(!record(value)||!validFieldOrder(value.order,value.fields,['start','end'])
+    ||!validFieldOrder(value.startOrder,value.start,['x','y'])||!validFieldOrder(value.endOrder,value.end,['x','y'])
+    ||value.canonicalOrder!==undefined&&typeof value.canonicalOrder!=='boolean')return false;
+  const meta=value as unknown as RunMetadata;
+  return !meta.canonicalOrder||meta.order[0]==='start'&&meta.order[1]==='end'
+    &&meta.startOrder[0]==='x'&&meta.startOrder[1]==='y'&&meta.endOrder[0]==='x'&&meta.endOrder[1]==='y';
+}
+
+function assertRunBuffers(value:CitySceneTransfer):void{
   if (value.version !== 1 || !(value.coordinates instanceof Float64Array) || !(value.metadataIndices instanceof Uint32Array)
     || value.coordinates.length !== value.metadataIndices.length * 4) throw new Error("Invalid city run transfer");
-  const arrays: CellRunDto[][] = []; let expected = 0;
+}
+function* hydrate(value: CitySceneTransfer, immutable = false, packed = false): Generator<void, CitySceneDto, void> {
+  assertRunBuffers(value);
+  // A packed reader owns only numeric storage and metadata. Do not put the
+  // original carrier or its scene skeleton into an escaping reader closure.
+  const storage:RunStorage={coordinates:value.coordinates,metadataIndices:value.metadataIndices,metadata:value.metadata};
+  if(immutable){
+    if(!Array.isArray(storage.metadata))throw new Error('Invalid city run metadata');
+    const seen=new WeakSet<object>();
+    for(const meta of storage.metadata){
+      if(!validRunMetadata(meta))throw new Error('Invalid city run metadata');
+      freezeMetadata(meta,seen);yield;
+    }
+    Object.freeze(storage.metadata);
+  }
+  const arrays: Array<CellRunDto[]|PackedRunArray> = []; let expected = 0;
   for (const descriptor of value.arrays) {
     if (!Number.isSafeInteger(descriptor.offset) || !Number.isSafeInteger(descriptor.length) || descriptor.length < 0
       || descriptor.offset !== expected || descriptor.offset + descriptor.length > value.metadataIndices.length) throw new Error("Invalid city run range");
@@ -132,17 +198,16 @@ function* hydrate(value: CitySceneTransfer): Generator<void, CitySceneDto, void>
     for (let local = 0; local < descriptor.length; local++) {
       const index = descriptor.offset + local, meta = value.metadata[value.metadataIndices[index]!];
       if (!meta) throw new Error("Invalid city run metadata");
-      const offset = index * 4;
-      const x1=value.coordinates[offset]!,y1=value.coordinates[offset+1]!,x2=value.coordinates[offset+2]!,y2=value.coordinates[offset+3]!;
-      if(meta.canonicalOrder)runs.push({start:{x:x1,y:y1,...meta.start},end:{x:x2,y:y2,...meta.end},...meta.fields});
-      else {
-        const point=(order:string[],fields:Fields,x:number,y:number)=>Object.fromEntries(order.map(key=>[key,key==="x"?x:key==="y"?y:fields[key]]));
-        const start=point(meta.startOrder,meta.start,x1,y1),end=point(meta.endOrder,meta.end,x2,y2);
-        runs.push(Object.fromEntries(meta.order.map(key=>[key,key==="start"?start:key==="end"?end:meta.fields[key]])) as CellRunDto);
+      const offset=index*4;
+      if(immutable){
+        if(!Number.isFinite(value.coordinates[offset])||!Number.isFinite(value.coordinates[offset+1])
+          ||!Number.isFinite(value.coordinates[offset+2])||!Number.isFinite(value.coordinates[offset+3]))throw new Error('Invalid city run coordinates');
       }
+      if(!packed){const run=decodedRun(storage,index);runs.push(immutable?freezeRun(run):run);}
       if ((local & 63) === 63) yield;
     }
-    arrays.push(runs); expected += descriptor.length; yield;
+    if (immutable) Object.freeze(runs);
+    arrays.push(packed?new PackedRunArray(storage,descriptor.offset,descriptor.length):runs); expected += descriptor.length; yield;
   }
   if (expected !== value.metadataIndices.length) throw new Error("Invalid city run coverage");
   return yield* mapRunContainers(value.scene as CitySceneDto, ref => {
@@ -152,8 +217,20 @@ function* hydrate(value: CitySceneTransfer): Generator<void, CitySceneDto, void>
     return arrays[index];
   });
 }
+function* hydrateCarrier(value:CitySceneTransfer,immutable:boolean):Generator<void,CitySceneDto,void>{
+  assertRunBuffers(value);
+  // This phase runs inside the cooperative promise owner, after its first
+  // abort check. Invalid buffers/clone failures reject that promise too.
+  const owned=immutable?{...value,coordinates:value.coordinates.slice(),metadataIndices:value.metadataIndices.slice(),
+    arrays:value.arrays.map(range=>({...range})),metadata:structuredClone(value.metadata)}:value;
+  return yield* hydrate(owned,immutable,immutable&&typeof WeakRef==='function');
+}
+export type CitySceneHydrationOptions = CooperativePreparationOptions & { runStorage?: 'PACKED_IMMUTABLE' };
 export function hydrateCitySceneTransfer(value: CitySceneTransfer | CitySceneDto,
-  options: CooperativePreparationOptions = {}): Promise<CitySceneDto> {
-  return "kind" in value && value.kind === KIND
-    ? prepareCooperatively(hydrate(value), options) : Promise.resolve(value as CitySceneDto);
+  options: CitySceneHydrationOptions = {}): Promise<CitySceneDto> {
+  if (!("kind" in value && value.kind === KIND)) return Promise.resolve(value as CitySceneDto);
+  const immutable=options.runStorage==='PACKED_IMMUTABLE';
+  // Immutable readers own their metadata; freezing their result must never
+  // freeze or alias a caller's mutable private carrier.
+  return prepareCooperatively(hydrateCarrier(value,immutable), options);
 }

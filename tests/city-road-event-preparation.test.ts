@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCityMobility, prepareCityMobilityNetworkAsync } from "../src/client/city-mobility";
 import { buildMobilityNetwork } from "../src/client/city-mobility-network";
 import { prepareRoadEventGeometrySteps } from "../src/client/city-road-event-geometry";
-import { prepareCooperatively } from "../src/client/cooperative-preparation";
+import { prepareCooperatively } from "../src/shared/cooperative-preparation";
 import type { Cell, RoadCellDto } from "../src/shared/contracts";
 
 const key = (cell: Cell) => `${cell.x},${cell.y}`;
@@ -24,6 +24,17 @@ function streetGrid(offsets: readonly number[], read: (x: number) => void = () =
 const population = { walkGraph: new Map<string, Cell>(), crosswalks: new Set<string>(), activityCells: new Set<string>(), seed: 73, carLimit: 1, walkerLimit: 0 };
 
 describe("prepared road event geometry", () => {
+  it('uses available services near the viewed neighbourhood instead of only the first six spawned cars', () => {
+    const city = createCityMobility({ ...population, roads: streetGrid(Array.from({ length: 10 }, (_, i) => i * 1000)), carLimit: 24, transitFleet: true });
+    const responders = city.agents.filter(a => !a.fleet), district = (x: number) => Math.floor((x + 2) / 1000);
+    const local = responders.find(a => !responders.slice(0, 6).some(first => district(first.position.x) === district(a.position.x)))!;
+    expect(local).toBeDefined(); const minX = district(local.position.x) * 1000 - 4;
+    const view = { minX, minY: -4, maxX: minX + 50, maxY: 46 };
+    const visible = (site: ReturnType<typeof city.roadEventSites>[number]) => site.cells.every(c => c.x >= view.minX && c.x <= view.maxX);
+    expect(city.roadEventSites().filter(visible)).toEqual([]);
+    expect(city.roadEventSites(view).filter(visible).length).toBeGreaterThan(0);
+    expect(city.metrics.networkBuilds).toBe(1);
+  });
   it("reuses static distant geometry after construction while returning the same real reachable sites", () => {
     let denyDistant = false, occupiedLeft = false;
     const roads = streetGrid([0, 1000], x => {

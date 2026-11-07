@@ -3,7 +3,7 @@ import {renderToStaticMarkup} from "react-dom/server";
 import {CityWorldObservation} from "../src/client/components/CityWorldObservation";
 import type {InspectionSnapshot} from "../src/client/city-world-inspection";
 const snapshot:InspectionSnapshot={item:{kind:"PLACE",local:true,title:"Школа",phase:"READY",task:{countryId:"country",taskId:"school"}},following:false,canFollow:false,ended:false};
-const props={onClose:()=>{},onFollow:()=>{},onTask:()=>{},onTourClose:()=>{},onChoose:()=>{}};
+const props={onClose:()=>{},onFollow:()=>{},onTask:()=>{}};
 it("keeps the active place task action but removes an obsolete task button after the inspected place ends",()=>{
  expect(renderToStaticMarkup(<CityWorldObservation {...props} snapshot={snapshot}/>)).toContain("Открыть задачу");
  const ended=renderToStaticMarkup(<CityWorldObservation {...props} snapshot={{...snapshot,ended:true}}/>);
@@ -14,4 +14,11 @@ it("describes a boarding ferry at its real berth instead of claiming it is trave
   title:"Паром",phase:"STOPPED",activity:"BOARDING",fromName:"Приморск",toName:"Сосново",progress:0,local:true,waiting:2,aboard:1,boarded:1,alighted:0}};
  const html=renderToStaticMarkup(<CityWorldObservation {...props} snapshot={ferry}/>);
  expect(html).toContain("Посадка пассажиров");expect(html).toContain("У причала");
+});
+it('describes a city bus stop without a fabricated trip percentage or terminal task',()=>{
+ const bus:InspectionSnapshot={...snapshot,item:{kind:'TRANSPORT',transportKind:'BUS',routeId:'line',vehicleId:'bus',journeyId:'ride',
+  title:'Автобус',phase:'BOARD',activity:'BOARDING',fromName:'Остановка1',toName:'Остановка2',progress:0,local:true,waiting:2,aboard:1,boarded:1,alighted:0}};
+ const html=renderToStaticMarkup(<CityWorldObservation {...props} snapshot={bus}/>);
+ expect(html).toContain('Городской маршрут');expect(html).toContain('У остановки');
+ expect(html).not.toContain('Путь рейса');expect(html).not.toContain('Открыть задачу');
 });

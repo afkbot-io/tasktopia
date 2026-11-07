@@ -1,3 +1,4 @@
+import { captureOwnedCityFailure } from './owned-city-failure';
 import { observeCinematics, type CineSample } from './city-cinematic-observer';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
 import { sceneClockStepTowardStart } from '../scene-clock-step';
@@ -71,65 +72,102 @@ test('реальные MCP комментарии и документы ожив
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const reads:string[]=[];page.on('request',r=>{const p=new URL(r.url()).pathname;if(r.method()==='GET'&&(/\/scene$|\/world\/viewport|\/chunks\//.test(p)))reads.push(p);});
  type ActivityPose={taskId:string;eventId:number;kind:string;phase:string;arrived:number;visitors:number;static:boolean};
- type Admission={pose:ActivityPose;observedAtMs:number;started:number;merged:number;delivered:number};
+ type Admission={pose:ActivityPose;observedAtMs:number;started:number;merged:number;delivered:number;fixedSteps:number};
  type ActivityNode=HTMLElement&{__qaActivity?:{observer:MutationObserver;records:Array<{activity:string;first:Record<string,string|number|null>;last:Record<string,string|number|null>}>}};
  let admissionEvidence:Record<string,unknown>={branch:'UNOBSERVED'};
  try {
-  await f.focus(f.task);
-  await page.locator('.world-menu > summary').click();const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
-  await f.host.evaluate(el=>{
-   const node=el as ActivityNode,records:NonNullable<ActivityNode['__qaActivity']>['records']=[];
-   const read=()=>{
-    const d=node.dataset,activity=d.taskActivity??'[]';
-    const state={performanceNowMs:performance.now(),dateNowMs:Date.now(),fixedSteps:d.mobilityFixedSteps??null,
-     serverNow:d.roadEventServerNow??null,walkState:d.residentWalkState??null,maxWait:d.pedestrianMaxWaitMs??null,
-     networkBuilds:d.mobilityNetworkBuilds??null,quality:d.worldQuality??null,animationActive:d.animationActive??null,
-     preparing:d.movementPreparing??null,sceneCommit:d.citySceneCommit??null,delivered:d.taskActivityDelivered??null,
-     started:d.taskActivityStarted??null,merged:d.taskActivityMerged??null};
-    const previous=records.at(-1);
-    if(previous?.activity===activity)previous.last=state;
-    else{records.push({activity,first:state,last:state});if(records.length>32)records.shift();}
-   };
-   const observer=new MutationObserver(read);node.__qaActivity={observer,records};
-   observer.observe(node,{attributes:true,attributeFilter:['data-task-activity','data-mobility-fixed-steps']});read();
-  });
-  const baseline=reads.length;
-  const poses=async()=>JSON.parse(await f.host.getAttribute('data-task-activity')??'[]') as ActivityPose[];
-  // Read the FIRST published COMMENT, not a late zero-visitor frame after cancellation.
-  const firstAdmission=()=>f.host.evaluate((el,taskId)=>{
-   for(const record of (el as ActivityNode).__qaActivity?.records??[]){
-    const pose=(JSON.parse(record.activity) as ActivityPose[]).find(p=>p.taskId===taskId&&p.kind==='COMMENT');
-    if(pose)return {pose,observedAtMs:Number(record.first.dateNowMs),started:Number(record.first.started),
-     merged:Number(record.first.merged),delivered:Number(record.first.delivered)} satisfies Admission;
+  const negativeAttempts:Record<string,unknown>[]=[];
+  const attemptComment=async()=>{
+   await f.focus(f.task);
+   await page.locator('.world-menu > summary').click();const preferences=page.locator('.world-preferences:visible');await preferences.locator('> summary').click();await preferences.getByLabel('Детализация').selectOption('NORMAL');await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+   await f.host.evaluate(el=>{
+    const node=el as ActivityNode,records:NonNullable<ActivityNode['__qaActivity']>['records']=[];
+    const read=()=>{
+     const d=node.dataset,activity=d.taskActivity??'[]';
+     const state={performanceNowMs:performance.now(),dateNowMs:Date.now(),fixedSteps:d.mobilityFixedSteps??null,
+      serverNow:d.roadEventServerNow??null,walkState:d.residentWalkState??null,maxWait:d.pedestrianMaxWaitMs??null,
+      networkBuilds:d.mobilityNetworkBuilds??null,quality:d.worldQuality??null,animationActive:d.animationActive??null,
+      preparing:d.movementPreparing??null,sceneCommit:d.citySceneCommit??null,delivered:d.taskActivityDelivered??null,
+      started:d.taskActivityStarted??null,merged:d.taskActivityMerged??null};
+     const previous=records.at(-1);
+     if(previous?.activity===activity)previous.last=state;
+     else{records.push({activity,first:state,last:state});if(records.length>32)records.shift();}
+    };
+    const observer=new MutationObserver(read);node.__qaActivity={observer,records};
+    observer.observe(node,{attributes:true,attributeFilter:['data-task-activity','data-mobility-fixed-steps']});read();
+   });
+   const baseline=reads.length;
+   const poses=async()=>JSON.parse(await f.host.getAttribute('data-task-activity')??'[]') as ActivityPose[];
+   // Read the FIRST published COMMENT, not a late zero-visitor frame after cancellation.
+   const firstAdmission=()=>f.host.evaluate((el,taskId)=>{
+    for(const record of (el as ActivityNode).__qaActivity?.records??[]){
+     const pose=(JSON.parse(record.activity) as ActivityPose[]).find(p=>p.taskId===taskId&&p.kind==='COMMENT');
+     if(pose)return {pose,observedAtMs:Number(record.first.dateNowMs),started:Number(record.first.started),
+      merged:Number(record.first.merged),delivered:Number(record.first.delivered),fixedSteps:Number(record.first.fixedSteps)} satisfies Admission;
+    }
+    return null;
+   },f.task.id);
+   const key=crypto.randomUUID(),comment={taskId:f.task.id,body:'Обсудим следующий шаг'};
+   await f.call('task.add_comment',comment,key);
+   await expect.poll(firstAdmission).toMatchObject({pose:{taskId:f.task.id,kind:'COMMENT',static:false}});
+   const admission=(await firstAdmission())!,starts=admission.started;
+   expect(Number.isInteger(admission.pose.visitors)).toBe(true);expect(admission.pose.visitors).toBeGreaterThanOrEqual(0);
+   expect(admission.pose.eventId).toBeGreaterThan(0);expect(starts).toBeGreaterThan(0);
+   const delivery=admission.pose.visitors>0;
+   admissionEvidence={branch:delivery?'DELIVERY':'SIGNAL',admission,negativeAttempts};
+   if(delivery)expect(['DELIVER','DISCUSS']).toContain(admission.pose.phase);
+   else expect(admission.pose).toMatchObject({phase:'SIGNAL',visitors:0,arrived:0,static:false});
+   await f.call('task.add_comment',comment,key);
+   const duplicate=(await poses()).find(p=>p.taskId===f.task.id)!;
+   expect(duplicate).toMatchObject({eventId:admission.pose.eventId,kind:'COMMENT',static:false});
+   expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
+   expect(Number(await f.host.getAttribute('data-task-activity-merged'))).toBe(admission.merged);
+   if(!delivery)expect(duplicate).toMatchObject({phase:'SIGNAL',visitors:0,arrived:0});
+   admissionEvidence.duplicate=duplicate;
+   if(delivery){
+    await page.screenshot({path:info.outputPath('comment-envelope.png')});
+    let outcome='WAIT';
+    await expect.poll(async()=>{
+     const pose=(await poses()).find(p=>p.taskId===f.task.id&&p.eventId===admission.pose.eventId);
+     outcome=pose?.phase==='DISCUSS'?'ARRIVED':pose?'WAIT':'ENDED';return outcome;
+    },{timeout:35000}).not.toBe('WAIT');
+    if(outcome==='ENDED'){
+     // A free-flow admission is not an arrival guarantee in a live queue.
+     // Keep this bounded physical cancellation negative and require another
+     // actual delivery; never turn a vanished envelope into DISCUSS.
+     expect(await poses()).toEqual([]);
+     expect(Number(await f.host.getAttribute('data-task-activity-delivered'))).toBe(admission.delivered);
+     expect(Number(await f.host.getAttribute('data-mobility-fixed-steps'))-admission.fixedSteps).toBeGreaterThanOrEqual(500);
+     await expect(f.host).toHaveAttribute('data-map-active','true');
+     await expect(f.host).toHaveAttribute('data-animation-active','true');
+     await expect(f.host).toHaveAttribute('data-city-scene-commit','atomic');
+     await f.call('task.add_comment',comment,key);
+     await expect(f.host).toHaveAttribute('data-task-activity','[]');
+     expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
+     expect(reads.slice(baseline)).toEqual([]);expect(errors).toEqual([]);
+     const terminal=await f.host.evaluate(el=>{
+      const node=el as ActivityNode,d=node.dataset;
+      return {history:node.__qaActivity?.records??[],safety:[d.mobilityVehicleUnsafeTotal,d.mobilityPedestrianUnsafeTotal,
+       d.mobilityVehiclePedestrianUnsafeTotal,d.wrongWayCars,d.walkerOffPath]};
+     });
+     expect(terminal.safety).toEqual(['0','0','0','0','0']);
+     negativeAttempts.push({admission,reason:'ENDED_WITHOUT_ARRIVAL',history:terminal.history,safety:terminal.safety});
+     return undefined;
+    }
+    expect((await poses()).find(p=>p.taskId===f.task.id)!.arrived).toBeGreaterThan(0);
+    await page.screenshot({path:info.outputPath('comment-discussion.png')});
    }
-   return null;
-  },f.task.id);
-  const key=crypto.randomUUID(),comment={taskId:f.task.id,body:'Обсудим следующий шаг'};
-  await f.call('task.add_comment',comment,key);
-  await expect.poll(firstAdmission).toMatchObject({pose:{taskId:f.task.id,kind:'COMMENT',static:false}});
-  const admission=(await firstAdmission())!,starts=admission.started;
-  expect(Number.isInteger(admission.pose.visitors)).toBe(true);expect(admission.pose.visitors).toBeGreaterThanOrEqual(0);
-  expect(admission.pose.eventId).toBeGreaterThan(0);expect(starts).toBeGreaterThan(0);
-  const delivery=admission.pose.visitors>0;
-  admissionEvidence={branch:delivery?'DELIVERY':'SIGNAL',admission};
-  if(delivery)expect(['DELIVER','DISCUSS']).toContain(admission.pose.phase);
-  else expect(admission.pose).toMatchObject({phase:'SIGNAL',visitors:0,arrived:0,static:false});
-  await f.call('task.add_comment',comment,key);
-  const duplicate=(await poses()).find(p=>p.taskId===f.task.id)!;
-  expect(duplicate).toMatchObject({eventId:admission.pose.eventId,kind:'COMMENT',static:false});
-  expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
-  expect(Number(await f.host.getAttribute('data-task-activity-merged'))).toBe(admission.merged);
-  if(!delivery)expect(duplicate).toMatchObject({phase:'SIGNAL',visitors:0,arrived:0});
-  admissionEvidence.duplicate=duplicate;
-  if(delivery){
-   await page.screenshot({path:info.outputPath('comment-envelope.png')});
-   await expect.poll(poses,{timeout:35000}).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'COMMENT',phase:'DISCUSS',arrived:expect.any(Number)})]));
-   expect((await poses()).find(p=>p.taskId===f.task.id)!.arrived).toBeGreaterThan(0);
-   await page.screenshot({path:info.outputPath('comment-discussion.png')});
-  }
+   return {baseline,poses,key,comment,admission,starts,delivery};
+  };
+  let successful:Awaited<ReturnType<typeof attemptComment>>=undefined;
+  // Three independent real openings retain the original35s delivery and
+  // 120s whole-test caps. Every failed admission is recorded, never positive.
+  for(let attempt=0;attempt<3&&!successful;attempt++)successful=await attemptComment();
+  expect(successful,'No comment signal or real discussion in three bounded openings').toBeTruthy();
+  const {baseline,poses,key,comment,admission,starts,delivery}=successful!;
   await Promise.all(Array.from({length:5},(_,i)=>f.call('task.add_comment',{taskId:f.task.id,body:`Продолжение обсуждения ${i+1}`})));
   await expect.poll(async()=>Number(await f.host.getAttribute('data-task-activity-merged'))).toBeGreaterThanOrEqual(1);
-  expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6);
+  expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6+negativeAttempts.length);
   expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
   await f.call('task.update_fields',{taskId:f.task.id,description:'Уточнённое описание для проверки живого обновления'});
   await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'UPDATE'})]));
@@ -143,7 +181,7 @@ test('реальные MCP комментарии и документы ожив
    await f.call('task.add_comment',comment,key);
    await expect(f.host).toHaveAttribute('data-task-activity','[]');
    expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
-   expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6);
+   expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6+negativeAttempts.length);
    admissionEvidence.expiredWithoutReplay=true;
   }
   expect(reads.slice(baseline)).toEqual([]);
@@ -165,10 +203,14 @@ test('реальные MCP комментарии и документы ожив
   await info.attach('feedback-frame-cpu',{body:JSON.stringify({...cpu,activityBranch:admissionEvidence.branch}),contentType:'application/json'});
   expect(cpu.p95).toBeLessThanOrEqual(8);
   expect(errors).toEqual([]);
+ } catch (error) {
+  await captureOwnedCityFailure(info, f.service, f.user.countryId, f.city.id); throw error;
  } finally {
   let timer:ReturnType<typeof setTimeout>|undefined;
   try{
-   const frames=await Promise.race([f.host.evaluate(el=>{const record=(el as ActivityNode).__qaActivity;record?.observer.disconnect();return record?.records??null;}).catch(error=>({unavailable:String(error).slice(0,300)})),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:'public activity capture exceeded1000ms'}),1000);})]);
+   // A hosted native software frame can take over1s. Bound this diagnostic
+   // read separately, after the unchanged functional and native CPU assertions.
+   const frames=await Promise.race([f.host.evaluate(el=>{const record=(el as ActivityNode).__qaActivity;record?.observer.disconnect();return record?.records??null;}).catch(error=>({unavailable:String(error).slice(0,300)})),new Promise(resolve=>{timer=setTimeout(()=>resolve({unavailable:'public activity capture exceeded3000ms'}),3000);})]);
    await info.attach('comment-public-activity-history',{body:JSON.stringify(frames),contentType:'application/json'});
    await info.attach('comment-admission-contract',{body:JSON.stringify(admissionEvidence),contentType:'application/json'});
   }finally{if(timer)clearTimeout(timer);await f.cleanup();}
@@ -191,7 +233,9 @@ test('touch-sized комментарий в reduced motion статичен, и�
 });
 
 test('MCP/WebSocket keeps the old building through all stages, delivers a helicopter transfer and leaves ruins after demolition',async({page},info)=>{
- test.setTimeout(180000);await page.setViewportSize({width:1440,height:1100});
+ test.setTimeout(180000);
+ if(info.project.use.isMobile)expect(page.viewportSize()!.width).toBeLessThan(500);
+ else await page.setViewportSize({width:1440,height:1100});
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const f=await fixture(page);
  try{
@@ -398,6 +442,21 @@ clockSceneTest('all seven road scenes dispatch moving services, close and reopen
  try{
   // Protocol/trace latency must not advance a second calendar window.
   await f.focus(f.task);await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));const kinds=new Set<string>();
+  // Do not adopt a late episode already active when the map opened: its
+  // remaining calendar window may admit the next kind during the35s sample.
+  // Arrange the first future window through the ordinary preference control.
+  const life=async(on:boolean)=>{
+   await page.locator('.world-menu > summary').click();const prefs=page.locator('.world-preferences:visible');await prefs.locator('> summary').click();
+   await prefs.getByLabel('Жизнь города').setChecked(on);await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.clock.runFor(100);
+  };
+  await life(false);
+  const first=Number(await f.host.getAttribute('data-road-event-next-start'));
+  for(let step=0;step<4;step++){
+   const now=Number(await f.host.getAttribute('data-road-event-server-now'));if(now>=first-2000)break;
+   await page.clock.fastForward(sceneClockStepTowardStart(now,first-2000));await page.clock.runFor(100);
+  }
+  expect(Number(await f.host.getAttribute('data-road-event-server-now'))).toBeLessThan(first);
+  await life(true);
   for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    await expect(f.host).toHaveAttribute('data-road-event-server-now',/\d{13}/);
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
@@ -463,10 +522,24 @@ test('native road captures cover every scene without adding standalone props or 
  test.setTimeout(90000);await page.setViewportSize({width:1440,height:1100});await installSceneClock(page);const f=await fixture(page),kinds=new Set<string>(),errors:string[]=[],standalone:string[]=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/\/props\/[^/]+\.png/.test(request.url()))standalone.push(request.url());});
  try{
   await f.focus(f.task);await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));
+  // A late episode gets its full duration at admission and can overlap the
+  // next calendar window. Start before a fresh window, as the physics case does.
+  const life=async(on:boolean)=>{
+   await page.locator('.world-menu > summary').click();const prefs=page.locator('.world-preferences:visible');await prefs.locator('> summary').click();
+   await prefs.getByLabel('Жизнь города').setChecked(on);await page.keyboard.press('Escape');await page.keyboard.press('Escape');await page.clock.runFor(100);
+  };
+  await life(false);
+  const first=Number(await f.host.getAttribute('data-road-event-next-start'));
+  for(let step=0;step<4;step++){
+   const now=Number(await f.host.getAttribute('data-road-event-server-now'));if(now>=first-2000)break;
+   await page.clock.fastForward(sceneClockStepTowardStart(now,first-2000));await page.clock.runFor(100);
+  }
+  expect(Number(await f.host.getAttribute('data-road-event-server-now'))).toBeLessThan(first);
+  await life(true);
   for(let attempt=0;attempt<21&&kinds.size<7;attempt++){
    for(let advance=0;advance<4&&!(await f.host.getAttribute('data-road-event'));advance++){
     const now=Number(await f.host.getAttribute('data-road-event-server-now')),next=Number(await f.host.getAttribute('data-road-event-next-start'));
-    await page.clock.fastForward(Math.max(100,next-now+300));await page.clock.runFor(100);
+    await page.clock.fastForward(sceneClockStepTowardStart(now,next));await page.clock.runFor(100);
    }
    const kind=await f.host.getAttribute('data-road-event');if(!kind)continue;
    await page.clock.fastForward(4500);await page.clock.runFor(100);await page.screenshot({path:info.outputPath(`road-${kind.toLowerCase()}.png`)});kinds.add(kind);

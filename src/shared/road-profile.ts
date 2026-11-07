@@ -10,11 +10,13 @@ function key(cell: Cell): string {
   return `${cell.x},${cell.y}`;
 }
 
-type RoadProfileCell = Cell & { roadClass?: RoadCellDto["roadClass"] };
+type RoadProfileCell = Cell & { roadClass?: RoadCellDto["roadClass"]; widthCells?: 3 };
+const narrowBand = (cell: RoadProfileCell) => cell.roadClass === "LOCAL" || cell.widthCells === 3;
 
 function belongsToBand(graph: ReadonlyMap<string, RoadProfileCell>, origin: RoadProfileCell, candidate: Cell): boolean {
   const value = graph.get(key(candidate));
-  return Boolean(value && (!origin.roadClass || !value.roadClass || value.roadClass === origin.roadClass));
+  return Boolean(value && (!origin.roadClass || !value.roadClass || value.roadClass === origin.roadClass
+    || narrowBand(origin) && narrowBand(value)));
 }
 
 function axisRun(graph: ReadonlyMap<string, RoadProfileCell>, cell: RoadProfileCell, dx: number, dy: number): number {
@@ -76,7 +78,7 @@ export function roadBandRole(graph: ReadonlyMap<string, RoadProfileCell>, cell: 
   // crossing or bend has at least one four-cell arm on each axis. Local roads
   // use the analogous two-cell threshold. Directional runs avoid confusing a
   // wide straight asphalt envelope with a junction.
-  const junctionArm = profileCell.roadClass === "LOCAL" ? 4 : profileCell.roadClass ? 8 : 4;
+  const junctionArm = narrowBand(profileCell) ? 4 : profileCell.roadClass ? 8 : 4;
   const north = directionalBandRun(graph, profileCell, 0, -1);
   const east = directionalBandRun(graph, profileCell, 1, 0);
   const south = directionalBandRun(graph, profileCell, 0, 1);

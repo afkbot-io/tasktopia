@@ -29,7 +29,7 @@ test('server session revocation removes the private card and returns to sign-in'
   const bootstrap = await (await page.request.get('/api/bootstrap')).json();
   const tasks = await (await page.request.get(`/api/tasks/list-page?countryId=${bootstrap.country.id}&limit=1`)).json() as TaskListPageDto;
   const task = tasks.items[0]; expect(task).toBeTruthy();
-  await page.goto(`/task/${task.taskNumber}?countryId=${bootstrap.country.id}&taskId=${task.id}`);
+  await page.goto(`/task/${task.taskNumber}?countryId=${bootstrap.country.id}&taskId=${task.id}`,{waitUntil:'domcontentloaded'});
   await expect(page.locator('#task-title')).toHaveText(task.title);
   await expect.poll(() => connectedReplay).toBe(true);
   await page.route('**/api/bootstrap', route => route.fulfill({ status: 401, json: { error: 'Session expired' } }));
@@ -47,7 +47,7 @@ test('real session logout removes an already open card through the server discon
   const task = tasks.items[0];
   let connected = false;
   page.on('request', request => { if (request.url().includes('/api/events?after=')) connected = true; });
-  await page.goto(`/task/${task.taskNumber}?countryId=${bootstrap.country.id}&taskId=${task.id}`);
+  await page.goto(`/task/${task.taskNumber}?countryId=${bootstrap.country.id}&taskId=${task.id}`,{waitUntil:'domcontentloaded'});
   await expect(page.locator('#task-title')).toHaveText(task.title);
   await expect.poll(() => connected).toBe(true);
   expect((await page.request.post('/api/auth/logout')).status()).toBe(200);

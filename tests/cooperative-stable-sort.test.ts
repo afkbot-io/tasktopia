@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { completePreparation, prepareCooperatively, stableSortPreparation } from '../src/client/cooperative-preparation';
+import { completePreparation, prepareCooperatively, stableSortPreparation } from '../src/shared/cooperative-preparation';
 
 it('sorts complete canonical keys stably without per-comparison scheduler overhead', async () => {
   const input = Array.from({ length: 32_768 }, (_, index) => ({ key: (index * 73) % 997, index }));

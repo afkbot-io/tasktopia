@@ -24,6 +24,8 @@ describe("compiled mobility routing", () => {
     edges.get = () => { throw new Error('Topology rescan'); };
     plan.setBlocked(new Set(['1,1', 'absent']));
     expect(plan(start, previous, target, 8).routeTo(target)).toEqual([]);
+    expect(plan.planning(start, previous, target, 8).routeTo(target)).toEqual(before.routeTo(target));
+    expect(plan(start, previous, target, 8).routeTo(target), 'Planning must never remove the live closure').toEqual([]);
     expect(before.routeTo(target)).toEqual([start, { x: 1, y: 1 }, { x: 0, y: 1 }, target]);
     plan.setBlocked(new Set());
     expect(plan(start, previous, target, 8).routeTo(target)).toEqual(before.routeTo(target));

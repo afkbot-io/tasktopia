@@ -2,15 +2,16 @@ import { Container, Graphics, Sprite, FederatedPointerEvent, EventBoundary, type
 import type { Cell, ChunkTaskDto, Rect } from "../shared/contracts";
 import { microDirection } from "../shared/micro-ambient";
 import { createCityCinematics, type CityCinematicFrame, type CityCinematicRequest } from "./city-cinematics";
-import { planCinematicCrew } from "./city-cinematic-crew";
+import { planCinematicCrew,type CrewWalkIndex,type CrewMembership } from "./city-cinematic-crew";
 import { incidentEffectPixels } from "./incident-pixels";
+import { transportBuildingArt } from "../shared/transport-building-art";
 
 type Capture = { task: ChunkTaskDto; building: Container; platform?: Container };
 type Target = { task?: ChunkTaskDto; building?: Container; platform?: Container; markers: Container[]; version: number };
 type Shot = Capture & { x: number; y: number; platformX: number; platformY: number; bounds: Rect; visual: {x:number;y:number;width:number;height:number}; root: Container; pixels: Graphics; aircraft: Sprite;
-  workers: { view: Sprite; path: Cell[] }[]; hidden: Set<Container>; target?: Target; sounded: Set<string> };
+  workers: { view: Sprite; path: Cell[] }[]; hidden: Set<Container>; target?: Target; targetPosition?: {x:number;y:number}; sounded: Set<string> };
 type Options = { layer: Container; airLayer: Container; texture(key: string): Texture | undefined;
-  walk(): ReadonlyMap<string, Cell>; roads(): ReadonlySet<string>; economy(): boolean;
+  walk(): CrewWalkIndex; roads(): CrewMembership; occupied?(): ReadonlySet<string>; economy(): boolean;
   sound(cue: "hammer" | "blast" | "rotor" | "reveal"): void; complete(frame: CityCinematicFrame, bounds: Rect): void };
 
 /** Owns only captured presentation objects. Authoritative task records remain
@@ -49,6 +50,7 @@ export function createCityCinematicView(options: Options) {
       if (existing) { if (request.kind !== "CONSTRUCT") { existing.building.eventMode = "none"; existing.building.interactiveChildren = false; } return true; }
       if (!capture) return false;
       const occupied = new Set([...shots.values()].flatMap(shot => shot.workers.flatMap(w => w.path.map(c => `${c.x},${c.y}`))));
+      for(const id of options.occupied?.()??[])occupied.add(id);
       const paths = request.kind === "TRANSFER" ? [] : planCinematicCrew(capture.task, options.walk(), options.roads(), occupied, options.economy() ? 3 : 6);
       const root = new Container({ label: `cinematic-${request.taskId}`, eventMode: "none" });
       const pixels = new Graphics(), aircraft = new Sprite();
@@ -83,6 +85,15 @@ export function createCityCinematicView(options: Options) {
     target(id: string, target: Target) {
       const shot = shots.get(id); if (!shot) return;
       showTargets(shot); shot.target = target;
+      shot.targetPosition = undefined;
+      // An authoritative offscreen destination has no culled render object.
+      // Keep only its native ground anchor; do not instantiate distant views
+      // or load their artwork merely to let the flight leave the viewport.
+      if (!target.building && target.task?.footprint.length) {
+        const task=target.task;
+        if(task.visualKind==='PARK')shot.targetPosition={x:Math.min(...task.footprint.map(p=>p.x))*8,y:(Math.max(...task.footprint.map(p=>p.y))+1)*8};
+        else{const art=transportBuildingArt(task);shot.targetPosition={x:art.origin.x*8+art.entry.footprint.width*4,y:(art.origin.y+art.entry.footprint.height)*8};}
+      }
       if (target.version >= 0) timeline.ready(id, target.version);
       gate(shot, false);
     },
@@ -122,7 +133,7 @@ export function createCityCinematicView(options: Options) {
         }
         if (frame.kind === "TRANSFER") {
           for (const worker of shot.workers) worker.view.visible = false;
-          const target = shot.target?.building;
+          const target = shot.target?.building ?? shot.targetPosition;
           const carry = frame.phase === "CARRY" ? frame.phaseProgress : ["LOWER", "DEPART"].includes(frame.phase) ? 1 : 0;
           const dx = target ? target.x - shot.x : 0, dy = target ? target.y - shot.y : 0;
           const lift = frame.phase === "LIFT" ? frame.phaseProgress : frame.phase === "LOWER" ? 1 - frame.phaseProgress : frame.phase === "CARRY" ? 1 : 0;

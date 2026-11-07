@@ -294,6 +294,9 @@ export type RoadCellDto = Cell & {
   mask: number;
   structure: "ROAD" | "BRIDGE";
   roadClass: "LOCAL" | "COLLECTOR" | "ARTERIAL" | "HIGHWAY";
+  /** Explicit narrow physical envelope for intercity roads with a higher
+   * material class. Legacy broad roads keep their existing inferred profile. */
+  widthCells?: 3;
 };
 
 export type TerrainCellDto = Cell & {
@@ -368,7 +371,7 @@ export type ChunkDto = {
 export type ChunkLod = "DETAIL" | "OVERVIEW";
 
 export type CellRunDto = { start: Cell; end: Cell };
-export type RoadRunDto = CellRunDto & Pick<RoadCellDto, "mask" | "structure" | "roadClass">;
+export type RoadRunDto = CellRunDto & Pick<RoadCellDto, "mask" | "structure" | "roadClass" | "widthCells">;
 export type SurfaceRunDto = CellRunDto & Pick<SurfaceCellDto, "kind" | "finish">;
 
 /**

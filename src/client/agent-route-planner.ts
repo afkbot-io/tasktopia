@@ -1,4 +1,4 @@
-import {completePreparation,prepareCooperatively,type CooperativePreparationOptions} from "./cooperative-preparation";
+import {completePreparation,prepareCooperatively,type CooperativePreparationOptions} from "../shared/cooperative-preparation";
 import type { Cell } from "../shared/contracts";
 import { agentCellKey, nextSeededRandom } from "./agent-routing";
 

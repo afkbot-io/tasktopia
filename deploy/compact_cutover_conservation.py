@@ -36,6 +36,14 @@ def capture_business(database, tables=None, preserve_world=False):
         tables = database.json("SELECT COALESCE(jsonb_agg(tablename ORDER BY tablename),'[]') "
                                "FROM pg_tables WHERE schemaname='public'")
         tables = [table for table in tables if preserve_world or table not in SPATIAL_TABLES]
+    return capture_rows(database, tables, lambda table, row: project_row(table, row, preserve_world))
+
+
+def capture_rows(database, tables, project):
+    """Bounded hashing shared by two explicit, separately enforced policies.
+
+    The row projection is repository code, never a CLI/operator callback.
+    """
     result = {}
     for table in tables:
         require(re.fullmatch(r"[a-z_][a-z_0-9]*", table), "Invalid conservation table")
@@ -49,7 +57,7 @@ def capture_business(database, tables=None, preserve_world=False):
                 if not line:
                     break
                 require(len(line) <= 32 * 1024 ** 2 and line.endswith(b"\n"), "Oversized conservation row")
-                hashes.append(hashlib.sha256(canonical(project_row(table, json.loads(line), preserve_world))).hexdigest())
+                hashes.append(hashlib.sha256(canonical(project(table, json.loads(line)))).hexdigest())
         (database.runner.directory / name).unlink()
         result[table] = sorted(hashes)
     return result

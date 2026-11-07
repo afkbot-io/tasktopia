@@ -3,16 +3,21 @@ import { test, type Page, type TestInfo } from '@playwright/test';
 /** Keep the full CSS viewport, NORMAL density, real renderer and every fixed
  * physics step. A smaller raster buffer bounds software GPU cost in CI; native
  * visual and real-clock performance cases retain their original device scale. */
-export function clockSceneTest(name: string, body: (args: { page: Page }, info: TestInfo) => Promise<void>) {
+export function clockSceneTest(name: string, body: (args: { page: Page; hasTouch: boolean }, info: TestInfo) => Promise<void>) {
   const dpr = Number(process.env.E2E_SCENE_DPR ?? (process.env.CI ? '0.25' : '1'));
   if (!Number.isFinite(dpr) || dpr < .25 || dpr > 2) throw new Error('Invalid clock scene raster scale');
   test.describe(name, () => {
     test.use({ deviceScaleFactor: dpr });
-    test(name, async ({ page }, info) => {
-      const actualDpr = await page.evaluate(() => devicePixelRatio);
-      if (actualDpr !== dpr) throw new Error(`Clock scene raster scale ${actualDpr}, expected ${dpr}`);
-      await info.attach('clock-renderer-workload', { body: JSON.stringify({ deviceScaleFactor: actualDpr, fixedStep: 'unchanged', sceneDensity: 'unchanged' }), contentType: 'application/json' });
-      await body({ page }, info);
+    test(name, async ({ page, hasTouch, browserName }, info) => {
+      const initial = await page.evaluate(() => ({ dpr: devicePixelRatio, viewportScale: visualViewport?.scale ?? 1 }));
+      // Before the application's viewport meta exists, mobile WebKit scales
+      // about:blank's980px layout and reports DPR multiplied by that scale.
+      const actualDpr = browserName === 'webkit' && hasTouch && page.url() === 'about:blank'
+        ? initial.dpr / initial.viewportScale : initial.dpr;
+      if (!Number.isFinite(actualDpr) || Math.abs(actualDpr - dpr) > .000001) throw new Error(`Clock scene raster scale ${actualDpr}, expected ${dpr}`);
+      await info.attach('clock-renderer-workload', { body: JSON.stringify({ deviceScaleFactor: actualDpr, initial,
+        fixedStep: 'unchanged', sceneDensity: 'unchanged' }), contentType: 'application/json' });
+      await body({ page, hasTouch }, info);
     });
   });
 }

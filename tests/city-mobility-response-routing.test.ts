@@ -14,16 +14,31 @@ function consume<T>(steps: Generator<void, T, void>): { result: T; work: number 
 
 afterEach(() => vi.restoreAllMocks());
 
+it('позднее завершение старого вызова не отменяет новый выезд той же машины и роли', () => {
+  const input = { roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),
+    walkGraph: new Map(realCity.walkGraph.map(cell => [key(cell), cell])), crosswalks: new Set(realCity.crosswalks),
+    activityCells: new Set(realCity.activityCells), seed: realCity.seed, carLimit: 1, walkerLimit: 0 };
+  const city = createCityMobility(input), network = buildMobilityNetwork(input), before = city.agents[0]!;
+  const search = routing.createMobilityRouteSearch(network.cars, network.carEdges)(before.next, before.current, undefined, 28);
+  const target = search.cells.find(cell => !network.zoneByCell.has(key(cell)) && search.routeTo(cell).length >= 4)!;
+  expect(city.dispatchResponse('FIRE', [target], 2500, before.id, 'old-scene')).toBe(true);
+  city.clearResponses(['FIRE'], before.id, 'old-scene');
+  expect(city.dispatchResponse('FIRE', [target], 2500, before.id, 'new-scene')).toBe(true);
+  city.clearResponses(['FIRE'], before.id, 'old-scene');
+  expect(city.agents[0]).toMatchObject({ response: 'FIRE', responseOwner: 'new-scene' });
+  city.clearResponses(['FIRE'], before.id, 'new-scene');
+  expect(city.agents[0]!.response).toBeUndefined();
+});
+
 it.each<CityResponseRole>(['BUS', 'SCHOOL_BUS', 'FIRE'])('останавливает поиск %s у единственного близкого назначения', role => {
   const original = routing.createMobilityRouteSearchSteps;
   const calls: Array<{ result: routing.MobilityRouteResult; work: number }> = [];
   // Count actual cooperative BFS work; topology, routes and physics stay real.
   vi.spyOn(routing, 'createMobilityRouteSearchSteps').mockImplementation(function* (graph, edges) {
     const real = yield* original(graph, edges);
-    const measured: routing.MobilityRouteSearch = (...args) => {
+    const measured = Object.assign((...args: Parameters<routing.MobilityRouteSearch>) => {
       const call = consume(real.steps(...args)); calls.push(call); return call.result;
-    };
-    measured.steps = real.steps; measured.setBlocked = real.setBlocked;
+    }, { steps: real.steps, setBlocked: real.setBlocked, planning: real.planning, adjacency: real.adjacency });
     return measured;
   });
   const input = { roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),

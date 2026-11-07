@@ -67,7 +67,12 @@ describe("road raster retains exact geometry with bounded axial work", () => {
         (["LOCAL", "COLLECTOR", "ARTERIAL", "SERVICE"] as const)[random(4)]!, random(3) === 0 ? "BRIDGE" : undefined)));
       const bounds: Array<Rect | undefined> = [undefined, { minX: -40, minY: -40, maxX: 10, maxY: 10 },
         { minX: 0, minY: -30, maxX: 30, maxY: 30 }];
-      for (const crop of bounds) expect(rasterizeBlockRoads(input, crop)).toEqual(reference(input, crop));
+      // The frozen axis-stamping oracle predates explicit physical width on
+      // higher-class narrow roads. Compare its complete original geometry,
+      // material and mask contract; the new metadata has its own roundtrip QA.
+      for (const crop of bounds) expect(rasterizeBlockRoads(input, crop).map(({widthCells,...cell})=>{
+        void widthCells;return cell;
+      })).toEqual(reference(input, crop));
     }
   });
 });

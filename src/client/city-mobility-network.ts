@@ -1,5 +1,5 @@
 import { createMobilityRouteSearch } from "./mobility-route-search";
-import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from "./cooperative-preparation";
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from "../shared/cooperative-preparation";
 import type { CityParkingPlan } from "./city-parking";
 import type { Cell, RoadCellDto } from "../shared/contracts";
 import { roadBandRole } from "../shared/road-profile";
@@ -30,8 +30,8 @@ export type MobilityNetwork = {
   roads: ReadonlyMap<string, RoadCellDto>;
   cars: Map<string, Cell>;
   walkers: Map<string, Cell>;
-  carEdges: Map<string, Cell[]>;
-  walkerEdges: Map<string, Cell[]>;
+  carEdges: ReadonlyMap<string, Cell[]>;
+  walkerEdges: ReadonlyMap<string, Cell[]>;
   zones: MobilityZone[];
   zoneByCell: Map<string, MobilityZone>;
   activityCells: ReadonlySet<string>;
@@ -45,7 +45,7 @@ export function mobilityNetworkSignature(input: MobilityNetworkInput): string {
 }
 function* mobilityNetworkSignatureSteps(input: MobilityNetworkInput): Generator<void, string, void> {
   const roadKeys: string[] = [];
-  for (const [key, cell] of input.roads) { roadKeys.push(`${key}:${cell.roadClass}`); yield; }
+  for (const [key, cell] of input.roads) { roadKeys.push(`${key}:${cell.roadClass}${cell.widthCells === 3 ? ":3" : ""}`); yield; }
   const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
   const roads = yield* stableSortPreparation(roadKeys, compare);
   const walking = yield* stableSortPreparation(input.walkGraph.keys(), compare);
@@ -75,53 +75,79 @@ function* buildWalkingSpineSteps(input: MobilityNetworkInput): Generator<void, M
   const entries: Array<[string, Cell]> = [];
   for (const entry of input.walkGraph) { if (!input.roads.has(entry[0]) || input.crosswalks.has(entry[0])) entries.push(entry); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
   const ordered = yield* stableSortPreparation(entries, ([a], [b]) => a.localeCompare(b));
-  const cells = new Map<string, Cell>();
-  for (const [id, cell] of ordered) { cells.set(id, cell); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
-  const originalCore = new Set<string>(), coreDegrees = new Map<string, number>(), tails: string[] = [];
-  for (const [cellKey, cell] of cells) {
-    originalCore.add(cellKey);
-    const degree = MOBILITY_DIRECTIONS.filter(d => cells.has(`${cell.x + d.x},${cell.y + d.y}`)).length;
-    coreDegrees.set(cellKey, degree); if (degree < 2) tails.push(cellKey); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
-  }
-  for (let i = 0; i < tails.length; i++) {
-    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
-    const cellKey = tails[i]!;
-    if (!originalCore.delete(cellKey)) continue;
-    const cell = cells.get(cellKey)!;
-    for (const delta of MOBILITY_DIRECTIONS) {
-      const nextKey = `${cell.x + delta.x},${cell.y + delta.y}`;
-      if (!originalCore.has(nextKey)) continue;
-      const degree = coreDegrees.get(nextKey)! - 1;
-      coreDegrees.set(nextKey, degree); if (degree < 2) tails.push(nextKey);
+  // Numeric links are temporary preparation state. Keep source Cell values
+  // and locale order intact; only indices, never coordinates, use Int32.
+  const indices = new Map<string, number>();
+  for (let i=0; i<ordered.length; i++) { indices.set(ordered[i]![0],i); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  const links = new Int32Array(ordered.length*4).fill(-1);
+  const degrees = new Uint8Array(ordered.length), core = new Uint8Array(ordered.length).fill(1);
+  const alive = new Uint8Array(ordered.length).fill(1), protectedCells = new Uint8Array(ordered.length);
+  const tails: number[] = [];
+  for (let i=0; i<ordered.length; i++) {
+    const {x,y} = ordered[i]![1];let degree = 0;
+    for (let d=0; d<4; d++) {
+      const delta=MOBILITY_DIRECTIONS[d]!, id=`${x+delta.x},${y+delta.y}`;
+      const next=indices.get(id)??-1;links[i*4+d]=next;
+      if (next>=0) degree++;
+      if (input.roads.has(id)) protectedCells[i]=1;
     }
+    degrees[i]=degree;if(degree<2)tails.push(i);
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
   }
-  const protectedCells = new Set<string>();
-  for (const source of [input.crosswalks, input.activityCells, input.buildingEntrances ?? [], input.transferCells ?? []]) for (const id of source) { protectedCells.add(id); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
-  for (const [cellKey, cell] of cells) { if (MOBILITY_DIRECTIONS.some(d => input.roads.has(`${cell.x + d.x},${cell.y + d.y}`))) protectedCells.add(cellKey); if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; } }
+  for (const source of [input.crosswalks,input.activityCells,input.buildingEntrances??[],input.transferCells??[]]) for (const id of source) {
+    const index=indices.get(id);if(index!==undefined)protectedCells[index]=1;
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
+  }
+  indices.clear();
+  for (let cursor=0; cursor<tails.length; cursor++) {
+    const index=tails[cursor]!;
+    if (core[index]) {
+      core[index]=0;
+      for (let d=0; d<4; d++) {
+        const next=links[index*4+d]!;if(next<0||!core[next])continue;
+        if (--degrees[next]!<2) tails.push(next);
+      }
+    }
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
+  }
   let changed = true;
   while (changed) {
     changed = false;
-    for (const [cellKey, cell] of cells) {
+    for (let index=0; index<ordered.length; index++) {
       if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
-      if (protectedCells.has(cellKey)) continue;
-      const neighbors = MOBILITY_DIRECTIONS.map(d => ({ x: cell.x + d.x, y: cell.y + d.y })).filter(c => cells.has(mobilityCellKey(c)));
-      if (neighbors.length < 2 || neighbors.length === 4) continue;
-      // Do not collapse a usable walking loop into a blind spur: ambient
-      // routes cannot reverse on a one-cell lane, so their two-core matters.
-      if (originalCore.has(cellKey) && neighbors.some(next => originalCore.has(mobilityCellKey(next))
-        && MOBILITY_DIRECTIONS.filter(d => { const k = `${next.x + d.x},${next.y + d.y}`; return originalCore.has(k) && cells.has(k); }).length < 3)) continue;
-      const square = [-1, 1].some(dx => [-1, 1].some(dy => cells.has(`${cell.x + dx},${cell.y}`)
-        && cells.has(`${cell.x},${cell.y + dy}`) && cells.has(`${cell.x + dx},${cell.y + dy}`)));
-      if (!square) continue;
-      const reached = new Set([mobilityCellKey(neighbors[0]!)]), pending = [neighbors[0]!];
-      for (let i = 0; i < pending.length; i++) for (const delta of MOBILITY_DIRECTIONS) {
-        const next = { x: pending[i]!.x + delta.x, y: pending[i]!.y + delta.y }, nextKey = mobilityCellKey(next);
-        if (nextKey === cellKey || Math.abs(next.x - cell.x) > 1 || Math.abs(next.y - cell.y) > 1 || reached.has(nextKey) || !cells.has(nextKey)) continue;
-        reached.add(nextKey); pending.push(next);
+      if (!alive[index] || protectedCells[index]) continue;
+      const base=index*4;let degree=0, protectsCore=false;
+      for (let d=0; d<4; d++) {
+        const next=links[base+d]!;if(next<0||!alive[next])continue;
+        degree++;
+        // Ambient routes cannot reverse on a one-cell lane. Preserve the
+        // original two-core with the same sequential deletion rule.
+        if(core[index]&&core[next]) {
+          let coreDegree=0;
+          for(let n=0;n<4;n++){const target=links[next*4+n]!;if(target>=0&&core[target]&&alive[target])coreDegree++;}
+          if(coreDegree<3)protectsCore=true;
+        }
       }
-      if (!neighbors.every(next => reached.has(mobilityCellKey(next)))) continue;
-      cells.delete(cellKey); changed = true;
+      if(degree<2||degree===4||protectsCore)continue;
+      // Removing the centre leaves an eight-cell ring in its3x3 window.
+      // With2/3 live cardinal neighbours (four is excluded above), they are
+      // connected iff degree-1 adjacent pairs have a live diagonal bridge.
+      // This is the former local BFS without point/array/Set allocation.
+      let bridges=0;
+      for(let d=0;d<4;d++){
+        const first=links[base+d]!,second=links[base+(d+1)%4]!;
+        if(first<0||second<0||!alive[first]||!alive[second])continue;
+        const diagonal=links[first*4+(d+1)%4]!;
+        if(diagonal>=0&&alive[diagonal])bridges++;
+      }
+      if(bridges<degree-1)continue;
+      alive[index]=0;changed=true;
     }
+  }
+  const cells = new Map<string, Cell>();
+  for(let i=0;i<ordered.length;i++){
+    if(alive[i])cells.set(...ordered[i]!);
+    if (++work === NETWORK_CHECKPOINT_BATCH) { work = 0; yield; }
   }
   // The caller starts another bounded loop. Flush a partial child batch so
   // its remaining work cannot be added to the parent's next sixteen cells.

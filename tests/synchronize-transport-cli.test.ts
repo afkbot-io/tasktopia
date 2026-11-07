@@ -11,7 +11,10 @@ afterEach(async()=>db?.close());
 it('defaults to a read-only report, imports missing legacy geometry explicitly, and repeats without changing the world',async()=>{
  db=await createTestDb();const service=new AppService(db);
  const {user}=await registerUser(db,{email:'transport-cli@example.test',name:'CLI',password:'password123'});
- const countryId=user.countryId,city=await service.createCity(countryId,{name:'Старый вокзал',idempotencyKey:'city'});
+ const countryId=user.countryId;
+ // The CLI contract needs an actual station, independent of a random coast.
+ await db.prepare('UPDATE countries SET seed=? WHERE id=?').run(424242,countryId);
+ const city=await service.createCity(countryId,{name:'Старый вокзал',idempotencyKey:'city'});
  for(let i=0;i<6;i++){
   const district=await service.createDistrict(countryId,{cityId:city.id,name:`Район ${i}`,activate:false,idempotencyKey:`district-${i}`});
   await service.createTask(countryId,{cityId:city.id,districtId:district.id,title:`Дом ${i}`,estimate:1,idempotencyKey:`task-${i}`});
@@ -23,7 +26,7 @@ it('defaults to a read-only report, imports missing legacy geometry explicitly, 
  await db.prepare('DELETE FROM city_railway_corridors_v1 WHERE layout_id=?').run(layout.id);
  const schema=(await db.prepare('SELECT current_schema() AS name').get<{name:string}>())!.name;
  expect(schema).toMatch(/^test_[a-f0-9]+$/);
- const url=new URL(process.env.TEST_DATABASE_URL!);url.searchParams.set('options',`-csearch_path=${schema}`);
+ const url=new URL(process.env.TEST_DATABASE_URL??'postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test');url.searchParams.set('options',`-csearch_path=${schema}`);
  const run=async(...args:string[])=>JSON.parse((await execute(process.execPath,['--import','tsx','src/server/synchronize-transport-cli.ts','--country',countryId,...args],{env:{...process.env,DATABASE_URL:url.toString()},timeout:15000})).stdout.trim());
  const snapshot=async()=>({country:await db!.prepare('SELECT world_version FROM countries WHERE id=?').get(countryId),
   rail:await db!.prepare('SELECT count(*)::int AS total FROM city_railway_corridors_v1').get(),

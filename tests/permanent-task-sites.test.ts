@@ -61,7 +61,7 @@ describe("permanent task sites and atomic sprint transfer", { timeout: 30_000 },
     expect(await service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[1]!, idempotencyKey: "move-once" })).toEqual(moved);
     const twice = await service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[2]!, idempotencyKey: "move-twice" });
     expect(await service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[1]!, idempotencyKey: "move-once" })).toEqual(twice);
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    expect((await service.listWorldFeatures(countryId)).filter(feature=>feature.siteMarker)).toEqual([]);
     expect((await service.listTasks(countryId)).map(task => task.id)).toEqual([task.id]);
     const layout = (await readActiveBlockLayout(db, cityId))!;
     expect(layout.placements).toHaveLength(1); expect(layout.siteMarkers).toHaveLength(0);
@@ -70,10 +70,10 @@ describe("permanent task sites and atomic sprint transfer", { timeout: 30_000 },
     const history = await db.prepare("SELECT details_json FROM task_events_v7 WHERE task_id=? AND event_type='FIELDS_UPDATED'").all(task.id);
     expect(history).toHaveLength(2);
     await service.deleteTask(countryId, { taskId: twice.id, confirmTitle: twice.title, idempotencyKey: "delete-moved" });
-    const historical = await new AppService(db).listWorldFeatures(countryId);
+    const historical = (await new AppService(db).listWorldFeatures(countryId)).filter(feature=>feature.siteMarker);
     await expect(service.transferTask(countryId, { taskId: task.id, targetDistrictId: districts[1]!, idempotencyKey: "move-once" }))
       .rejects.toMatchObject({ code: "NOT_FOUND" });
-    expect(await service.listWorldFeatures(countryId)).toEqual(historical);
+    expect((await service.listWorldFeatures(countryId)).filter(feature=>feature.siteMarker)).toEqual(historical);
     expect(historical).toHaveLength(1);
     expect(historical.every(marker => marker.siteMarker?.targetTaskId === null)).toBe(true);
     expect(historical.filter(marker => marker.siteMarker?.kind === "RELOCATED")).toHaveLength(0);
@@ -86,6 +86,7 @@ describe("permanent task sites and atomic sprint transfer", { timeout: 30_000 },
     const task = await create();
     const before = await readActiveBlockLayout(db, cityId);
     const events = await service.listEvents(countryId);
+    const features = await service.listWorldFeatures(countryId);
     const faultDb: Db = { ...db, close: () => db.close(), exec: query => db.exec(query), transaction: callback => db.transaction(callback),
       prepare: query => {
         const statement = db.prepare(query);
@@ -99,7 +100,7 @@ describe("permanent task sites and atomic sprint transfer", { timeout: 30_000 },
     })).rejects.toThrow("destination allocation rejected");
     expect(await service.getTask(countryId, task.id)).toEqual(task);
     expect(await readActiveBlockLayout(db, cityId)).toEqual(before);
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    expect(await service.listWorldFeatures(countryId)).toEqual(features);
     expect(await service.listEvents(countryId)).toEqual(events);
   });
 

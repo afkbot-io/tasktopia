@@ -6,6 +6,7 @@ import { airportSiteReservations, planAirportSite, type AirportSitePlan } from "
 import { isBuildableTerrain,terrainAt } from "../../shared/world-terrain";
 import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 import { BlockPlacementError } from "./block-layout-compiler";
+import { countryTransitStopReservations } from './city-transit-stop-store';
 export type CityAirportSite={taskId:string;stage:number;plan:AirportSitePlan|null;reason:"NO_AIRFIELD"|null};
 /** Persisted pads outlive a demolished terminal as protected historical land. */
 export async function countryAirportReservations(db:Db,countryId:string,purpose:"PARCEL"|"ROAD"="PARCEL",excludeTaskId?:string):Promise<Rect[]>{
@@ -61,11 +62,11 @@ export async function readCountryAirportSites(db:Db,countryId:string):Promise<Ma
  const missing=[...new Set(rows.filter(row=>!row.persisted).map(row=>row.city_id))];if(!missing.length)return result;
  const [{readActiveBlockLayouts},{countryPortReservations},{countryRailwayReservations},{permanentSiteBounds},{readCountryRoads},{intercityRoadCorridors}]=await Promise.all([
   import("./active-block-layout"),import("./port-reservations"),import("./city-railway-store"),import("./permanent-task-sites"),import("./intercity-road-store"),import("../../shared/intercity-roads")]);
- const [layouts,bounds,ports,rails,historical,pads,roadSnapshot]=await Promise.all([
+ const [layouts,bounds,ports,rails,historical,pads,roadSnapshot,stops]=await Promise.all([
   readActiveBlockLayouts(db,missing),db.prepare("SELECT city_id,bounds_json FROM city_layouts_v1 WHERE country_id=? AND status='ACTIVE'").all<{city_id:string;bounds_json:Rect}>(countryId),
-  countryPortReservations(db,countryId),countryRailwayReservations(db,countryId),permanentSiteBounds(db,countryId,true),countryAirportReservations(db,countryId),readCountryRoads(db,countryId)]);
+  countryPortReservations(db,countryId),countryRailwayReservations(db,countryId),permanentSiteBounds(db,countryId,true),countryAirportReservations(db,countryId),readCountryRoads(db,countryId),countryTransitStopReservations(db,countryId)]);
  for(const layout of layouts){
-  const sites=await readCityAirportSites(db,layout,[...ports,...rails,...historical,...pads,...bounds.filter(row=>row.city_id!==layout.cityId).map(row=>row.bounds_json)],intercityRoadCorridors(roadSnapshot?.plan.routes??[]));
+  const sites=await readCityAirportSites(db,layout,[...ports,...rails,...historical,...pads,...stops,...bounds.filter(row=>row.city_id!==layout.cityId).map(row=>row.bounds_json)],intercityRoadCorridors(roadSnapshot?.plan.routes??[]));
   result.set(layout.cityId,sites);for(const site of sites)pads.push(...airportSiteReservations(site.plan));
  }
  return result;

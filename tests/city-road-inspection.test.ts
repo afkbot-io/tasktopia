@@ -6,9 +6,12 @@ it("reads only the active real episode, its actual responders, arrivals and clos
  expect(roadInspection(undefined,2000,[],new Set())).toBeUndefined();
  expect(roadInspection(episode,999,[],new Set())).toBeUndefined();
  expect(roadInspection(episode,19000,[],new Set())).toBeUndefined();
- const responders=[{id:"police",response:"POLICE"},{id:"unrelated",response:"FIRE"}];
+ const responders=[{id:"police",response:"POLICE",responseOwner:episode.id},{id:"unrelated",response:"FIRE",responseOwner:'another-episode'}];
  expect(roadInspection(episode,6000,responders,new Set(["police"]))).toMatchObject({id:episode.id,title:"Дорожная авария",phase:"ARRIVE",closedCells:3,services:["Полиция"]});
  expect(roadInspection({...episode,serviceArrival:5000},6000,responders,new Set(["police"]))).toMatchObject({phase:"WORK"});
  expect(roadInspection({...episode,serviceArrival:5000,cargoLoaded:true},18000,responders,new Set(["police"]))).toMatchObject({phase:"CLEAR",closedCells:0});
  expect(roadInspection({...episode,kind:"PATROL"},2000,[],new Set())).toMatchObject({closedCells:0});
+});
+it('не приписывает старой сцене новый выезд той же служебной машины',()=>{
+ expect(roadInspection(episode,6000,[{id:'reused',response:'FIRE',responseOwner:'new-episode'}],new Set(['reused']))?.services).toEqual([]);
 });

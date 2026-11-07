@@ -3,6 +3,23 @@ import { createCityCinematics, cinematicMarkerMatches } from "../src/client/city
 import type { WorldFeatureDto } from '../src/shared/contracts';
 
 describe("городские кинематические переходы", () => {
+  it.each(['CONSTRUCT', 'DEMOLISH'] as const)("%s показывает работу после редкого кадра и сохраняет предельный срок", kind => {
+    const timeline = createCityCinematics();
+    const request = { eventId: 1, version: 2, taskId: 'slow-frame', kind, fromStage: 3,
+      ...(kind === 'CONSTRUCT' ? { toStage: 4 } : {}) };
+    timeline.begin(request, 0); timeline.ready(request.taskId, 2);
+    expect(timeline.sample(100)[0]).toMatchObject({ phase: 'CREW', oldVisible: true, done: false });
+    // In the hosted native trace the next rendered sample followed after the
+    // complete WORK interval. It must still publish work before hiding cargo.
+    expect(timeline.sample(2800)[0]).toMatchObject({ phase: 'WORK', oldVisible: true, revealTarget: false, done: false });
+    // Scene reconciliation and the ticker can both sample before one paint.
+    expect(timeline.sample(2800)[0]).toMatchObject({ phase: 'WORK', oldVisible: true });
+    expect(timeline.sample(2820)[0]).toMatchObject({ phase: 'WORK', oldVisible: true });
+    expect(timeline.sample(2850)[0]).toMatchObject({ phase: 'COVER', oldVisible: true, revealTarget: false, done: false });
+    expect(timeline.sample(3200)[0]).toMatchObject({ done: true, revealTarget: true });
+    const expired = createCityCinematics(); expired.begin(request, 0); expired.sample(100);
+    expect(expired.sample(5200)[0]).toMatchObject({ done: true }); expect(expired.size).toBe(0);
+  });
   it("сохраняет прежнее здание во время работы даже если новая стадия уже загружена", () => {
     const timeline = createCityCinematics();
     expect(timeline.begin({ eventId: 1, version: 2, taskId: "home", kind: "CONSTRUCT", fromStage: 2, toStage: 3 }, 0)).toBe(true);

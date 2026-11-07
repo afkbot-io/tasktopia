@@ -1,0 +1,83 @@
+{
+  "profile": "TASKTOPIA_TRANSPORT_FURNITURE_HIGH_45_V1",
+  "frames": [
+    {
+      "key": "airport-windsock",
+      "source": "sources/airport-windsock.png",
+      "sourceSha256": "2701b3374dc4ee70effb8d691ebae59c72db9d67ca58eb76711f19575448c5b0",
+      "commonSourceFrame": [
+        414,
+        356,
+        876,
+        1080
+      ],
+      "sourceContactX": 506.5,
+      "scale": 0.019337016574585635,
+      "size": [
+        16,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        8,
+        16
+      ],
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "nativeOrigin": [
+        6,
+        2
+      ],
+      "opaqueBounds": [
+        6,
+        2,
+        15,
+        16
+      ],
+      "path": "normalized/airport-windsock.png",
+      "sha256": "2f90cd63e68e271e376ccef8bb99b63627ca47f478fbee45b942e3587506eb03"
+    },
+    {
+      "key": "rail-platform-clock",
+      "source": "sources/rail-platform-clock.png",
+      "sourceSha256": "71ac1ae60e41950dde85949215ad5a00418335575eae928b266ca97aeb91af90",
+      "commonSourceFrame": [
+        276,
+        176,
+        984,
+        1202
+      ],
+      "sourceContactX": 630.5,
+      "scale": 0.01364522417153996,
+      "size": [
+        16,
+        16
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "anchorPx": [
+        8,
+        16
+      ],
+      "alphaThreshold": 192,
+      "paletteLimit": 8,
+      "nativeOrigin": [
+        3,
+        2
+      ],
+      "opaqueBounds": [
+        3,
+        2,
+        13,
+        16
+      ],
+      "path": "normalized/rail-platform-clock.png",
+      "sha256": "996e95f3e038c4a087300f48c4e568916eef3bde55c7dc713209eaf08d528ec1"
+    }
+  ]
+}

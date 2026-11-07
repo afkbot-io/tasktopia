@@ -1,8 +1,10 @@
 import type { Cell, Rect } from '../shared/contracts';
+import { ROAD_EVENT_RECIPES } from './city-event-recipes';
 export type RoadEventKind='ACCIDENT'|'REPAIR'|'FIRE'|'MEDICAL'|'PATROL'|'BREAKDOWN'|'WATER';
 export type RoadEventSite={cells:Cell[];responseCells:Cell[];towCell?:Cell};
 export type RoadEpisode=RoadEventSite&{id:string;kind:RoadEventKind;start:number;end:number;responderId?:string;serviceArrival?:number;cargoLoaded?:boolean};
-const kinds:RoadEventKind[]=['ACCIDENT','REPAIR','FIRE','MEDICAL','PATROL','BREAKDOWN','WATER'];
+const kinds=ROAD_EVENT_RECIPES.map(recipe=>recipe.kind);
+export const ROAD_EVENT_LABEL = Object.fromEntries(ROAD_EVENT_RECIPES.map(recipe=>[recipe.kind,recipe.label])) as Readonly<Record<RoadEventKind,string>>;
 export function planRoadEpisode(cityId:string,sites:readonly RoadEventSite[],now:number,bounds:Rect):RoadEpisode|undefined{
  if(!Number.isFinite(now))return;
  let hash=0;for(const ch of cityId)hash=(Math.imul(hash,31)+ch.charCodeAt(0))>>>0;

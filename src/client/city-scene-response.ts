@@ -60,7 +60,7 @@ export function loadCitySceneResponse(path:string,signal:AbortSignal,factory?:()
       // the worker's decoded object forest before allocating normalized runs.
       releaseWorker();
       const rehydrateStarted=performance.now();
-      void hydrateCitySceneTransfer(value.transfer??value.scene!,{signal}).then(scene=>{
+      void hydrateCitySceneTransfer(value.transfer??value.scene!,{signal,runStorage:'PACKED_IMMUTABLE'}).then(scene=>{
         if(settled||signal.aborted)return;
         const completedAt=performance.now();
         if(value.metrics){

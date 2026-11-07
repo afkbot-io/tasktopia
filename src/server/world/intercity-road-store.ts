@@ -1,12 +1,13 @@
 import { countryAirportReservations } from "./city-airport-site-store";
 import { countryPortReservations } from "./port-reservations";
 import { countryRailwayReservations } from "./city-railway-store";
+import { countryTransitStopReservations } from './city-transit-stop-store';
 import { createHash } from "node:crypto";
 import type { CityBlockV1 } from "../../shared/block-world";
 import type { SemanticRoadNode } from "../../shared/semantic-road";
 import { transaction, type Db } from "../db";
 import { permanentSiteBounds } from "./permanent-task-sites";
-import { planIntercityRoads, type IntercityRoadPlan } from "./intercity-road-planner";
+import { INTERCITY_ROAD_PLANNER_VERSION, planIntercityRoads, type IntercityRoadPlan } from "./intercity-road-planner";
 import { parseWorldTerrainProfile } from "../../shared/world-terrain-profile";
 
 export type CountryRoadSnapshot = { revision: number; topologyHash: string; plan: IntercityRoadPlan };
@@ -27,6 +28,16 @@ export async function readCountryRoads(db: Db, countryId: string): Promise<Count
  * Task statuses, names and comments never invalidate the topology digest.
  * The injected pure planner is a test seam, not a production fallback. */
 export async function synchronizeCountryRoads(db: Db, countryId: string, planner = planIntercityRoads): Promise<CountryRoadSnapshot> {
+  return prepareCountryRoadSnapshot(db,countryId,planner,true);
+}
+
+/** Explicit administrative preview only. GET consumers keep using the indexed
+ * readCountryRoads lookup and never invoke planning or repair. */
+export async function previewCountryRoads(db: Db, countryId: string, planner = planIntercityRoads): Promise<CountryRoadSnapshot> {
+  return prepareCountryRoadSnapshot(db,countryId,planner,false);
+}
+
+async function prepareCountryRoadSnapshot(db: Db, countryId: string, planner: typeof planIntercityRoads, persist: boolean): Promise<CountryRoadSnapshot> {
   return transaction(db, async () => {
     const country = await db.prepare("SELECT seed,terrain_profile_json FROM countries WHERE id=? FOR UPDATE").get<{ seed: number; terrain_profile_json: unknown }>(countryId);
     if (!country) throw new Error("Unknown intercity road country");
@@ -35,7 +46,7 @@ export async function synchronizeCountryRoads(db: Db, countryId: string, planner
       .all<{ city_id: string; checksum: string }>(countryId);
     const topologyHash = countryRoadTopologyHash(Number(country.seed), heads);
     const previous = await readCountryRoads(db, countryId);
-    if (previous?.topologyHash === topologyHash && previous.plan.plannerVersion === 2) return previous;
+    if (previous?.topologyHash === topologyHash && previous.plan.plannerVersion === INTERCITY_ROAD_PLANNER_VERSION) return previous;
     const rows = await db.prepare(`SELECT l.city_id,r.nodes_json,
       (SELECT COALESCE(jsonb_agg(jsonb_build_object('origin',jsonb_build_object('x',b.origin_x,'y',b.origin_y),
         'width',b.width,'height',b.height) ORDER BY b.id),'[]') FROM city_blocks_v1 b WHERE b.layout_id=l.id) AS blocks
@@ -51,11 +62,11 @@ export async function synchronizeCountryRoads(db: Db, countryId: string, planner
     const plan = planner({ countryId, seed: Number(country.seed), allowBridges:true,
       terrainProfile: parseWorldTerrainProfile(country.terrain_profile_json),
       cities: developed.map(row => ({ id: row.city_id, nodes: row.nodes_json, blocks: row.blocks })),
-      protectedSites: [...await permanentSiteBounds(db, countryId, true),...await countryRailwayReservations(db,countryId,undefined,"ROAD"),...await countryPortReservations(db,countryId),...await countryAirportReservations(db,countryId,"ROAD")],
+      protectedSites: [...await permanentSiteBounds(db, countryId, true),...await countryRailwayReservations(db,countryId,undefined,"ROAD"),...await countryPortReservations(db,countryId),...await countryAirportReservations(db,countryId,"ROAD"),...await countryTransitStopReservations(db,countryId,'ROAD')],
       ...(previous ? { previous: { countryId, seed: previous.plan.seed, routes: retained! } } : {}),
     });
     const revision = (previous?.revision ?? 0) + 1;
-    await db.prepare(`INSERT INTO country_road_snapshots_v1(country_id,revision,topology_hash,plan_json)
+    if (persist) await db.prepare(`INSERT INTO country_road_snapshots_v1(country_id,revision,topology_hash,plan_json)
       VALUES(?,?,?,?::jsonb) ON CONFLICT(country_id) DO UPDATE SET revision=excluded.revision,
       topology_hash=excluded.topology_hash,plan_json=excluded.plan_json,updated_at=now()`)
       .run(countryId, revision, topologyHash, JSON.stringify(plan));

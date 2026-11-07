@@ -7,8 +7,13 @@ import * as hashes from "../src/server/world/chunk-payload-hash";
 import type { ChunkPayloadV2Dto, TaskDto } from "../src/shared/contracts";
 import type { CitySceneDto } from "../src/shared/city-scene-contract";
 import { decodeCitySceneWire, encodeCitySceneWire } from "../src/shared/city-scene-wire";
+import { CitySceneSnapshotStore } from '../src/server/world/city-scene-snapshot-store';
 
 const contentHash = hashes.chunkPayloadContentHash;
+// These tests own the raw constructor and its independent frozen oracle.
+// A persistent hit would skip the work they are meant to verify.
+const uncachedReader=(db:Db)=>new AppService(db,undefined,undefined,undefined,undefined,
+  new CitySceneSnapshotStore(db,{read:false,write:false}));
 const stableHash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
 // Capture the canonical builder output, then independently apply the previous
@@ -39,7 +44,7 @@ function expectPreviousWire(scene: CitySceneDto, pages: Map<string, ChunkPayload
   expect(decodeCitySceneWire(encodeCitySceneWire(scene))).toEqual(scene);
   expect(scene.sceneRevision).toBe(stableHash({
     schemaVersion: scene.schemaVersion, cityId: scene.city.id, bounds: scene.city.bounds,
-    ports: scene.ports, airports: scene.airports, airportConnections: scene.airportConnections,
+    ports: scene.ports, airports: scene.airports, transitStops:scene.transitStops, airportConnections: scene.airportConnections,
     railway: scene.railway, intercityRoads: scene.intercityRoads, roadContext: scene.roadContext,
     chunks: chunks.map(chunk => ({ x: chunk.chunkX, y: chunk.chunkY, hash: chunk.contentHash })),
   }));
@@ -68,7 +73,7 @@ describe("transaction-owned whole-city projection", () => {
 
   it("hashes each active-district page once and preserves the previous full and compact wire", async () => {
     const recorded = recordBuilderPages();
-    const scene = await new AppService(db).getCityScene(countryId, cityId);
+    const scene = await uncachedReader(db).getCityScene(countryId, cityId);
     expect(scene.completedDistrictSnapshots).toEqual([]);
     expect(new Set(scene.chunks.flatMap(chunk => chunk.tasks.map(task => task.id)))).toEqual(new Set([done.id, active.id]));
     expectPreviousWire(scene, recorded.pages);
@@ -81,7 +86,7 @@ describe("transaction-owned whole-city projection", () => {
       if (query.includes("FROM city_layouts_v1 l WHERE city_id=ANY")) layoutReads.push(isTransactionActive());
       return prepare(query);
     });
-    const reader = new AppService(db);
+    const reader = uncachedReader(db);
     const scene = await reader.getCitySceneForUser(userId, countryId, cityId);
     expect(layoutReads).toEqual([true]);
     expect(reader.runtimeStats().caches.layouts.bypasses).toBe(1);
@@ -110,7 +115,7 @@ describe("transaction-owned whole-city projection", () => {
       if (query.includes("FROM city_layouts_v1 l WHERE city_id=ANY")) layoutReads.push(isTransactionActive());
       return prepare(query);
     });
-    const scene = await new AppService(db).getCitySceneForUser(userId, countryId, cityId);
+    const scene = await uncachedReader(db).getCitySceneForUser(userId, countryId, cityId);
     expect(layoutReads).toEqual([true]);
     expect(scene.completedDistrictSnapshots).toHaveLength(1);
     const snapshot = scene.completedDistrictSnapshots[0]!;
@@ -130,7 +135,7 @@ describe("transaction-owned whole-city projection", () => {
       if (query.includes("FROM city_layouts_v1 l WHERE city_id=ANY")) layoutReads.push(query);
       return prepare(query);
     });
-    const reader = new AppService(db);
+    const reader = uncachedReader(db);
     await expect(reader.getCitySceneForUser(outsider.user.id, countryId, cityId)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(reader.getCitySceneForUser(outsider.user.id, outsider.user.countryId, cityId)).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(layoutReads).toEqual([]);

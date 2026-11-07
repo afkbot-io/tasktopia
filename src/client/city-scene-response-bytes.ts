@@ -1,4 +1,4 @@
-import { yieldPreparationTask } from "./cooperative-preparation";
+import { yieldPreparationTask } from "../shared/cooperative-preparation";
 import { CITY_SCENE_RESPONSE_BYTE_LIMIT } from "./city-scene-response-limit";
 
 /** Only binary IO lives on the page. UTF8/JSON/geometry stay in its worker. */

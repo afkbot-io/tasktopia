@@ -27,7 +27,7 @@ export function loadPlanetAtlas(userId: string, revision: number, load = fetchPl
   return cache.read(key, async () => {
     const next = await load();
     if (epoch !== sessionEpoch) throw new DOMException("Planet session changed", "AbortError");
-    if (next.schemaVersion !== PLANET_ATLAS_SCHEMA_VERSION) throw new Error("Версия планеты устарела. Обновите страницу");
+    if (next.schemaVersion !== PLANET_ATLAS_SCHEMA_VERSION && next.schemaVersion !== 5) throw new Error("Версия планеты устарела. Обновите страницу");
     checkedAt.delete(key); checkedAt.set(key, Date.now());
     lastFrames.delete(key); lastFrames.set(key, next);
     while (checkedAt.size > 2) checkedAt.delete(checkedAt.keys().next().value!);

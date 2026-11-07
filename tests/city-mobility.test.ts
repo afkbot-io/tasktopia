@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import type { Cell, RoadCellDto } from "../src/shared/contracts";
 import { createCityMobility, mobilityPassageExitIndex } from "../src/client/city-mobility";
@@ -28,6 +28,24 @@ export function mobilityGrid() {
 }
 
 describe("deterministic joint city mobility", () => {
+  it('не сканирует все зоны города при каждом шаге владельца перехода', () => {
+    const input = { ...realCity, roads: new Map(realCity.roads.map(cell => [key(cell), cell as RoadCellDto])),
+      walkGraph: new Map(realCity.walkGraph.map(cell => [key(cell), cell])), crosswalks: new Set(realCity.crosswalks), activityCells: new Set(realCity.activityCells) };
+    const city=createCityMobility(input),original=Array.prototype.find;
+    let zoneVisits=0;
+    // Observe work at the public controller seam, without changing results,
+    // routes, clocks or private reservations. Other bounded actor finds stay.
+    const probe=vi.spyOn(Array.prototype,'find').mockImplementation(function(this:unknown[],predicate,thisArg){
+      return original.call(this,(value:unknown,index:number,array:unknown[])=>{
+        if(value&&typeof value==='object'&&'cells' in value&&'signalPosts' in value&&'bounds' in value)zoneVisits++;
+        return predicate.call(thisArg,value,index,array);
+      });
+    });
+    try {for(let step=0;step<200;step++)city.advance(50);}finally{probe.mockRestore();}
+    expect(city.metrics.crossingsCompleted).toBeGreaterThan(0);
+    expect(zoneVisits,'Live reservation lookup must not scan the complete city zone array').toBe(0);
+    expect(city.metrics.vehicleUnsafeTotal+city.metrics.pedestrianUnsafeTotal+city.metrics.vehiclePedestrianUnsafeTotal).toBe(0);
+  });
   it("lets simultaneous building visitors leave opposite walking lanes without holding each other inside", () => {
     const cells: Cell[] = [];
     for (let i = 0; i <= 6; i++) cells.push({ x: i, y: 0 }, { x: i, y: 6 }, { x: 0, y: i }, { x: 6, y: i });

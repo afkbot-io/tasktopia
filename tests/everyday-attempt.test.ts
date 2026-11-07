@@ -18,10 +18,41 @@ type Input = Parameters<typeof isEverydayAttemptExpiredWithoutArrival>[0];
 const expired = (changes: Partial<Input> = {}) => isEverydayAttemptExpiredWithoutArrival({ ...input, ...changes });
 
 describe('непройденная everyday попытка с доказанным естественным истечением', () => {
+  it('использует точное свидетельство истечения, когда отказ следующей попытки заменил последний skip', () => {
+    const ended={episodeId:initial.everydayEpisodeId,serverNow:start+44_000,nextEpisodeId:''};
+    for(const everydaySkip of ['busy','offscreen']){
+      const current={...terminal,everydaySkip};
+      expect(expired({terminal:current,observed:{...observed,ended}})).toBe(true);
+      expect(expired({terminal:current})).toBe(false);
+      expect(expired({terminal:current,observed:{...observed,ended:{...ended,serverNow:start+43_999}}})).toBe(false);
+      expect(expired({terminal:current,observed:{...observed,ended:{...ended,episodeId:'another'}}})).toBe(false);
+      expect(expired({terminal:current,observed:{...observed,ended:{...ended,nextEpisodeId:'other'}}})).toBe(false);
+    }
+  });
   it('принимает целиком наблюдавшийся слот с реальным назначением и физическими шагами', () => {
     expect(expired()).toBe(true);
     expect(expired({ observed: { ...observed, samples: [sample('ARRIVE', 650), sample('ARRIVE', 9000),
       sample('ACTIVITY', 10_000), sample('ACTIVITY', 33_999), sample('LEAVE', 34_000), sample('LEAVE', 43_999)] } })).toBe(true);
+  });
+
+  it('различает истёкший слот и уже начавшееся следующее событие по наблюдаемому episode ID', () => {
+    const successor={...terminal,everydayEvent:'SCHOOL',everydayPhase:'ARRIVE',everydayTask:'school',
+      everydayEpisodeId:'city:window:school',everydayVisitors:'2',everydaySkip:''};
+    const ended={episodeId:initial.everydayEpisodeId,serverNow:start+44_000,nextEpisodeId:successor.everydayEpisodeId};
+    const history={...observed,ended};
+    expect(expired({terminal:successor,observed:history})).toBe(true);
+    expect(expired({terminal:successor})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,serverNow:start+43_999}}})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,episodeId:'another-episode'}}})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,nextEpisodeId:initial.everydayEpisodeId}}})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,ended:{...ended,nextEpisodeId:''}}})).toBe(true);
+    for(const serverNow of [NaN,Infinity,start+44_001])expect(expired({terminal:successor,observed:{...history,ended:{...ended,serverNow}}})).toBe(false);
+    expect(expired({terminal:{...successor,everydayEvent:'UNKNOWN'},observed:history})).toBe(false);
+    expect(expired({terminal:{...successor,everydayPhase:'LEAVE'},observed:history})).toBe(false);
+    expect(expired({terminal:{...successor,everydayTask:''},observed:history})).toBe(false);
+    expect(expired({terminal:successor,observed:{...history,arrivals:1}})).toBe(false);
+    expect(expired({terminal:{...successor,everydayEpisodeId:initial.everydayEpisodeId},observed:history})).toBe(false);
+    expect(expired({terminal:{...successor,mobilityFixedSteps:'101'},observed:history})).toBe(false);
   });
 
   it('сохраняет границу44s и не создаёт истечение из прежнего40s окна', () => {

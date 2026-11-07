@@ -29,7 +29,7 @@ describe("realtime Tasktopia notification copy", () => {
   it("describes sprint transfer and targets the canonical task at its new location", () => {
     const moved = { ...building, origin: { x: 152, y: -10 }, district: { id: "next-sprint", name: "Следующий спринт" } };
     expect(presentRealtimeNotice(event("task.transferred", { taskId: building.id, building: moved }))).toMatchObject({
-      title: "Задание №42 «Единый центр входящих запросов» перенесено в спринт «Следующий спринт»; прежняя площадка сохранена",
+      title: "Задание №42 «Единый центр входящих запросов» перенесено в спринт «Следующий спринт»",
       location: "Атуталенд · Веб-версия · Следующий спринт", target: moved, actionLabel: "Открыть здание",
     });
   });
@@ -40,6 +40,8 @@ describe("realtime Tasktopia notification copy", () => {
       building,
     }))).toEqual({
       id: 91,
+      groupKey:JSON.stringify(['country-atuta','task-42']),
+      compactTitle:'№42: Строительство',
       title: "Здание №42 «Единый центр входящих запросов» перешло на этап «Строительство»",
       location: "Атуталенд · Веб-версия · Личный кабинет",
       tone: "info",
@@ -69,6 +71,10 @@ describe("realtime Tasktopia notification copy", () => {
   it("does not revive generic task copy for comments or legacy events without context", () => {
     expect(presentRealtimeNotice(event("task.comment_added", { taskId: building.id }))).toBeNull();
     expect(presentRealtimeNotice(event("task.status_changed", { taskId: building.id, status: "IN_PROGRESS" }))).toBeNull();
+    expect(presentRealtimeNotice(event("task.status_changed", { building, status: "toString" }))).toBeNull();
+    expect(presentRealtimeNotice(event("task.deleted", { building }))).toMatchObject({
+      groupKey:JSON.stringify(['country-atuta','task-42']),compactTitle:'№42: Снесено',target:null,actionLabel:null,
+    });
   });
 
   it("keeps task-backed parks as canonical city parks", () => {

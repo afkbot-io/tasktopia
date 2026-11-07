@@ -110,6 +110,42 @@ test('task A → dependency B → browser Back/Forward restores the city camera 
   }
 });
 
+for (const close of ['button', 'Escape'] as const) test(`dismiss ${close} preserves the presented city scale and centre after task search`, async ({ page }, info) => {
+  const { a } = await fixture(page), errors: string[] = [], scenes: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('request', request => { if (/\/scene(?:\?|$)/.test(request.url())) scenes.push(request.url()); });
+  await page.goto('/'); await openMapCity(page);
+  const host = page.locator('.world-canvas'), canvas = host.locator('canvas');
+  await expect(host).toHaveAttribute('data-city-scene-commit', 'atomic');
+  await expect(host).toHaveAttribute('data-camera-presentation-pending', 'false');
+  await canvas.focus();
+  for (let i = 0; i < 6; i++) await page.keyboard.press('+');
+  await expect(host).toHaveAttribute('data-camera-presentation-pending', 'false');
+  const pose = () => host.evaluate(node => {
+    const d = (node as HTMLElement).dataset;
+    return { x: Number(d.cameraWorldX), y: Number(d.cameraWorldY), scale: Number(d.renderScale) };
+  });
+  const before = await pose(); expect(before.scale).toBeGreaterThan(1.5);
+  const search = page.getByRole('combobox', { name: 'Поиск здания по номеру или названию' });
+  await search.fill(`#${a.taskNumber}`); await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(1); await search.press('Enter');
+  await expect(page.locator('#task-title')).toHaveText(a.title);
+  await expect(host).toHaveAttribute('data-focus-x', String(a.origin.x));
+  await expect(host).toHaveAttribute('data-camera-presentation-pending', 'false');
+  const shown = await pose(); expect(shown.scale).toBeCloseTo(before.scale, 5);
+  if ((page.viewportSize()?.width ?? 0) <= 600) expect(shown).toEqual(before);
+  await page.screenshot({ path: info.outputPath(`task-focus-${close}.png`) });
+  if (close === 'button') await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  else await page.keyboard.press('Escape');
+  await expect(page.locator('.task-modal')).toHaveCount(0);
+  await expect(page).not.toHaveURL(/\/task(?:\/|\?)/);
+  await expect.poll(pose).toEqual(shown);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await pose()).toEqual(shown);
+  await expect(page.getByRole('button', { name: 'Сейчас в городе', exact: true })).toHaveCount(0);
+  expect(scenes).toHaveLength(1); expect(errors).toEqual([]);
+  await info.attach('dismiss-camera', { body: JSON.stringify({ before, shown, after: await pose(), scenes, errors }), contentType: 'application/json' });
+});
+
 test('Back cancels a pending dependency card and its late response cannot reopen it', async ({ page }) => {
   const { bootstrap, a, b } = await fixture(page);
   let release!: () => void, started = false;

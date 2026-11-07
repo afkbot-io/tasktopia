@@ -70,16 +70,22 @@ export class ChunkMaterializer {
   private inlineActive: MaterializationRequest | undefined;
   private inlineFallback = false;
   private destroyed = false;
+  private readonly abortOwner = () => this.destroy();
   private static readonly QUEUE_LIMIT = 32;
 
   constructor(
     workerCount = recommendedChunkWorkerCount(navigator.hardwareConcurrency || 2),
     workerFactory: ChunkWorkerFactory = browserWorkerFactory,
+    private readonly ownerSignal?: AbortSignal,
   ) {
     this.targetWorkerCount = workerCount;
     this.workerFactory = workerFactory;
     this.inlineFallback = workerCount === 0;
-    for (let index = 0; index < workerCount; index += 1) {
+    if (ownerSignal?.aborted) { this.destroyed = true; return; }
+    // Subscribe before individual requests: a whole-run cancellation destroys
+    // the pool instead of briefly replacing each cancelled worker.
+    ownerSignal?.addEventListener("abort", this.abortOwner, { once: true });
+    for (let index = 0; index < workerCount && !this.destroyed; index += 1) {
       try {
         this.attachWorker(workerFactory());
         this.replacementAttempts = 0;
@@ -91,6 +97,7 @@ export class ChunkMaterializer {
   }
 
   private attachWorker(worker: ChunkWorker): void {
+    if (this.destroyed) { worker.terminate(); return; }
     this.inlineFallback = false;
     const slot: WorkerSlot = { worker };
     worker.addEventListener("message", (event) => {
@@ -249,6 +256,7 @@ export class ChunkMaterializer {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.ownerSignal?.removeEventListener("abort", this.abortOwner);
     if (this.replacementTimer) clearTimeout(this.replacementTimer);
     for (const slot of this.workers) {
       clearTimeout(slot.timeout);

@@ -1,5 +1,8 @@
 import type { ChunkDto, ChunkPayloadDto, ChunkTaskDto } from "../shared/contracts";
-import { yieldPreparationTask } from "./cooperative-preparation";
+import { yieldPreparationTask } from "../shared/cooperative-preparation";
+
+type PhysicalRecord = {hash:string;stages:string;chunk:ChunkDto};
+type PageResult = {ok:true;id:string;record:PhysicalRecord} | {ok:false;error:unknown};
 
 export type CanonicalPhysicalSnapshot = {chunks: readonly ChunkDto[];completed: readonly ChunkTaskDto[]};
 
@@ -7,9 +10,12 @@ export type CanonicalPhysicalSnapshot = {chunks: readonly ChunkDto[];completed: 
 export class CanonicalCityProjection {
   current: CanonicalPhysicalSnapshot = {chunks: [],completed: []};
   pending = false;
-  private records = new Map<string,{hash:string;stages:string;chunk:ChunkDto}>();
+  private records = new Map<string,PhysicalRecord>();
   private run: {key:string;controller:AbortController;promise:Promise<boolean>} | undefined;
   private disposed = false;
+  constructor(private readonly readWidth = 1) {
+    if (!Number.isInteger(readWidth) || readWidth < 1 || readWidth > 2) throw new RangeError("Invalid physical read width");
+  }
   prepare(key: string,payloads: readonly ChunkPayloadDto[],completed: readonly ChunkTaskDto[],
     read: (payload: ChunkPayloadDto,signal: AbortSignal) => Promise<ChunkDto>): Promise<boolean> {
     if(this.disposed)return Promise.resolve(false);
@@ -18,10 +24,14 @@ export class CanonicalCityProjection {
     const run={key,controller:new AbortController(),promise:Promise.resolve(false)};
     this.run=run;this.pending=true;
     run.promise=(async()=>{
-      const records=new Map<string,{hash:string;stages:string;chunk:ChunkDto}>(),chunks:ChunkDto[]=[];
-      let slice=performance.now();
-      try{
-        for(const payload of payloads){
+      const records=new Map<string,PhysicalRecord>(),chunks:ChunkDto[]=[];
+      const pending=new Map<number,Promise<PageResult>>();
+      // Attach rejection handlers as soon as a prefetch starts. A later page
+      // can fail before its ordered adoption, or after this owner is cancelled.
+      const enqueue=(index:number)=>{
+        if(index>=payloads.length)return;
+        const payload=payloads[index]!;
+        pending.set(index,(async()=>{
           run.controller.signal.throwIfAborted();
           const id=`${payload.chunkX},${payload.chunkY}`;
           const stages=JSON.stringify([payload.tasks.map(task=>[task.id,task.stage]),payload.decorationContext.tasks.map(task=>[task.id,task.stage])]);
@@ -32,14 +42,23 @@ export class CanonicalCityProjection {
               ? previous.chunk : {...previous.chunk,tasks:payload.tasks,worldVersion:payload.publishedVersion};
           }else{
             const materialized=await read(payload,run.controller.signal);
-            // Worker transport clones metadata as well. The authoritative
-            // immutable arrays already belong to the one retained full scene.
+            // The one retained scene already owns immutable task metadata.
             chunk={...materialized,tasks:payload.tasks,worldFeatures:payload.worldFeatures,
               plannedSites:payload.plannedSites,blockPlaques:payload.blockPlaques};
           }
+          return {id,record:{hash:payload.contentHash,stages,chunk}};
+        })().then(value=>({ok:true as const,...value}),error=>({ok:false as const,error})));
+      };
+      let slice=performance.now();
+      try{
+        for(let index=0;index<this.readWidth;index++)enqueue(index);
+        for(let index=0;index<payloads.length;index++){
+          const result=await pending.get(index)!;pending.delete(index);
           run.controller.signal.throwIfAborted();
           if(this.disposed||this.run!==run)return false;
-          chunks.push(chunk);records.set(id,{hash:payload.contentHash,stages,chunk});
+          if(!result.ok)throw result.error;
+          chunks.push(result.record.chunk);records.set(result.id,result.record);
+          enqueue(index+this.readWidth);
           if(performance.now()-slice>=4){await yieldPreparationTask(run.controller.signal);slice=performance.now();}
         }
         if(this.disposed||this.run!==run)return false;
@@ -47,6 +66,9 @@ export class CanonicalCityProjection {
         return true;
       }catch(error){
         if(run.controller.signal.aborted)return false;
+        // Failure belongs to this run. Stop sibling reads without disturbing
+        // another owner's replacement or clearing the previous ready city.
+        run.controller.abort(error);
         throw error;
       }finally{if(this.run===run)this.run=undefined;}
     })();

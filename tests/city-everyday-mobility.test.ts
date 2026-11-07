@@ -73,11 +73,14 @@ it('назначение и отмена автобуса в плотном по
     const bodies=outdoor.map(a=>{const art=microAmbientSprite(a.kind==='CAR'?'car':'person',a.variant,a.direction);return {
       left:a.position.x+(art.opaqueBounds.left-art.anchor.x)/8,right:a.position.x+(art.opaqueBounds.right-art.anchor.x)/8,
       top:a.position.y+(art.opaqueBounds.top-art.anchor.y)/8,bottom:a.position.y+(art.opaqueBounds.bottom-art.anchor.y)/8};});
+    const collisions:string[]=[];
     for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++){
       const a=bodies[i]!,b=bodies[j]!;
-      expect(a.left<b.right-1e-7&&a.right>b.left+1e-7&&a.top<b.bottom-1e-7&&a.bottom>b.top+1e-7,
-        `step ${step}: ${outdoor[i]!.id}/${outdoor[j]!.id}`).toBe(false);
+      if(a.left<b.right-1e-7&&a.right>b.left+1e-7&&a.top<b.bottom-1e-7&&a.bottom>b.top+1e-7)collisions.push(`${outdoor[i]!.id}/${outdoor[j]!.id}`);
     }
+    // Check every pair on every original tick; avoid almost a million
+    // assertion wrappers competing with the physics this regression verifies.
+    expect(collisions,`step ${step}`).toEqual([]);
     expect(city.metrics.vehicleUnsafeTotal,`step ${step}`).toBe(0);
     expect(city.metrics.vehiclePedestrianUnsafeTotal,`step ${step}`).toBe(0);
   }
