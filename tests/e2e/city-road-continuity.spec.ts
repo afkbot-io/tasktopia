@@ -28,13 +28,18 @@ test.use({trace:{mode:'retain-on-failure',snapshots:false,screenshots:false,sour
 
 async function actualCityRoadPixels(page:Page,scene:CitySceneDto,seed:number){
   const host=page.locator('.world-canvas'),canvas=host.locator('canvas');
-  for(let i=0;i<8&&Number(await host.getAttribute('data-render-scale'))<3;i++){
+  for(let i=0;i<8&&Number(await host.getAttribute('data-render-scale'))<4;i++){
     const before=Number(await host.getAttribute('data-render-scale'));
     const box=(await canvas.boundingBox())!;
     await canvas.dispatchEvent('wheel',{deltaY:-250,clientX:box.x+box.width/2,clientY:box.y+box.height/2,bubbles:true});
     await expect.poll(async()=>Number(await host.getAttribute('data-render-scale'))).toBeGreaterThan(before);
     await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
   }
+  // Terrain presentation readiness does not mean the smooth wheel zoom has
+  // finished. Sample a settled native4x frame, so metadata and screenshot use
+  // the same transform (as in the existing transport/art pixel checks).
+  await expect.poll(async()=>Number(await host.getAttribute('data-render-scale')),{timeout:15000}).toBe(4);
+  await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
   await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15000});
   const view=await host.evaluate(el=>{const d=(el as HTMLElement).dataset,c=el.querySelector('canvas')!;
     return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight};});
