@@ -8,6 +8,7 @@ import { pauseInstalledClock } from './city-clock-control';
 import { sceneWalkGeometry } from './city-scene-walk-fixture';
 import { cityEventRecipe } from '../../src/client/city-event-recipes';
 import {everydayFixture} from './everyday-city-fixture';
+import { neighbourhoodAdmissionDeadline, NEIGHBOURHOOD_ADMISSION_WORLD_MS } from '../neighbourhood-admission';
 
 test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
 test.afterEach(async({page},info)=>{
@@ -90,19 +91,33 @@ clockSceneTest('a completed neighbourhood uses real residents through arrival, a
   let plan!:CityLifePlan,initial:Participant[]=[],arrived:Participant[]=[],leaving:Participant[]=[];
   let completed=false;const actions:string[]=[];
   const approach:unknown[]=[],attempts:unknown[]=[],episodeIds=new Set<string>();
+  const admissions:unknown[]=[];
   // A real crossing may cancel arrival at24s or physical departure at12s.
   // Observe up to three whole natural admissions in the same city; a finished
   // lease alone is never a positive journey and cancelled IDs cannot replay.
   for(let attempt=0;attempt<3;attempt++){
-    // Preserve the12s idle admission bound. A real higher-priority owner can
-    // defer this scene until its bounded30s response and the next retry finish.
-    let deferredByOwner=false;
-    for(let step=0;step<90&&!await world.getAttribute('data-city-life-episode-id');step++){
-      const owners=JSON.parse((await world.getAttribute('data-city-event-owners'))!) as {priority:number}[];
-      deferredByOwner ||= owners.some(owner=>owner.priority>1);
-      if(step===24)expect(deferredByOwner,'Delayed admission needs an observed shared owner').toBe(true);
+    // Preserve12s of owner-free world time. EVERYDAY can legitimately own
+    // this approach for44s; a frozen15s locator poll cannot expire that lease.
+    const admissionState=()=>world.evaluate(node=>{const d=(node as HTMLElement).dataset;
+      return{now:Number(d.roadEventServerNow),id:d.cityLifeEpisodeId,phase:d.cityLifePhase,
+        owners:JSON.parse(d.cityEventOwners??'[]') as {id:string;priority:number;until:number}[]};});
+    const startedAt=(await admissionState()).now;let blockingUntil=startedAt;
+    const admission={attempt,startedAt,deadline:neighbourhoodAdmissionDeadline(startedAt),samples:[] as Awaited<ReturnType<typeof admissionState>>[]};
+    admissions.push(admission);
+    // The public world clock can slew-10%; keep every physical frame and a
+    // bounded sample count even if its telemetry stops advancing.
+    const maxSteps=Math.ceil(NEIGHBOURHOOD_ADMISSION_WORLD_MS/(500*.9))+2;
+    for(let step=0;step<maxSteps;step++){
+      const state=await admissionState();admission.samples.push(state);
+      expect(Number.isFinite(state.now),'Admission requires a published world clock').toBe(true);
+      if(state.id)break;
+      for(const owner of state.owners)if(owner.priority>1&&Number.isFinite(owner.until)&&owner.until>state.now)
+        blockingUntil=Math.max(blockingUntil,owner.until);
+      admission.deadline=neighbourhoodAdmissionDeadline(startedAt,blockingUntil);
+      if(state.now>=admission.deadline)break;
       await page.clock.runFor(500);
     }
+    await writeFile(info.outputPath('physical-admissions.json'),JSON.stringify(admissions,null,2));
     await expect(world).toHaveAttribute('data-city-life-phase', /^(ARRIVING|ACTIVITY)$/);
     plan=JSON.parse((await world.getAttribute('data-city-life-plan'))!) as CityLifePlan;
     expect(episodeIds.has(plan.id),'A cancelled episode must not replay').toBe(false);episodeIds.add(plan.id);
