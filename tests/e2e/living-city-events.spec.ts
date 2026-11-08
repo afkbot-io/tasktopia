@@ -446,19 +446,44 @@ test('real-clock effects stay within the CPU and retained-heap budgets over repe
  }finally{await f.cleanup();}
 });
 
-test('visibility lifecycle stops work and audio, then releases an expired capture onto the latest server stage',async({page})=>{
+test('visibility lifecycle stops work and audio, then releases an expired capture onto the latest server stage',async({page},info)=>{
  test.setTimeout(45000);const f=await fixture(page);
+ type WorkNode=HTMLElement&{__qaWorkVisibility?:{captured?:{taskId:string;kind:string;phase:string;at:number};samples:{at:number;states:CineSample['states']}[];observer:MutationObserver}};
  try{
-  await f.focus(f.task);await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});await expect(f.host).toHaveAttribute('data-cinematic-phases',/CONSTRUCT:WORK/);
+  await f.focus(f.task);
   // Headless tabs remain visible even after bringToFront on another tab.
-  // Inject only the browser lifecycle signal; changes still use live MCP/WS.
-  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
+  // Observe before the command and hide in the actual published WORK frame.
+  // Protocol polling can span that short phase on a software renderer.
+  // Only the browser lifecycle signal is injected; changes use live MCP/WS.
+  await f.host.evaluate((el,taskId)=>{
+   const node=el as WorkNode,samples:{at:number;states:CineSample['states']}[]=[];let signature='';
+   const read=()=>{
+    const states:CineSample['states']=JSON.parse(node.dataset.cinematicState??'[]'),next=JSON.stringify(states);
+    if(next!==signature){signature=next;samples.push({at:performance.now(),states});if(samples.length>32)samples.shift();}
+    const work=states.find(s=>s.taskId===taskId&&s.kind==='CONSTRUCT'&&s.phase==='WORK');
+    if(!work||node.__qaWorkVisibility!.captured)return;
+    node.__qaWorkVisibility!.captured={taskId:work.taskId,kind:work.kind,phase:work.phase,at:performance.now()};
+    node.__qaWorkVisibility!.observer.disconnect();
+    Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));
+   };
+   const observer=new MutationObserver(read);node.__qaWorkVisibility={samples,observer};
+   observer.observe(node,{attributes:true,attributeFilter:['data-cinematic-state']});read();
+  },f.task.id);
+  await f.call('task.set_status',{taskId:f.task.id,status:'STARTED'});
+  await expect.poll(()=>f.host.evaluate(el=>(el as WorkNode).__qaWorkVisibility?.captured),{timeout:15000})
+   .toMatchObject({taskId:f.task.id,kind:'CONSTRUCT',phase:'WORK'});
+  expect(await page.evaluate(()=>document.hidden)).toBe(true);
   await expect(f.host).toHaveAttribute('data-animation-active','false');await expect(f.host).toHaveAttribute('data-city-audio-voices','0');
   await f.call('task.set_status',{taskId:f.task.id,status:'IN_PROGRESS',progress:40});await page.waitForTimeout(6000);
   await page.evaluate(()=>{Reflect.deleteProperty(document,'hidden');document.dispatchEvent(new Event('visibilitychange'));});
   await expect(f.host).toHaveAttribute('data-city-cinematics','0');await expect(f.host).toHaveAttribute('data-cinematic-workers','0');await expect(f.host).toHaveAttribute('data-animation-active','true');
   await page.getByLabel('Поиск здания по номеру или названию').fill(String(f.task.taskNumber));await page.locator('.task-search-results button').first().click();await expect(page.locator('.task-modal .stage-icon')).toHaveText('3');
- }finally{await f.cleanup();}
+ }finally{
+  try{
+   const evidence=await f.host.evaluate(el=>{const record=(el as WorkNode).__qaWorkVisibility;record?.observer.disconnect();return record?{captured:record.captured,samples:record.samples}:null;}).catch(()=>null);
+   await info.attach('visibility-work-frame',{body:JSON.stringify(evidence),contentType:'application/json'});
+  }finally{await f.cleanup();}
+ }
 });
 
 clockSceneTest('all seven road scenes dispatch moving services, close and reopen lanes without unsafe pairs',async({page},info)=>{

@@ -8,6 +8,13 @@ import {readActiveBlockLayout,synchronizeCityBlocks} from '../../src/server/worl
 import type {CityTransportFurniture} from '../../src/shared/city-transport-furniture';
 import {roadAtlasSurfaceTile} from '../../src/shared/road-atlas';
 
+// Linux WebKit's headless snapshot can retain an earlier static WebGL frame.
+// Run this native pixel check in a real window; other browsers
+// keep their configured launch mode. CI supplies the isolated X display.
+if(process.platform==='linux')test.use({headless:async({headless,browserName},use)=>{
+  await use(browserName==='webkit'?false:headless);
+}});
+
 async function centre(page:Page,point:{x:number;y:number},precision=24){
   const host=page.locator('.world-canvas'),canvas=host.locator('canvas');
   for(let step=0;step<40;step++){
@@ -119,10 +126,8 @@ test('native permanent airport/rail furniture follows real MCP readiness, surviv
     for(let i=0;i<9;i++)await page.keyboard.press('+');
     await expect.poll(async()=>Number(await host.getAttribute('data-render-scale')),{timeout:15000}).toBeGreaterThanOrEqual(3);
     await expect(host).toHaveAttribute('data-camera-presentation-pending','false');await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15000});
-    // Linux WebKit's native PNG may retain the penultimate static WebGL
-    // buffer although the trace compositor already shows the final pose.
-    // Request one ordinary paint at the already reached zoom cap, and prove
-    // that this neither completes a missing zoom nor changes the camera.
+    // Another public zoom at the reached cap must preserve the presented
+    // pose. Check that idempotence separately from the native pixel oracle.
     const capturePose=await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{scale:d.renderScale,x:d.cameraWorldX,y:d.cameraWorldY};});
     expect(capturePose.scale).toBe('4');
     await page.keyboard.press('+');

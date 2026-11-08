@@ -185,7 +185,8 @@ jobs:
       - run: npx playwright install --with-deps chromium firefox webkit
       # One worker per independent runner/DB preserves stateful file order.
       # Existing readiness/performance/assertion budgets stay in the tests.
-      - run: npm run test:e2e -- --reporter=line --max-failures=3 --shard=${{ matrix.shard }}/4
+      # Native static WebKit pixel checks use an isolated real window on Linux.
+      - run: xvfb-run -a npm run test:e2e -- --reporter=line --max-failures=3 --shard=${{ matrix.shard }}/4
       - name: Retain browser evidence
         if: failure() || cancelled()
         uses: actions/upload-artifact@v4

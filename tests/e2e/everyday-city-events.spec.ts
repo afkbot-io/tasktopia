@@ -377,13 +377,20 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
 test('touch-sized everyday city keeps preferences, sound opt-in, motion cancellation and read-only task controls usable', async ({ page, hasTouch }, info) => {
   test.setTimeout(90000); await page.setViewportSize({ width: 390, height: 844 }); const f = await everydayFixture(page);
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  let cinematicFrames: Awaited<ReturnType<typeof observeCinematics>> | undefined;
   try {
     await f.focus(f.pendingSchool);
+    cinematicFrames=await observeCinematics(f.host);
     await f.service.activateDistrict(f.user.countryId, f.pendingSchool.districtId, crypto.randomUUID());
     const menu = page.locator('.world-menu > summary'); if (hasTouch) await menu.tap(); else await menu.click();
     const prefs = page.locator('.world-preferences:visible'); if (hasTouch) await prefs.locator('> summary').tap(); else await prefs.locator('> summary').click();
     await prefs.getByLabel('Детализация').selectOption('ECONOMY'); await prefs.getByLabel('Звуки города').check();
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+    // Atomic terrain/mobility readiness precedes the separate life director.
+    // Establish the requested quality and assets before the opening scenario.
+    await expect(f.host).toHaveAttribute('data-world-quality','ECONOMY');
+    await expect(f.host).toHaveAttribute('data-ambient-assets','ready',{timeout:15000});
+    await expect(f.host).toHaveAttribute('data-everyday-kinds',/SCHOOL/,{timeout:15000});
     await f.call('task.set_status', { taskId: f.pendingSchool.id, status: 'COMPLETED' });
     await expect(f.host).toHaveAttribute('data-everyday-event', 'OPEN_SCHOOL', { timeout: 15000 });
     await page.screenshot({ path: info.outputPath('mobile-school-opening.png') });
@@ -393,7 +400,15 @@ test('touch-sized everyday city keeps preferences, sound opt-in, motion cancella
     await f.panFocus(await f.service.getTask(f.user.countryId, f.pendingSchool.id));
     expect(await page.getByRole('button', { name: /Создать задачу|Назначить|Редактировать задачу|Удалить задачу|Завершить задачу/ }).count()).toBe(0);
     expect(errors).toEqual([]);
-  } finally { await f.cleanup(); }
+  } finally {
+    try{
+      const state=await f.host.evaluate(el=>{const d=(el as HTMLElement).dataset;return Object.fromEntries([
+        'worldQuality','ambientAssets','everydayKinds','everydayEvent','everydaySkip','everydaySites','everydayCompiles',
+        'lifeRevision','canonicalSnapshotPending','movementPreparing','cinematicPhases','celebrations','animationActive'
+      ].map(key=>[key,d[key]??null]));}).catch(()=>null);
+      await info.attach('mobile-opening-readiness',{body:JSON.stringify({state,frames:await cinematicFrames?.frames().catch(()=>[])}),contentType:'application/json'});
+    }finally{await f.cleanup();}
+  }
 });
 
 
