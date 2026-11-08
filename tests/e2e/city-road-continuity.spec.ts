@@ -1,4 +1,5 @@
-import { expect,test,type Page } from '@playwright/test';
+import {expectVisibleCityGround} from './city-visible-readiness';
+import { expect,test,type Page,type TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import { Client,StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
@@ -26,7 +27,7 @@ import {planPlanetGroundRoadRaster} from '../../src/client/planet-ground-road-ra
 // readbacks otherwise stall the hosted software GPU during ordinary gestures.
 test.use({trace:{mode:'retain-on-failure',snapshots:false,screenshots:false,sources:true}});
 
-async function actualCityRoadPixels(page:Page,scene:CitySceneDto,seed:number){
+async function actualCityRoadPixels(page:Page,scene:CitySceneDto,seed:number,info:TestInfo){
   const host=page.locator('.world-canvas'),canvas=host.locator('canvas');
   for(let i=0;i<8&&Number(await host.getAttribute('data-render-scale'))<4;i++){
     const before=Number(await host.getAttribute('data-render-scale'));
@@ -40,7 +41,7 @@ async function actualCityRoadPixels(page:Page,scene:CitySceneDto,seed:number){
   // the same transform (as in the existing transport/art pixel checks).
   await expect.poll(async()=>Number(await host.getAttribute('data-render-scale')),{timeout:15000}).toBe(4);
   await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
-  await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15000});
+  await expectVisibleCityGround(host,info,'native-road-zoom');
   const view=await host.evaluate(el=>{const d=(el as HTMLElement).dataset,c=el.querySelector('canvas')!;
     return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight};});
   expect(view.scale).toBeGreaterThanOrEqual(3);
@@ -215,8 +216,8 @@ test('canonical road survives city growth, task close and planet return without 
     }
     await expect.poll(async()=>host.evaluate((el,p)=>{const d=(el as HTMLElement).dataset,c=el.querySelector('canvas')!,s=8*Number(d.renderScale);
       return Math.abs((Number(d.cameraWorldX)-p.x)*s)<c.clientWidth/2-12&&Math.abs((Number(d.cameraWorldY)-p.y)*s)<c.clientHeight/2-80;},exit)).toBe(true);
-    await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15_000});
-    const cityPixels=await actualCityRoadPixels(page,scene,1);
+    await expectVisibleCityGround(host,info,'road-exit-pan');
+    const cityPixels=await actualCityRoadPixels(page,scene,1,info);
     await writeFile(info.outputPath('city-road-pixels.json'),JSON.stringify(cityPixels));
     expect(cityPixels.best.matches,JSON.stringify(cityPixels)).toBeGreaterThanOrEqual(60);
     expect(cityPixels.best.wrongMatches).toBeLessThan(cityPixels.best.matches);

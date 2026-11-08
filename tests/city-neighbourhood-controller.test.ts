@@ -151,6 +151,35 @@ it('does not count a drill as completed when the actual engine cannot leave its 
   expect(f.director.active).toEqual([]);
 });
 
+it('keeps a blocked pedestrian departure negative after a real arrival and activity', () => {
+  const f=fixture('GARDEN');expect(f.controller.start(f.plan,f.start)).toBe(true);
+  let blockedAt:number|undefined,terminatedAt:number|undefined;
+  const departure=new Map<string,{x:number;y:number}>();
+  const phases=new Set<string>();
+  for(let elapsed=0;elapsed<75_000&&f.controller.state;elapsed+=50){
+    const now=f.start+elapsed;f.director.update(now,options);
+    const state=f.controller.update(now,f.view,true);
+    if(state)phases.add(state.phase);
+    if(blockedAt===undefined&&state?.phase==='LEAVING'){
+      blockedAt=now;
+      for(const id of state.actorIds)departure.set(id,{...f.city.agents.find(actor=>actor.id===id)!.position});
+      f.city.setWalkClosures(new Set(f.input.walkGraph.keys()));
+    }
+    if(f.controller.state)f.city.advance(50);else terminatedAt=now;
+  }
+  expect([...phases]).toEqual(['ARRIVING','ACTIVITY','LEAVING']);
+  expect(blockedAt).toBeDefined();expect(f.controller.metrics.activities).toBe(1);
+  expect(terminatedAt!-blockedAt!).toBe(12_000);
+  for(const [id,origin] of departure){
+    const actor=f.city.agents.find(actor=>actor.id===id)!;
+    expect(Math.abs(actor.position.x-origin.x)+Math.abs(actor.position.y-origin.y)).toBeLessThan(3);
+  }
+  expect(f.controller.metrics.completed).toBe(0);expect(f.controller.metrics.cancelled).toBe(1);
+  expect(f.controller.state).toBeUndefined();expect(f.director.active).toEqual([]);
+  expect(f.city.agents.some(actor=>actor.visit?.id.startsWith(f.plan.id))).toBe(false);
+  expect([f.city.metrics.vehicleUnsafeTotal,f.city.metrics.pedestrianUnsafeTotal,f.city.metrics.vehiclePedestrianUnsafeTotal]).toEqual([0,0,0]);
+});
+
 it('uses one worker on a narrow approach so a resting arrival cannot block the next participant', () => {
   const f = fixture('GARDEN'), city = createCityMobility({ ...f.input, spawnPriorityCells: [{ x: 3, y: -2 }] });
   const controller = createNeighbourhoodController(() => city, f.director);

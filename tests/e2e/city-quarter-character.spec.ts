@@ -1,3 +1,4 @@
+import {expectVisibleCityGround} from './city-visible-readiness';
 import {expect,test} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import {createDb,transaction} from '../../src/server/db';
@@ -49,33 +50,37 @@ test('one real district renders three persistent quarter characters through norm
     expect((await page.request.post('/api/auth/login',{data:{email:user.email,password:'password123'}})).ok()).toBe(true);
     await page.goto(taskLink(user.countryId,initial));await expect(page.locator('#task-title')).toContainText(initial.title);
     await page.getByRole('button',{name:'Закрыть',exact:true}).click();
-    const host=page.locator('.world-canvas'),canvas=page.getByLabel('Интерактивная карта города',{exact:true});
+    const host=page.locator('.world-canvas');
     await expect(host).toHaveAttribute('data-city-scene-commit','atomic',{timeout:30000});
     await expect(host).toHaveAttribute('data-canonical-task-count','600',{timeout:30000});
     await expect(host).toHaveAttribute('data-mobility-ready','true',{timeout:30000});
     const retained=await host.locator('canvas').elementHandle(),evidence=[];
+    // One public DOM read carries the pose and canvas box. Resolving a locator
+    // separately for each value added costly round trips on the native CI phone.
+    const readView=()=>page.evaluate(()=>{const host=document.querySelector<HTMLElement>('.world-canvas')!,d=host.dataset;
+      const box=host.querySelector('canvas')!.getBoundingClientRect();
+      return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),pending:d.cameraPresentationPending,
+        box:{x:box.x,y:box.y,width:box.width,height:box.height}};});
     for(const chosen of selected){
       const task=await service.getTask(user.countryId,chosen.taskId),target={x:task.origin.x+3,y:task.origin.y+3};
       for(let drag=0;drag<40;drag++){
-        const before=await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale)};});
-        const box=(await canvas.boundingBox())!,dx=(before.x-target.x)*8*before.scale,dy=(before.y-target.y)*8*before.scale;
+        const before=await readView(),box=before.box,dx=(before.x-target.x)*8*before.scale,dy=(before.y-target.y)*8*before.scale;
         // The evidence needs the whole building inside the native viewport.
         // Repeated micro-drags to its exact centre add software-GPU work while
         // proving no additional camera or artwork behaviour.
         if(Math.abs(dx)<box.width/2-32&&Math.abs(dy)<box.height/2-64)break;
         const f=Math.min(1,box.width*.32/Math.max(1,Math.abs(dx)),box.height*.32/Math.max(1,Math.abs(dy)));
         await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
-        // Two actual pointer moves cross the drag threshold and reach the
-        // same endpoint. Extra intermediate native phone rasters consumed
-        // the120s host budget after all three artwork captures already passed.
-        await page.mouse.move(box.x+box.width/2+dx*f,box.y+box.height/2+dy*f,{steps:2});await page.mouse.up();
-        await expect.poll(async()=>{const now=await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{x:Number(d.cameraWorldX),y:Number(d.cameraWorldY)};});
-          return Math.abs(now.x-before.x)+Math.abs(now.y-before.y);}).toBeGreaterThan(.1);
-        await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
+        // The same trusted drag endpoint crosses the gesture threshold in
+        // one move, preserving the native viewport and the120s whole guard.
+        await page.mouse.move(box.x+box.width/2+dx*f,box.y+box.height/2+dy*f);await page.mouse.up();
+        let current=before;
+        await expect.poll(async()=>{current=await readView();return Math.abs(current.x-before.x)+Math.abs(current.y-before.y);}).toBeGreaterThan(.1);
+        if(current.pending!=='false')await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
       }
       await expect.poll(async()=>host.evaluate((el,p)=>{const d=(el as HTMLElement).dataset,c=el.querySelector('canvas')!,s=8*Number(d.renderScale);
         return Math.abs((Number(d.cameraWorldX)-p.x)*s)<c.clientWidth/2-32&&Math.abs((Number(d.cameraWorldY)-p.y)*s)<c.clientHeight/2-64;},target)).toBe(true);
-      await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15000});
+      await expectVisibleCityGround(host,info,`quarter-${chosen.blockId}`);
       await expect(host).toHaveAttribute('data-world-object-depth-errors','0');
       const character=String(blocks.get(chosen.blockId)!.parameters.quarterCharacter);
       // Mouse-driven phone emulation can hover the final drag endpoint. Move

@@ -45,7 +45,10 @@ clockSceneTest('a completed neighbourhood uses real residents through arrival, a
   // Software WebKit must deliver all physical frames, including approach and
   // departure. This runner allowance does not alter simulation deadlines or
   // the separate native latency/input budgets; fastForward stays forbidden.
-  test.setTimeout(process.env.CI?240_000:120_000);await installSceneClock(page);
+  // Up to three complete natural admissions can include safe cancellation
+  // during arrival or departure. Keep24s/12s world deadlines and every frame;
+  // the wall guard covers those three journeys plus shared-owner deferrals.
+  test.setTimeout(process.env.CI?720_000:240_000);await installSceneClock(page);
   await page.addInitScript(() => localStorage.setItem('tasktopia:world-preferences:v2', JSON.stringify({ quality: 'NORMAL', cityLife: false, sound: false })));
   expect((await page.request.post('/api/auth/login', { data: { email: 'demo@tasktopia.local', password: 'tasktopia-demo' } })).status()).toBe(200);
   const bootstrap = await (await page.request.get('/api/bootstrap')).json();
@@ -84,11 +87,12 @@ clockSceneTest('a completed neighbourhood uses real residents through arrival, a
   }
   type Participant = { id: string; position: Cell; visit?: { id: string; arrived: boolean } };
   const people = async () => JSON.parse((await world.getAttribute('data-city-life-actors'))!) as Participant[];
-  let plan!:CityLifePlan,initial:Participant[]=[];
+  let plan!:CityLifePlan,initial:Participant[]=[],arrived:Participant[]=[],leaving:Participant[]=[];
+  let completed=false;const actions:string[]=[];
   const approach:unknown[]=[],attempts:unknown[]=[],episodeIds=new Set<string>();
-  // A real crossing may safely cancel an appointment at24s. Observe up to
-  // three natural admissions in this same city, without replaying an ID or
-  // treating any cancellation as a positive journey. Keep the whole deadline.
+  // A real crossing may cancel arrival at24s or physical departure at12s.
+  // Observe up to three whole natural admissions in the same city; a finished
+  // lease alone is never a positive journey and cancelled IDs cannot replay.
   for(let attempt=0;attempt<3;attempt++){
     // Preserve the12s idle admission bound. A real higher-priority owner can
     // defer this scene until its bounded30s response and the next retry finish.
@@ -113,49 +117,71 @@ clockSceneTest('a completed neighbourhood uses real residents through arrival, a
       await page.clock.runFor(500);
     }
     const current=await world.evaluate(node=>({...((node as HTMLElement).dataset)}));
-    attempts.push({plan,initial,before,current});
-    await writeFile(info.outputPath('physical-attempts.json'),JSON.stringify(attempts,null,2));
-    if(current.cityLifeEpisodeId===plan.id)break;
-    expect(Number(current.cityLifeCancelled)).toBeGreaterThan(before.cancelled);
-    expect(Number(current.cityLifeCompleted)).toBe(before.completed);
-    expect(Number(current.mobilityFixedSteps)).toBeGreaterThan(before.steps);
-    expect(current.animationActive).toBe('true');expect(current.movementPreparing).toBe('false');
-    for(const metric of ['mobilityVehicleUnsafeTotal','mobilityPedestrianUnsafeTotal','mobilityVehiclePedestrianUnsafeTotal','wrongWayCars','walkerOffPath'])expect(current[metric]).toBe('0');
-    await page.clock.runFor(250);
-    const owners=JSON.parse(await world.getAttribute('data-city-event-owners')??'[]') as {id:string}[];
+    const record:Record<string,unknown>={plan,initial,before,current};attempts.push(record);
+    if(current.cityLifeEpisodeId===plan.id){
+      const recipe=cityEventRecipe(plan.recipeId!);
+      expect(recipe?.channel).toBe('NEIGHBOURHOOD');
+      if(!recipe||recipe.channel!=='NEIGHBOURHOOD')throw new Error('A completed native site needs a registered neighbourhood recipe');
+      await expect(world).toHaveAttribute('data-city-life-phase','ACTIVITY');
+      arrived=await people();expect(arrived.map(actor=>actor.id)).toEqual(initial.map(actor=>actor.id));
+      expect(arrived.every(actor=>actor.visit?.id===plan.id&&actor.visit.arrived)).toBe(true);
+      await page.screenshot({path:info.outputPath('physical-neighbourhood-activity.png')});
+      actions.length=0;
+      for(let step=0;step<28&&await world.getAttribute('data-city-life-episode-id')===plan.id&&await world.getAttribute('data-city-life-phase')==='ACTIVITY';step++){
+        const cue=await world.evaluate(node=>{const d=(node as HTMLElement).dataset;return{recipe:d.cityLifeRecipe,action:d.cityLifeAction,step:Number(d.cityLifeActionStep)};});
+        expect(cue.recipe).toBe(recipe.id);if(actions.length===cue.step)actions.push(cue.action!);
+        await page.clock.runFor(500);
+      }
+      if(await world.getAttribute('data-city-life-episode-id')===plan.id){
+        expect(actions).toEqual(recipe.steps);
+        await expect(world).toHaveAttribute('data-city-life-episode-id',plan.id);
+        await expect(world).toHaveAttribute('data-city-life-phase','LEAVING');
+        await expect(world).toHaveAttribute('data-city-life-action','');
+        leaving=await people();
+        const leavingAt=Number(await world.getAttribute('data-road-event-server-now')),departure:unknown[]=[];
+        //12s belongs to the public world clock. Its-10% slew needs at most28
+        // half-second browser steps; no appointment lifetime is extended.
+        for(let step=0;step<28&&await world.getAttribute('data-city-life-episode-id')===plan.id
+          &&Number(await world.getAttribute('data-road-event-server-now'))<leavingAt+12_000;step++){
+          departure.push(await world.evaluate(node=>{const d=(node as HTMLElement).dataset;return{now:d.roadEventServerNow,
+            phase:d.cityLifePhase,actors:d.cityLifeActors,steps:d.mobilityFixedSteps,completed:d.cityLifeCompleted,cancelled:d.cityLifeCancelled};}));
+          await page.clock.runFor(500);
+        }
+        await expect(world).not.toHaveAttribute('data-city-life-episode-id',plan.id);
+        // Counters and owner lists publish every250ms even if a replacement
+        // keeps the lease count unchanged. Do not sample stale terminal metadata.
+        await page.clock.runFor(250);
+        const terminal=await world.evaluate(node=>({...((node as HTMLElement).dataset)}));
+        expect(Number(terminal.roadEventServerNow)-leavingAt).toBeLessThanOrEqual(13_000);
+        completed=Number(terminal.cityLifeCompleted)>before.completed;
+        Object.assign(record,{arrived,leaving,actions:[...actions],leavingAt,departure,terminal,
+          outcome:completed?'PHYSICAL_DEPARTURE_COMPLETED':'CANCELLED_DURING_DEPARTURE'});
+      }else{
+        Object.assign(record,{arrived,actions:[...actions],outcome:'CANCELLED_DURING_ACTIVITY'});
+        await page.clock.runFor(250);
+      }
+    }else{
+      Object.assign(record,{terminal:current,outcome:'CANCELLED_DURING_ARRIVAL'});
+      await page.clock.runFor(250);
+    }
+    const terminal=await world.evaluate(node=>({...((node as HTMLElement).dataset)}));
+    record.terminal=terminal;
+    const owners=JSON.parse(terminal.cityEventOwners??'[]') as {id:string}[];
     expect(owners.some(owner=>owner.id===plan.id)).toBe(false);
+    expect(Number(terminal.mobilityFixedSteps)).toBeGreaterThan(before.steps);
+    for(const metric of ['mobilityVehicleUnsafeTotal','mobilityPedestrianUnsafeTotal','mobilityVehiclePedestrianUnsafeTotal','wrongWayCars','walkerOffPath'])expect(terminal[metric]).toBe('0');
+    await writeFile(info.outputPath('physical-attempts.json'),JSON.stringify(attempts,null,2));
+    if(completed){expect(Number(terminal.cityLifeCompleted)).toBe(before.completed+1);break;}
+    expect(Number(terminal.cityLifeCancelled)).toBeGreaterThan(before.cancelled);
+    expect(Number(terminal.cityLifeCompleted)).toBe(before.completed);
+    expect(terminal.animationActive).toBe('true');expect(terminal.movementPreparing).toBe('false');
   }
   const approachPath=info.outputPath('physical-approach.json');await writeFile(approachPath,JSON.stringify(approach,null,2));
   await info.attach('physical-approach',{path:approachPath,contentType:'application/json'});
-  const recipe=cityEventRecipe(plan.recipeId!);
-  expect(recipe?.channel).toBe('NEIGHBOURHOOD');
-  if(!recipe||recipe.channel!=='NEIGHBOURHOOD')throw new Error('A completed native site needs a registered neighbourhood recipe');
-  await expect(world).toHaveAttribute('data-city-life-episode-id', plan.id);
-  await expect(world).toHaveAttribute('data-city-life-phase', 'ACTIVITY');
-  const arrived = await people();expect(arrived.map(actor => actor.id)).toEqual(initial.map(actor => actor.id));
-  expect(arrived.every(actor => actor.visit?.id === plan.id && actor.visit.arrived)).toBe(true);
-  await page.screenshot({ path: info.outputPath('physical-neighbourhood-activity.png') });
-  const actions:string[]=[];
-  for (let step = 0; step < 28 && await world.getAttribute('data-city-life-phase') === 'ACTIVITY'; step++) {
-    const cue=await world.evaluate(node=>{const d=(node as HTMLElement).dataset;return {recipe:d.cityLifeRecipe,action:d.cityLifeAction,step:Number(d.cityLifeActionStep)};});
-    expect(cue.recipe).toBe(recipe.id);
-    if(actions.length===cue.step)actions.push(cue.action!);
-    await page.clock.runFor(500);
-  }
-  expect(actions).toEqual(recipe.steps);
-  await expect(world).toHaveAttribute('data-city-life-episode-id', plan.id);await expect(world).toHaveAttribute('data-city-life-phase', 'LEAVING');
-  await expect(world).toHaveAttribute('data-city-life-action','');
-  const leaving = await people();
-  for (let step = 0; step < 24 && await world.getAttribute('data-city-life-episode-id') === plan.id; step++) await page.clock.runFor(500);
-  await expect(world).not.toHaveAttribute('data-city-life-episode-id', plan.id);
-  expect(Number(await world.getAttribute('data-city-life-completed'))).toBeGreaterThan(0);
-  // The phase changes immediately; the director publishes its bounded debug
-  // snapshot every250ms when a replacement keeps the lease count unchanged.
-  // Advance one publication interval, well before the old75s lease expires.
-  await page.clock.runFor(250);
+  expect(completed,'No real physical departure completed in three natural admissions').toBe(true);
   const owners = JSON.parse((await world.getAttribute('data-city-event-owners'))!) as { id: string }[];expect(owners.some(owner => owner.id === plan.id)).toBe(false);
   for (const metric of ['data-mobility-vehicle-unsafe-total', 'data-mobility-pedestrian-unsafe-total', 'data-mobility-vehicle-pedestrian-unsafe-total']) await expect(world).toHaveAttribute(metric, '0');
   expect(writes).toEqual([]);expect(errors).toEqual([]);
   expect(reads.filter(path => path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path => /\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
-  await info.attach('physical-neighbourhood', { body: JSON.stringify({ plan, actions, initial, arrived, leaving, owners, writes, reads, errors }), contentType: 'application/json' });
+  await info.attach('physical-neighbourhood', { body: JSON.stringify({ plan, actions, initial, arrived, leaving, owners, attempts, writes, reads, errors }), contentType: 'application/json' });
 });
