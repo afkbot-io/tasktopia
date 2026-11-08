@@ -10,7 +10,7 @@ import { rainPose } from '../../src/client/city-everyday-life';
 import { openMapCity } from './map-navigation';
 import { installSceneClock, clockSceneTest } from './city-scene-clock';
 import { sceneClockStepTowardStart } from '../scene-clock-step';
-import { isSchoolBusAttemptTerminal } from '../school-bus-attempt';
+import { isSchoolBusAttemptTerminal, SCHOOL_BUS_OBSERVATION_WORLD_MS } from '../school-bus-attempt';
 import { isEverydayAttemptExpiredWithoutArrival } from '../everyday-attempt';
 
 // Long fixed-step journeys already save native checkpoints and telemetry.
@@ -772,8 +772,16 @@ clockSceneTest('rain covers actual walkers, puddles and car splashes then dries 
 });
 
 clockSceneTest('school bus delivers children through the real school entrance independently of its street ceremony', async ({ page }, info) => {
-  test.setTimeout(900000); await installSceneClock(page); const f = await everydayFixture(page);
+  // Three complete264s world windows need up to888 browser seconds before
+  // preparation. CI571 spent830.7s wall on383 advances. The whole guard
+  // covers that workload without changing any simulation phase or attempt.
+  test.setTimeout(2400000); await installSceneClock(page); const f = await everydayFixture(page);
   try {
+    // Preserve the owned geometry before any long trip; a whole-test timeout
+    // cannot reliably complete the failure-only scene attachment.
+    const fixtureScene=info.outputPath('school-native-scene.json');
+    await writeFile(fixtureScene,JSON.stringify(await f.service.getCityScene(f.user.countryId,f.city.id)));
+    await info.attach('school-native-scene',{path:fixtureScene,contentType:'application/json'});
     const schools = f.tasks.filter(task => task.stage === 5 && BUILDING_CATALOG.find(b => b.key === task.visualAssetKey)?.educationKind === 'SCHOOL');
     expect(schools.length).toBeGreaterThan(0);
     type Dropoff={taskId:string;serial:number;alighted:number;serverNow:number};
@@ -809,7 +817,7 @@ clockSceneTest('school bus delivers children through the real school entrance in
     // Ordinary traffic can delay passengers beyond a finite boarding window.
     // Exercise up to three scheduled ceremonies in the same live city, recording
     // empty/cancelled trips too; never replace a real doorway arrival with a lease.
-    const deliveryBudgetMs = 44_000 + 80_000 + 60_000;
+    const deliveryBudgetMs = SCHOOL_BUS_OBSERVATION_WORLD_MS;
     const journeys: Record<string, unknown>[] = [], progress: Record<string, unknown>[] = [];
     let deliveredTask: typeof f.tasks[number] | undefined, previousStart=0;
     for (let episode = 0; episode < 3 && !deliveredTask; episode++) {
@@ -847,8 +855,8 @@ clockSceneTest('school bus delivers children through the real school entrance in
       const deliveryStartedAt = Number(await f.host.getAttribute('data-road-event-server-now'));
       const before = await f.host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
       let sample = before, observedSchoolBus = before.transitRole === 'SCHOOL_BUS';
-      // The original184s budget belongs to the world clock. Its -10% slew
-      // needs up to205 browser seconds plus two telemetry samples, not184.
+      // The full observation belongs to the world clock; allow its -10%
+      // slew while preserving every actual fixed physics step.
       const deliveryDeadline = deliveryStartedAt + deliveryBudgetMs;
       const maximumSteps = Math.ceil(deliveryBudgetMs / .9 / 1000) + 2;
       for (let i = 0; i < maximumSteps && Number(sample.roadEventServerNow) < deliveryDeadline

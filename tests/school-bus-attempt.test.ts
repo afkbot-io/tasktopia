@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSchoolBusAttemptTerminal } from './school-bus-attempt';
+import { isSchoolBusAttemptTerminal, SCHOOL_BUS_OBSERVATION_WORLD_MS } from './school-bus-attempt';
 
 const start = 100_000;
 const before = { schoolBusArrived: '0', schoolBuses: '0', transitRole: '' };
@@ -7,6 +7,15 @@ const ended = { roadEventServerNow: String(start + 63_000), transitRole: '', sch
 const terminal = (current = ended, observedSchoolBus = true) => isSchoolBusAttemptTerminal({ scheduledStartMs: start, before, current, observedSchoolBus });
 
 describe('school bus attempt termination from published state', () => {
+  it('сохраняет полное время пешего пути после поздней реальной высадки WebKit', () => {
+    // Retained native v164: the bus alighted at +174742.989ms; at the
+    // former +184s observer deadline a child still had a valid school visit.
+    const enteredAt = 1794115358371.7942, alightedAt = 1794115533114.7834;
+    const current = { roadEventServerNow: '1794115542431.5293', transitRole: '', schoolBusVisits: '1',
+      schoolBusArrived: '0', schoolBuses: '1', schoolBusPendingTask: '' };
+    expect(isSchoolBusAttemptTerminal({ scheduledStartMs: 1794115358000, before, current, observedSchoolBus: true })).toBe(false);
+    expect(alightedAt + 60_000 - enteredAt).toBeLessThanOrEqual(SCHOOL_BUS_OBSERVATION_WORLD_MS);
+  });
   it('сохраняет физические шаги для ожидающей заявки после завершения уличной сценки',()=>{
     expect(terminal({...ended,schoolBusPendingTask:'school'})).toBe(false);
     const missing:Partial<typeof ended>={...ended};delete missing.schoolBusPendingTask;

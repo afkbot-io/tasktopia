@@ -1,3 +1,7 @@
+// Ceremony, pending handoff after its end, physical bus leg, then the
+// actual child's walking visit. These are separate existing app bounds.
+export const SCHOOL_BUS_OBSERVATION_WORLD_MS = 44_000 + 80_000 + 80_000 + 60_000;
+
 type Snapshot = Readonly<{
   roadEventServerNow?: string;
   transitRole?: string;
