@@ -16,6 +16,9 @@ async function centre(page:Page,point:{x:number;y:number},precision=24){
     if(Math.abs(dx)<precision&&Math.abs(dy)<precision)return;
     const f=Math.min(1,box.width*.3/Math.max(1,Math.abs(dx)),box.height*.3/Math.max(1,Math.abs(dy)));
     await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+    // A sub-two-pixel residual is a tap, which legitimately opens the airport
+    // task. Cross the drag threshold before returning to the precise endpoint.
+    if(Math.abs(dx*f)+Math.abs(dy*f)<8)await page.mouse.move(box.x+box.width/2+12,box.y+box.height/2);
     await page.mouse.move(box.x+box.width/2+dx*f,box.y+box.height/2+dy*f,{steps:6});await page.mouse.up();
     await expect(host).toHaveAttribute('data-camera-presentation-pending','false',{timeout:15000});
   }
@@ -112,7 +115,9 @@ test('native permanent airport/rail furniture follows real MCP readiness, surviv
     await expect.poll(async()=>Number(await host.getAttribute('data-airport-native-material-tiles'))).toBeGreaterThan(500);
     const airfield=current.airports![0]!.plan!.airfield,probe={x:airfield.minX+5,y:airfield.minY+11};
     await centre(page,{x:probe.x+.5,y:probe.y+.5},1);await host.locator('canvas').focus();
+    await expect(page.locator('.task-modal')).toHaveCount(0);
     for(let i=0;i<9;i++)await page.keyboard.press('+');
+    await expect.poll(async()=>Number(await host.getAttribute('data-render-scale')),{timeout:15000}).toBeGreaterThanOrEqual(3);
     await expect(host).toHaveAttribute('data-camera-presentation-pending','false');await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15000});
     await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
     // WebKit can return an older compositor PNG after its DOM/RAF already

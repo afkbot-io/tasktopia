@@ -303,12 +303,16 @@ clockSceneTest('paused scene preparation advances a released renderer frame befo
 
 for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
   clockSceneTest(`${targetKind} service waits for actual arrival, drives and reopens safely`, async ({ page }, info) => {
-    test.setTimeout(180000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
+    // Three target dispatches require up to 105 fully rendered browser seconds.
+    // CI569 needed 139.8s wall for only 57 steps; its slowest step cost 5.575s.
+    // Cover all permitted steps plus setup/calendar work, keeping the original
+    // 31s world horizon, 35 steps per try and three admissions below unchanged.
+    test.setTimeout(720000); await page.setViewportSize({ width: 1440, height: 1100 }); await installSceneClock(page);
     const f = await everydayFixture(page), seen = new Set<string>(), evidence: Record<string, unknown>[] = [], frames: Record<string, unknown>[] = [], windows:Record<string,unknown>[]=[];
     try {
       await f.focus(f.tasks[0]!); await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 2000).toISOString()));
       // Nine calendar windows may contain only one target kind. Observe up
-      // to three genuine target dispatches within the original180s wall bound.
+      // to three genuine target dispatches within the bounded wall guard.
       let targetAttempts=0;
       for (let attempt = 0; attempt < 21 && targetAttempts<3 && seen.size < 1; attempt++) {
         const next = Number(await f.host.getAttribute('data-road-event-next-start')); await seek(page, f.host, next + 300);
@@ -324,7 +328,7 @@ for (const targetKind of ['BREAKDOWN', 'WATER'] as const) {
         let arrived = false, loaded = false;
         // The public server clock can slew backwards by10%. Deliver every
         // physical frame until31s of that clock elapsed, within35 one-second
-        // browser steps; the service's30s lifetime and wall deadline stay fixed.
+        // browser steps; the service's30s lifetime stays fixed.
         for (let i = 0; i < 35; i++) {
           await page.clock.runFor(1000); const state = await safe(f.host);
           if (state.roadEvent === kind) phases.add(state.roadEventPhase!);
