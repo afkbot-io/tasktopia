@@ -1,13 +1,18 @@
-import { expect,test,type Page,type Locator,type TestInfo } from "@playwright/test";
+import {expectVisibleCityGround} from './city-visible-readiness';
+import { expect,test,type Page } from "@playwright/test";
 import type { CitySceneDto } from "../../src/shared/city-scene-contract";
 import { decodeCitySceneWire } from "../../src/shared/city-scene-wire";
 import { CITY_SCENE_LOAD_TIMEOUT_MS } from "../../src/client/city-scene-deadline";
+import { CITY_MOVEMENT_MAX_TIMEOUT_MS } from '../../src/client/city-movement-deadline';
 import type { BootstrapDto,RealtimeEvent } from "../../src/shared/contracts";
 import { chunkPayloadContentHash } from "../../src/server/world/chunk-payload-hash";
 import { openMapCity, openMapPlanet } from "./map-navigation";
 import { installCityPreparationDiagnostics, attachCityPreparationFailure } from "./city-preparation-diagnostics";
 import { installCooperativeYieldGate, type CooperativeYieldGateWindow } from './cooperative-yield-gate';
 import { pauseInstalledClock } from './city-clock-control';
+import { installSceneClock } from './city-scene-clock';
+import { cityLifeHash } from '../../src/client/city-life';
+import { rainPose } from '../../src/client/city-everyday-life';
 
 // Сохраняем вызовы, сеть, исходники и итоговый PNG. Повторные автоматические
 // снимки canvas не являются частью проверяемой работы города.
@@ -40,7 +45,7 @@ async function openWorldPreferences(page:Page,hasTouch:boolean,keyboardDesktop=f
   return preferences;
 }
 
-async function enterCity(page:Page) {
+async function enterCity(page:Page,direct=false) {
   await page.addInitScript(() => {
     const NativeSocket=window.WebSocket,sockets=new Set<WebSocket>(),upgraded=new Set<WebSocket>();
     window.WebSocket=class extends NativeSocket {
@@ -56,39 +61,144 @@ async function enterCity(page:Page) {
   expect((await page.request.post("/api/auth/login",{data:{email:process.env.E2E_CITY_EMAIL??"demo@tasktopia.local",password:process.env.E2E_CITY_PASSWORD??"tasktopia-demo"}})).status()).toBe(200);
   // The journey waits for the actual PLANET/CITY readiness below. Generic
   // window.load is a separate lifecycle signal from those visible UI gates.
-  await page.goto("/", { waitUntil: "domcontentloaded" });await openMapCity(page);
+  let url='/';
+  if(direct){const bootstrap=await (await page.request.get('/api/bootstrap')).json() as BootstrapDto;
+    url=`/?${new URLSearchParams({countryId:bootstrap.country.id,cityId:bootstrap.initialCity!.id})}`;}
+  await page.goto(url, { waitUntil: "domcontentloaded" });await openMapCity(page);
   const host=page.locator(".world-canvas");
   await expect(host).toHaveAttribute("data-city-scene-commit","atomic",{timeout:30_000});
   await expect(host).toHaveAttribute("data-loading","false");
   return host;
 }
 
-// Visible CITY readiness is independent of the offscreen prewarm queue.
-async function expectVisibleCityGround(host:Locator,info:TestInfo,phase:string){
- let last:Record<string,string|undefined>|undefined;
- try{
-   await expect.poll(async()=>{
-     last=await host.evaluate(node=>{
-       const d=(node as HTMLElement).dataset;
-       return {citySceneCommit:d.citySceneCommit,cityFirstFrameRendered:d.cityFirstFrameRendered,
-         cityCriticalGroundReady:d.cityCriticalGroundReady,cameraPresentationPending:d.cameraPresentationPending,
-         cameraPaddingVisibleUntextured:d.cameraPaddingVisibleUntextured,cameraPaddingTargetUnbaked:d.cameraPaddingTargetUnbaked,
-         loading:d.loading,loadError:d.loadError,groundBakeQueue:d.groundBakeQueue,cityHaloGroundPending:d.cityHaloGroundPending,
-         cameraPaddingTerrainPending:d.cameraPaddingTerrainPending,cameraPaddingRoadPending:d.cameraPaddingRoadPending,
-         cameraPaddingTreePending:d.cameraPaddingTreePending,groundCache:d.groundCache,ambientAssets:d.ambientAssets,
-         movementPreparing:d.movementPreparing,mobilityReady:d.mobilityReady,renderScale:d.renderScale,
-         cameraWorldX:d.cameraWorldX,cameraWorldY:d.cameraWorldY};
-     });
-     return {commit:last.citySceneCommit,frame:last.cityFirstFrameRendered,critical:last.cityCriticalGroundReady,
-       presentation:last.cameraPresentationPending,visibleUntextured:last.cameraPaddingVisibleUntextured,
-       targetUnbaked:last.cameraPaddingTargetUnbaked,loading:last.loading,failed:last.loadError==="true"};
-   },{timeout:15_000,message:"The actual visible city ground and camera must be ready before controlling movement"}).toEqual({
-     commit:"atomic",frame:"true",critical:"true",presentation:"false",visibleUntextured:"0",targetUnbaked:"0",loading:"false",failed:false,
-   });
- }finally{
-   await info.attach(`visible-ground-${phase}`,{body:JSON.stringify({phase,coverage:last?"observed-last-public-snapshot":"unavailable",snapshot:last}),contentType:"application/json"});
- }
-}
+test('optional cloud art never blocks the first city frame and recovers after its delayed load',async({page},info)=>{
+  test.setTimeout(90_000);
+  let release!:()=>void,requests=0;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/atlas/clouds-v3/*.png*',async route=>{requests++;await gate;await route.continue().catch(()=>undefined);});
+  try{
+    const host=await enterCity(page,true);
+    await expectVisibleCityGround(host,info,'cloud-art-delayed');
+    await expect(host).toHaveAttribute('data-weather-assets','loading');
+    await expect(host).toHaveAttribute('data-cloud-shadows','0');
+    expect(requests).toBeGreaterThan(0);
+    release();await expect(host).toHaveAttribute('data-weather-assets','ready');
+    await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  }finally{release();}
+});
+
+test('failed optional cloud art retries through the existing city-life preference without replacing the map',async({page,hasTouch})=>{
+  test.setTimeout(90_000);
+  let unavailable=true,requests=0;
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.route('**/atlas/clouds-v3/*.png*',async route=>{requests++;
+    if(unavailable)await route.fulfill({status:503,body:''});else await route.continue();
+  });
+  const host=await enterCity(page,true),canvas=await host.locator('canvas').elementHandle();
+  await expect(host).toHaveAttribute('data-weather-assets','retry');
+  await expect(host).toHaveAttribute('data-loading','false');await expect(host).toHaveAttribute('data-cloud-shadows','0');
+  const failedRequests=requests;unavailable=false;
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Жизнь города').setChecked(false);
+  await preferences.getByLabel('Жизнь города').setChecked(true);
+  await expect(host).toHaveAttribute('data-weather-assets','ready');
+  await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  expect(requests).toBeGreaterThan(failedRequests);expect(await canvas!.evaluate(node=>node===document.querySelector('.world-canvas canvas'))).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('world weather survives pan, respects quality and motion, and dries without extra scene reads',async({page,hasTouch},info)=>{
+  test.setTimeout(120_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  let origin=Date.UTC(2035,0,1),cityId='';
+  await page.route('**/api/**',async route=>{
+    const response=await route.fetch({headers:{...route.request().headers(),'accept-encoding':'identity'}});
+    if(new URL(route.request().url()).pathname==='/api/bootstrap'){
+      const data=await response.json() as BootstrapDto;cityId=data.initialCity!.id;
+      origin=Math.floor(Date.UTC(2035,0,1)/540_000)*540_000+90_000+cityLifeHash(cityId)%150_000+22_000;
+    }
+    await route.fulfill({response,headers:{...response.headers(),'x-tasktopia-server-time':String(origin)}});
+  });
+  const host=await enterCity(page,true),canvas=host.locator('canvas');
+  await expect(host).toHaveAttribute('data-mobility-ready','true',{timeout:CITY_MOVEMENT_MAX_TIMEOUT_MS});
+  await expect(host).toHaveAttribute('data-weather-assets','ready');
+  await expect(host).toHaveAttribute('data-city-weather','RAIN');
+  await expect.poll(async()=>Number(await host.getAttribute('data-weather-rain-streaks'))).toBeGreaterThan(0);
+  await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  await pauseInstalledClock(page);await page.clock.runFor(300);
+  const before=JSON.parse((await host.getAttribute('data-cloud-shadow-poses'))!) as {id:string;x:number;y:number}[];
+  await page.screenshot({path:info.outputPath('city-rain-clouds.png')});
+  const x=await host.getAttribute('data-camera-world-x');
+  await canvas.focus();await page.keyboard.press('ArrowRight');await page.clock.runFor(600);
+  await expect(host).not.toHaveAttribute('data-camera-world-x',x!);
+  const after=JSON.parse((await host.getAttribute('data-cloud-shadow-poses'))!) as {id:string;x:number;y:number}[];
+  const common=before.filter(p=>after.some(n=>n.id===p.id));expect(common.length).toBeGreaterThan(0);
+  for(const previous of common){const next=after.find(n=>n.id===previous.id)!;expect(Math.abs(next.x-previous.x)).toBeLessThanOrEqual(4);expect(Math.abs(next.y-previous.y)).toBeLessThanOrEqual(2);}
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');await page.clock.runFor(300);
+  expect(Number(await host.getAttribute('data-cloud-shadows'))).toBeLessThanOrEqual(6);
+  expect(Number(await host.getAttribute('data-weather-rain-streaks'))).toBeLessThanOrEqual(48);
+  expect(Number(await host.getAttribute('data-weather-wet-cells'))).toBeLessThanOrEqual(12);
+  expect(Number(await host.getAttribute('data-weather-wet-visited'))).toBeLessThanOrEqual(6144);
+  await preferences.getByLabel('Жизнь города').setChecked(false);await page.clock.runFor(100);
+  await expect(host).toHaveAttribute('data-cloud-shadows','0');await expect(host).toHaveAttribute('data-weather-rain-streaks','0');
+  await preferences.getByLabel('Жизнь города').setChecked(true);await page.clock.runFor(300);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(host).toHaveAttribute('data-cloud-shadows','0');await expect(host).toHaveAttribute('data-weather-rain-streaks','0');
+  await page.emulateMedia({reducedMotion:'no-preference'});await expect(host).toHaveAttribute('data-animation-active','true');await page.clock.runFor(300);
+  await expect.poll(async()=>Number(await host.getAttribute('data-cloud-shadows'))).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');await page.keyboard.press('Escape');
+  for(const phase of ['DRYING','DRY'] as const){
+    for(let attempt=0;attempt<5&&await host.getAttribute('data-city-weather')!==phase;attempt++){
+      const now=Number(await host.getAttribute('data-road-event-server-now'));
+      const target=Array.from({length:120},(_,i)=>now+(i+1)*1000).find(t=>rainPose(cityId,t).phase===phase);
+      expect(target).toBeDefined();await page.clock.fastForward(Math.max(100,(target!-now)/.9+300));await page.clock.runFor(300);
+    }
+    await expect(host).toHaveAttribute('data-city-weather',phase);await expect(host).toHaveAttribute('data-weather-rain-streaks','0');
+  }
+  await expect(host).toHaveAttribute('data-weather-wet-cells','0');
+  await page.screenshot({path:info.outputPath('city-dry-clouds.png')});
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+  expect(errors).toEqual([]);
+  await info.attach('weather-state',{body:JSON.stringify(await host.evaluate(node=>({...((node as HTMLElement).dataset)}))),contentType:'application/json'});
+});
+
+test('a city entered mid-window admits local scenes and releases shared owners when life is disabled',async({page,hasTouch},info)=>{
+  test.setTimeout(90_000);
+  const errors:string[]=[],reads:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  const origin=Math.floor(Date.UTC(2035,0,1)/900_000)*900_000+42_000;
+  await page.route('**/api/**',async route=>{
+    const response=await route.fetch({headers:{...route.request().headers(),'accept-encoding':'identity'}});
+    await route.fulfill({response,headers:{...response.headers(),'x-tasktopia-server-time':String(origin)}});
+  });
+  const host=await enterCity(page,true);
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await pauseInstalledClock(page);
+  for(let step=0;step<16&&Number(await host.getAttribute('data-city-event-admitted')??0)===0;step++)await page.clock.runFor(500);
+  expect(Number(await host.getAttribute('data-city-event-admitted'))).toBeGreaterThan(0);
+  const owners=JSON.parse((await host.getAttribute('data-city-event-owners'))!) as {id:string;channel:string}[];
+  expect(owners.length).toBeGreaterThan(0);expect(owners.length).toBeLessThanOrEqual(3);
+  expect(new Set(owners.map(owner=>owner.channel)).size).toBe(owners.length);
+  expect(Number(await host.getAttribute('data-event-local-site-work')??0)).toBeLessThanOrEqual(4096);
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');await page.clock.runFor(300);
+  expect(Number(await host.getAttribute('data-city-event-leases'))).toBeLessThanOrEqual(2);
+  await preferences.getByLabel('Жизнь города').setChecked(false);await page.clock.runFor(300);
+  await expect(host).toHaveAttribute('data-city-event-leases','0');
+  for(const attribute of ['data-city-life-event','data-everyday-event','data-road-event'])await expect(host).toHaveAttribute(attribute,'');
+  await preferences.getByLabel('Жизнь города').setChecked(true);await page.clock.runFor(2500);
+  const next=JSON.parse((await host.getAttribute('data-city-event-owners'))!) as {id:string}[];
+  expect(next.some(owner=>owners.some(previous=>previous.id===owner.id))).toBe(false);
+  for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total'])await expect(host).toHaveAttribute(metric,'0');
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('common-event-director',{body:JSON.stringify({owners,next,state:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:'application/json'});
+});
+
 
 test("a hung authoritative refresh expires without destroying the city and a real retry recovers",async({page})=>{
   test.setTimeout(90_000);
@@ -171,15 +281,14 @@ test("a movement timeout keeps its native retry after a same-range camera pan",a
    await page.screenshot({path:info.outputPath("movement-timeout-after-pan.png")});
    const layout=await failure.evaluate(alert=>{
      const rect=(node:Element)=>{const r=node.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
-     const retry=alert.querySelector<HTMLButtonElement>('button')!,wrap=alert.closest('.world-canvas-wrap')!,world=wrap.querySelector('.world-canvas')!,tour=wrap.querySelector('.city-world-tour-trigger')!;
-     return {alert:rect(alert),retry:rect(retry),world:rect(world),tour:rect(tour),retryClientWidth:retry.clientWidth,retryScrollWidth:retry.scrollWidth};
+     const retry=alert.querySelector<HTMLButtonElement>('button')!,wrap=alert.closest('.world-canvas-wrap')!,world=wrap.querySelector('.world-canvas')!;
+     return {alert:rect(alert),retry:rect(retry),world:rect(world),retryClientWidth:retry.clientWidth,retryScrollWidth:retry.scrollWidth};
    });
    await info.attach("movement-timeout-layout",{body:JSON.stringify(layout),contentType:"application/json"});
    expect(layout.retryScrollWidth,"The complete retry label must fit inside its button").toBeLessThanOrEqual(layout.retryClientWidth+1);
    for(const edge of ['left','top'] as const){expect(layout.alert[edge]).toBeGreaterThanOrEqual(layout.world[edge]-1);expect(layout.retry[edge]).toBeGreaterThanOrEqual(layout.alert[edge]-1);}
    for(const edge of ['right','bottom'] as const){expect(layout.alert[edge]).toBeLessThanOrEqual(layout.world[edge]+1);expect(layout.retry[edge]).toBeLessThanOrEqual(layout.alert[edge]+1);}
-   const overlapsTour=layout.alert.left<layout.tour.right&&layout.alert.right>layout.tour.left&&layout.alert.top<layout.tour.bottom&&layout.alert.bottom>layout.tour.top;
-   expect(overlapsTour,"The city tour trigger must not obscure the error message").toBe(false);
+   await expect(page.locator(".city-world-tour-trigger")).toHaveCount(0);
    await expect(failure).toBeVisible();
    await expect(host).not.toHaveAttribute("data-mobility-ready","true");
    await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());
@@ -286,15 +395,219 @@ test("quality limits preserve the physical walk network and everyday compilation
   const host=await enterCity(page);
   await expect(host).toHaveAttribute("data-mobility-ready","true");
   const walk=await host.getAttribute("data-walk-network-builds"),life=await host.getAttribute("data-everyday-compiles");
+  const cars=Number(await host.getAttribute('data-cars'));
   const preferences=await openWorldPreferences(page,hasTouch);
   await preferences.getByLabel("Детализация").selectOption("ECONOMY");
   await expect(host).toHaveAttribute("data-world-quality","ECONOMY");
-  await expect.poll(async()=>Number(await host.getAttribute("data-cars"))).toBeLessThanOrEqual(8);
+  // Active/visible physical trips drain above the new target; Economy must
+  // not erase them in place. Exact target caps/draining have controller tests.
+  await expect.poll(async()=>Number(await host.getAttribute("data-cars"))).toBeLessThanOrEqual(Math.max(8,cars));
   expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);
   expect(await host.getAttribute("data-everyday-compiles")).toBe(life);
   await preferences.getByLabel("Детализация").selectOption("NORMAL");
   await expect(host).toHaveAttribute("data-world-quality","NORMAL");
   expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);
+});
+
+test("permanent transit stops survive event preferences, reduced motion and quality changes",async({page,hasTouch},info)=>{
+  test.setTimeout(90_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  // Observe just the already-decoded manifest. Capturing the whole native
+  // response can exceed DevTools' body cache or retain another65MiB JSON copy.
+  await page.addInitScript(()=>{
+    const NativeWorker=window.Worker;
+    window.Worker=class extends NativeWorker{
+      constructor(url:string|URL,options?:WorkerOptions){
+        super(url,options);
+        this.addEventListener('message',event=>{
+          const transfer=event.data?.transfer;
+          if(transfer?.kind==='tasktopia.city-scene.transfer')
+            (window as unknown as {qaTransitManifest:unknown}).qaTransitManifest=transfer.scene?.transitStops;
+        });
+      }
+    };
+  });
+  const host=await enterCity(page);
+  const manifest=await page.evaluate(()=>(window as unknown as {qaTransitManifest:CitySceneDto['transitStops']}).qaTransitManifest);
+  expect(manifest,'This journey must exercise the stored server manifest').toBeDefined();
+  // Street infrastructure is ready independently of background actor physics.
+  // Actual movement completion/cancellation has its own held-preparation test.
+  await expect(host).toHaveAttribute('data-transit-stop-preparation','ready');
+  await expect.poll(async()=>Number(await host.getAttribute('data-transit-stops'))).toBeGreaterThan(0);
+  const stops=await host.getAttribute('data-transit-stops'),geometry=await host.getAttribute('data-transit-stop-geometry');
+  const visible=String(JSON.parse(geometry!).length);
+  expect(Number(visible)).toBeGreaterThan(0);expect(Number(visible)).toBeLessThanOrEqual(256);
+  expect(Number(visible)).toBeLessThanOrEqual(Number(stops));
+  const canonical=new Map(manifest?.map(stop=>[stop.id,stop.shelter]));
+  const fixed=async()=>{
+    // A keyboard pan can cross a culling boundary between Playwright calls.
+    // Read one published frame, rather than holding the preceding frame's list.
+    await expect.poll(async()=>{
+      const state=await host.evaluate(node=>{
+        const d=(node as HTMLElement).dataset;
+        return {total:d.transitStops,views:Number(d.transitStopViews),visible:Number(d.transitStopVisible),
+          local:JSON.parse(d.transitStopGeometry!) as Array<{id:string;shelter:unknown}>};
+      });
+      return {total:state.total,views:state.views===state.local.length,visible:state.visible===state.local.length,
+        canonical:state.local.every(stop=>JSON.stringify(stop.shelter)===JSON.stringify(canonical.get(stop.id)))};
+    }).toEqual({total:stops,views:true,visible:true,canonical:true});
+  };
+  const unchanged=async()=>{
+    await fixed();
+    await expect(host).toHaveAttribute('data-transit-stop-geometry',geometry!);
+  };
+  await unchanged();
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Жизнь города',{exact:true}).uncheck();await unchanged();
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');
+  await expect(host).toHaveAttribute('data-world-quality','ECONOMY');await unchanged();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(host).toHaveAttribute('data-animation-active','false');await unchanged();
+  await preferences.getByLabel('Жизнь города',{exact:true}).check();await unchanged();
+  await preferences.getByLabel('Детализация').selectOption('NORMAL');
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await expect(host).toHaveAttribute('data-animation-active','true');await unchanged();
+  await preferences.locator(':scope > summary').click();
+  if(hasTouch)await page.locator('.world-menu > summary').click();
+  await host.locator('canvas').focus();await page.keyboard.press('ArrowRight');await fixed();
+  await openMapPlanet(page);await openMapCity(page);await fixed();
+  await page.screenshot({path:info.outputPath('permanent-stops.png')});
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
+  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(host).toHaveAttribute('data-transit-stop-preparation','ready');
+  await fixed();
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(2);
+  await info.attach('permanent-stops-state',{body:JSON.stringify({stops,geometry:JSON.parse(geometry!),reads,errors}),contentType:'application/json'});
+  expect(errors).toEqual([]);
+});
+
+test('local population stays bounded across native camera movement, quality and disabled presentation without city reads',async({page,hasTouch},info)=>{
+  test.setTimeout(90_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  const host=await enterCity(page),canvas=host.locator('canvas'),identity=await canvas.elementHandle();
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect.poll(async()=>Number(await host.getAttribute('data-population-local-cars'))).toBeGreaterThan(0);
+  await expect.poll(async()=>Number(await host.getAttribute('data-population-local-walkers'))).toBeGreaterThan(0);
+  await pauseInstalledClock(page);
+  const before=await host.evaluate(node=>({...((node as HTMLElement).dataset)}));
+  await page.screenshot({path:info.outputPath('local-population-initial.png')});
+  await canvas.focus();
+  for(let step=0;step<3;step++){await page.keyboard.press('ArrowRight');await page.clock.runFor(300);}
+  await expect(host).not.toHaveAttribute('data-camera-world-x',before.cameraWorldX!);
+  await page.clock.runFor(2000);
+  await expect(host).toHaveAttribute('data-mobility-network-builds',before.mobilityNetworkBuilds!);
+  await expect(host).toHaveAttribute('data-population-full-scans','0');
+  const preferences=await openWorldPreferences(page,hasTouch);
+  await preferences.getByLabel('Детализация').selectOption('ECONOMY');await page.clock.runFor(500);
+  await expect(host).toHaveAttribute('data-mobility-network-builds',before.mobilityNetworkBuilds!);
+  const population=()=>host.evaluate(node=>{const d=(node as HTMLElement).dataset;return{cars:Number(d.cars),walkers:Number(d.walkers),
+    spawned:Number(d.populationSpawned),pending:d.populationPending,steps:Number(d.populationWorkSteps),
+    visited:Number(d.populationQueryWork),buckets:Number(d.populationQueryBuckets),fullScans:Number(d.populationFullScans),p95:Number(d.populationSliceP95Ms)};});
+  const economy=await population();
+  expect(economy.cars).toBeLessThanOrEqual(24);expect(economy.walkers).toBeLessThanOrEqual(32);
+  expect(economy.steps).toBeLessThanOrEqual(256);expect(economy.visited).toBeLessThanOrEqual(4096);expect(economy.buckets).toBeLessThanOrEqual(512);
+  await preferences.getByLabel('Жизнь города').setChecked(false);
+  await expect(host).toHaveAttribute('data-population-pending','false');
+  const disabled=await population();await page.clock.runFor(3000);expect((await population()).spawned).toBe(disabled.spawned);
+  await preferences.getByLabel('Жизнь города').setChecked(true);await page.clock.runFor(2000);
+  await page.emulateMedia({reducedMotion:'reduce'});await expect(host).toHaveAttribute('data-population-pending','false');
+  const reduced=await population();await page.clock.runFor(2000);expect((await population()).spawned).toBe(reduced.spawned);
+  expect(await identity!.evaluate(node=>node.isConnected)).toBe(true);
+  for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total'])await expect(host).toHaveAttribute(metric,'0');
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('local-population',{body:JSON.stringify({before,economy,disabled,reduced,reads,errors}),contentType:'application/json'});
+});
+
+test('a regular city bus opens halfway through a minute and its native pixels expose the actual line',async({page,hasTouch},info)=>{
+  test.setTimeout(120_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await installSceneClock(page);
+  const origin=Date.UTC(2035,0,1)+42_000;
+  await page.route('**/api/**',async route=>{
+    const response=await route.fetch({headers:{...route.request().headers(),'accept-encoding':'identity'}});
+    await route.fulfill({response,headers:{...response.headers(),'x-tasktopia-server-time':String(origin)}});
+  });
+  const host=await enterCity(page),canvas=host.locator('canvas');
+  await expect(host).toHaveAttribute('data-mobility-ready','true');
+  await expect(host).toHaveAttribute('data-transit-fleet','2');
+  await pauseInstalledClock(page);
+  // Pausing is an asynchronous browser RPC. A run seen before that boundary
+  // may legitimately finish during it. Select a live run after the pause,
+  // driving at most the original12s admission budget, with every physics step.
+  type BusEntry={role:string;phase:string;line:string;vehicle:string;physical:boolean;serverNow:number;observedAt:number};
+  const entry=async()=>host.evaluate(node=>{
+    const d=(node as HTMLElement).dataset,vehicles=JSON.parse(d.transitVehicles??'[]') as {id:string;role:string}[];
+    return {role:d.transitRole??'',phase:d.transitPhase??'',line:d.transitLine??'',vehicle:d.transitVehicle??'',
+      physical:vehicles.some(v=>v.id===d.transitVehicle&&v.role==='BUS'),serverNow:Number(d.roadEventServerNow),observedAt:Date.now()};
+  });
+  const attempts:BusEntry[]=[];let current=await entry();const admissionStart=current.observedAt;
+  for(let step=0;step<48&&!(current.role==='BUS'&&current.line&&current.physical);step++){
+    attempts.push(current);await page.clock.runFor(250);current=await entry();
+  }
+  await info.attach('bus-admission-after-pause',{body:JSON.stringify({admissionStart,attempts,current}),contentType:'application/json'});
+  expect(current.observedAt-admissionStart).toBeLessThanOrEqual(12_000);
+  await expect(host).toHaveAttribute('data-transit-line',/.+/);
+  await expect(host).toHaveAttribute('data-transit-role','BUS');
+  expect(current.physical).toBe(true);
+  expect(Number(await host.getAttribute('data-road-event-server-now'))%60_000).toBeGreaterThan(4000);
+  // This journey verifies native vehicle selection in its actual phase.
+  // A legitimate repair can delay boarding, and a later school appointment
+  // can preempt this run. Paused time already makes the moving bus clickable.
+  // Physical boarding, closures and complete cycles have separate simulations.
+  await info.attach('bus-inspection-entry',{body:JSON.stringify(await host.evaluate(node=>{
+    const d=(node as HTMLElement).dataset;return{phase:d.transitPhase,role:d.transitRole,line:d.transitLine,vehicle:d.transitVehicle};
+  })),contentType:'application/json'});
+  const id=current.vehicle;
+  for(let pan=0;pan<12;pan++){
+    const vehicles=JSON.parse((await host.getAttribute('data-transit-vehicles'))!) as {id:string;role:string;position:{x:number;y:number}}[];
+    const bus=vehicles.find(bus=>bus.id===id)!;expect(bus.role).toBe('BUS');
+    const box=(await canvas.boundingBox())!,scale=Number(await host.getAttribute('data-render-scale'));
+    const point={x:box.width/2+(bus.position.x-Number(await host.getAttribute('data-camera-world-x')))*8*scale,
+      y:box.height/2+(bus.position.y-Number(await host.getAttribute('data-camera-world-y')))*8*scale};
+    if(point.x>24&&point.x<box.width-24&&point.y>24&&point.y<box.height-100)break;
+    const dx=Math.max(-box.width*.35,Math.min(box.width*.35,box.width/2-point.x)),dy=Math.max(-box.height*.35,Math.min(box.height*.35,box.height/2-point.y));
+    await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+    await page.mouse.move(box.x+box.width/2+dx,box.y+box.height/2+dy,{steps:4});await page.mouse.up();
+    await page.clock.runFor(300);await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+  }
+  // Drag suppression lasts500ms. Let it expire before sampling the moving bus.
+  await page.clock.runFor(600);
+  // Vehicle diagnostics publish every250ms. End on their actual publication
+  // frame so a moving bus is tapped at its rendered position, rather than a
+  // coordinate from an earlier physics frame, up to250ms old.
+  const publishedSteps=await host.getAttribute('data-mobility-fixed-steps');
+  for(let frame=0;frame<20&&await host.getAttribute('data-mobility-fixed-steps')===publishedSteps;frame++)await page.clock.runFor(16);
+  expect(await host.getAttribute('data-mobility-fixed-steps')).not.toBe(publishedSteps);
+  const vehicles=JSON.parse((await host.getAttribute('data-transit-vehicles'))!) as {id:string;position:{x:number;y:number}}[];
+  const bus=vehicles.find(bus=>bus.id===id)!,box=(await canvas.boundingBox())!,scale=Number(await host.getAttribute('data-render-scale'));
+  const point={x:box.width/2+(bus.position.x-Number(await host.getAttribute('data-camera-world-x')))*8*scale,
+    y:box.height/2+(bus.position.y-Number(await host.getAttribute('data-camera-world-y')))*8*scale};
+  await info.attach('bus-tap-frame',{body:JSON.stringify({id,point,position:bus.position,publishedSteps,
+    currentSteps:await host.getAttribute('data-mobility-fixed-steps'),phase:await host.getAttribute('data-transit-phase')}),contentType:'application/json'});
+  if(hasTouch)await canvas.tap({position:point});else await canvas.click({position:point});
+  const inspector=page.getByRole('complementary',{name:'Наблюдение за городом'});
+  await expect(inspector).toHaveAttribute('data-world-vehicle',id);
+  await expect(inspector.getByRole('heading',{name:'Автобус',exact:true})).toBeVisible();
+  await expect(inspector).toContainText('Городской маршрут');await expect(inspector).toContainText(/Остановка \d+/);
+  await expect(inspector.getByRole('button',{name:'Открыть задачу',exact:true})).toHaveCount(0);
+  await page.screenshot({path:info.outputPath('regular-bus.png')});
+  await inspector.getByRole('button',{name:'Следить за транспортом',exact:true}).click();
+  await canvas.focus();await page.keyboard.press('ArrowRight');
+  await expect(inspector.getByRole('button',{name:'Следить за транспортом',exact:true})).toHaveAttribute('aria-pressed','false');
+  await page.emulateMedia({reducedMotion:'reduce'});await expect(host).toHaveAttribute('data-animation-active','false');
+  await expect(host).toHaveAttribute('data-transit-fleet','2');
+  for(const metric of ['data-mobility-vehicle-unsafe-total','data-mobility-pedestrian-unsafe-total','data-mobility-vehicle-pedestrian-unsafe-total'])await expect(host).toHaveAttribute(metric,'0');
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
+  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('bus-line-state',{body:JSON.stringify(await host.evaluate(node=>({...((node as HTMLElement).dataset)}))),contentType:'application/json'});
 });
 
 test("authoritative resync keeps a ready CITY canvas and reuses identical physical networks",async({page})=>{
@@ -323,14 +636,19 @@ test("authoritative resync keeps a ready CITY canvas and reuses identical physic
   expect(await host.getAttribute("data-everyday-compiles")).toBe(life);
 });
 
-test("returning to an unchanged ready CITY retains its complete physical snapshot",async({page})=>{
+test("returning to an unchanged ready CITY retains its complete physical snapshot",async({page},info)=>{
   test.setTimeout(90_000);
   const scenes:string[]=[],errors:string[]=[];
   page.on("request",request=>{if(new URL(request.url()).pathname.endsWith("/scene"))scenes.push(request.url());});
   page.on("pageerror",error=>errors.push(error.message));
-  const host=await enterCity(page);
-  await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false");
-  await expect(host).toHaveAttribute("data-mobility-ready","true");
+  const started=performance.now(),host=await enterCity(page);
+  // First establish the two cold phases, then assert3 retained returns. The
+  // dense fixture's cold latency belongs to the separate scale budget.
+  const coldPhaseTimeout=process.env.E2E_CITY_200==="true"?30_000:5000;
+  await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false",{timeout:coldPhaseTimeout});
+  await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:coldPhaseTimeout});
+  const coldReadyMs=performance.now()-started;
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
   const state=()=>host.evaluate(node=>{
     const d=(node as HTMLElement).dataset;
     return {started:d.canonicalStartSinceBootstrapMs,prepare:d.canonicalPrepareMs,
@@ -347,7 +665,11 @@ test("returning to an unchanged ready CITY retains its complete physical snapsho
     expect(await canvas!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
     expect(await state()).toEqual(before);
   }
-  expect(scenes).toHaveLength(1);expect(errors).toEqual([]);await canvas!.dispose();
+  expect(scenes).toHaveLength(1);expect(errors).toEqual([]);
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
+  await info.attach("retained-city-preparation",{body:JSON.stringify({coldReadyMs,before,after:await state(),
+    renderer:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:"application/json"});
+  await canvas!.dispose();
 });
 
 test("an offscreen frontage update replaces compact physics without retaining offscreen visual terrain",async({page})=>{
@@ -459,11 +781,14 @@ test("real resident itinerary compilation reuses the canonical city and bounds e
  expect(await host.getAttribute("data-canonical-task-count")).toBe(canonical);expect(await host.getAttribute("data-walk-network-builds")).toBe(walk);
 });
 
-test("the voluntary city tour opens with keyboard focus and Escape returns to its trigger",async({page})=>{
- await enterCity(page);const trigger=page.getByRole("button",{name:"Сейчас в городе",exact:true});await trigger.focus();await page.keyboard.press("Enter");
- const tour=page.getByRole("complementary",{name:"Интересное в городе"});await expect(tour).toBeVisible();
- await expect(tour.getByRole("button",{name:"Закрыть интересное в городе"})).toBeFocused();
- await page.keyboard.press("Escape");await expect(tour).toHaveCount(0);await expect(trigger).toBeFocused();
+test("the city has no unsolicited tour and keyboard navigation remains available",async({page})=>{
+ const host=await enterCity(page),canvas=host.locator("canvas");
+ await expect(page.getByRole("button",{name:"Сейчас в городе",exact:true})).toHaveCount(0);
+ await expect(page.getByRole("complementary",{name:"Интересное в городе"})).toHaveCount(0);
+ const before=await host.getAttribute("data-camera-world-x");
+ await canvas.focus();await page.keyboard.press("ArrowRight");
+ await expect.poll(()=>host.getAttribute("data-camera-world-x")).not.toBe(before);
+ await expect(canvas).toBeFocused();
 });
 
 test("leaving during cooperative preparation cancels late publication and a retained city really retries",async({page})=>{
@@ -474,6 +799,7 @@ test("leaving during cooperative preparation cancels late publication and a reta
  const host=await enterCity(page),canvas=await host.locator("canvas").elementHandle();
  await expect.poll(()=>page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.state().held),{timeout:30_000}).toBeGreaterThan(0);
  await expect(host).not.toHaveAttribute("data-mobility-ready","true");
+ await expect.poll(async()=>Number(await host.getAttribute('data-transit-stop-visible')),{timeout:5000}).toBeGreaterThan(0);
  await page.getByRole("navigation",{name:"Уровень карты"}).getByRole("button",{name:"Планета",exact:true}).click();
  await expect(page.locator(".planet-atlas")).toBeVisible();await expect(host).toHaveAttribute("data-map-active","false");
  await page.evaluate(()=>(window as unknown as CooperativeYieldGateWindow).qaCooperativeYield.release());
@@ -574,6 +900,7 @@ test("a physical worker failure retains the visible city and its native retry pu
   await expect(page.getByRole("alert").filter({hasText:"Не удалось подготовить движение"})).toBeVisible();
   await expect(host).toHaveAttribute("data-canonical-snapshot-pending","true");
   await expect(host).toHaveAttribute("data-canonical-decoded-chunks","0");
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
   expect(await page.evaluate(()=>(window as unknown as {qaPhysicalFault():{firstPhysicalFrame:unknown}}).qaPhysicalFault().firstPhysicalFrame))
     .toEqual({commit:"atomic",rendered:"true"});
   const ground=await host.getAttribute("data-ground-rebuilds"),sceneReads=reads.filter(path=>path.endsWith("/scene")).length;
@@ -581,6 +908,7 @@ test("a physical worker failure retains the visible city and its native retry pu
   await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false",{timeout:30_000});
   await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
   await expect(host).toHaveAttribute("data-canonical-terrain-cells","0");
+  await expect(host).toHaveAttribute("data-canonical-decode-pools","0");
   await expect(page.getByRole("alert").filter({hasText:"Не удалось подготовить движение"})).toHaveCount(0);
   expect(await canvas!.evaluate(node=>node===document.querySelector(".world-canvas canvas"))).toBe(true);
   expect(await host.getAttribute("data-ground-rebuilds")).toBe(ground);
@@ -889,7 +1217,11 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
  expect(rebuilds).toBeLessThan(budget);
  const actualTaskIds=new Set([...scene.chunks.flatMap(chunk=>chunk.tasks),...scene.completedDistrictSnapshots.flatMap(snapshot=>snapshot.tasks)].map(task=>task.id));
  expect(actualTaskIds.size).toBe(1000);expect(Number(data.canonicalTaskCount)).toBe(actualTaskIds.size);
- expect(Number(data.canonicalDecodedChunks)).toBe(scene.chunks.length);expect(data.canonicalSnapshotPending).toBe("false");
+ // The atomic visible frame intentionally does not wait for offscreen physics.
+ // Its independent worker gate above proves that ordering explicitly.
+ expect(Number(data.canonicalDecodedChunks)).toBeGreaterThanOrEqual(0);
+ expect(Number(data.canonicalDecodedChunks)).toBeLessThanOrEqual(scene.chunks.length);
+ expect(["true","false"]).toContain(data.canonicalSnapshotPending);
  expect(data.cityCriticalGroundReady).toBe("true");expect(Number(data.cityCriticalGroundCount)).toBeGreaterThan(0);
  expect(first!.canvas).not.toBeNull();
  const scale=Number(data.renderScale),centerX=Number(data.cameraWorldX),centerY=Number(data.cameraWorldY);
@@ -912,6 +1244,9 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
  expect(data.worldQuality).toBe("NORMAL");expect(first!.canvas).not.toBeNull();
  expect(first!.canvas!.width).toBeGreaterThan(0);expect(first!.canvas!.height).toBeGreaterThan(0);
  expect(first!.canvas!.touchAction).toBe("none");
+ await expect(host).toHaveAttribute("data-canonical-decoded-chunks",String(scene.chunks.length),{timeout:30_000});
+ await expect(host).toHaveAttribute("data-canonical-snapshot-pending","false");
+ await expect(host).toHaveAttribute("data-mobility-ready","true",{timeout:30_000});
  await expect(host).toHaveAttribute("data-city-halo-ground-pending","0");
  await expect(host).toHaveAttribute("data-ground-bake-queue","0");
  await expect(host).toHaveAttribute("data-loading","false");
@@ -935,4 +1270,117 @@ test("the first atomic CITY frame keeps complete visible ground and all entity s
  expect(reads.filter(path=>path.endsWith("/scene"))).toHaveLength(1);
  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
  await page.screenshot({path:info.outputPath("initial-critical-city-after-pan.png")});
+});
+
+
+for (const viewport of [
+ {name:"compact",size:{width:390,height:844}}, {name:"tall desktop",size:{width:1440,height:1100}},
+]) test(`a native city pan publishes its complete visible frame before baking newly resident invisible ground: ${viewport.name}`,async({page},info)=>{
+ test.skip(process.env.E2E_CITY_200!=="true"||Number(process.env.WORLD_RENDER_TASK_COUNT??200)!==1000,"Requires the owned1000-task dense-city fixture");
+ test.setTimeout(90_000);await page.setViewportSize(viewport.size);
+ const reads:string[]=[],errors:string[]=[];
+ page.on("pageerror",error=>errors.push(error.message));
+ page.on("request",request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+ const response=page.waitForResponse(response=>new URL(response.url()).pathname.endsWith("/scene"));
+ const host=await enterCity(page),scene=decodeCitySceneWire(await(await response).json());
+ await expect(host).toHaveAttribute("data-loading","false");
+ await expect(host).toHaveAttribute("data-ground-bake-queue","0",{timeout:30_000});
+ const before=await host.evaluate(node=>{const d=(node as HTMLElement).dataset,c=node.querySelector('canvas')!;return {
+   x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight,
+   ground:Number(d.groundRebuilds),commits:Number(d.cameraPresentationCommits??0),budget:Number(d.cityResidentChunkBudget),
+ };});
+ // Independent screen intersection plus the existing one-page residency halo.
+ // At these fractional poses no boundary lies in the subpixel tolerance strip.
+ const residentKeys=(pose:typeof before)=>{
+   const halfX=pose.width/(16*pose.scale),halfY=pose.height/(16*pose.scale),size=scene.chunkSize;
+   const visible=scene.chunks.filter(chunk=>chunk.chunkX*size<pose.x+halfX&&(chunk.chunkX+1)*size>pose.x-halfX
+     &&chunk.chunkY*size<pose.y+halfY&&(chunk.chunkY+1)*size>pose.y-halfY);
+   const minX=Math.min(...visible.map(c=>c.chunkX))-1,maxX=Math.max(...visible.map(c=>c.chunkX))+1;
+   const minY=Math.min(...visible.map(c=>c.chunkY))-1,maxY=Math.max(...visible.map(c=>c.chunkY))+1;
+   return new Set(scene.chunks.filter(c=>c.chunkX>=minX&&c.chunkX<=maxX&&c.chunkY>=minY&&c.chunkY<=maxY).map(c=>`${c.chunkX},${c.chunkY}`));
+ };
+ const initialKeys=residentKeys(before);expect(initialKeys.size).toBe(before.budget);expect(before.ground).toBe(before.budget);
+ const canvas=host.locator('canvas'),retained=await canvas.elementHandle();
+ await host.evaluate((node,baseline)=>{
+   type Snapshot={x:number;y:number;scale:number;width:number;height:number;ground:number;commits:number;budget:number;loading:string|undefined;pending:string|undefined;untextured:string|undefined;unbaked:string|undefined;entities:number};
+   const el=node as HTMLElement&{__qaFirstPan?:Snapshot};
+   const observer=new MutationObserver(()=>{
+     const d=el.dataset,c=el.querySelector('canvas')!;
+     if(Number(d.cameraPresentationCommits??0)<=baseline||d.cameraPresentationPending!=='false')return;
+     el.__qaFirstPan={x:Number(d.cameraWorldX),y:Number(d.cameraWorldY),scale:Number(d.renderScale),width:c.clientWidth,height:c.clientHeight,
+       ground:Number(d.groundRebuilds),commits:Number(d.cameraPresentationCommits),budget:Number(d.cityResidentChunkBudget),loading:d.loading,pending:d.cameraPresentationPending,
+       untextured:d.cameraPaddingVisibleUntextured,unbaked:d.cameraPaddingTargetUnbaked,entities:Number(d.citySceneEntityChunks)};observer.disconnect();
+   });
+   observer.observe(el,{attributes:true,attributeFilter:['data-camera-presentation-commits']});
+ },before.commits);
+ const box=(await canvas.boundingBox())!,direction=scene.city.bounds.maxX-before.x>=before.x-scene.city.bounds.minX?1:-1;
+ await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+ await page.mouse.move(box.x+box.width/2-direction*900,box.y+box.height/2,{steps:1});await page.mouse.up();
+ const first=async()=>host.evaluate(node=>(node as HTMLElement&{__qaFirstPan?:typeof before&{loading?:string;pending?:string;untextured?:string;unbaked?:string;entities:number}}).__qaFirstPan);
+ await expect.poll(first,{timeout:15_000}).toBeTruthy();
+ const published=(await first())!,nextKeys=residentKeys(published),newKeys=[...nextKeys].filter(key=>!initialKeys.has(key));
+ const halfX=published.width/(16*published.scale),halfY=published.height/(16*published.scale),size=scene.chunkSize;
+ const newVisibleKeys=newKeys.filter(key=>{const [x,y]=key.split(',').map(Number) as [number,number];
+   return x*size<published.x+halfX&&(x+1)*size>published.x-halfX&&y*size<published.y+halfY&&(y+1)*size>published.y-halfY;});
+ await info.attach('first-presented-pan',{body:JSON.stringify({before,published,newKeys,newVisibleKeys,initialKeys:[...initialKeys],nextKeys:[...nextKeys]}),contentType:'application/json'});
+ expect(Math.abs(published.x-before.x)).toBeGreaterThan(10);expect(newKeys.length).toBeGreaterThan(0);
+ expect(nextKeys.size).toBe(published.budget);expect(published.entities).toBe(nextKeys.size);
+ expect(published.untextured).toBe('0');expect(published.unbaked).toBe('0');expect(published.loading).toBe('false');
+ expect(newVisibleKeys.length).toBeGreaterThan(0);
+ expect(published.ground-before.ground,'Every newly visible page must have real ground before the camera commits').toBeGreaterThanOrEqual(newVisibleKeys.length);
+ expect(published.ground-before.ground,'Invisible new resident ground must not hold the coherent pan frame').toBeLessThan(newKeys.length);
+ await expect(host).toHaveAttribute('data-loading','false');await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:30_000});
+ await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+ await expect(host).toHaveAttribute('data-canonical-task-count','1000');await expect(host).toHaveAttribute('data-world-quality','NORMAL');
+ expect(await retained!.evaluate(node=>node===document.querySelector('.world-canvas canvas'))).toBe(true);
+ expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);
+ expect(errors).toEqual([]);await page.screenshot({path:info.outputPath('foreground-pan.png')});
+});
+
+test('leaving during real physical read-ahead destroys only its workers and retries the retained city',async({page},info)=>{
+  test.skip(process.env.E2E_CITY_200!=="true","Requires the owned dense fixture");test.setTimeout(90_000);
+  const errors:string[]=[],reads:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{const path=new URL(request.url()).pathname;if(/\/scene$|\/world\/viewport|\/chunks\//.test(path))reads.push(path);});
+  await page.addInitScript(()=>{
+    const NativeWorker=window.Worker,held:Array<()=>void>=[];let released=false,physicalWorkers=0,terminated=0;
+    window.Worker=class extends NativeWorker{
+      private closed=false;private physical=false;
+      constructor(url:string|URL,options?:WorkerOptions){
+        super(url,options);const post=this.postMessage.bind(this),owned=String(url).includes('chunk-materializer-worker');
+        this.postMessage=((...args:Parameters<Worker['postMessage']>)=>{
+          if(owned&&(args[0] as {physicalOnly?:boolean}|null)?.physicalOnly){
+            if(!this.physical){this.physical=true;physicalWorkers++;}
+            if(!released){held.push(()=>{if(!this.closed)post(...args);});return;}
+          }
+          post(...args);
+        }) as Worker['postMessage'];
+      }
+      override terminate(){if(this.physical&&!this.closed)terminated++;this.closed=true;super.terminate();}
+    };
+    Object.assign(window,{qaPhysicalReadAhead:()=>({held:held.length,released,physicalWorkers,terminated}),
+      qaReleasePhysicalReadAhead:()=>{released=true;for(const post of held.splice(0))post();}});
+  });
+  const host=await enterCity(page),canvas=await host.locator('canvas').elementHandle();
+  const state=()=>page.evaluate(()=>(window as unknown as {qaPhysicalReadAhead():{held:number;physicalWorkers:number;terminated:number}}).qaPhysicalReadAhead());
+  const width=Number(await host.getAttribute('data-canonical-read-width'));expect([1,2]).toContain(width);
+  await expect.poll(async()=>(await state()).held).toBe(width);
+  await expect(host).toHaveAttribute('data-canonical-decode-pools','1');
+  await expect(host).not.toHaveAttribute('data-mobility-ready','true');
+  await expect.poll(async()=>Number(await host.getAttribute('data-transit-stop-visible'))).toBeGreaterThan(0);
+  await openMapPlanet(page);await expect(host).toHaveAttribute('data-map-active','false');
+  await expect(host).toHaveAttribute('data-canonical-decode-pools','0');
+  expect((await state()).terminated).toBe(width);
+  await page.evaluate(()=>(window as unknown as {qaReleasePhysicalReadAhead():void}).qaReleasePhysicalReadAhead());
+  await expect(host).not.toHaveAttribute('data-mobility-ready','true');
+  await openMapCity(page);
+  await expect(host).toHaveAttribute('data-canonical-snapshot-pending','false',{timeout:30_000});
+  await expect(host).toHaveAttribute('data-mobility-ready','true',{timeout:30_000});
+  await expect(host).toHaveAttribute('data-canonical-decode-pools','0');
+  await expect(host).toHaveAttribute('data-canonical-task-count',String(Number(process.env.WORLD_RENDER_TASK_COUNT??200)));
+  expect(await canvas!.evaluate(node=>node===document.querySelector('.world-canvas canvas'))).toBe(true);
+  const final=await state();expect(final.physicalWorkers).toBe(width*2);expect(final.terminated).toBe(width*2);
+  expect(reads.filter(path=>path.endsWith('/scene'))).toHaveLength(1);
+  expect(reads.filter(path=>/\/world\/viewport|\/chunks\//.test(path))).toEqual([]);expect(errors).toEqual([]);
+  await info.attach('physical-read-ahead-cancellation',{body:JSON.stringify({width,final,renderer:await host.evaluate(node=>({...((node as HTMLElement).dataset)}))}),contentType:'application/json'});
 });

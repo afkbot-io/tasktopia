@@ -3,12 +3,14 @@ import type { BlockWorldBounds, CityBlockV1 } from "../../shared/block-world";
 import { decodeOrthogonalRoadRuns, encodeOrthogonalRoadPath, type GridPoint, type SemanticRoadNode } from "../../shared/semantic-road";
 import { isBuildableTerrain, terrainAt } from "../../shared/world-terrain";
 import type { WorldTerrainProfile } from "../../shared/world-terrain-profile";
-import type { IntercityRoadRoute } from "../../shared/intercity-roads";
+import { isIntercityRoadClass, type IntercityRoadRoute } from "../../shared/intercity-roads";
 export type { IntercityRoadRoute } from "../../shared/intercity-roads";
 
 const GRID = 8;
 const RADIUS = 2; // Three road cells and one clearance cell on either side.
 const BUCKET = 64;
+const TURN_COST = 2;
+export const INTERCITY_ROAD_PLANNER_VERSION = 4;
 export type IntercityRoadCity = {
   id: string;
   /** Actual supplied layout nodes, not synthetic city-centre endpoints. */
@@ -21,7 +23,7 @@ export type IntercityRoadLimits = {
   maxTerrainSamples: number; maxEndpointNodes: number; maxGeometrySteps: number;
 };
 export type IntercityRoadPlan = {
-  countryId: string; seed: number; plannerVersion?: 2; routes: IntercityRoadRoute[]; unreachable: IntercityRoadFailure[];
+  countryId: string; seed: number; plannerVersion?: 2 | 3 | typeof INTERCITY_ROAD_PLANNER_VERSION; routes: IntercityRoadRoute[]; unreachable: IntercityRoadFailure[];
   /** Actual accepted connectivity, including isolated cities. Never implies a full country network. */
   components: string[][];
   metrics: { candidates: number; attemptedRoutes: number; retainedRoutes: number; visited: number; terrainSamples: number; edgeChecks: number };
@@ -51,7 +53,10 @@ type SearchNode = GridPoint & { heading: number; cost: number; score: number; or
 class Frontier {
   private items: SearchNode[] = [];
   get size() { return this.items.length; }
-  private before(a: SearchNode, b: SearchNode) { return a.score < b.score || a.score === b.score && a.order < b.order; }
+  // Prefer progress on an equal-f plateau; FIFO can spend the whole bounded
+  // search flooding dry Manhattan rectangles before reaching their far end.
+  private before(a: SearchNode, b: SearchNode) { return a.score < b.score || a.score === b.score
+    && (a.cost > b.cost || a.cost === b.cost && a.order < b.order); }
   push(node: SearchNode) {
     let i = this.items.length; this.items.push(node);
     while (i > 0) { const parent = (i - 1) >> 1;
@@ -196,6 +201,7 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     const a = byId.get(route.fromCityId)?.nodes.find(node => node.id === route.fromNodeId);
     const b = byId.get(route.toCityId)?.nodes.find(node => node.id === route.toNodeId);
     if (!a || !b || !route.id || route.fromCityId === route.toCityId || route.widthCells !== 3 || routeIds.has(route.id)) throw new Error("Invalid previous intercity endpoints");
+    if (route.roadClass !== undefined && !isIntercityRoadClass(route.roadClass)) throw new Error("Invalid previous intercity road class");
     routeIds.add(route.id);
     const length = route.geometry.runs.reduce((sum, run) => sum + run.length, 0);
     geometrySteps += length;
@@ -217,7 +223,7 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     if (path.some(point => !bridgeCells.has(key(point)) && !pointOpen(point))) throw new Error(sampleBudgetExhausted ? "Previous intercity validation exceeds sample budget" : "Previous accepted road is obstructed; do not move it silently");
     join(route.fromCityId, route.toCityId);
   }
-  if (input.validateOnly) return { countryId: input.countryId, seed: input.seed, plannerVersion:2, routes,
+  if (input.validateOnly) return { countryId: input.countryId, seed: input.seed, plannerVersion: INTERCITY_ROAD_PLANNER_VERSION, routes,
     unreachable: [], components: components(), metrics };
   const centers = new Map(cities.map(city => [city.id, {
     x: city.nodes.reduce((sum, n) => sum + n.x, 0) / Math.max(1, city.nodes.length),
@@ -277,15 +283,21 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
       minY: Math.min(...ends.map(p => p.y)), maxY: Math.max(...ends.map(p => p.y)) };
     const goalAt = new Map(ends.map(p => [key(p), p]));
     const heuristic = (p: GridPoint) => Math.max(goal.minX - p.x, 0, p.x - goal.maxX) + Math.max(goal.minY - p.y, 0, p.y - goal.maxY);
-    const open = new Frontier(), best = new Map<string, number>();
+    const open = new Frontier(), best = new Map<string, number>(), pointBest = new Map<string, number>();
     const state = (p: SearchNode) => `${key(p)}:${p.heading}`;
     let order = 0, visited = 0, found: SearchNode | undefined;
     for (const point of starts) { const entry = { x: point.x, y: point.y, cost: 0, score: heuristic(point), order: order++, startId: point.id, heading: -1 };
-      open.push(entry); best.set(state(entry), 0); }
+      open.push(entry); best.set(state(entry), 0); pointBest.set(key(entry), 0); }
     const directions = [[GRID, 0], [0, GRID], [-GRID, 0], [0, -GRID]] as const;
     const offset = Number.parseInt(tie.slice(0, 2), 16) % 4;
     while (open.size && visited < limits.maxVisitedPerRoute && metrics.visited < limits.maxTotalVisited && !sampleBudgetExhausted) {
-      const current = open.pop(); if (best.get(state(current)) !== current.cost) continue;
+      const current = open.pop();
+      // Outgoing edges/bridge checks depend on position, not arrival heading.
+      // A cheaper arrival saves at least the maximum possible next-turn cost,
+      // so it can reproduce every continuation without a greater total cost.
+      // Keep cheaper heading alternatives: they may avoid the next turn.
+      if (best.get(state(current)) !== current.cost
+        || current.cost >= (pointBest.get(key(current)) ?? Infinity) + TURN_COST) continue;
       visited++; metrics.visited++;
       if (goalAt.has(key(current))) { found = current; break; }
       for (let i = 0; i < 4; i++) {
@@ -303,9 +315,11 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
           if (!landing) continue;
           point=landing; bridge=true;
         }
-        const cost = current.cost + distance(current,point) + (bridge ? 48 : 0) + (current.heading >= 0 && current.heading !== heading ? 2 : 0);
+        const cost = current.cost + distance(current,point) + (bridge ? 48 : 0) + (current.heading >= 0 && current.heading !== heading ? TURN_COST : 0);
         const next: SearchNode = { ...point, heading, cost, score: cost + heuristic(point), order: order++, previous: current, startId: current.startId, bridge };
-        if (cost >= (best.get(state(next)) ?? Infinity)) continue;
+        if (cost >= (best.get(state(next)) ?? Infinity)
+          || cost >= (pointBest.get(key(next)) ?? Infinity) + TURN_COST) continue;
+        pointBest.set(key(next), Math.min(cost, pointBest.get(key(next)) ?? Infinity));
         best.set(state(next), cost); open.push(next);
       }
     }
@@ -328,9 +342,11 @@ export function planIntercityRoads(input: IntercityRoadPlannerInput): IntercityR
     geometrySteps += path.length - 1;
     const geometry = encodeOrthogonalRoadPath(path), toNodeId = goalAt.get(key(found))!.id;
     routes.push({ id: `intercity:${digest(JSON.stringify([input.countryId, input.seed, a.id, b.id, found.startId, toNodeId, geometry])).slice(0, 24)}`,
-      fromCityId: a.id, toCityId: b.id, fromNodeId: found.startId, toNodeId, widthCells: 3, geometry, ...(bridges.length ? {bridges:bridges.reverse()} : {}) });
+      fromCityId: a.id, toCityId: b.id, fromNodeId: found.startId, toNodeId, widthCells: 3,
+      roadClass: distance(path[0]!, path.at(-1)!) >= 512 ? "ARTERIAL" : "COLLECTOR",
+      geometry, ...(bridges.length ? {bridges:bridges.reverse()} : {}) });
     join(a.id, b.id);
   }
   const unreachable = failures.filter(failure => root(failure.fromCityId) !== root(failure.toCityId));
-  return { countryId: input.countryId, seed: input.seed, plannerVersion:2, routes, unreachable, components: components(), metrics };
+  return { countryId: input.countryId, seed: input.seed, plannerVersion: INTERCITY_ROAD_PLANNER_VERSION, routes, unreachable, components: components(), metrics };
 }

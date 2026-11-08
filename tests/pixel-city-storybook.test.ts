@@ -4,6 +4,25 @@ import catalog from "../assets/pixel-city-pack/catalog/buildings.json";
 import manifest from "../assets/pixel-city-pack/manifest.json";
 
 describe("Pixel City asset Storybook", () => {
+  it('rejects unreviewed transport furniture profiles and substituted native geometry',()=>{
+    const stdout=execFileSync('.venv-assets/bin/python',['-c',`import copy,json,runpy,tempfile,sys
+from pathlib import Path
+sys.path.insert(0,'scripts')
+load=runpy.run_path('scripts/render-pixel-city-storybook.py')['load_storybook_data']
+original=json.loads(load.__globals__['MANIFEST_PATH'].read_text());result={}
+with tempfile.TemporaryDirectory(prefix='transport-storybook-') as directory:
+ for case in ('old-profile','wrong-footprint','wrong-anchor','unknown-key'):
+  manifest=copy.deepcopy(original);prop=manifest['props']['airport-windsock']
+  if case=='old-profile': prop['visualProfile']='TASKTOPIA_V6_REPLACED'
+  elif case=='wrong-footprint': prop['footprintCells']=[2,1]
+  elif case=='wrong-anchor': prop['anchorPx']=[8,15]
+  else: manifest['props']['airport-windsock-unreviewed']=copy.deepcopy(prop)
+  path=Path(directory)/'manifest.json';path.write_text(json.dumps(manifest));load.__globals__['MANIFEST_PATH']=path
+  result[case]=load()[1]
+print(json.dumps(result))`],{encoding:'utf8'});
+    for(const [name,errors]of Object.entries(JSON.parse(stdout) as Record<string,string[]>))
+      expect(errors.some(error=>error.startsWith(name==='unknown-key'?'airport-windsock-unreviewed:':'airport-windsock:')&&error.includes('accepted visual profile')),name).toBe(true);
+  });
   it("accepts only registered event families with their exact camera, canvas and anchor", () => {
     const stdout = execFileSync(".venv-assets/bin/python", ["-c", `import copy,json,runpy,tempfile,sys
 from pathlib import Path

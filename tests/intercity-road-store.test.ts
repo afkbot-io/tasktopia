@@ -5,8 +5,8 @@ import { createTestDb, transaction, type Db } from "../src/server/db";
 import { registerUser } from "../src/server/auth";
 import { compileBlockLayout } from "../src/server/world/block-layout-compiler";
 import { persistReadyBlockLayout, activateBlockLayout } from "../src/server/world/block-layout-store";
-import { planIntercityRoads } from "../src/server/world/intercity-road-planner";
-import { readCountryRoads, synchronizeCountryRoads } from "../src/server/world/intercity-road-store";
+import { INTERCITY_ROAD_PLANNER_VERSION, planIntercityRoads } from "../src/server/world/intercity-road-planner";
+import { previewCountryRoads, readCountryRoads, synchronizeCountryRoads } from "../src/server/world/intercity-road-store";
 
 describe("canonical country road snapshots", () => {
   let db: Db, countryId: string;
@@ -61,6 +61,33 @@ describe("canonical country road snapshots", () => {
     const retained = first.plan.routes.filter(route => route.fromCityId !== b && route.toCityId !== b);
     expect(next.plan.routes).toEqual(expect.arrayContaining(retained));
     expect(next.plan.components).toHaveLength(1);
+  });
+  it.each([2,3] as const)('upgrades an unchanged v%s snapshot once, preserving legacy geometry and appearance', async version => {
+    await city(0);await city(96);
+    const first = await synchronizeCountryRoads(db,countryId,dryPlanner);
+    const legacy = structuredClone({ ...first.plan,plannerVersion: version });
+    for(const route of legacy.routes)delete route.roadClass;
+    await db.prepare('UPDATE country_road_snapshots_v1 SET plan_json=?::jsonb WHERE country_id=?').run(JSON.stringify(legacy),countryId);
+    const next = await synchronizeCountryRoads(db,countryId,dryPlanner);
+    expect(next.plan.plannerVersion).toBe(INTERCITY_ROAD_PLANNER_VERSION);
+    expect(next.revision).toBe(first.revision+1);
+    expect(next.topologyHash).toBe(first.topologyHash);
+    expect(next.plan.routes).toEqual(legacy.routes);
+    expect(await synchronizeCountryRoads(db,countryId,() => {throw new Error('Current snapshot must not be replanned');})).toEqual(next);
+  });
+  it('previews the exact version upgrade without publishing any row and repeats deterministically', async () => {
+    await city(0);await city(96);
+    const first = await synchronizeCountryRoads(db,countryId,dryPlanner);
+    await db.prepare('UPDATE country_road_snapshots_v1 SET plan_json=?::jsonb WHERE country_id=?')
+      .run(JSON.stringify({...first.plan,plannerVersion:2}),countryId);
+    const rows = await db.prepare('SELECT * FROM country_road_snapshots_v1').all();
+    const preview = await previewCountryRoads(db,countryId,dryPlanner);
+    expect(preview.revision).toBe(first.revision+1);
+    expect(preview.plan.plannerVersion).toBe(INTERCITY_ROAD_PLANNER_VERSION);expect(preview.plan.routes).toEqual(first.plan.routes);
+    expect(await db.prepare('SELECT * FROM country_road_snapshots_v1').all()).toEqual(rows);
+    expect(await previewCountryRoads(db,countryId,dryPlanner)).toEqual(preview);
+    expect(await synchronizeCountryRoads(db,countryId,dryPlanner)).toEqual(preview);
+    expect(await previewCountryRoads(db,countryId,() => {throw new Error('Current preview must not replan');})).toEqual(preview);
   });
   it("keeps accepted roads when station approaches are added, including on later topology growth", async () => {
     const a = await city(0); await city(96);

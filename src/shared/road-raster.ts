@@ -33,6 +33,9 @@ export function rasterizeBlockRoads(network: SemanticRoadNetwork, bounds?: Rect)
           if (!previous || rank[roadClass] > rank[previous.roadClass] || bridge && previous.structure !== "BRIDGE") {
             cells.set(`${px}:${py}`, {x:px,y:py,mask:0,
               structure:previous?.structure === "BRIDGE" || bridge ? "BRIDGE" : "ROAD",
+              ...(previous && rank[previous.roadClass] > rank[roadClass]
+                ? previous.widthCells === 3 ? {widthCells:3 as const} : {}
+                : segment.widthCells === 3 && roadClass !== "LOCAL" ? {widthCells:3 as const} : {}),
               roadClass:previous && rank[previous.roadClass] > rank[roadClass] ? previous.roadClass : roadClass});
           }
         }

@@ -13,7 +13,7 @@ import type { BootstrapDto, BuildingEventContext, CityDto, RealtimeEvent, TaskSe
 import type { PlanetViewState } from "./components/PlanetAtlasCanvas";
 import type { CitySceneDto } from "../shared/city-scene-contract";
 import { countryOverviewEventImpact } from "../shared/country-overview-events";
-import { presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
+import { appendRealtimeNotice,presentRealtimeNotice, type RealtimeNoticePresentation } from "../shared/realtime-notifications";
 import { api, ApiError } from "./api";
 import { AuthScreen } from "./components/AuthScreen";
 import { CountryPanel } from "./components/CountryPanel";
@@ -39,7 +39,7 @@ import { CoalescedRefresh } from "./coalesced-refresh";
 import { WorldPreferences } from "./components/WorldPreferences";
 import { WorldAmbientLighting } from "./components/WorldAmbientLighting";
 import { bindCityAudioLifecycle, playCitySound, silenceCityAudio } from "./city-audio";
-import { AppNavigation, readNavigationState, type NavigationView } from './app-navigation';
+import { AppNavigation, type NavigationView } from './app-navigation';
 import type { CityViewState } from './city-view-state';
 import { acceptsCityNavigationPose } from './city-navigation-pose';
 import type { TaskCardDto } from '../shared/task-read-contracts';
@@ -87,7 +87,9 @@ export function App() {
   });
   const [wheelNavigation] = useState(createAtlasWheelNavigation);
   const [navigation] = useState(() => new AppNavigation(window.history, () => location.pathname + location.search));
+  useEffect(()=>()=>navigation.cancelPose(),[navigation]);
   const [cityViewMemory] = useState(() => new Map<string, CityViewState>());
+  const cityViewReaderRef = useRef<(() => CityViewState | undefined) | null>(null);
   const navigationRestoringRef = useRef(false), navigationRequestRef = useRef(0), navigationRestoreEpochRef = useRef(0);
   const restoredTaskRef = useRef<string | null>(null);
   const taskNavigationAbortRef = useRef<AbortController | undefined>(undefined);
@@ -129,7 +131,7 @@ export function App() {
   const [planetEntryCountryId, setPlanetEntryCountryId] = useState<string | null>(null);
   const [planetViewMemory] = useState(() => new Map<string, PlanetViewState>());
   const rememberPlanetView = useCallback((view: PlanetViewState) => { planetViewMemory.set("last", view); }, [planetViewMemory]);
-  const [focusTask, setFocusTask] = useState<{ origin: { x: number; y: number }; token: number } | null>(null);
+  const [focusTask, setFocusTask] = useState<{ taskId: string; origin: { x: number; y: number }; token: number } | null>(null);
   const [taskCardFocus] = useState(() => new TaskCardFocus());
   const deepLinkHandledRef = useRef(false);
   // Decide before the first bootstrap render: no map module, asset or scene
@@ -225,6 +227,11 @@ export function App() {
     taskEntryRequestRef.current++; navigationRequestRef.current++; navigationRestoreEpochRef.current++;
     taskNavigationAbortRef.current?.abort(); mapTransitionAbortRef.current?.abort(); setMapTransition(null);
     const view = navigationView();
+    const shown = view?.mode === 'CITY' ? cityViewReaderRef.current?.() : undefined;
+    if (view && shown) {
+      view.cityView = shown;
+      cityViewMemory.set(view.countryId + ':' + view.cityId, shown);
+    }
     const city = selectedTask && taskEntry ? focusCity : null;
     const destination = city && countryId ? { ...view!, countryId, cityId: city.id, mode: 'CITY' as const, cityView: cityViewMemory.get(countryId + ':' + city.id) } : view;
     navigationRestoringRef.current = Boolean(navigation.current()?.task && navigation.current()!.taskDepth > 0);
@@ -233,8 +240,11 @@ export function App() {
     if (!wentBack) { navigationRestoringRef.current = false; if (destination) setMapMode(destination.mode); else window.history.replaceState(null, '', '/'); }
   }, [taskEntry, selectedTask, focusCity, countryId, navigationView, navigation, cityViewMemory, taskCardFocus]);
   const selectVisibleTask = useCallback((id: string) => {
-    cancelPendingNavigation(); setTaskEntry(null); setSelectedTask(id);
-  }, [cancelPendingNavigation]);
+    cancelPendingNavigation(); setTaskEntry(null); setSelectedTask(id); setFocusTask(null);
+    if (countryId && focusCity) taskCardFocus.queue({ countryId, cityId: focusCity.id, taskId: id,
+      authenticationEpoch: authenticationEpochRef.current, sessionGeneration: sessionGenerationRef.current,
+      navigationRequest: navigationRequestRef.current }, () => setFocusTask({ taskId: id, origin: focusCity.center, token: Date.now() }), readTaskFocusScope);
+  }, [cancelPendingNavigation, countryId, focusCity, taskCardFocus, readTaskFocusScope]);
   const closeArchiveRecord = useCallback(() => setSelectedArchiveRecord(null), []);
   const closeSettings = useCallback(() => setTokensOpen(false), []);
   const openSettings = useCallback((section: "mcp" | "account") => {
@@ -246,6 +256,7 @@ export function App() {
     setDirectoryOpen(true);
   }, []);
   const clearPrivateSessionUi = useCallback(() => {
+    navigation.cancelPose();
     taskCardFocus.cancel();
     sessionGenerationRef.current++; navigationRequestRef.current++; navigationRestoreEpochRef.current++;
     navigationRestoringRef.current = false; restoredTaskRef.current = null;
@@ -261,7 +272,7 @@ export function App() {
     eventCountryRef.current = undefined; lastWorldEventIdRef.current = 0;
     clearMapSceneCaches(); clearTaskDetailCache(); clearPlanetAtlasCache(); silenceCityAudio();
     cityViewMemory.clear(); cityRestoreTokensRef.current.clear(); planetViewMemory.clear();
-  }, [cityViewMemory, planetViewMemory, taskCardFocus]);
+  }, [cityViewMemory, planetViewMemory, taskCardFocus,navigation]);
   const transitionMap = useCallback(async (
     to: MapLevel,
     focus: { x: number; y: number },
@@ -436,9 +447,9 @@ export function App() {
       setFocusTask(null);
       taskCardFocus.queue({ countryId: countryId!, cityId: target.city.id, taskId: target.id,
         authenticationEpoch: authenticationEpochRef.current, sessionGeneration: sessionGenerationRef.current,
-        navigationRequest: navigationRequestRef.current }, () => setFocusTask({ origin, token: Date.now() }), readTaskFocusScope);
+        navigationRequest: navigationRequestRef.current }, () => setFocusTask({ taskId: target.id, origin, token: Date.now() }), readTaskFocusScope);
     } else {
-      setFocusTask(keepCamera ? null : { origin: target.origin, token: Date.now() });
+      setFocusTask(keepCamera ? null : { taskId: target.id, origin: target.origin, token: Date.now() });
     }
     // The card is independent of terrain preparation, even on direct links.
     setSelectedTask(target.id);
@@ -498,7 +509,7 @@ export function App() {
       }
       if (entryOnly) {
         setFocusCity(target.city);
-        setFocusTask(keepCamera ? null : { origin: target.origin, token: Date.now() });
+        setFocusTask(keepCamera ? null : { taskId: target.id, origin: target.origin, token: Date.now() });
         setSelectedTask(target.id);
       } else openBuilding(target, session, keepCamera, true);
     } catch (error) {
@@ -564,7 +575,7 @@ export function App() {
     const restore = async (event: PopStateEvent) => {
       if (!bootstrap || sessionState !== 'AUTHENTICATED') return;
       taskCardFocus.cancel();
-      const state = readNavigationState(event.state), query = taskResolutionQuery(new URL(location.href));
+      const state = navigation.restore(event.state), query = taskResolutionQuery(new URL(location.href));
       restoredTaskRef.current = state?.task?.id ?? null;
       const request = ++navigationRequestRef.current, restoreEpoch = ++navigationRestoreEpochRef.current, epoch = authenticationEpochRef.current;
       navigationRestoringRef.current = true; mapTransitionAbortRef.current?.abort(); setMapTransition(null);
@@ -609,7 +620,7 @@ export function App() {
     };
     const listener = (event: PopStateEvent) => { void restore(event); };
     window.addEventListener('popstate', listener); return () => window.removeEventListener('popstate', listener);
-  }, [bootstrap, sessionState, applyBootstrap, cityViewMemory, planetViewMemory, openCanonicalTask, load, taskCardFocus]);
+  }, [bootstrap, sessionState, applyBootstrap, cityViewMemory, planetViewMemory, openCanonicalTask, load, taskCardFocus, navigation]);
   useEffect(() => {
     document.title = bootstrap ? `Tasktopia — ${bootstrap.country.name}` : "Tasktopia — цифровая страна";
   }, [bootstrap]);
@@ -649,7 +660,7 @@ export function App() {
     if (countryOverviewEventImpact(event) !== "NONE") setPlanetRevision((value) => value + 1);
     const notice = presentRealtimeNotice(event);
     if (notice) {
-      setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice].slice(-3));
+      setNotices((current) => appendRealtimeNotice(current,notice));
       window.setTimeout(() => setNotices((current) => current.filter((item) => item.id !== notice.id)), notice.tone === "success" ? 10_000 : 7_000);
       if (notice.tone === "success") playCitySound("bell");
     }
@@ -832,7 +843,7 @@ export function App() {
       </Suspense>
       {activeCity && (effectiveMapMode === "CITY" || preparedCityScene !== null || retainedCityKey===`${bootstrap.country.id}:${activeCity.id}`) && <div aria-hidden={effectiveMapMode !== "CITY"} style={{ position:"absolute", inset:0, visibility:effectiveMapMode === "CITY" ? "visible" : "hidden", pointerEvents:effectiveMapMode === "CITY" ? "auto" : "none" }}>
         <Suspense fallback={<div className="app-loading" role="status">Готовим город…</div>}>
-          <WorldCanvas initialView={cityViewMemory.get(bootstrap.country.id + ':' + activeCity.id)} onViewChange={rememberCityView} restoreView={cityViewRestore?.scope === bootstrap.country.id + ':' + activeCity.id ? cityViewRestore : undefined} onInspectTask={(scope, id) => { void openCanonicalTask(new URLSearchParams({ countryId: scope, id }).toString()); }} selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.active && attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={selectVisibleTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
+          <WorldCanvas viewReaderRef={cityViewReaderRef} initialView={cityViewMemory.get(bootstrap.country.id + ':' + activeCity.id)} onViewChange={rememberCityView} restoreView={cityViewRestore?.scope === bootstrap.country.id + ':' + activeCity.id ? cityViewRestore : undefined} onInspectTask={(scope, id) => { void openCanonicalTask(new URLSearchParams({ countryId: scope, id }).toString()); }} selectedTransportRoute={selectedTransportRoute} transportRevision={transportRevision} dependencies={dependencyTask?.scope === dependencyScope && dependencyData.scope === dependencyScope ? dependencyData.selection : undefined} attentionIds={attention.active && attention.scope === `${bootstrap.user.id}:${countryId}:${activeCity?.id}` ? attention.ids : undefined} onDistrictSelect={districtId => { if (activeCity) setDirectoryFocus({ cityId: activeCity.id, districtId }); setDirectorySection("cities"); setDirectoryOpen(true); }} active={effectiveMapMode === "CITY"} key={`${bootstrap.country.id}:${activeCity?.id ?? "world"}`} countryId={bootstrap.country.id} chunkSize={bootstrap.chunkSize} worldManifest={bootstrap.worldManifest} viewBounds={activeCity?.bounds ?? bootstrap.viewBounds} focusCity={activeCity} initialCityScene={preparedCityScene && preparedCityScene.city.id === activeCity?.id ? preparedCityScene : undefined} startAtMinimumScale={Boolean(preparedCityScene && preparedCityScene.city.id === activeCity?.id)} focusTask={focusTask} invalidations={mapInvalidations} onInvalidationsProcessed={acknowledgeCityInvalidations} showDistricts={showDistricts} onTaskSelect={selectVisibleTask} onArchiveSelect={openArchive} onSiteSelect={feature => { setSelectedTask(null); setSelectedSite({ countryId: bootstrap.country.id, feature }); }} onReady={() => {
                   setRetainedCityKey(`${bootstrap.country.id}:${activeCity.id}`);
                   cityReadyResolverRef.current?.();
                   cityReadyResolverRef.current = null;
@@ -900,13 +911,14 @@ export function App() {
       setPushOfferDismissed(true);
     }} />}
     <aside className="realtime-notices" aria-live="polite" aria-label="События страны">
-      {notices.map((notice) => <article key={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`}>
-        <button className="realtime-notice-content" type="button" disabled={!notice.target} onClick={() => {
+      {notices.map((notice) => <article key={notice.id} data-notice-id={notice.id} className={`realtime-notice realtime-notice-${notice.tone}`}>
+        <button className="realtime-notice-content" type="button" aria-label={`${notice.title}${notice.actionLabel?`. ${notice.actionLabel}`:''}`} disabled={!notice.target} onClick={() => {
           if (!notice.target) return;
           void openCanonicalTask(new URLSearchParams({ id: notice.target.id }).toString());
           setNotices((current) => current.filter((item) => item.id !== notice.id));
         }}>
-          <strong>{notice.title}</strong>
+          <strong className="realtime-notice-full-title">{notice.title}</strong>
+          <strong className="realtime-notice-compact-title">{notice.compactTitle}</strong>
           <small>{notice.location}</small>
           {notice.actionLabel && <span>{notice.actionLabel} →</span>}
         </button>

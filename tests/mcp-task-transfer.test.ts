@@ -53,6 +53,7 @@ describe("MCP explicit-country permanent sprint transfer", { timeout: 30_000 }, 
   });
 
   it("advertises a strict explicit-country tool and rejects malformed calls before mutation", async () => {
+    const featuresBefore = await service.listWorldFeatures(countryId);
     const client = await connect(), tools = (await client.listTools()).tools;
     const transfer = tools.find(tool => tool.name === "task.transfer");
     expect(transfer).toBeDefined();
@@ -67,7 +68,7 @@ describe("MCP explicit-country permanent sprint transfer", { timeout: 30_000 }, 
       expect(result.isError).toBe(true);
     }
     expect((await service.getTask(countryId, task.id)).districtId).toBe(task.districtId);
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    expect(await service.listWorldFeatures(countryId)).toEqual(featuresBefore);
   });
 
   it("allocates parcels automatically and rejects removed geometry parameters", async () => {
@@ -85,6 +86,7 @@ describe("MCP explicit-country permanent sprint transfer", { timeout: 30_000 }, 
   });
 
   it("checks token scope, live membership and target ownership without exposing or changing another project", async () => {
+    const featuresBefore = await service.listWorldFeatures(countryId);
     for (const caller of [{ ...identity, scopes: ["tasks:read"] as McpIdentity["scopes"] }, viewerIdentity]) {
       const result = await (await connect(caller)).callTool({ name: "task.transfer", arguments: request() });
       expect(result.isError).toBe(true); expect(JSON.stringify(result.content)).toContain("FORBIDDEN_SCOPE");
@@ -100,10 +102,11 @@ describe("MCP explicit-country permanent sprint transfer", { timeout: 30_000 }, 
       expect(JSON.stringify(result.content)).not.toContain("Project foreign");
     }
     expect((await service.getTask(countryId, task.id)).districtId).toBe(task.districtId);
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    expect(await service.listWorldFeatures(countryId)).toEqual(featuresBefore);
   });
 
   it("moves once across reconnects, preserves the canonical identity and returns country-scoped human links", async () => {
+    const featuresBefore = await service.listWorldFeatures(countryId);
     let client = await connect();
     const result = await client.callTool({ name: "task.transfer", arguments: { ...request(), comment: "Next sprint" } });
     expect(result.isError).not.toBe(true);
@@ -130,7 +133,9 @@ describe("MCP explicit-country permanent sprint transfer", { timeout: 30_000 }, 
       expect(httpRetry.statusCode).toBe(200);
       expect(httpRetry.json()).toMatchObject({ id: task.id, districtId: targetDistrictId, origin: moved.origin });
     } finally { await setActiveCountry(db, identity.userId, activeCountryId); await app.close(); }
-    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    const featuresAfter = await service.listWorldFeatures(countryId);
+    expect(featuresAfter).toEqual(expect.arrayContaining(featuresBefore));
+    expect(featuresAfter.filter(feature=>feature.kind!=='BUS_STOP')).toEqual([]);
     expect((await service.listEvents(countryId, 0)).filter(event => event.type === "task.transferred")).toHaveLength(1);
     expect(await db.prepare("SELECT active_country_id FROM users WHERE id=?").get(identity.userId)).toEqual({ active_country_id: activeCountryId });
   });

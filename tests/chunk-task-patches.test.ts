@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { patchChunkPayloadTaskStatuses, patchChunkTaskStatuses, type ChunkTaskStatusPatch } from "../src/client/chunk-task-patches";
 import type { ChunkDto, ChunkPayloadDto, ChunkTaskDto } from "../src/shared/contracts";
+import type {CitySceneDto} from '../src/shared/city-scene-contract';
+import {packCitySceneTransfer,hydrateCitySceneTransfer} from '../src/client/city-scene-transfer';
 
 function task(): ChunkTaskDto {
   return {
@@ -35,6 +37,23 @@ function payload(): ChunkPayloadDto {
 }
 
 describe("patchChunkTaskStatuses", () => {
+  it('replaces packed scene task metadata without reading or retaining untouched geometry',async()=>{
+    const source=payload();source.roadRuns=[{start:{x:1,y:2},end:{x:3,y:2},mask:3,structure:'ROAD',roadClass:'LOCAL'}];
+    source.surfaceRuns=[{start:{x:1,y:3},end:{x:3,y:3},kind:'PATH'}];source.decorationContext.surfaceHaloRuns=source.surfaceRuns;
+    const scene={schemaVersion:5,sceneRevision:'metadata',city:{id:'city'},chunks:[source],completedDistrictSnapshots:[]} as unknown as CitySceneDto;
+    const current=(await hydrateCitySceneTransfer(packCitySceneTransfer(scene),{runStorage:'PACKED_IMMUTABLE'})).chunks[0]!;
+    let reads=0;
+    for(const [target,keys] of [[current,['roadRuns','surfaceRuns']],[current.decorationContext,['surfaceHaloRuns','blockedCellRuns']]] as const)
+      for(const key of keys){const descriptor=Object.getOwnPropertyDescriptor(target,key)!,get=descriptor.get!;
+        Object.defineProperty(target,key,{...descriptor,get(){reads++;return get.call(this);}});}
+    const patched=patchChunkPayloadTaskStatuses(current,new Map([['task-1',{status:'IN_PROGRESS',progress:50,stage:3,worldVersion:2}]]));
+    expect(reads).toBe(0);expect(patched).not.toBe(current);
+    expect(patched.decorationContext.tasks[0]!.stage).toBe(3);expect(current.decorationContext.tasks[0]!.stage).toBe(2);
+    const beforeClone=reads,cloned=structuredClone(patched),cloneReads=reads-beforeClone;
+    expect(cloned.roadRuns).toEqual(source.roadRuns);expect(cloned.surfaceRuns).toEqual(source.surfaceRuns);
+    expect(cloned.surfaceRuns).toBe(cloned.decorationContext.surfaceHaloRuns);expect(cloneReads).toBe(4);
+    expect(cloned.decorationContext.tasks[0]!.stage).toBe(3);
+  });
   it("overlays a realtime status on a stale worker result", () => {
     const stale = chunk();
     const patched = patchChunkTaskStatuses(stale, new Map([[

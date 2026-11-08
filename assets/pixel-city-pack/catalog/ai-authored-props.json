@@ -2777,5 +2777,47 @@
       1,
       1
     ]
+  },
+  {
+    "label": "Указатель ветра аэродрома",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_TRANSPORT_FURNITURE_HIGH_45_V1",
+    "key": "airport-windsock",
+    "sheet": "ai-authored/transport-furniture-v1/sources/airport-windsock.png",
+    "reviewed": true,
+    "sourceSha256": "2701b3374dc4ee70effb8d691ebae59c72db9d67ca58eb76711f19575448c5b0"
+  },
+  {
+    "label": "Часы железнодорожной платформы",
+    "size": [
+      16,
+      16
+    ],
+    "footprintCells": [
+      1,
+      1
+    ],
+    "anchorPx": [
+      8,
+      16
+    ],
+    "artSource": "AI_AUTHORED",
+    "visualProfile": "TASKTOPIA_TRANSPORT_FURNITURE_HIGH_45_V1",
+    "key": "rail-platform-clock",
+    "sheet": "ai-authored/transport-furniture-v1/sources/rail-platform-clock.png",
+    "reviewed": true,
+    "sourceSha256": "71ac1ae60e41950dde85949215ad5a00418335575eae928b266ca97aeb91af90"
   }
 ]

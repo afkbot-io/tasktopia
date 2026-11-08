@@ -14,6 +14,7 @@ import struct
 from pathlib import Path
 from typing import Any
 from courtyard_furniture_contract import GEOMETRY as COURTYARD_GEOMETRY, PROFILE as COURTYARD_PROFILE
+from transport_furniture_art import KEYS as TRANSPORT_FURNITURE_KEYS, PROFILE as TRANSPORT_FURNITURE_PROFILE
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -145,6 +146,8 @@ def load_storybook_data() -> tuple[dict[str, Any], list[str]]:
                             else (key in everyday and profile == "TASKTOPIA_EVERYDAY_MICRO_V1"
                                   and (entry["size"], entry["footprintCells"], entry["anchorPx"]) == ([event_size, event_size], [event_size // 8, event_size // 8], [event_size // 2, event_size])
                                   and entry.get("direction") == event_direction) if key.startswith("city-event-")
+                            else (profile == TRANSPORT_FURNITURE_PROFILE
+                                  and (entry["size"], entry["footprintCells"], entry["anchorPx"]) == ([16, 16], [1, 1], [8, 16])) if key in TRANSPORT_FURNITURE_KEYS
                             else profile.startswith(("TASKTOPIA_V5_", "TASKTOPIA_V6_")))
         if entry.get("artSource") == "AI_AUTHORED" and not accepted_profile:
             errors.append(f"{key}: active authored prop does not use its accepted visual profile")

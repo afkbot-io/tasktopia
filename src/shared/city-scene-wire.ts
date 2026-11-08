@@ -1,6 +1,7 @@
 import type { CitySceneDto } from "./city-scene-contract";
 import type { Cell, ChunkPayloadDto, ChunkTaskDto } from "./contracts";
 import { CITY_SCENE_MAX_CHUNKS } from "./city-capacity";
+import { readCanonicalTransitStops } from './city-transit-stops';
 
 export const CITY_SCENE_COMPACT_ACCEPT = "application/vnd.tasktopia.city-scene+json; encoding=compact-v1";
 export function acceptsCompactCityScene(header: string | undefined): boolean {
@@ -70,9 +71,11 @@ function integer(value: unknown): value is number { return Number.isSafeInteger(
  * bounds; malformed indexes must never turn into missing or invented tasks. */
 export function decodeCitySceneWire(input: unknown): CitySceneDto {
   if (!record(input)) return invalid();
+  const transitStops = input.transitStops===undefined ? undefined : readCanonicalTransitStops(input.transitStops);
   if (input.kind !== "city.scene.compact") {
     // An older rollback server still serves the established schema4/5 DTO.
-    if ((input.schemaVersion === 4 || input.schemaVersion === 5) && Array.isArray(input.chunks)) return input as CitySceneDto;
+    if ((input.schemaVersion === 4 || input.schemaVersion === 5) && Array.isArray(input.chunks))
+      return transitStops===undefined ? input as CitySceneDto : { ...input,transitStops } as CitySceneDto;
     return invalid();
   }
   if (input.version !== 1 || input.schemaVersion !== 5 && input.schemaVersion !== 4) return invalid();
@@ -126,5 +129,5 @@ export function decodeCitySceneWire(input: unknown): CitySceneDto {
   });
   const { kind: _kind, version: _version, taskTable: _table, ...scene } = input;
   void _kind; void _version; void _table;
-  return { ...scene, chunks, completedDistrictSnapshots } as CitySceneDto;
+  return { ...scene, chunks, completedDistrictSnapshots,...(transitStops!==undefined ? {transitStops} : {}) } as CitySceneDto;
 }

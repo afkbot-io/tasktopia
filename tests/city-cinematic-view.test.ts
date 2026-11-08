@@ -3,15 +3,44 @@ import { Container, Graphics, Texture } from 'pixi.js';
 import { createCityCinematicView } from '../src/client/city-cinematic-view';
 import type { ChunkTaskDto } from '../src/shared/contracts';
 
-function fixture(economy=false){
+function fixture(economy=false,occupied:ReadonlySet<string>=new Set()){
  const ground=new Container(),layer=new Container(),airLayer=new Container(),complete=vi.fn(),sound=vi.fn();
  const walk=new Map(Array.from({length:144},(_,i)=>({x:i%12,y:Math.floor(i/12)})).map(c=>[`${c.x},${c.y}`,c]));
  const task={id:'one',stage:1,footprint:[{x:4,y:4},{x:5,y:4},{x:4,y:5},{x:5,y:5}],accessPath:[{x:4,y:6}],siteBounds:{minX:4,minY:4,maxX:5,maxY:5}} as ChunkTaskDto;
  const building=new Container(),platform=new Container();building.addChild(new Graphics().rect(-8,-24,16,24).fill(0x81975b));building.position.set(40,48);platform.position.set(32,32);ground.addChild(platform,building);
- const view=createCityCinematicView({layer,airLayer,walk:()=>walk,roads:()=>new Set(),economy:()=>economy,texture:()=>Texture.EMPTY,complete,sound});
+ const view=createCityCinematicView({layer,airLayer,walk:()=>walk,roads:()=>new Set(),occupied:()=>occupied,economy:()=>economy,texture:()=>Texture.EMPTY,complete,sound});
  const target=new Container(),targetPlatform=new Container();target.position.set(100,120);targetPlatform.position.set(92,104);ground.addChild(targetPlatform,target);
  return{ground,layer,airLayer,complete,view,task,building,platform,target,targetPlatform,setEconomy:(value:boolean)=>{economy=value;}};
 }
+it.each([
+ {buildingType:'compact-apartment-v1',visualKind:'BUILDING',width:6,height:6,x:824,y:688},
+ {buildingType:'compact-long-gallery-v1',visualKind:'BUILDING',width:12,height:6,x:848,y:688},
+ {buildingType:'compact-apartment-v1',visualKind:'PARK',width:3,height:2,x:800,y:656},
+] as const)('carries to the canonical offscreen $visualKind/$buildingType without creating its culled sprite',target=>{
+ const f=fixture();
+ try{
+  f.view.begin({eventId:1,version:2,taskId:'one',kind:'TRANSFER',fromStage:5},{task:f.task,building:f.building,platform:f.platform},0);
+  expect(f.view.update(4500).states[0]?.phase).toBe('LIFT');
+  const task={...f.task,stage:5,origin:{x:100,y:80},buildingType:target.buildingType,visualKind:target.visualKind,
+   footprint:Array.from({length:target.width*target.height},(_,i)=>({x:100+i%target.width,y:80+Math.floor(i/target.width)}))};
+  f.view.target('one',{task,markers:[],version:2});f.view.update(5000);
+  const carry=f.view.update(6000);expect(carry.states[0]).toMatchObject({phase:'CARRY',oldVisible:true,targetVisible:false,aircraftVisible:true});
+  expect(f.building.x).toBeGreaterThan(40);expect(f.building.x).toBeLessThan(target.x);
+  const landing=f.view.update(7000);expect(landing.states[0]?.phase).toBe('LOWER');
+  expect(f.building.x).toBe(target.x);expect(f.building.y).toBeLessThan(target.y);expect(f.building.y).toBeGreaterThan(target.y-24);
+  expect(f.ground.children).toHaveLength(2);expect(f.view.update(7700).ghosts).toBe(0);expect(f.complete).toHaveBeenCalledTimes(1);
+ }finally{f.view.clear();f.ground.destroy({children:true});f.layer.destroy({children:true});f.airLayer.destroy({children:true});}
+});
+it('keeps current and future resident occupancy clear without mutating the shared walking graph',()=>{
+ const occupied=new Set(['3,4','3,5','3,6','4,6','5,6']),f=fixture(false,occupied);
+ try{
+  expect(f.view.begin({eventId:1,version:2,taskId:'one',kind:'CONSTRUCT',fromStage:1,toStage:2},
+   {task:f.task,building:f.building,platform:f.platform},0)).toBe(true);
+  expect(f.view.reservedCells().size).toBeGreaterThan(0);
+  for(const cell of f.view.reservedCells())expect(occupied.has(cell)).toBe(false);
+  expect(occupied).toEqual(new Set(['3,4','3,5','3,6','4,6','5,6']));
+ }finally{f.view.clear();f.ground.destroy({children:true});f.layer.destroy({children:true});f.airLayer.destroy({children:true});}
+});
 it('applies the current task filter to the captured building, crew and hidden destination without changing reveal ownership',()=>{
  const f=fixture();f.view.begin({eventId:1,version:2,taskId:'one',kind:'CONSTRUCT',fromStage:1,toStage:2},{task:f.task,building:f.building,platform:f.platform},0);
  f.view.target('one',{task:f.task,building:f.target,platform:f.targetPlatform,markers:[],version:2});

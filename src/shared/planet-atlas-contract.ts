@@ -1,12 +1,14 @@
 import type { Cell, Rect } from "./contracts";
 
-export const PLANET_ATLAS_SCHEMA_VERSION = 5 as const;
+export const PLANET_ATLAS_SCHEMA_VERSION = 6 as const;
 
 export type PlanetCountryDto = {
   id: string;
   name: string;
   seed: number;
   terrainProfile?: import("./world-terrain-profile").WorldTerrainProfile;
+  /** Saved canonical links only; absent in schema5 and older snapshots. */
+  groundRoads?: import('./planet-ground-roads').PlanetGroundRoads;
   transportNetworks?: {schemaVersion:1;AIR:import("./transport-network").TimetabledAirEdge[];RAIL:import("./transport-network").TimetabledRailEdge[]};
   worldVersion: number;
   cityCount: number;
@@ -44,7 +46,7 @@ export type PlanetAtlasDto = {
   /** Server-authorized routes avoid private geographic reserves without exposing them. */
   seaRoutes?: PlanetSeaRouteDto[];
   railRoutes?:PlanetRailRouteDto[];
-  schemaVersion: typeof PLANET_ATLAS_SCHEMA_VERSION | 4;
+  schemaVersion: typeof PLANET_ATLAS_SCHEMA_VERSION | 5 | 4;
   planetSeed: number;
   geography?: import("./planet-geography").VisiblePlanetGeography;
   revision: string;

@@ -1,28 +1,48 @@
-import type { Cell, ChunkTaskDto, Rect } from '../shared/contracts';
+import type { BlockServiceRole } from '../shared/block-world';
+import type { Cell, ChunkTaskDto } from '../shared/contracts';
 import { incidentMode } from './task-incidents';
-import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from './cooperative-preparation';
-export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'>;
+import { BUILDING_CATALOG } from '../shared/catalog';
+import { cityEventRecipe, eligibleNeighbourhoodRecipes, type CityLifeContext } from './city-event-recipes';
+import { completePreparation, prepareCooperatively, stableSortPreparation, type CooperativePreparationOptions } from '../shared/cooperative-preparation';
+export type CityLifeTask = Pick<ChunkTaskDto, 'id'|'status'|'stage'|'accessPath'|'visualKind'|'serviceRole'|'workItemType'|'defectSummary'> & Partial<Pick<ChunkTaskDto,'visualAssetKey'>>;
 
-export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL';
-export const CITY_LIFE_LABEL:Record<CityLifeKind,string>={MOVING:'Новосёлы',DELIVERY:'Доставка',GARDEN:'Уход за двором',MUSIC:'Уличная музыка',CELEBRATION:'Праздник во дворе',CLEANING:'Уборка улицы',MAINTENANCE:'Уход за фасадом',DRILL:'Учебный выезд'};
-export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[]};
-export type CityLifePlan=CityLifeSite & {id:string;start:number;durationMs:number};
-export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';progress:number;position:Cell;durationMs:number};
+export type CityLifeKind='MOVING'|'DELIVERY'|'GARDEN'|'MUSIC'|'CELEBRATION'|'CLEANING'|'MAINTENANCE'|'DRILL'|'READING'|'ART'|'CULTURE';
+export type CityLifeSite={taskId:string;kind:CityLifeKind;route:Cell[];context?:CityLifeContext;responseCells?:readonly Cell[]};
+export type CityLifePlan=CityLifeSite & {id:string;start:number;durationMs:number;recipeId?:string};
+export type CityLifeScene=CityLifePlan & {phase:'ARRIVING'|'ACTIVITY'|'LEAVING';position:Cell;actorIds:string[];serviceId?:string;arrived:number;activityAt?:number};
 const key=(cell:Cell)=>`${cell.x},${cell.y}`;
+/** These indexes belong to one completed physical snapshot. Life only asks
+ * membership; duplicating their city-wide union retains hundreds of thousands
+ * of hash entries without adding information. */
+export function createCityLifeBlocker(blocked:Pick<ReadonlySet<string>,'has'>,roads:Pick<ReadonlySet<string>,'has'>,
+  parking:Pick<ReadonlySet<string>,'has'>):Pick<ReadonlySet<string>,'has'>{
+  return {has:id=>blocked.has(id)||roads.has(id)||parking.has(id)};
+}
 export function cityLifeHash(value:string) {let h=2166136261;for(const char of value)h=Math.imul(h^char.charCodeAt(0),16777619);return h>>>0;}
 const directions=[{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+const buildings=new Map(BUILDING_CATALOG.map(building=>[building.key,building]));
+const serviceContexts:Readonly<Record<BlockServiceRole,CityLifeContext>>={
+  EDUCATION:'EDUCATION',MEDICAL:'MEDICAL',FIRE:'FIRE',POLICE:'POLICE',RAILWAY:'RAILWAY',AIRPORT:'AIRPORT',CIVIC:'CIVIC',SHOP:'SHOP',PORT:'PORT',
+};
+function contextFor(task:CityLifeTask):CityLifeContext {
+  const role=task.serviceRole??buildings.get(task.visualAssetKey??'')?.serviceRole;
+  if(role&&Object.hasOwn(serviceContexts,role))return serviceContexts[role as BlockServiceRole];
+  if(task.visualKind==='PARK')return task.visualAssetKey==='urban-parking'?'PAVED':task.visualAssetKey==='urban-lake'?'WATER_EDGE':'GREEN';
+  return 'HOME';
+}
 
-function kindFor(task:CityLifeTask):CityLifeKind {
+function kindFor(task:CityLifeTask,context:CityLifeContext):CityLifeKind {
   const hash=cityLifeHash(task.id);
-  if(task.serviceRole==='FIRE')return 'DRILL';
-  if(task.serviceRole==='SHOP')return 'DELIVERY';
-  if(task.visualKind==='PARK')return (['GARDEN','MUSIC','CELEBRATION'] as const)[hash%3]!;
-  if(task.serviceRole)return hash%2?'MAINTENANCE':'CLEANING';
+  if(context==='FIRE')return 'DRILL';
+  if(context==='SHOP')return 'DELIVERY';
+  if(context==='PAVED'||context==='WATER_EDGE')return 'CLEANING';
+  if(context==='GREEN')return (['GARDEN','MUSIC','CELEBRATION'] as const)[hash%3]!;
+  if(context!=='HOME')return hash%2?'MAINTENANCE':'CLEANING';
   return (['MOVING','GARDEN','MAINTENANCE'] as const)[hash%3]!;
 }
 
 /** Compile only real walkable approaches. Completed task records remain immutable. */
-export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):Generator<void,CityLifeSite[],void> {
+export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,roads?:ReadonlyMap<string,Cell>):Generator<void,CityLifeSite[],void> {
   const sites:CityLifeSite[]=[];
   const unique=new Map<string,CityLifeTask>();
   for(const task of tasks){unique.set(task.id,task);yield;}
@@ -45,37 +65,43 @@ export function* cityLifeSitesSteps(tasks:readonly CityLifeTask[],walkGraph:Read
       }
     }
     if(route.length<7)continue;
-    sites.push({taskId:task.id,kind:kindFor(task),route:route.reverse()});
+    const context=contextFor(task),kind = kindFor(task,context), responseCells: Cell[] = [];
+    if (kind === 'DRILL' && roads) for (let y = entrance.y - 8; y <= entrance.y + 8; y++) for (let x = entrance.x - 8; x <= entrance.x + 8; x++) {
+      const cell = roads.get(`${x},${y}`);if (cell) responseCells.push(cell);yield;
+    }
+    responseCells.sort((a,b)=>Math.abs(a.x-entrance.x)+Math.abs(a.y-entrance.y)-Math.abs(b.x-entrance.x)-Math.abs(b.y-entrance.y));
+    sites.push({taskId:task.id,kind,context,route:route.reverse(),...(kind === 'DRILL' ? {responseCells:responseCells.slice(0,16)} : {})});
   }
   return sites;
 }
-export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>):CityLifeSite[] {
-  return completePreparation(cityLifeSitesSteps(tasks,walkGraph,blocked));
+export function cityLifeSites(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,roads?:ReadonlyMap<string,Cell>):CityLifeSite[] {
+  return completePreparation(cityLifeSitesSteps(tasks,walkGraph,blocked,roads));
 }
-export function cityLifeSitesAsync(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,options:CooperativePreparationOptions={}):Promise<CityLifeSite[]> {
-  return prepareCooperatively(cityLifeSitesSteps(tasks,walkGraph,blocked),options);
+export function cityLifeSitesAsync(tasks:readonly CityLifeTask[],walkGraph:ReadonlyMap<string,Cell>,blocked:Pick<ReadonlySet<string>, 'has'>,options:CooperativePreparationOptions={},roads?:ReadonlyMap<string,Cell>):Promise<CityLifeSite[]> {
+  return prepareCooperatively(cityLifeSitesSteps(tasks,walkGraph,blocked,roads),options);
 }
 
-/** One deterministic scene per window; compile candidates only when the window
- * or canonical site list changes. No camera-dependent event identity. */
-export function planCityLife(cityId:string,sites:readonly CityLifeSite[],now:number,canonicalTaskIds:readonly string[]=sites.map(site=>site.taskId)):CityLifePlan|undefined {
+/** The shared director supplies bounded visible candidates and owns admission.
+ * A site keeps its window ID even when a temporary conflict delays its start. */
+export function planCityLife(cityId:string,sites:readonly CityLifeSite[],now:number):CityLifePlan|undefined {
+  if(!sites.length||!Number.isFinite(now))return;
   const window=Math.floor(now/180_000);
-  const candidates=[...new Set(canonicalTaskIds)].filter(id=>cityLifeHash(id)%4===((window%4)+4)%4).sort();
-  if(!candidates.length)return;
-  const selected=candidates[cityLifeHash(`${cityId}:${window}`)%candidates.length]!;
-  const site=sites.find(site=>site.taskId===selected);if(!site)return;
-  return {...site,id:`${cityId}:${window}:${site.taskId}`,start:window*180_000+15_000+cityLifeHash(`${cityId}:${window}:start`)%90_000,durationMs:38_000};
+  const ordered=[...sites].sort((a,b)=>a.taskId.localeCompare(b.taskId));
+  const site=ordered[cityLifeHash(`${cityId}:${window}`)%ordered.length]!;
+  const recipes=site.context?eligibleNeighbourhoodRecipes(site.context):undefined;
+  if(recipes&&!recipes.length)return;
+  const recipe=recipes?.[cityLifeHash(`${cityId}:${window}:${site.taskId}:recipe`)%recipes.length];
+  return {...site,...(recipe?{kind:recipe.kind,recipeId:recipe.id}:{}),id:`${cityId}:${window}:${site.taskId}`,start:now,durationMs:75_000};
 }
-export function cityLifePose(plan:CityLifePlan|undefined,now:number,view:Rect,options:{enabled:boolean;reducedMotion:boolean}):CityLifeScene|undefined {
-  if(!plan||!options.enabled||options.reducedMotion||!Number.isFinite(now))return;
-  const anchor=plan.route.at(-1)!;
-  if(anchor.x<view.minX||anchor.x>view.maxX||anchor.y<view.minY||anchor.y>view.maxY)return;
-  const elapsed=now-plan.start;if(elapsed<0||elapsed>=plan.durationMs)return;
-  const phase=elapsed<8000?'ARRIVING':elapsed<30000?'ACTIVITY':'LEAVING';
-  const progress=phase==='ARRIVING'?elapsed/8000:phase==='ACTIVITY'?1:1-(elapsed-30000)/8000;
-  const step=progress*(plan.route.length-1),from=plan.route[Math.floor(step)]!,to=plan.route[Math.min(plan.route.length-1,Math.floor(step)+1)]!;
-  return {...plan,phase,progress,position:{x:from.x+(to.x-from.x)*(step%1),y:from.y+(to.y-from.y)*(step%1)}};
-}
-export function sampleCityLife(cityId:string,sites:readonly CityLifeSite[],now:number,view:Rect,options:{enabled:boolean;reducedMotion:boolean}):CityLifeScene|undefined {
-  return cityLifePose(planCityLife(cityId,[...sites].sort((a,b)=>a.taskId.localeCompare(b.taskId)),now),now,view,options);
+
+
+/** Retained work follows current eligibility and real geometry, not a site's
+ * legacy default kind when its selected recipe uses another action. */
+export function cityLifePlanFitsSite(site:CityLifeSite,plan:CityLifePlan):boolean {
+  if(site.taskId!==plan.taskId || site.route!==plan.route && (site.route.length!==plan.route.length
+    || site.route.some((cell,index)=>cell.x!==plan.route[index]!.x||cell.y!==plan.route[index]!.y)))return false;
+  if(!plan.recipeId)return site.kind===plan.kind;
+  const recipe=cityEventRecipe(plan.recipeId);
+  return !!recipe&&recipe.channel==='NEIGHBOURHOOD'&&recipe.kind===plan.kind&&!!site.context
+    &&eligibleNeighbourhoodRecipes(site.context).includes(recipe);
 }

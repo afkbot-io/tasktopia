@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { compileBlockLayout } from "../src/server/world/block-layout-compiler";
 import { CITY_SCENE_MAX_CHUNKS, citySceneChunkRange } from "../src/shared/city-capacity";
+import {createHash} from 'node:crypto';
 
 const input = (count: number, seed = 7, archetype = "MIXED_URBAN") => ({
   countryId: "capacity-country", cityId: "capacity-city", seed, revision: 1,
@@ -34,4 +35,15 @@ describe("compiler capacity performance without geometry changes", () => {
     expect(citySceneChunkRange(layout.bounds).count).toBeGreaterThan(256);
     expect(citySceneChunkRange(layout.bounds).count).toBeLessThanOrEqual(CITY_SCENE_MAX_CHUNKS);
   }, 30_000);
+
+  it('keeps canonical 10k geography and roads with distributed services and local characters enabled',()=>{
+    const layout=compileBlockLayout({...input(10000,424242,'NEW_BUILD'),localServices:'DISTRIBUTED_V1',localCharacters:'LOCAL_V1'});
+    expect(layout.placements).toHaveLength(10000);expect(layout.blocks).toHaveLength(1939);
+    const geography=createHash('sha256').update(JSON.stringify(layout.blocks.map(b=>[b.id,b.origin,b.width,b.height,b.parameters.sitePlan]))).digest('hex');
+    // Independent frozen geometry from the pre-character native compiler pair.
+    expect(geography).toBe('166ef60f180b974151005fa723d886caff3956005b26084287928252c709798d');
+    expect(layout.roadNetwork.checksum).toBe('8175bdf74c2144c8903427bfc1696eba4c0c9f90b5ca183ff01bd0333d24c0d5');
+    expect(new Set(layout.blocks.map(b=>b.parameters.quarterCharacter))).toEqual(new Set(['TERRACOTTA','SLATE','GARDENS']));
+    expect(citySceneChunkRange(layout.bounds).count).toBeLessThanOrEqual(CITY_SCENE_MAX_CHUNKS);
+  },30000);
 });

@@ -1,4 +1,5 @@
 import type { ChunkDto, ChunkPayloadDto, ChunkTaskDto } from "../shared/contracts";
+import {copyCitySceneRunFields} from './city-scene-run-owner';
 
 export type ChunkTaskStatusPatch = Pick<ChunkTaskDto, "status" | "progress" | "stage"> & {
   worldVersion: number;
@@ -57,5 +58,6 @@ export function patchChunkPayloadTaskStatuses(
     return { ...task, stage: patch.stage };
   });
   if (!changed && publishedVersion === payload.publishedVersion) return payload;
-  return { ...payload, tasks, publishedVersion, decorationContext: { ...payload.decorationContext, tasks: contextTasks } };
+  return copyCitySceneRunFields(payload,{tasks,publishedVersion,
+    decorationContext:copyCitySceneRunFields(payload.decorationContext,{tasks:contextTasks})});
 }

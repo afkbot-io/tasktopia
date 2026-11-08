@@ -1,0 +1,9 @@
+{
+  "reviewed": true,
+  "profile": "TASKTOPIA_TRANSPORT_FURNITURE_HIGH_45_V1",
+  "normalizationSha256": "b781d9651ba1444024766fc00b9f0d5ee2249f6290f6711b0f82c46b8ccb0aa6",
+  "reviewer": "root AI native art review",
+  "native": "16x16, bottomcenter8,16; physical lower1x1 contact, source-aligned windsock foot. Both1x and8x inspected. No rotation/mirror/redraw. Muted slate/terracotta/cream and upperleft highlight match bench/trafficlight/apartment reference.",
+  "semantics": "Windsock tapered striped cloth and mast; clock v3 has visible two-arm L in broad cream dial. v1 narrow clock and v2 lost vertical hand rejected.",
+  "worldReview": "Native CITY200 one district; desktop1440x1100/compactPixel7/iPhone13,6PNG4x inspected. Windsock and clock palette/camera/contact match traffic lights/benches/buildings. Metadata readiness/drop/quality/reducedmotion/reload/pan verified; final exact candidate3profiles PASS0retry,plus3actualAIR/RAIL/SEA inspector PASS. Airport atlas-local UV failure found visually and fixed; real GPU pixel RED0/64 thenGREEN>=60/64 all3profiles."
+}

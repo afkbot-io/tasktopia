@@ -2,6 +2,9 @@ import type { PortSitePlan } from "../../shared/port-site";
 import { getBuilding } from "../../shared/catalog";
 import { nextInfrastructure, PORT_MIN_CITY_BLOCKS } from "../../shared/city-development-policy";
 import { buildingProfile } from "../../shared/building-profiles";
+import {LocalCityServices,LOCAL_SERVICE_THRESHOLDS,type LocalServiceRole} from './local-city-services';
+import {quarterCharacterFor,quarterCharacter} from '../../shared/city-quarter-character';
+import {cityNeighbourhoodKey} from '../../shared/city-neighbourhood';
 import { createHash } from "node:crypto";
 import { BLOCK_WORLD_GENERATOR_VERSION, type BlockServiceRole, type BlockSlotKind, type BlockWorldBounds, type CityBlockV1,
   type CompiledBlockLayoutV1, type ConstructionStage, type DistrictLayoutV1, type TaskPlacementV1 } from "../../shared/block-world";
@@ -28,9 +31,15 @@ export type BlockLayoutCompilerInput = {
   countryId: string; cityId: string; origin?: { x: number; y: number }; seed: number; revision: number;
   districts: BlockLayoutDistrictInput[]; previous?: CompiledBlockLayoutV1;
   compactReplay?: boolean;
+  /** Trusted generation policy; legacy compiler callers keep their exact plan. */
+  localServices?:'DISTRIBUTED_V1';
+  localCharacters?:'LOCAL_V1';
   /** Trusted coastal allocator; never accepted from a task request. */
   planPort?: (terminal: BlockWorldBounds, blocks: readonly CityBlockV1[]) => PortSitePlan | null;
   canPlaceBlock?: (bounds: BlockWorldBounds) => boolean;
+  /** Trusted immutable public infrastructure. New parcels and doors route
+   * around it; existing block/task geography is never repacked. */
+  publicReservations?: readonly BlockWorldBounds[];
 };
 
 /** A valid plan has no remaining connected, buildable rectangle on its grid. */
@@ -95,6 +104,7 @@ function assertCompilerInput(input: BlockLayoutCompilerInput): void {
 type InfrastructureState = {
   nonemptyBlocks: Set<string>; cityDistricts: Set<string>; triggers: Set<string>; hasPort: boolean;
   districtBlocks: Map<string, number>; districtBuildings: Map<string, number>; latestSequence: Map<string, number>;
+  local?:LocalCityServices;
 };
 /** Reserve only the next already-planned building parcel; never invent a task or block. */
 function reserveNextInfrastructure(district: BlockLayoutDistrictInput,
@@ -106,8 +116,23 @@ function reserveNextInfrastructure(district: BlockLayoutDistrictInput,
     districtBlocks: state.districtBlocks.get(district.id) ?? 0,
     cityBlocks: state.nonemptyBlocks.size, cityDistricts: state.cityDistricts.size,
   }, state.triggers);
-  if (!next) return;
   const candidates = requestedFamily ? slots.filter(({slot}) => familyFitsSlot(requestedFamily,slot)) : slots;
+  // Preserve primary infrastructure priority. Additional shops yield to a
+  // missing nearby school/service, only where its actual native art can fit.
+  if(state.local&&(!next||next.role==='SHOP')){
+    const localState=state.local;
+    for(const role of Object.keys(LOCAL_SERVICE_THRESHOLDS) as LocalServiceRole[]){
+      const local=candidates.find(({block,slot})=>localState.missing(block,role)
+        &&serviceFamilyForSlot(role,slot,family=>familyAccessFits(block,slot,family)));
+      if(!local)continue;
+      const {block,slot}=local,trigger=localState.reserve(block,role);
+      block.parameters={...block.parameters,
+        slotRoles:{...block.parameters.slotRoles as Record<string,BlockServiceRole>,[slot.key]:role},
+        slotRoleTriggers:{...block.parameters.slotRoleTriggers as Record<string,string>,[slot.key]:trigger}};
+      state.triggers.add(trigger);return;
+    }
+  }
+  if (!next) return;
   const suitable=candidates.find(({slot})=>serviceFamilyForSlot(next.role,slot));
   // A new airport must look like a terminal on its immutable parcel. Keep the
   // milestone pending when the requested parcel cannot fit either native art.
@@ -117,6 +142,7 @@ function reserveNextInfrastructure(district: BlockLayoutDistrictInput,
     slotRoles: { ...block.parameters.slotRoles as Record<string, BlockServiceRole>, [slot.key]: next.role },
     slotRoleTriggers: { ...block.parameters.slotRoleTriggers as Record<string, string>, [slot.key]: next.id } };
   state.triggers.add(next.id);
+  state.local?.addRole(block,next.role);
 }
 
 const familyFitsSlot = (family:string,slot:BlockSlot) => slot.kind === "BUILDING" && compactFamilyMatchesFootprint(family,
@@ -201,9 +227,11 @@ function createBlockFrontierIndex(allBlocks: CityBlockV1[], origin: { x: number;
   } };
 }
 type BlockFrontierIndex = ReturnType<typeof createBlockFrontierIndex>;
+type BlockSiteCandidate = {template:BlockTemplate;origin:{x:number;y:number};separator?:DistrictSeparator};
 
 function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origin: { x: number; y: number }, kind: BlockSlotKind,
-  sequence: number, canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], frontierIndex: BlockFrontierIndex, parkSize?: BlockLayoutTaskInput["parkSize"], requestedFamily?: string, remainingTasks?: number) {
+  sequence: number, canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], frontierIndex: BlockFrontierIndex, parkSize?: BlockLayoutTaskInput["parkSize"], requestedFamily?: string, remainingTasks?: number,
+  canPlanSite?: (site:BlockSiteCandidate)=>boolean) {
   const shapeKey = requestedFamily ? compactBuildingShapeFamily(requestedFamily) : undefined;
   if (requestedFamily && !shapeKey) throw new BlockPlacementError(`Unknown building geometry: ${requestedFamily}`);
   const templates = kind === "BUILDING"
@@ -228,7 +256,7 @@ function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origi
   // manufacture a bridge or make an otherwise valid existing city unusable.
   const separationModes = !ownBlocks.length && allBlocks.length ? [true, false] : [false];
   for (const separated of separationModes) for (const frontier of frontiers) for (const template of templates) {
-    try { return { template, ...nextBlockOrigin(frontier, districtLayoutId, origin, template, canPlace, allBlocks, separated, frontierIndex) }; }
+    try { return { template, ...nextBlockOrigin(frontier, districtLayoutId, origin, template, canPlace, allBlocks, separated, frontierIndex,canPlanSite) }; }
     catch (error) { if (!(error instanceof BlockPlacementError)) throw error; failure = error; }
   }
   throw failure!;
@@ -236,7 +264,8 @@ function nextBlockSite(ownBlocks: CityBlockV1[], districtLayoutId: string, origi
 
 /** Compact edge-adjacent rectangle on the fixed city grid; only actual blocks reserve land. */
 function nextBlockOrigin(frontierBlocks: CityBlockV1[], districtLayoutId: string, origin: { x: number; y: number }, template: BlockTemplate,
-  canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], separated: boolean, frontierIndex: BlockFrontierIndex): { origin: { x: number; y: number }; separator?: DistrictSeparator } {
+  canPlace: BlockLayoutCompilerInput["canPlaceBlock"], allBlocks: CityBlockV1[], separated: boolean, frontierIndex: BlockFrontierIndex,
+  canPlanSite?: (site:BlockSiteCandidate)=>boolean): { origin: { x: number; y: number }; separator?: DistrictSeparator } {
   const frontier = frontierIndex.candidates(frontierBlocks, template, separated);
   const extent = frontierIndex.extent;
   const separators = readDistrictSeparators(allBlocks);
@@ -274,7 +303,9 @@ function nextBlockOrigin(frontierBlocks: CityBlockV1[], districtLayoutId: string
       const b = candidate.separator.bounds;
       if (!canPlace({ minX: b.minX - 2, minY: b.minY - 2, maxX: b.maxX + 2, maxY: b.maxY + 2 })) continue;
     }
-    return { origin: { x: candidate.x, y: candidate.y }, ...(candidate.separator ? { separator: candidate.separator } : {}) };
+    const site={origin:{x:candidate.x,y:candidate.y},...(candidate.separator?{separator:candidate.separator}:{})};
+    if(canPlanSite&&!canPlanSite({...site,template}))continue;
+    return site;
   }
   throw new BlockPlacementError("No buildable connected rectangle on the selected city frontier");
 }
@@ -398,7 +429,10 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   // The durable task number, not district grouping, defines construction order.
   // Replaying an interleaved city must not move its railway/airport to another
   // task simply because one district happened to be enumerated first.
-  const homeUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>() };
+  const blockContext = new Map(contexts.flatMap(context => context.districtBlocks.map(block => [block.id, { block, districtId: context.district.id }] as const)));
+  const trackLocalHomes=input.localCharacters==='LOCAL_V1'||reservedBlocks.some(block=>block.parameters.quarterCharacterVersion===1
+    &&quarterCharacter(block.parameters.quarterCharacter));
+  const homeUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>(),zones:new Map<string,Map<string,number>>() };
   const serviceUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>() };
   const recordFamily = (placement: TaskPlacementV1) => {
     if (kinds.get(placement.taskId) !== "BUILDING") return;
@@ -409,14 +443,22 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
     if (!counts) { counts = new Map(); usage.blocks.set(placement.blockId, counts); }
     counts.set(placement.buildingFamily, (counts.get(placement.buildingFamily) ?? 0) + 1);
     usage.city.set(placement.buildingFamily, (usage.city.get(placement.buildingFamily) ?? 0) + 1);
+    if(trackLocalHomes&&!placement.serviceRole){
+      const zone=cityNeighbourhoodKey(blockContext.get(placement.blockId)!.block);
+      let counts=homeUsage.zones.get(zone);if(!counts){counts=new Map();homeUsage.zones.set(zone,counts);}
+      counts.set(placement.buildingFamily,(counts.get(placement.buildingFamily)??0)+1);
+    }
   };
   for (const placement of activePlacements.values()) recordFamily(placement);
-  const blockContext = new Map(contexts.flatMap(context => context.districtBlocks.map(block => [block.id, { block, districtId: context.district.id }] as const)));
   const infrastructure: InfrastructureState = {
     nonemptyBlocks: new Set(), cityDistricts: new Set(), districtBlocks: new Map(), districtBuildings: new Map(), latestSequence: new Map(),
     triggers: new Set([...durableTriggers, ...reservedBlocks.flatMap(block => Object.values(block.parameters.slotRoleTriggers as Record<string, string> ?? {}))]),
     hasPort: reservedBlocks.some(block => Object.values(block.parameters.slotRoles as Record<string, BlockServiceRole> ?? {}).includes("PORT")),
+    local:input.localServices==='DISTRIBUTED_V1'?new LocalCityServices([...durableTriggers,...reservedBlocks.flatMap(block=>Object.values(block.parameters.slotRoleTriggers as Record<string,string>??{}))]):undefined,
   };
+  const closedSlots=new Set(siteMarkers.map(marker=>`${marker.blockId}:${marker.slotKey}`));
+  if(infrastructure.local)for(const block of reservedBlocks)for(const [slot,role] of Object.entries(block.parameters.slotRoles as Record<string,BlockServiceRole>??{}))
+    if(!closedSlots.has(`${block.id}:${slot}`))infrastructure.local.addRole(block,role);
   const recordInfrastructure = (placement: TaskPlacementV1) => {
     const context = blockContext.get(placement.blockId)!;
     if (!infrastructure.nonemptyBlocks.has(placement.blockId)) {
@@ -424,8 +466,11 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       infrastructure.districtBlocks.set(context.districtId, (infrastructure.districtBlocks.get(context.districtId) ?? 0) + 1);
       infrastructure.latestSequence.set(context.districtId, Math.max(infrastructure.latestSequence.get(context.districtId) ?? -1, context.block.sequence));
     }
-    if (kinds.get(placement.taskId) === "BUILDING") infrastructure.districtBuildings.set(context.districtId,
-      (infrastructure.districtBuildings.get(context.districtId) ?? 0) + 1);
+    if (kinds.get(placement.taskId) === "BUILDING") {
+      infrastructure.districtBuildings.set(context.districtId,(infrastructure.districtBuildings.get(context.districtId) ?? 0) + 1);
+      infrastructure.local?.addBuilding(context.block);
+      if(placement.serviceRole)infrastructure.local?.addRole(context.block,placement.serviceRole);
+    }
   };
   for (const placement of activePlacements.values()) recordInfrastructure(placement);
   const frontierIndex = createBlockFrontierIndex(reservedBlocks, origin);
@@ -446,7 +491,9 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       }
       const portPlans = new Map<string, PortSitePlan | null>();
       const portPlan = ({ block, slot }: { block: CityBlockV1; slot: BlockSlot }) => {
-        const id = `${block.id}:${slot.key}`;
+        // Alternative new sites share a future block/slot identity. Their
+        // terminal rectangles are different planning candidates.
+        const b=slot.footprintBounds,id = `${block.id}:${slot.key}:${b.minX},${b.minY}:${b.maxX},${b.maxY}`;
         if (!portPlans.has(id)) {
           const plan = familyFitsSlot("compact-port-v1", slot) ? input.planPort?.(slot.footprintBounds, reservedBlocks) : null;
           const scoped = plan && plan.link.countryId === input.countryId && plan.link.cityId === input.cityId
@@ -492,10 +539,10 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       let selected = preferred() ?? pocketSite();
       if (!selected) {
         const sequence = districtBlocks.reduce((high, block) => Math.max(high, block.sequence), -1) + 1;
-        const site = nextBlockSite(districtBlocks, districtLayoutId,
-          origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, canPlaceBlock, reservedBlocks, frontierIndex, task.parkSize, requestedFamily, input.compactReplay ? remainingTasks : undefined);
-        const template = site.template;
-        const block: CityBlockV1 = { id: deterministicId(`${identity}:district:${district.id}:block:${sequence}`), districtLayoutId, sequence,
+        const prepared:{block?:CityBlockV1}={};
+        const canPlanSite=(site:BlockSiteCandidate)=>{
+          const template=site.template;
+          const block: CityBlockV1 = { id: deterministicId(`${identity}:district:${district.id}:block:${sequence}`), districtLayoutId, sequence,
           kind: template.kind === "BUILDING" ? "RESIDENTIAL" : template.kind === "PARKING" ? "TRANSPORT" : template.kind,
           templateKey: template.key, templateVersion: BLOCK_TEMPLATE_VERSION, variant: "south", seed: input.seed + sequence,
           origin: site.origin,
@@ -503,11 +550,42 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
           parameters: { entrancePolicyVersion: 1, buildingProfile: buildingProfile(district.archetype) ?? "MIXED_URBAN", buildingProfileVersion: 1, packingCorner: ["NW", "NE", "SW", "SE"][((input.seed + sequence + district.sequence) % 4 + 4) % 4], infill: true,
             ...(site.separator ? { districtSeparator: site.separator } : {}),
             ...(requestedFamily ? { firstFamily: compactBuildingShapeFamily(requestedFamily)! } : task.parkSize === "POCKET" ? { firstFamily: "compact-apartment-v1" } : {}) }, summary: {} };
+        if(input.localCharacters==='LOCAL_V1')block.parameters={...block.parameters,
+          quarterCharacter:quarterCharacterFor(input.seed,block),quarterCharacterVersion:1};
         // A port's coastal allocator chooses its terminal independently; its
         // existing south-centre access does not need a provisional art alias.
         const firstAuthoredFamily = wantsPort ? undefined : requestedFamily;
-        block.parameters.sitePlan = createBlockSitePlan(block, firstAuthoredFamily);
+        const reservedPublic = (input.publicReservations??[]).map(r => ({
+          minX: Math.max(0,r.minX-block.origin.x),minY: Math.max(0,r.minY-block.origin.y),
+          maxX: Math.min(block.width,r.maxX-block.origin.x),maxY: Math.min(block.height,r.maxY-block.origin.y),
+        })).filter(r => r.minX<=r.maxX && r.minY<=r.maxY);
+        if (reservedPublic.length) block.parameters.publicReservations = reservedPublic;
+        try{block.parameters.sitePlan = createBlockSitePlan(block, firstAuthoredFamily);}
+        catch(error){
+          // The terrain/site envelope may fit while an inherited public pad
+          // consumes the smallest template's usable parcel. Keep searching
+          // the connected frontier instead of publishing a failed allocation.
+          if(reservedPublic.length&&error instanceof Error&&/No (?:public )?parcel fits around (?:public )?infrastructure|(?:Invalid|Blocked|Unreachable) planned entrance/.test(error.message))return false;
+          throw error;
+        }
         if (firstAuthoredFamily) block.parameters.slotFamilies = { "slot-0": firstAuthoredFamily };
+        // Infrastructure may leave a valid but smaller public parcel. Prove
+        // that this task fits before accepting the candidate, so a large park
+        // or terminal can continue through the existing connected frontier.
+        if(!blockSlots(block).some(slot=>eligible({block,slot})))return false;
+        prepared.block=block;return true;
+        };
+        try {
+          nextBlockSite(districtBlocks, districtLayoutId,
+            origin, task.autoVisualKind || task.parkSize === "POCKET" ? "BUILDING" : kind, sequence, canPlaceBlock, reservedBlocks, frontierIndex, task.parkSize, requestedFamily, input.compactReplay ? remainingTasks : undefined,canPlanSite);
+        } catch (error) {
+          // Exhausting coastal candidates keeps the public PORT_UNAVAILABLE
+          // contract; unexpected allocator failures must still propagate.
+          if (wantsPort && error instanceof BlockPlacementError) throw new PortPlacementError();
+          throw error;
+        }
+        const block=prepared.block;
+        if(!block)throw new BlockPlacementError('No prepared public-infrastructure site');
         districtBlocks.push(block); reservedBlocks.push(block);
         blockContext.set(block.id, { block, districtId: district.id });
         const slots = blockSlots(block);
@@ -540,6 +618,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
         slotRoleTriggers: { ...selected.block.parameters.slotRoleTriggers as Record<string,string>,
           [selected.slot.key]: trigger } };
         infrastructure.triggers.add(trigger);
+        infrastructure.local?.addRole(selected.block,task.serviceRole);
       }
       else if (!task.serviceRoleAssigned && !wantsPort) {
         reserveNextInfrastructure(district, available, occupied, infrastructure, requestedFamily);
@@ -575,14 +654,17 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       const accepts = (family: string) => familyAccessFits(selected.block, selected.slot, family);
       const familyEntropy = Number.parseInt(checksum(`${input.seed}:${district.id}:${task.taskNumber}`).slice(0, 8), 16);
       const assignedUsage = serviceRole ? serviceUsage : homeUsage;
-      const usage = new Map([...assignedUsage.city].map(([family, count]) => [family,
+      const character=selected.block.parameters.quarterCharacterVersion===1?quarterCharacter(selected.block.parameters.quarterCharacter):undefined;
+      const familyCounts=character&&!serviceRole?(homeUsage.zones.get(cityNeighbourhoodKey(selected.block))??new Map<string,number>()):assignedUsage.city;
+      const usage = new Map([...familyCounts].map(([family, count]) => [family,
         count + (assignedUsage.blocks.get(selected.block.id)?.get(family) ?? 0) * 100]));
       const authoredFamily = requestedFamily ?? (!task.serviceRoleAssigned && serviceRole ? serviceFamilyForSlot(serviceRole,selected.slot, accepts, familyEntropy, usage) : undefined)
         ?? (landmarkCandidates.length ? landmarkCandidates[landmarkEntropy % landmarkCandidates.length] : undefined)
         ?? (!serviceRole && selected.slot.kind === "BUILDING" ? compactHomeFamily(
           selected.slot.footprintBounds.maxX - selected.slot.footprintBounds.minX + 1,
           selected.slot.footprintBounds.maxY - selected.slot.footprintBounds.minY + 1,
-          familyEntropy, usage, selected.block.parameters.buildingProfileVersion === 1 ? buildingProfile(selected.block.parameters.buildingProfile) : undefined, accepts) : undefined)
+          familyEntropy, usage, selected.block.parameters.buildingProfileVersion === 1 ? buildingProfile(selected.block.parameters.buildingProfile) : undefined, accepts,
+          character) : undefined)
         ?? selected.slot.buildingFamily ?? task.buildingFamily;
       if (selected.slot.kind === "BUILDING") {
         const oldEntrance = selected.slot.buildingFamily ? getBuilding(selected.slot.buildingFamily).entrances[0] : undefined;

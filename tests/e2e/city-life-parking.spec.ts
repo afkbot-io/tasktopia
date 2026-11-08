@@ -1,83 +1,21 @@
 import {expect,test} from '@playwright/test';
+import {writeFile} from 'node:fs/promises';
 import type {ChunkTaskDto} from '../../src/shared/contracts';
 import type {CitySceneDto} from '../../src/shared/city-scene-contract';
-import {materializeChunkPayload} from '../../src/shared/world-chunk-payload';
-import {buildCityWalkNetwork} from '../../src/client/city-walk-network';
-import {cityLifeSites,planCityLife} from '../../src/client/city-life';
 import {planCityParking} from '../../src/client/city-parking';
+import {sceneWalkGeometry as geometry} from './city-scene-walk-fixture';
 // Framebuffer readback for trace thumbnails starves a software renderer. Keep
 // DOM/source traces and the explicit visual captures, as in city-mobility.
 test.use({trace:{mode:'retain-on-failure',screenshots:false,snapshots:true,sources:true}});
-const key=(c:{x:number;y:number})=>`${c.x},${c.y}`;
-function geometry(scene:CitySceneDto){
- const chunks=scene.chunks.map(c=>materializeChunkPayload(c));
- const tasks=[...new Map([...chunks.flatMap(c=>c.tasks),...scene.completedDistrictSnapshots.flatMap(s=>s.tasks)].map(t=>[t.id,t])).values()];
- const roads=new Map(chunks.flatMap(c=>c.roads).map(c=>[key(c),c]));
- const surfaces=chunks.flatMap(c=>c.surfaces);
- const network=buildCityWalkNetwork({tasks,roads,surfaces,terrain:chunks.flatMap(c=>c.terrain),features:chunks.flatMap(c=>c.worldFeatures),decorations:chunks.flatMap(c=>c.decorations)});
- return {tasks,roads,surfaces,...network};
-}
-
-test('событие у завершённого дома прибывает, действует и завершается без записей задач',async({page},info)=>{
- test.setTimeout(75000);
- await page.request.post('/api/auth/login',{data:{email:'demo@tasktopia.local',password:'tasktopia-demo'}});
- const bootstrap=await (await page.request.get('/api/bootstrap')).json();
- const scene=await (await page.request.get(`/api/countries/${bootstrap.country.id}/cities/${bootstrap.initialCity.id}/scene`)).json() as CitySceneDto;
- const g=geometry(scene),sites=cityLifeSites(g.tasks,g.walkGraph,new Set([...g.blockedCells,...g.roads.keys()]));
- const candidates=g.tasks.filter(t=>t.status==='COMPLETED'&&t.stage===5).map(t=>t.id);
- let plan:ReturnType<typeof planCityLife>;
- for(let w=Math.floor(Date.now()/180000);w<Math.floor(Date.now()/180000)+12&&!plan;w++)plan=planCityLife(scene.city.id,sites,w*180000,candidates);
- expect(plan).toBeTruthy();const task=g.tasks.find(t=>t.id===plan!.taskId)!;
- const epoch=plan!.start-90000;
- await page.clock.install();
- await page.route('**/api/**',async route=>{const response=await route.fetch();await route.fulfill({response,headers:{...response.headers(),'cache-control':'no-store','x-tasktopia-server-time':String(epoch)}});});
- const writes:string[]=[],errors:string[]=[];page.on('request',r=>{if(r.method()!=='GET'&&new URL(r.url()).pathname.startsWith('/api/'))writes.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
- await page.goto(`/task/${task.taskNumber}?countryId=${bootstrap.country.id}&taskId=${task.id}`);
- await expect(page.locator('#task-title')).toBeVisible();
- await page.getByRole('button',{name:'Закрыть',exact:true}).click();
- await expect(page.locator('.world-canvas')).toHaveAttribute('data-loading','false',{timeout:45000});
- const world=page.locator('.world-canvas');
- // Keep the original 15s preparation bound. Do not spend the ARRIVING window
- // while cooperative movement preparation and native rendering finish.
- await expect.poll(()=>world.evaluate(el=>el.dataset.mobilityReady==='true'
-  &&el.dataset.movementPreparing!=='true'&&el.dataset.ambientAssets==='ready'
-  &&Number(el.dataset.cityLifeSites)>0&&Number.isFinite(Number(el.dataset.roadEventServerNow))),{timeout:15000}).toBe(true);
- await page.clock.pauseAt(await page.evaluate(()=>new Date(Date.now()+2000).toISOString()));
- const serverNow=()=>world.evaluate(el=>Number(el.dataset.roadEventServerNow));
- const beforeArrival=await serverNow();expect(Number.isFinite(beforeArrival)).toBe(true);
- expect(beforeArrival,'Server epoch must be initialized').toBeGreaterThanOrEqual(epoch);
- expect(beforeArrival,'Initial event must still be in the future').toBeLessThan(plan!.start);
- const arrivalAt=plan!.start+1000,clockSteps:Array<{before:number;jump:number;after:number}>=[];
- for(let attempt=0;attempt<8;attempt++){
-  const before=await serverNow();expect(Number.isFinite(before)).toBe(true);
-  if(before>=arrivalAt)break;
-  // ServerWorldClock may slew by +/-10%; use public clock readback instead
-  // of assuming one browser-clock jump lands on the requested server epoch.
-  const jump=Math.max(1,Math.floor((arrivalAt-before)/1.1));
-  await page.clock.fastForward(jump);await page.clock.runFor(100);
-  const after=await serverNow();clockSteps.push({before,jump,after});
-  expect(Number.isFinite(after)).toBe(true);expect(after).toBeGreaterThanOrEqual(before);
-  expect(after,'Clock control must not skip ARRIVING').toBeLessThan(plan!.start+8000);
- }
- const arrivedAt=await serverNow();expect(arrivedAt).toBeGreaterThanOrEqual(arrivalAt);
- expect(arrivedAt).toBeLessThan(plan!.start+8000);
- await expect(world).toHaveAttribute('data-city-life-planned-task',plan!.taskId);
- await expect(world).toHaveAttribute('data-city-life-event',plan!.kind,{timeout:15000});
- await expect(world).toHaveAttribute('data-city-life-phase','ARRIVING');
- await info.attach('life-clock-control',{body:Buffer.from(JSON.stringify({epoch,start:plan!.start,beforeArrival,arrivalAt,arrivedAt,clockSteps,deviceScaleFactor:await page.evaluate(()=>devicePixelRatio)})),contentType:'application/json'});
- await page.clock.fastForward(10000);await expect(world).toHaveAttribute('data-city-life-phase','ACTIVITY');
- await page.screenshot({path:info.outputPath('completed-home-life.png')});
- await page.clock.fastForward(24000);await expect(world).toHaveAttribute('data-city-life-phase','LEAVING');
- await page.clock.fastForward(9000);await expect(world).toHaveAttribute('data-city-life-event','');
- expect(writes).toEqual([]);expect(errors).toEqual([]);
- await info.attach('life-evidence',{body:Buffer.from(JSON.stringify({kind:plan!.kind,taskId:task.id,route:plan!.route,writes,errors})),contentType:'application/json'});
-});
 
 test('машина заезжает на существующий мощёный участок парковки и возвращается на дорогу',async({page},info)=>{
  test.setTimeout(110000);
  await page.setViewportSize({width:800,height:600});
  await page.addInitScript(()=>{
-  localStorage.setItem('tasktopia:world-preferences:v1',JSON.stringify({quality:'ECONOMY'}));
+  // Keep the initial traffic pool for this positive parking journey; calendar
+  // closures, bus leases and population rebalancing have separate journeys.
+  // Cars still use the real resolver, density and physical clock.
+  localStorage.setItem('tasktopia:world-preferences:v2',JSON.stringify({quality:'ECONOMY',cityLife:false,sound:false}));
   // Replay the traffic seed captured in the Linux CI failure.
   const random=crypto.getRandomValues.bind(crypto);
   Object.defineProperty(crypto,'getRandomValues',{value:(array:ArrayBufferView<ArrayBuffer>)=>{
@@ -102,13 +40,22 @@ test('машина заезжает на существующий мощёный
  await expect(page.locator('#task-title')).toBeVisible();await page.getByRole('button',{name:'Закрыть',exact:true}).click();
  const host=page.locator('.world-canvas');await expect(host).toHaveAttribute('data-loading','false',{timeout:45000});
  await expect.poll(async()=>Number(await host.getAttribute('data-parking-lots'))).toBeGreaterThan(0);
+ await expect(host).toHaveAttribute('data-mobility-ready','true');
+ await expect.poll(async()=>await host.getAttribute('data-road-event')??'').toBe('');
+ await expect(host).toHaveAttribute('data-city-event-leases','0');await expect(host).toHaveAttribute('data-transit-role','');
+ expect(Number(await host.getAttribute('data-cars'))).toBeGreaterThan(0);
  const state=()=>host.evaluate(el=>({steps:Number(el.dataset.mobilityFixedSteps),parked:el.dataset.parkedCarIds?.split(',').filter(Boolean)??[],road:el.dataset.roadCarIds?.split(',')??[],alive:el.dataset.agentIds?.split(',')??[]}));
  const arrivalStarted=(await state()).steps;
  // Entry uses the same simulation clock as the stop below: the CI trace had
  // advanced only 10.4 simulation seconds in 45 wall seconds, still en route.
  // Keep a 45-second simulation bound and the original whole-test deadline.
  await expect.poll(async()=>{const s=await state();return s.parked.length>0||s.steps-arrivalStarted>=900;},{timeout:75000}).toBe(true);
- const arrival=await state();expect(arrival.parked.length).toBeGreaterThan(0);
+ const arrival=await state();
+ await writeFile(info.outputPath('parking-arrival-state.json'),JSON.stringify({arrivalStarted,arrival,parking,
+  state:await host.evaluate(el=>Object.fromEntries(['cars','parkingLots','trafficMaxWaitMs','mobilityPeakVehicleWaitMs','roadEvent','roadEventGeometry','roadClosedCells',
+   'trafficBlockedVehicles','trafficMovingVehicles','mobilityTrips','cameraWorldX','cameraWorldY','populationLocalCars','worldQuality','worldPixelRatio',
+   'transitRole','populationRetired','populationSpawned','mobilityReady','mobilityFixedSteps','agentIds'].map(k=>[k,el.dataset[k]??null])))},null,2));
+ expect(arrival.parked.length).toBeGreaterThan(0);
  const parkedId=arrival.parked[0]!;
  expect(parkedId).toBeTruthy();
  const parkedAt=Number(await host.getAttribute('data-mobility-fixed-steps'));

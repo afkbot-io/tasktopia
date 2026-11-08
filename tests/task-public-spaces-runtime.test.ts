@@ -92,11 +92,14 @@ describe("public-space task persistence", () => {
       const moved = await service.transferTask(countryId, { taskId: fountain.id, targetDistrictId: target.id, idempotencyKey: "move" });
       expect(moved).toMatchObject({ id: fountain.id, taskNumber: fountain.taskNumber, stage: 5 });
       expect(moved.origin).not.toEqual(fountain.origin);
-      expect(await service.listWorldFeatures(countryId)).toEqual([]);
+      const beforeDelete=await service.listWorldFeatures(countryId);
+      expect(beforeDelete.length).toBeGreaterThan(0);
+      expect(beforeDelete.every(feature=>feature.kind==='BUS_STOP')).toBe(true);
       await service.deleteTask(countryId, { taskId: fountain.id, confirmTitle: fountain.title, idempotencyKey: "delete" });
       const sites = await service.listWorldFeatures(countryId);
       expect(sites.filter(s => s.siteMarker)).toHaveLength(1);
-      expect(sites[0]!.origin).toEqual(moved.origin);
+      expect(sites.find(site=>site.siteMarker)!.origin).toEqual(moved.origin);
+      expect(sites).toEqual(expect.arrayContaining(beforeDelete));
       expect((await service.getTask(countryId, house.id)).footprint).toEqual(house.footprint);
       expect(await service.listTasks(countryId)).toHaveLength(1);
     } finally { await db.close(); }

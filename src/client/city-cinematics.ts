@@ -11,7 +11,7 @@ export type CityCinematicRequest = { eventId: number; version: number; taskId: s
 export type CityCinematicPhase = "CREW" | "WORK" | "COVER" | "REVEAL" | "APPROACH" | "LIFT" | "CARRY" | "LOWER" | "DEPART";
 export type CityCinematicFrame = CityCinematicRequest & { startedAtMs: number; elapsedMs: number; progress: number; phaseProgress: number; phase: CityCinematicPhase; oldVisible: boolean; revealTarget: boolean; done: boolean };
 type Entry = { request: CityCinematicRequest; start: number; readyVersion: number;
-  transferHeld?: boolean; transferResumedAt?: number; transferRate?: number };
+  transferHeld?: boolean; transferResumedAt?: number; transferRate?: number; phaseCeiling?: number; phasePresentedAt?: number };
 const schedules: Record<CityCinematicKind, ReadonlyArray<readonly [number, CityCinematicPhase]>> = {
   CONSTRUCT: [[650, "CREW"], [2200, "WORK"], [2750, "COVER"], [3100, "REVEAL"]],
   DEMOLISH: [[800, "CREW"], [1600, "WORK"], [2500, "COVER"], [2900, "REVEAL"]],
@@ -39,6 +39,8 @@ export function createCityCinematics(capacity = 3) {
         if (kind !== current.request.kind) {
           current.start = now; current.transferHeld = false;
           current.transferResumedAt = undefined; current.transferRate = undefined;
+          current.phaseCeiling = undefined;
+          current.phasePresentedAt = undefined;
         }
         current.request = { ...request, kind, fromStage: current.request.fromStage };
         return true;
@@ -79,6 +81,24 @@ export function createCityCinematics(capacity = 3) {
         if (index < 0) index = schedule.length - 1;
         if (!ready && phaseElapsedMs >= schedule.at(-2)![0]) index = schedule.length - 2;
         if (!ready && entry.request.kind === "TRANSFER" && phaseElapsedMs >= 1700 && entry.transferResumedAt === undefined) index = 1;
+        // Once the crew was actually presented, sparse renderer frames must
+        // still present work and its cover before revealing the new parcel.
+        // Keep the original hard deadline, including when artwork never arrives.
+        if (entry.request.kind !== 'TRANSFER' && elapsedMs < duration + 2000) {
+          if (entry.phaseCeiling !== undefined) {
+            // Reconciliation may sample again before a renderer tick. Keep
+            // the presented phase for50ms rather than consuming it per call.
+            const ceiling = now - entry.phasePresentedAt! < 50 ? entry.phaseCeiling - 1 : entry.phaseCeiling;
+            if (index > ceiling) {
+              index = ceiling;
+              phaseElapsedMs = Math.min(phaseElapsedMs, schedule[index]![0] - 1);
+            }
+          }
+          if (index === 0 || entry.phaseCeiling !== undefined) {
+            if (entry.phaseCeiling !== index + 1) entry.phasePresentedAt = now;
+            entry.phaseCeiling = index + 1;
+          }
+        }
         const [end, phase] = schedule[index]!;
         const start = index === 0 ? 0 : schedule[index - 1]![0];
         const revealTarget = ready && phaseElapsedMs >= schedule.at(-2)![0];

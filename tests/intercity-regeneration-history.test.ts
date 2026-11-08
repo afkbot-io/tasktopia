@@ -97,7 +97,8 @@ describe("release regeneration with roads and permanent task history", { timeout
 
   it("keeps ruin geometry and relocation history through replay and serves one new canonical road model", async () => {
     const before = await durableTasks();
-    const markers = await service.listWorldFeatures(countryId);
+    const features = await service.listWorldFeatures(countryId),markers = features.filter(feature => feature.siteMarker);
+    expect(features.some(feature => feature.kind==='BUS_STOP')).toBe(true);
     expect(markers.map(marker => marker.siteMarker?.kind).sort()).toEqual(["RUINED"]);
     const country = await service.getCountry(countryId);
     const command = { confirmName: country.name, idempotencyKey: "release-rebuild" };
@@ -105,7 +106,9 @@ describe("release regeneration with roads and permanent task history", { timeout
     const snapshot = await readCountryRoads(db, countryId);
     expect(snapshot).toBeDefined();
     const fresh = new AppService(db);
-    expect(await fresh.listWorldFeatures(countryId)).toEqual(markers);
+    const rebuiltFeatures = await fresh.listWorldFeatures(countryId);
+    expect(rebuiltFeatures.filter(feature => feature.siteMarker)).toEqual(markers);
+    expect(rebuiltFeatures.some(feature => feature.kind==='BUS_STOP')).toBe(true);
     expect(await durableTasks()).toEqual(before);
     expect((await auditWorld(db, fresh, countryId)).violations).toEqual([]);
     const overview = await fresh.getCountryOverview(userId, countryId);
@@ -128,7 +131,7 @@ describe("release regeneration with roads and permanent task history", { timeout
     expect(await service.regenerateCountry(countryId, command)).toEqual(result);
     expect(await readCountryRoads(db, countryId)).toEqual(snapshot);
     expect(await Promise.all(cityIds.map(cityId => readActiveBlockLayout(db, cityId)))).toEqual(layouts);
-    expect(await fresh.listWorldFeatures(countryId)).toEqual(markers);
+    expect(await fresh.listWorldFeatures(countryId)).toEqual(rebuiltFeatures);
   });
 
   it("rolls back every rebuilt city and the removed road snapshot if final network publication fails", async () => {

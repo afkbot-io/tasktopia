@@ -3,6 +3,15 @@ import { clearPlanetAtlasCache, loadPlanetAtlas, peekPlanetAtlas, watchPlanetAtl
 import { PLANET_ATLAS_SCHEMA_VERSION, type PlanetAtlasDto } from "../src/shared/planet-atlas-contract";
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); clearPlanetAtlasCache(); });
 
+it('reads schema5 without inventing roads and current schema6 in a coordinated upgrade',async()=>{
+  const legacy:PlanetAtlasDto={schemaVersion:5,planetSeed:7,revision:'old',countries:[]};
+  expect(await loadPlanetAtlas('legacy',1,async()=>legacy)).toBe(legacy);
+  expect((await loadPlanetAtlas('legacy',1,async()=>legacy)).countries).toEqual([]);
+  const current:PlanetAtlasDto={schemaVersion:6,planetSeed:7,revision:'current',countries:[]};
+  expect(await loadPlanetAtlas('current',1,async()=>current)).toBe(current);
+  await expect(loadPlanetAtlas('unsupported',1,async()=>({...current,schemaVersion:4}))).rejects.toThrow(/Обновите страницу/);
+});
+
 it("shares warm revision requests, isolates users and clears authentication data", async () => {
   clearPlanetAtlasCache();
   const dto = { schemaVersion: PLANET_ATLAS_SCHEMA_VERSION } as PlanetAtlasDto;

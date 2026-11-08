@@ -16,6 +16,7 @@ describe("unambiguous notification task links", () => {
     const a = pushPayloadForEvent(event("country-a", "task-a"))!, b = pushPayloadForEvent(event("country-b", "task-b"))!;
     expect(a.url).toBe("/task/7?countryId=country-a&taskId=task-a");
     expect(b.url).toBe("/task/7?countryId=country-b&taskId=task-b");
+    expect(Object.keys(a).sort()).toEqual(['body','tag','title','url']);
   });
   it("encodes context values rather than allowing query injection", () => {
     const url = new URL(pushPayloadForEvent(event("country&a=x", "task#fragment"))!.url, "https://tasktopia.test");

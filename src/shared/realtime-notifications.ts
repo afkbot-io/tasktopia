@@ -2,6 +2,8 @@ import type { BuildingEventContext, RealtimeEvent, TaskStatus } from "./contract
 
 export type RealtimeNoticePresentation = {
   id: number;
+  groupKey:string;
+  compactTitle:string;
   title: string;
   location: string;
   tone: "info" | "success";
@@ -86,14 +88,14 @@ function eventTitle(event: RealtimeEvent, context: BuildingEventContext): string
     case "task.status_changed": {
       const status = typeof event.payload.status === "string" ? event.payload.status as TaskStatus : context.status;
       const stages = context.visualKind === "PARK" ? parkStage : buildingStage;
-      if (!(status in stages)) return null;
+      if (!Object.hasOwn(stages,status)) return null;
       if (status === "COMPLETED") return `${named} ${context.visualKind === "PARK" ? "благоустроен" : "построено"}`;
       return `${named} ${context.visualKind === "PARK" ? "перешёл" : "перешло"} на этап «${stages[status]}»`;
     }
     case "task.renamed":
       return `${context.visualKind === "PARK" ? "Парк" : "Здание"} №${context.taskNumber} теперь называется «${context.title}»`;
     case "task.transferred":
-      return `Задание №${context.taskNumber} «${context.title}» перенесено в спринт «${context.district.name}»; прежняя площадка сохранена`;
+      return `Задание №${context.taskNumber} «${context.title}» перенесено в спринт «${context.district.name}»`;
     case "task.fields_updated":
       return `У ${genitiveSubject(context)} ${updatedBuildingDetail(event, context)}`;
     case "task.assignee_changed":
@@ -111,6 +113,29 @@ function eventTitle(event: RealtimeEvent, context: BuildingEventContext): string
   }
 }
 
+function compactAction(event:RealtimeEvent,context:BuildingEventContext):string{
+  switch(event.type){
+    case 'task.created':return 'Новый объект';
+    case 'task.status_changed':return (context.visualKind==='PARK'?parkStage:buildingStage)[
+      (typeof event.payload.status==='string'?event.payload.status:context.status) as TaskStatus];
+    case 'task.renamed':return 'Новое название';
+    case 'task.transferred':return 'Перенос';
+    case 'task.fields_updated':return 'Данные обновлены';
+    case 'task.assignee_changed':return 'Новый ответственный';
+    case 'task.defect_created':return 'Новая неисправность';
+    case 'task.defect_updated':return event.payload.status==='FIXED'?'Неисправность устранена':'Обновлена неисправность';
+    case 'task.deleted':return context.visualKind==='PARK'?'Удалён с карты':'Снесено';
+    default:return 'Обновление';
+  }
+}
+
+/** Ephemeral cards only. Every domain event has already reached its normal
+ * handlers/replay cursor; this queue never removes durable news or work. */
+export function appendRealtimeNotice(current:readonly RealtimeNoticePresentation[],notice:RealtimeNoticePresentation):RealtimeNoticePresentation[]{
+  if(!Number.isSafeInteger(notice.id)||notice.id<=0||current.some(item=>item.id>=notice.id))return current.slice(-3);
+  return [...current.filter(item=>item.groupKey!==notice.groupKey),notice].slice(-3);
+}
+
 /** Pure presentation seam shared by live socket delivery and durable replay. */
 export function presentRealtimeNotice(event: RealtimeEvent): RealtimeNoticePresentation | null {
   if (event.type === "task.comment_added") return null;
@@ -121,6 +146,8 @@ export function presentRealtimeNotice(event: RealtimeEvent): RealtimeNoticePrese
   const navigable = event.type !== "task.deleted";
   return {
     id: event.id,
+    groupKey:JSON.stringify([context.country.id,context.id]),
+    compactTitle:`№${context.taskNumber}: ${compactAction(event,context)}`,
     title,
     location: `${context.country.name} · ${context.city.name} · ${context.district.name}`,
     tone: event.type === "task.status_changed" && context.status === "COMPLETED" ? "success" : "info",

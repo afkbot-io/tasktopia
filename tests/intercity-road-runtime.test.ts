@@ -9,6 +9,8 @@ import { intercityRoadCorridors } from "../src/shared/intercity-roads";
 import { isBuildableTerrain, terrainAt } from "../src/shared/world-terrain";
 import { expandRoadRuns } from "../src/shared/world-cell-runs";
 import { auditWorld } from "../src/server/world/world-audit";
+import { readCountryTransitStopPlans } from "../src/server/world/city-transit-stop-store";
+import { cityTransitStopReservations } from "../src/shared/city-transit-stops";
 
 describe("intercity roads through actual city mutations", { timeout: 60_000 }, () => {
   let db: Db, service: AppService, countryId: string, userId: string;
@@ -29,6 +31,7 @@ describe("intercity roads through actual city mutations", { timeout: 60_000 }, (
     const first = await service.createTask(countryId, { cityId: a.id, districtId: districtA.id, title: "Alpha house", estimate: 1, idempotencyKey: "at" });
     await service.createTask(countryId, { cityId: b.id, districtId: districtB.id, title: "Beta house", estimate: 1, idempotencyKey: "bt" });
     const accepted = (await readCountryRoads(db, countryId))!;
+    const acceptedStops = await readCountryTransitStopPlans(db,countryId);
     expect(accepted.plan.routes, JSON.stringify(accepted.plan)).toHaveLength(1);
     expect(await db.prepare("SELECT payload_json->>'groundRoadTopologyChanged' AS changed FROM events WHERE country_id=? ORDER BY id DESC LIMIT 1").get(countryId)).toEqual({ changed: "true" });
     for (const route of accepted.plan.routes) for (const point of decodeOrthogonalRoadRuns(route.geometry)) {
@@ -55,6 +58,16 @@ describe("intercity roads through actual city mutations", { timeout: 60_000 }, (
     for (let i = 0; i < 35; i++) await service.createTask(countryId, { cityId: a.id, districtId: districtA.id, title: `Growth ${i}`, estimate: 1, idempotencyKey: `g${i}` });
     const grown = (await readCountryRoads(db, countryId))!;
     expect(grown.plan.routes).toEqual(accepted.plan.routes);
+    const grownStops = await readCountryTransitStopPlans(db,countryId);
+    expect(grownStops.flatMap(plan => plan.stops).length).toBeGreaterThan(acceptedStops.flatMap(plan => plan.stops).length);
+    for (const previous of acceptedStops) {
+      const next = grownStops.find(plan => plan.layoutId===previous.layoutId)!;
+      expect(next.stops.slice(0,previous.stops.length)).toEqual(previous.stops);
+      expect(next.processedBlockIds.slice(0,previous.processedBlockIds.length)).toEqual(previous.processedBlockIds);
+    }
+    for (const plan of grownStops) for (const stop of cityTransitStopReservations(plan,'ROAD'))
+      for (const road of intercityRoadCorridors(grown.plan.routes)) expect(stop.minX<=road.maxX && stop.maxX>=road.minX
+        && stop.minY<=road.maxY && stop.maxY>=road.minY).toBe(false);
     const layout = (await readActiveBlockLayout(db, a.id))!;
     expect(layout.blocks.length).toBeGreaterThan(1);
     for (const block of layout.blocks) for (const road of intercityRoadCorridors(grown.plan.routes)) {
@@ -62,7 +75,9 @@ describe("intercity roads through actual city mutations", { timeout: 60_000 }, (
         && block.origin.y + 3 <= road.maxY && block.origin.y + block.height - 3 >= road.minY;
       expect(intersectsInterior).toBe(false);
     }
+    const stopRows = await db.prepare('SELECT * FROM city_transit_stop_plans_v1 ORDER BY layout_id').all();
     expect((await new AppService(db).getCityScene(countryId, a.id)).intercityRoads).toEqual(accepted.plan.routes);
+    expect(await db.prepare('SELECT * FROM city_transit_stop_plans_v1 ORDER BY layout_id').all()).toEqual(stopRows);
     expect((await service.getTask(countryId, first.id)).origin).toEqual(first.origin);
     expect((await auditWorld(db, service, countryId)).violations).toEqual([]);
   });

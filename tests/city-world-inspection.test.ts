@@ -38,3 +38,10 @@ it("cannot follow an off-map vehicle or a place and does not expose a mutable so
   view.open({...item,local:false});expect(view.follow()).toBe(false);
   view.open({...item,position:undefined});expect(view.follow()).toBe(false);
 });
+
+it('publishes asynchronously resolved destination names without waiting for an animation frame',()=>{
+  const view=new CityWorldInspection(),unresolved={...item,toName:'Другой город'};
+  view.open(unresolved);expect(view.update(1000,unresolved,{...enabled,reducedMotion:true}).publication?.item).toMatchObject({toName:'Другой город'});
+  expect(view.update(1000,item,{...enabled,reducedMotion:true}).publication?.item).toMatchObject({toName:'Приморск'});
+  expect(view.update(1000,item,{...enabled,reducedMotion:true}).publication).toBeUndefined();
+});

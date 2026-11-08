@@ -60,4 +60,7 @@ export type CitySceneDto = {
    * Allows exterior rasterization without clipped half-width neighbour roads.
    * Optional for compatibility with already cached schema-v4 responses. */
   roadContext?: import("./semantic-road").SemanticRoadNetwork;
+  /** Undefined: legacy planner. Empty: ready with no suitable stop sites.
+   * Stored server geometry survives growth and every task state change. */
+  transitStops?: readonly import('./city-transit-stops').CanonicalTransitStop[];
 };

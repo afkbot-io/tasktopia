@@ -1,10 +1,16 @@
 import type { Rect } from "./contracts";
 import type { OrthogonalRoadGeometry, SemanticRoadNetwork } from "./semantic-road";
 
+export type IntercityRoadClass = "LOCAL" | "COLLECTOR" | "ARTERIAL";
+export const isIntercityRoadClass = (value: unknown): value is IntercityRoadClass =>
+  value === "LOCAL" || value === "COLLECTOR" || value === "ARTERIAL";
+
 /** Canonical world coordinates; COUNTRY only derives a cartographic projection. */
 export type IntercityRoadRoute = {
   id: string; fromCityId: string; toCityId: string; fromNodeId: string; toNodeId: string;
   widthCells: 3; geometry: OrthogonalRoadGeometry;
+  /** Absent in accepted legacy snapshots: preserve their LOCAL appearance. */
+  roadClass?: IntercityRoadClass;
   bridges?: OrthogonalRoadGeometry[];
 };
 
@@ -50,9 +56,9 @@ export function citySceneIntercityRoads(routes: readonly IntercityRoadRoute[], c
 export function intercityRoadRasterNetwork(routes: readonly IntercityRoadRoute[]): SemanticRoadNetwork {
   return { schemaVersion: 1, nodes: [], segments: routes.flatMap(route => [{
     id: route.id, fromNodeId: route.fromNodeId, toNodeId: route.toNodeId,
-    roadClass: "LOCAL", widthCells: route.widthCells, geometry: route.geometry,
+    roadClass: route.roadClass ?? "LOCAL", widthCells: route.widthCells, geometry: route.geometry,
   }, ...(route.bridges ?? []).map((geometry, index) => ({
     id: `${route.id}:bridge:${index}`, fromNodeId: route.fromNodeId, toNodeId: route.toNodeId,
-    roadClass: "LOCAL" as const, widthCells: route.widthCells, geometry, structure: "BRIDGE" as const,
+    roadClass: route.roadClass ?? "LOCAL", widthCells: route.widthCells, geometry, structure: "BRIDGE" as const,
   }))]) };
 }

@@ -275,3 +275,34 @@ describe("ChunkMaterializer", () => {
     }
   });
 });
+
+describe('run-owned physical workers',()=>{
+  it('does not create a pool for an already cancelled projection',async()=>{
+    const owner=new AbortController();owner.abort();let created=0;
+    const pool=new ChunkMaterializer(2,()=>{created++;return new FakeChunkWorker();},owner.signal);
+    try{expect(created).toBe(0);await expect(pool.materialize(payload(0))).rejects.toMatchObject({name:'AbortError'});}
+    finally{pool.destroy();}
+  });
+  it('terminates its2 pending workers without replacement and leaves another run alive',async()=>{
+    const firstOwner=new AbortController(),secondOwner=new AbortController(),workers:FakeChunkWorker[]=[];
+    const factory=()=>{const worker=new FakeChunkWorker();workers.push(worker);return worker;};
+    const first=new ChunkMaterializer(2,factory,firstOwner.signal),second=new ChunkMaterializer(1,factory,secondOwner.signal);
+    const failed=Promise.all([expect(first.materialize(payload(0),firstOwner.signal)).rejects.toMatchObject({name:'AbortError'}),
+      expect(first.materialize(payload(1),firstOwner.signal)).rejects.toMatchObject({name:'AbortError'})]);
+    const ready=second.materialize(payload(2),secondOwner.signal).then(value=>({value}),error=>({error}));
+    try{
+      firstOwner.abort();
+      expect(workers).toHaveLength(3);expect(workers.slice(0,2).every(worker=>worker.terminated)).toBe(true);
+      expect(workers[2]!.terminated).toBe(false);workers[2]!.respond();
+      await failed;expect(await ready).toMatchObject({value:{chunkX:2}});
+      await expect(first.materialize(payload(3))).rejects.toMatchObject({name:'AbortError'});
+    }finally{first.destroy();second.destroy();}
+  });
+  it('removes its owner listener on successful release and cannot restart a disposed pool',async()=>{
+    const owner=new AbortController(),remove=vi.spyOn(owner.signal,'removeEventListener'),worker=new FakeChunkWorker();
+    const pool=new ChunkMaterializer(1,()=>worker,owner.signal);
+    const ready=pool.materialize(payload(0));worker.respond();await ready;
+    pool.destroy();expect(remove).toHaveBeenCalledWith('abort',expect.any(Function));
+    owner.abort();await expect(pool.materialize(payload(1))).rejects.toMatchObject({name:'AbortError'});expect(worker.posted).toHaveLength(1);
+  });
+});
