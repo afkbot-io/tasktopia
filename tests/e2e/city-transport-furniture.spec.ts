@@ -119,6 +119,15 @@ test('native permanent airport/rail furniture follows real MCP readiness, surviv
     for(let i=0;i<9;i++)await page.keyboard.press('+');
     await expect.poll(async()=>Number(await host.getAttribute('data-render-scale')),{timeout:15000}).toBeGreaterThanOrEqual(3);
     await expect(host).toHaveAttribute('data-camera-presentation-pending','false');await expect(host).toHaveAttribute('data-ground-bake-queue','0',{timeout:15000});
+    // Linux WebKit's native PNG may retain the penultimate static WebGL
+    // buffer although the trace compositor already shows the final pose.
+    // Request one ordinary paint at the already reached zoom cap, and prove
+    // that this neither completes a missing zoom nor changes the camera.
+    const capturePose=await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{scale:d.renderScale,x:d.cameraWorldX,y:d.cameraWorldY};});
+    expect(capturePose.scale).toBe('4');
+    await page.keyboard.press('+');
+    await expect(host).toHaveAttribute('data-camera-presentation-pending','false');
+    expect(await host.evaluate(el=>{const d=(el as HTMLElement).dataset;return{scale:d.renderScale,x:d.cameraWorldX,y:d.cameraWorldY};})).toEqual(capturePose);
     await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
     // WebKit can return an older compositor PNG after its DOM/RAF already
     // reached the new pose. Keep 60/64 per native tile; the airfield edge also
@@ -149,6 +158,6 @@ test('native permanent airport/rail furniture follows real MCP readiness, surviv
     await call('task.delete',{taskId:airport.id,confirmTitle:airport.title});
     await expect.poll(async()=>JSON.parse((await host.getAttribute('data-transport-furniture'))??'[]').map((p:CityTransportFurniture)=>p.taskId)).toEqual([station.id]);
     expect(reads.filter(p=>/\/world\/viewport|\/chunks\//.test(p))).toEqual([]);expect(errors).toEqual([]);expect(failures).toEqual([]);expect(writes).toEqual([]);
-    await info.attach('furniture-evidence',{body:JSON.stringify({props,pixelProof,pixelCaptures,builds,reads,errors,failures,writes,viewport:page.viewportSize()}),contentType:'application/json'});
+    await info.attach('furniture-evidence',{body:JSON.stringify({props,capturePose,pixelProof,pixelCaptures,builds,reads,errors,failures,writes,viewport:page.viewportSize()}),contentType:'application/json'});
   }finally{await page.close();await mcp?.close();if(owner){await db.prepare('DELETE FROM countries WHERE id=?').run(owner.countryId);await db.prepare('DELETE FROM users WHERE id=?').run(owner.id);}await db.close();}
 });

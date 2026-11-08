@@ -398,11 +398,15 @@ test('touch-sized everyday city keeps preferences, sound opt-in, motion cancella
 
 
 async function seek(page: Page, host: Locator, target: number) {
-  for (let i = 0; i < 4; i++) {
+  // At the clock's -10% slew, four conservative jumps across the450s
+  // calendar can stop just before the boundary (CI570: target-0.6685ms).
+  // The fifth advance only finishes preparation; trip deadlines stay fixed.
+  for (let i = 0; i < 5; i++) {
     const now = Number(await host.getAttribute('data-road-event-server-now'));
     if (now >= target) return;
     await page.clock.fastForward(sceneClockStepTowardStart(now,target)); await page.clock.runFor(100);
   }
+  expect(Number(await host.getAttribute('data-road-event-server-now'))).toBeGreaterThanOrEqual(target);
 }
 async function safe(host: Locator) {
   const state = await host.evaluate(el => ({ ...(el as HTMLElement).dataset }));
