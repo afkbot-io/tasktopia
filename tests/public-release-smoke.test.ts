@@ -3,11 +3,12 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
 const execute = promisify(execFile);
-const script = new URL('../deploy/public-release-smoke.py', import.meta.url).pathname;
+const script = fileURLToPath(new URL('../deploy/public-release-smoke.py', import.meta.url));
 const revision = '1234567890abcdef';
 let root: string, origin: string;
 let server: ReturnType<typeof createServer>;
