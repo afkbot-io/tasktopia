@@ -2,8 +2,33 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { createTestDb, transaction, type Db } from "../src/server/db";
+import { createDb, createTestDb, transaction, type Db } from "../src/server/db";
 import { registerUser } from "../src/server/auth";
+
+it("migrates a fresh schema when runtime roles start concurrently", async () => {
+  const url = process.env.TEST_DATABASE_URL ?? "postgres://tasktopia:tasktopia@127.0.0.1:55432/tasktopia_test";
+  const schema = `concurrent_${randomUUID().replaceAll("-", "")}`;
+  const admin = await createDb(url, { migrate: false, maxConnections: 1 });
+  let runtimes: PromiseSettledResult<Db>[] = [];
+  try {
+    await admin.exec(`CREATE SCHEMA "${schema}"`);
+    runtimes = await Promise.allSettled(
+      Array.from({ length: 3 }, () => createDb(url, { schema, maxConnections: 1 })),
+    );
+    const migrationFiles = (await readdir(join(process.cwd(), "migrations/postgres"))).filter(
+      name => /^\d+.*\.sql$/.test(name),
+    );
+    for (const runtime of runtimes) {
+      if (runtime.status === "rejected") throw runtime.reason;
+      const count = await runtime.value.prepare("SELECT count(*)::int AS total FROM schema_migrations").get();
+      expect(count).toEqual({ total: migrationFiles.length });
+    }
+  } finally {
+    await Promise.all(runtimes.map(runtime => runtime.status === "fulfilled" && runtime.value.close()));
+    await admin.exec(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+    await admin.close();
+  }
+}, 30_000);
 
 describe("PostgreSQL migrations", () => {
   let db: Db;
