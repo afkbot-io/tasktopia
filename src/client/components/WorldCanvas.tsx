@@ -2162,7 +2162,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         taskActivityView.update(poses, now);
         if (force || now >= nextActivityTelemetry || !poses.length) {
           nextActivityTelemetry = now + 100;
-          host.dataset.taskActivity = JSON.stringify(poses.map(p => ({ taskId: p.taskId, eventId: p.eventId, kind: p.kind, phase: p.phase, arrived: p.arrived, visitors: p.visitors.length, static: p.static })));
+          host.dataset.taskActivity = JSON.stringify(poses.map(p => ({ taskId: p.taskId, eventId: p.eventId, kind: p.kind, phase: p.phase, arrived: p.arrived, visitors: p.visitors.length, static: p.static, startedAt: p.startedAt, expiresAt: p.expiresAt })));
           host.dataset.taskActivityStarted = String(taskActivity.metrics.started);
           host.dataset.taskActivityMerged = String(taskActivity.metrics.merged);
           host.dataset.taskActivityDelivered = String(taskActivity.metrics.delivered);
