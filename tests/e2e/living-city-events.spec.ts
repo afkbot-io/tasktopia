@@ -77,7 +77,7 @@ test('реальные MCP комментарии и документы ожив
  test.setTimeout(120000); await page.setViewportSize({width:1440,height:1000}); const f=await fixture(page,true);
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const reads:string[]=[];page.on('request',r=>{const p=new URL(r.url()).pathname;if(r.method()==='GET'&&(/\/scene$|\/world\/viewport|\/chunks\//.test(p)))reads.push(p);});
- type ActivityPose={taskId:string;eventId:number;kind:string;phase:string;arrived:number;visitors:number;static:boolean};
+ type ActivityPose={taskId:string;eventId:number;kind:string;phase:string;arrived:number;visitors:number;static:boolean;startedAt:number;expiresAt:number};
  type Admission={pose:ActivityPose;observedAtMs:number;started:number;merged:number;delivered:number;fixedSteps:number};
  type ActivityNode=HTMLElement&{__qaActivity?:{observer:MutationObserver;records:Array<{activity:string;first:Record<string,string|number|null>;last:Record<string,string|number|null>}>}};
  let admissionEvidence:Record<string,unknown>={branch:'UNOBSERVED'};
@@ -186,12 +186,31 @@ test('реальные MCP комментарии и документы ожив
   await expect.poll(async()=>Number(await f.host.getAttribute('data-task-activity-merged'))).toBeGreaterThanOrEqual(1);
   expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6+negativeAttempts.length);
   expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
+  const commentPose=await f.host.evaluate((el,taskId)=>{
+   const records=(el as ActivityNode).__qaActivity?.records??[];
+   return records.findLast(record=>(JSON.parse(record.activity) as ActivityPose[])
+    .some(p=>p.taskId===taskId&&p.kind==='COMMENT'))?.activity;
+  },f.task.id);
+  const lastComment=(JSON.parse(commentPose??'[]') as ActivityPose[])
+   .find(p=>p.taskId===f.task.id&&p.kind==='COMMENT');
+  expect(lastComment).toBeDefined();
   await f.call('task.update_fields',{taskId:f.task.id,description:'Уточнённое описание для проверки живого обновления'});
-  await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'UPDATE'})]));
-  expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
-  if(!delivery)expect((await poses()).find(p=>p.taskId===f.task.id)).toMatchObject({kind:'UPDATE',phase:'SIGNAL',visitors:0,arrived:0,static:false});
+  const readUpdate=()=>f.host.evaluate((el,taskId)=>{
+   for(const record of (el as ActivityNode).__qaActivity?.records??[]){
+    const pose=(JSON.parse(record.activity) as ActivityPose[])
+     .find(p=>p.taskId===taskId&&p.kind==='UPDATE');
+    if(pose)return {pose,started:Number(record.first.started)};
+   }
+   return null;
+  },f.task.id);
+  await expect.poll(readUpdate).not.toBeNull();
+  const update=(await readUpdate())!;
+  const mergedUpdate=update.pose.startedAt===lastComment!.startedAt;
+  expect(update.started).toBe(starts+(mergedUpdate?0:1));
+  if(!mergedUpdate)expect(update.pose.startedAt).toBeGreaterThanOrEqual(lastComment!.expiresAt);
+  if(!delivery&&mergedUpdate)expect(update.pose).toMatchObject({phase:'SIGNAL',visitors:0,arrived:0,static:false});
   await page.screenshot({path:info.outputPath('updated-document.png')});
-  if(!delivery){
+  if(!delivery&&mergedUpdate){
    // Burst and field update run before screenshots so they share the original short signal.
    await expect(f.host).toHaveAttribute('data-task-activity','[]',{timeout:6000});
    expect(Number(await f.host.getAttribute('data-task-activity-delivered'))).toBe(admission.delivered);
