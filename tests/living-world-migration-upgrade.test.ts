@@ -31,12 +31,17 @@ it("upgrades the populated pre-world schema without moving tasks or rewriting hi
       const tables = ["users","countries","country_members","cities_v3","districts_v3","tasks_v3","task_comments_v3","task_events_v7","task_defects_v18","events"];
       const snapshot = async () => Promise.all(tables.map(table => {
         const additiveCountryFields = table === "countries" ? " - 'task_number_counter' - 'generation_last_served_at'" : "";
-        const row = `to_jsonb(t) - 'terrain_profile_json' - 'world_version'${additiveCountryFields}`;
+        const additiveTaskFields = table === "tasks_v3" ? " - 'work_district_id'" : "";
+        const row = `to_jsonb(t) - 'terrain_profile_json' - 'world_version'${additiveCountryFields}${additiveTaskFields}`;
         return db.prepare(`SELECT ${row} AS row FROM "${table}" t ORDER BY (${row})::text`).all();
       }));
       const before = await snapshot();
       for (const file of files.filter(name => name >= "0030_")) await db.exec(await readFile(join(directory, file), "utf8"));
       expect(await snapshot()).toEqual(before);
+      expect(await db.prepare("SELECT district_id,work_district_id FROM tasks_v3 WHERE id=?").get(task))
+        .toEqual({ district_id: district, work_district_id: district });
+      expect(await db.prepare("SELECT count(*)::int AS count FROM task_sprint_phases_v1").get())
+        .toEqual({ count: 0 });
       expect(await db.prepare(`SELECT task_number_counter::int AS task_number_counter,
         generation_last_served_at='epoch'::timestamptz AS generation_unserved FROM countries WHERE id=?`).get(user.countryId))
         .toEqual({ task_number_counter: preservedTaskNumber, generation_unserved: true });
