@@ -2160,6 +2160,7 @@ export class AppService {
                         FROM tasks_v3 t JOIN task_placements_v1 p ON p.task_id=t.id
                         JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE t.city_id=?`).all<Row>(city.id);
                       await this.scheduleAttachmentCleanup(countryId, "city", city.id);
+                      await this.db.prepare("SELECT set_config('tasktopia.continuation_delete',?,true)").get(`city:${city.id}`);
                       await this.db.prepare("DELETE FROM tasks_v3 WHERE city_id=?").run(city.id);
                       for (const p of tasks) await this.db.prepare(`INSERT INTO site_markers_v1
                         (id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at)
@@ -2492,6 +2493,7 @@ export class AppService {
       if(input.confirmTitle.trim()!==task.title) throw new DomainError("CONFIRMATION_MISMATCH","Для удаления укажите точное название задачи");
       const placement=await this.db.prepare("SELECT p.* FROM task_placements_v1 p JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE p.task_id=?").get<Row>(task.id);
       await this.scheduleAttachmentCleanup(countryId, "task", task.id);
+      await this.db.prepare("SELECT set_config('tasktopia.continuation_delete',?,true)").get(`task:${task.id}`);
       await this.db.prepare("DELETE FROM tasks_v3 WHERE id=?").run(task.id);
       if(placement) await this.db.prepare("INSERT INTO site_markers_v1(id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at) VALUES(?,?,?,?,'RUINED',?::jsonb,'compact-rubble',?,?)")
         .run(randomUUID(),placement.layout_id,placement.block_id,placement.slot_key,JSON.stringify({taskId:task.id,taskNumber:task.taskNumber,title:task.title,buildingFamily:task.buildingType,lastStage:task.stage}),now(),now());

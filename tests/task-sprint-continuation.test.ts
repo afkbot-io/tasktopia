@@ -53,6 +53,9 @@ describe("one task across sequential sprints", { timeout: 60_000 }, () => {
     const main = new Set(task.footprint.map(p => `${p.x},${p.y}`));
     expect(sites[0]!.footprint.some(p => main.has(`${p.x},${p.y}`))).toBe(false);
     expect((await auditWorld(db, service, countryId)).violations).toEqual([]);
+    await db.prepare('DELETE FROM countries WHERE id=?').run(countryId);
+    expect(await service.listWorldFeatures(countryId)).toEqual([]);
+    expect(await db.prepare('SELECT id FROM task_sprint_phases_v1').all()).toEqual([]);
   });
 
   it("keeps three sprint results stable across keyset pages and reconnects", async () => {
@@ -123,5 +126,20 @@ describe("one task across sequential sprints", { timeout: 60_000 }, () => {
     expect((await service.listWorldFeatures(countryId)).filter(f=>f.continuation)).toHaveLength(1);
     await expect(service.transferTask(countryId,{taskId:task.id,targetDistrictId:third,idempotencyKey:"race-physical-move"})).rejects.toMatchObject({code:"TASK_HAS_CONTINUATIONS"});
     await expect(service.deleteDistrict(countryId,{districtId:first,confirmName:"First",idempotencyKey:"race-delete-home"})).rejects.toMatchObject({code:"DISTRICT_HAS_CONTINUATIONS"});
+    // A rolling upgrade can briefly leave a pre-continuation writer alive.
+    // Persistence must protect ownership even if that writer lacks new checks.
+    await expect(db.prepare('UPDATE tasks_v3 SET district_id=? WHERE id=?').run(third,task.id))
+      .rejects.toThrow('Continuation home district is immutable');
+    await expect(db.prepare('DELETE FROM districts_v3 WHERE id=?').run(first))
+      .rejects.toThrow('District participates in a task continuation');
+    const current=(await service.getTask(countryId,task.id)).currentDistrictId!;
+    await expect(db.prepare('DELETE FROM tasks_v3 WHERE district_id=?').run(first))
+      .rejects.toThrow('Continuation deletion requires an explicit current task or city command');
+    await expect(db.prepare('DELETE FROM districts_v3 WHERE id=?').run(current))
+      .rejects.toThrow('District participates in a task continuation');
+    await service.deleteCity(countryId,{cityId,confirmName:'One project',idempotencyKey:'race-delete-project'});
+    expect(await service.listTasks(countryId)).toEqual([]);
+    expect((await service.listWorldFeatures(countryId)).filter(feature=>feature.continuation)[0]?.continuation)
+      .toMatchObject({taskId:null,outcome:'REMOVED'});
   });
 });

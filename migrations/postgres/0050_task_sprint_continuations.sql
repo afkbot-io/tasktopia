@@ -4,20 +4,6 @@ UPDATE tasks_v3 SET work_district_id=district_id;
 ALTER TABLE tasks_v3 ALTER COLUMN work_district_id SET NOT NULL;
 CREATE INDEX tasks_v3_work_district_idx ON tasks_v3(work_district_id,updated_at DESC,id DESC);
 
-CREATE FUNCTION enforce_task_work_district() RETURNS trigger AS $$
-BEGIN
-  IF TG_OP='INSERT' AND NEW.work_district_id IS NULL THEN NEW.work_district_id=NEW.district_id; END IF;
-  IF TG_OP='UPDATE' AND NEW.district_id IS DISTINCT FROM OLD.district_id
-    AND OLD.work_district_id=OLD.district_id AND NEW.work_district_id=OLD.work_district_id
-    THEN NEW.work_district_id=NEW.district_id; END IF;
-  IF NOT EXISTS(SELECT 1 FROM districts_v3 WHERE id=NEW.work_district_id AND city_id=NEW.city_id)
-    THEN RAISE EXCEPTION 'Task work district must belong to its city'; END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE TRIGGER tasks_v3_work_district_guard BEFORE INSERT OR UPDATE OF city_id,district_id,work_district_id
-  ON tasks_v3 FOR EACH ROW EXECUTE FUNCTION enforce_task_work_district();
-
 CREATE TABLE task_sprint_phases_v1 (
   id text PRIMARY KEY,
   task_id text NOT NULL REFERENCES tasks_v3(id) ON DELETE CASCADE,
@@ -39,6 +25,48 @@ CREATE TABLE task_sprint_phases_v1 (
 );
 CREATE UNIQUE INDEX task_sprint_phases_v1_open_idx ON task_sprint_phases_v1(task_id) WHERE outcome='OPEN';
 CREATE INDEX task_sprint_phases_v1_district_idx ON task_sprint_phases_v1(district_id,task_id);
+CREATE FUNCTION enforce_task_work_district() RETURNS trigger AS $$
+BEGIN
+  IF TG_OP='INSERT' AND NEW.work_district_id IS NULL THEN NEW.work_district_id=NEW.district_id; END IF;
+  IF TG_OP='UPDATE' AND NEW.district_id IS DISTINCT FROM OLD.district_id THEN
+    IF EXISTS(SELECT 1 FROM task_sprint_phases_v1 WHERE task_id=OLD.id)
+      THEN RAISE EXCEPTION 'Continuation home district is immutable'; END IF;
+    IF OLD.work_district_id=OLD.district_id AND NEW.work_district_id=OLD.work_district_id
+      THEN NEW.work_district_id=NEW.district_id; END IF;
+  END IF;
+  IF NOT EXISTS(SELECT 1 FROM districts_v3 WHERE id=NEW.work_district_id AND city_id=NEW.city_id)
+    THEN RAISE EXCEPTION 'Task work district must belong to its city'; END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER tasks_v3_work_district_guard BEFORE INSERT OR UPDATE OF city_id,district_id,work_district_id
+  ON tasks_v3 FOR EACH ROW EXECUTE FUNCTION enforce_task_work_district();
+
+-- Old district.delete writers pre-delete tasks before their district. Fence
+-- both paths; only a current explicit task/city command grants local intent.
+CREATE FUNCTION preserve_continuation_task_deletion() RETURNS trigger AS $$
+BEGIN
+  IF EXISTS(SELECT 1 FROM task_sprint_phases_v1 WHERE task_id=OLD.id)
+    AND EXISTS(SELECT 1 FROM cities_v3 WHERE id=OLD.city_id)
+    AND current_setting('tasktopia.continuation_delete',true) IS DISTINCT FROM 'task:'||OLD.id
+    AND current_setting('tasktopia.continuation_delete',true) IS DISTINCT FROM 'city:'||OLD.city_id
+    THEN RAISE EXCEPTION 'Continuation deletion requires an explicit current task or city command'; END IF;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER tasks_v3_continuation_delete_guard BEFORE DELETE ON tasks_v3
+  FOR EACH ROW EXECUTE FUNCTION preserve_continuation_task_deletion();
+CREATE FUNCTION preserve_continuation_district() RETURNS trigger AS $$
+BEGIN
+  IF EXISTS(SELECT 1 FROM cities_v3 WHERE id=OLD.city_id)
+    AND EXISTS(SELECT 1 FROM task_sprint_phases_v1 WHERE district_id=OLD.id)
+    THEN RAISE EXCEPTION 'District participates in a task continuation'; END IF;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER districts_v3_continuation_guard BEFORE DELETE ON districts_v3
+  FOR EACH ROW EXECUTE FUNCTION preserve_continuation_district();
+
 CREATE FUNCTION enforce_task_sprint_phase() RETURNS trigger AS $$
 BEGIN
   IF TG_OP='UPDATE' AND (OLD.outcome<>'OPEN' OR
