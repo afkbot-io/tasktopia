@@ -1,9 +1,23 @@
-import type { ChunkDto, ChunkPayloadDto, ChunkTaskDto } from "../shared/contracts";
+import type { ChunkDto, ChunkPayloadDto, ChunkTaskDto, WorldFeatureDto } from "../shared/contracts";
 import {copyCitySceneRunFields} from './city-scene-run-owner';
 
 export type ChunkTaskStatusPatch = Pick<ChunkTaskDto, "status" | "progress" | "stage"> & {
   worldVersion: number;
 };
+
+function patchContinuationFeatures(features:WorldFeatureDto[],patches:ReadonlyMap<string,ChunkTaskStatusPatch>,version:number){
+  let worldVersion=version,changed=false;
+  const next=features.map(feature=>{
+    const site=feature.continuation,patch=site?.taskId?patches.get(site.taskId):undefined;
+    if(!site||site.outcome!=='OPEN'||!patch||patch.worldVersion<=version)return feature;
+    worldVersion=Math.max(worldVersion,patch.worldVersion);
+    if(site.status===patch.status&&site.progress===patch.progress)return feature;
+    changed=true;
+    return {...feature,continuation:{...site,status:patch.status,progress:patch.progress,
+      outcome:patch.status==='COMPLETED'?'COMPLETED' as const:'OPEN' as const}};
+  });
+  return {features:changed?next:features,worldVersion,changed};
+}
 
 /**
  * Applies the newest realtime task state to a decoded chunk. This is also run
@@ -15,8 +29,9 @@ export function patchChunkTaskStatuses(
   patches: ReadonlyMap<string, ChunkTaskStatusPatch>,
 ): ChunkDto {
   if(patches.size===0)return chunk;
-  let changed = false;
-  let worldVersion = chunk.worldVersion;
+  const linked=patchContinuationFeatures(chunk.worldFeatures,patches,chunk.worldVersion);
+  let changed = linked.changed;
+  let worldVersion = linked.worldVersion;
   const tasks = chunk.tasks.map((task) => {
     const patch = patches.get(task.id);
     if (!patch || patch.worldVersion <= chunk.worldVersion) return task;
@@ -25,7 +40,7 @@ export function patchChunkTaskStatuses(
     changed = true;
     return { ...task, status: patch.status, progress: patch.progress, stage: patch.stage };
   });
-  return changed || worldVersion !== chunk.worldVersion ? { ...chunk, tasks, worldVersion } : chunk;
+  return changed || worldVersion !== chunk.worldVersion ? { ...chunk, tasks, worldFeatures:linked.features,worldVersion } : chunk;
 }
 
 /**
@@ -39,8 +54,9 @@ export function patchChunkPayloadTaskStatuses(
   patches: ReadonlyMap<string, ChunkTaskStatusPatch>,
 ): ChunkPayloadDto {
   if(patches.size===0)return payload;
-  let changed = false;
-  let publishedVersion = payload.publishedVersion;
+  const linked=patchContinuationFeatures(payload.worldFeatures,patches,payload.publishedVersion);
+  let changed = linked.changed;
+  let publishedVersion = linked.worldVersion;
   const tasks = payload.tasks.map((task) => {
     const patch = patches.get(task.id);
     if (!patch || patch.worldVersion <= payload.publishedVersion) return task;
@@ -58,6 +74,6 @@ export function patchChunkPayloadTaskStatuses(
     return { ...task, stage: patch.stage };
   });
   if (!changed && publishedVersion === payload.publishedVersion) return payload;
-  return copyCitySceneRunFields(payload,{tasks,publishedVersion,
+  return copyCitySceneRunFields(payload,{tasks,publishedVersion,worldFeatures:linked.features,
     decorationContext:copyCitySceneRunFields(payload.decorationContext,{tasks:contextTasks})});
 }

@@ -10,6 +10,7 @@ import { runWithGenerationRequestSignal } from "../src/server/generation-request
 
 const commands = [
   ["task.set_status", "updateTaskStatus"], ["task.transfer", "transferTask"],
+  ["task.continue", "continueTask"],
   ["task.delete", "deleteTask"], ["city.delete", "deleteCity"],
   ["district.delete", "deleteDistrict"], ["district.complete", "completeDistrict"],
 ] as const;
@@ -27,9 +28,10 @@ describe("compatible durable spatial commands", { timeout: 20_000 }, () => {
     const job = await enqueueWorldGenerationJob(db, countryId, operation as WorldGenerationOperation, payload.idempotencyKey, payload);
     const retry = await enqueueWorldGenerationJob(db, countryId, operation as WorldGenerationOperation, payload.idempotencyKey, payload);
     expect(retry.id).toBe(job.id); expect(job.status).toBe("PENDING");
-    expect(await db.prepare("SELECT status FROM world_generation_jobs_v1 WHERE id=?").get(job.id)).toMatchObject({ status: "QUEUED" });
+    expect(await db.prepare("SELECT status FROM world_generation_jobs_v1 WHERE id=?").get(job.id)).toMatchObject({ status: operation==='task.continue'?"CONTINUE_QUEUED":"QUEUED" });
     const oldWorkerCandidates = () => db.prepare("SELECT id FROM world_generation_jobs_v1 WHERE status IN ('PENDING','RUNNING')").all();
     expect(await oldWorkerCandidates()).toEqual([]);
+    if(operation==='task.continue')expect(await db.prepare("SELECT id FROM world_generation_jobs_v1 WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING')").all()).toEqual([]);
     let release!: () => void;
     const gate = new Promise<void>(resolve => { release = resolve; });
     const execute = vi.fn(async () => { await gate; return { operation, applied: true }; });
@@ -39,7 +41,7 @@ describe("compatible durable spatial commands", { timeout: 20_000 }, () => {
     try {
       await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce(), { interval: 10 });
       expect(await getWorldGenerationJob(db, job.id)).toMatchObject({ status: "RUNNING", attempts: 1 });
-      expect(await db.prepare("SELECT status FROM world_generation_jobs_v1 WHERE id=?").get(job.id)).toMatchObject({ status: "EXECUTING" });
+      expect(await db.prepare("SELECT status FROM world_generation_jobs_v1 WHERE id=?").get(job.id)).toMatchObject({ status: operation==='task.continue'?"CONTINUE_EXECUTING":"EXECUTING" });
       expect(await oldWorkerCandidates()).toEqual([]);
       expect(await processNextWorldGenerationJob(db, service, "second-worker")).toBe(false);
     } finally { release(); await running; }

@@ -13,6 +13,7 @@ import { ApiError } from "../api";
 import { Markdown } from "./Markdown";
 import { presentTaskChanges } from '../task-history-presentation';
 import { readTaskWithInvalidationRetry } from '../owned-read-cache';
+import { TaskSprintHistory } from './TaskSprintHistory';
 
 const statusLabel: Record<TaskDto["status"], string> = {
   PLANNING: "В плане", STARTED: "В работе · 0%", IN_PROGRESS: "В работе", TESTING: "Приёмка", COMPLETED: "Завершено",
@@ -35,6 +36,7 @@ const buildingEventLabel: Record<TaskEventType, string> = {
   LINK_ADDED: "Добавлена ссылка на MR", LINK_REMOVED: "Удалена ссылка на MR", ATTACHMENT_ADDED: "Прикреплён файл",
   DOCUMENT_UPDATED: "Обновлён документ задачи", DOCUMENT_DELETED: "Удалён дополнительный документ задачи",
   CHECKLIST_REPLACED: "Обновлён чек-лист", CHECKLIST_ITEM_UPDATED: "Обновлён пункт чек-листа",
+  SPRINT_CONTINUED: "Работа продолжена в следующем спринте",
 };
 const parkEventLabel: Record<TaskEventType, string> = {
   ...buildingEventLabel,
@@ -122,7 +124,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
   const [copyFallback, setCopyFallback] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
-  const [tab,setTab] = useState<"overview"|"materials"|"discussion"|"history">("overview");
+  const [tab,setTab] = useState<"overview"|"materials"|"discussion"|"history"|"sprints">("overview");
   const [visited, setVisited] = useState(() => new Set(["overview"]));
   const documentPage = useMemo<TaskCollectionPageDto<'documents'> | undefined>(() => task ? {
     kind: 'task.collection-page', version: 1, countryId, taskId, collection: 'documents', items: task.documentMetadata, nextCursor: task.documentsNextCursor,
@@ -188,6 +190,7 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
         <GameTabs id="task-sections" value={tab} onChange={changeTab} tabs={[
           {id:"overview",label:"Задача"}, {id:"materials",label:"Материалы",count:task.counts.filledDocuments},
           {id:"discussion",label:"Обсуждение",count:task.counts.comments}, {id:"history",label:"История"},
+          {id:"sprints",label:"Спринты"},
         ]} />
         <div id="task-sections-overview-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-overview-tab" hidden={tab!=="overview"} className="task-tab-content">
         <div className="task-grid">
@@ -228,6 +231,9 @@ export function TaskModal({ standalone = false, countryId, taskId, revision, onC
           {items => items.map(comment => <article key={comment.id}><header className="comment-meta"><strong>{comment.actor}</strong><time>{new Date(comment.createdAt).toLocaleString('ru-RU')}</time></header><Markdown text={comment.body} /></article>)}
         </TaskCollectionSection>
         </>}
+        </div>
+        <div id="task-sections-sprints-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-sprints-tab" hidden={tab!=="sprints"} className="task-tab-content">
+          {visited.has('sprints')&&<TaskSprintHistory key={`${countryId}:${taskId}`} {...collectionProps}/>}
         </div>
         <div id="task-sections-history-panel" role="tabpanel" tabIndex={0} aria-labelledby="task-sections-history-tab" hidden={tab!=="history"} className="task-tab-content">
         {visited.has("history") && <>

@@ -2,7 +2,7 @@ import type { TaskAttachmentDto, TaskChecklistItemDto, TaskCommentDto, TaskDefec
   TaskDto, TaskEventDto, TaskLinkDto, TaskSearchResultDto } from "./contracts";
 
 export type TaskResultMode = "full" | "compact";
-export type TaskCommandResultDto = Pick<TaskDto, "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" |
+export type TaskCommandResultDto = Pick<TaskDto, "id" | "taskNumber" | "cityId" | "districtId" | "currentDistrictId" | "title" | "workItemType" |
   "estimate" | "priority" | "status" | "progress" | "stage" | "updatedAt"> & {
   kind: "task.command-result"; version: 1; countryId: string;
 };
@@ -27,7 +27,9 @@ export type TaskCollectionPageDto<Collection extends TaskCollection = TaskCollec
   kind: "task.collection-page"; version: 1; countryId: string; taskId: string; collection: Collection;
   items: TaskCollectionItems[Collection][]; nextCursor: string | null;
 };
-export type TaskListItemDto = Pick<TaskDto, "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" |
+export type TaskListItemDto = Pick<TaskDto, "id" | "taskNumber" | "cityId" | "districtId" | "currentDistrictId" | "title" | "workItemType" |
   "estimate" | "priority" | "status" | "progress" | "stage" | "updatedAt"> &
-  Pick<TaskSearchResultDto, "cityName" | "cityCenter" | "cityBounds" | "districtName" | "origin">;
+  Pick<TaskSearchResultDto, "cityName" | "cityCenter" | "cityBounds" | "districtName" | "origin"> & {
+    sprintOutcome?: "OPEN" | "CARRIED" | "COMPLETED"; sprintProgress?: number;
+  };
 export type TaskListPageDto = { kind: "task.list-page"; version: 1; countryId: string; items: TaskListItemDto[]; nextCursor: string | null };

@@ -52,6 +52,7 @@ import { planConstructionLife, constructionWorkerPose, type ConstructionLifeSite
 import { dependencySegments, type MapDependencySelection } from "../map-dependencies";
 import { createTaskFocusView } from "../task-focus-view";
 import { taskAttentionAlpha } from "../task-focus-presentation";
+import { continuationConstructionContext } from '../task-continuation-presentation';
 import { blockPlaqueRange } from "../../shared/block-plaque";
 import { mapPaddingWorkPriority, visibleMapPaddingReady, waitForVisibleMapWork } from "../map-frame-work";
 import { planCityRailway, railwayIntersectsRect, type CityRailway } from "../city-railway";
@@ -832,6 +833,19 @@ function drawWorldFeature(
   }
   const visual = sprite(entry.stages[4]!, feature.origin.x * CELL_SIZE + entry.footprint.width * CELL_SIZE / 2, feature.origin.y * CELL_SIZE + entry.footprint.height * CELL_SIZE);
   visual.anchor.set(0.5, 1);
+  if(feature.continuation){
+    const site=feature.continuation;
+    visual.label=`task-continuation:${feature.id}:${site.taskNumber}`;
+    visual.eventMode='static';visual.cursor=site.taskId?'pointer':'help';
+    visual.hitArea=new Rectangle(-entry.spriteSize.width/2,-entry.spriteSize.height,entry.spriteSize.width,entry.spriteSize.height);
+    const number=new Text({text:`↗ ${site.taskNumber} · ${site.sequence}`,resolution:3,
+      style:new TextStyle({fontFamily:'Manrope, sans-serif',fontSize:6,fontWeight:'800',fill:0xf0f2e7})});
+    const plate=new Container();plate.eventMode='none';
+    const background=new Graphics().roundRect(-3,-2,number.width+6,number.height+4,1)
+      .fill({color:0x10251d,alpha:.98}).stroke({color:site.outcome==='OPEN'?0xd8bd78:0x7f9e8c,width:1});
+    plate.addChild(background,number);plate.position.set(-number.width/2,-entry.spriteSize.height-8);visual.addChild(plate);
+    visual.on('pointertap',(event:FederatedPointerEvent)=>{event.stopPropagation();onSiteSelect(feature);});
+  }
   if (feature.kind === "COUNTRY_ARCHIVE") {
     visual.eventMode = "static";
     visual.cursor = "pointer";
@@ -958,7 +972,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
   invalidations: readonly MapInvalidation[];
   onInvalidationsProcessed: (cursor: number) => void;
   showDistricts: boolean;
-  onTaskSelect: (taskId: string) => void;
+  onTaskSelect: (taskId: string, keepCamera?: boolean) => void;
   onInspectTask?: (countryId:string,taskId:string)=>void;
   onDistrictSelect?: (districtId: string) => void;
   onArchiveSelect: () => void;
@@ -1128,7 +1142,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       if (performance.now() >= suppressSelectionUntil) onArchiveSelectRef.current();
     };
     const selectSite = (feature: WorldFeatureDto) => {
-      if (performance.now() >= suppressSelectionUntil) onSiteSelectRef.current(feature);
+      if (performance.now() < suppressSelectionUntil) return;
+      if(feature.continuation?.taskId)onTaskSelectRef.current(feature.continuation.taskId,true);
+      else onSiteSelectRef.current(feature);
     };
     const beginStreamingFeedback = () => {
       window.clearTimeout(streamingTimer);
@@ -1641,7 +1657,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         for (const texture of propAtlasTextures.values()) texture.destroy(false);
         propAtlasTextures.clear();
       });
-      const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Container }>();
+      const featureViews = new Map<string, { signature: string; platform?: Container; visual?: Container; taskId?:string }>();
       let entityReplacementCount = 0;
       // `focusArea` controls only the opening composition. Navigation and
       // visibility are bounded by the complete city supplied through
@@ -1651,6 +1667,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
       const taskFocus = createTaskFocusView();
       startupDisposers.push(() => taskFocus.destroy());
       applyTaskFocus = () => {
+        for(const record of featureViews.values())if(record.taskId){
+          const alpha=taskAttentionAlpha(record.taskId,attentionRef.current);
+          if(record.visual)record.visual.alpha=alpha;if(record.platform)record.platform.alpha=alpha;
+        }
         const stats = taskFocus.update({ tasks: attentionTasks, buildings: taskBuildingViews,
           platforms: taskPlatformViews, incidents: incidentViews, activeDistrictIds: focusDistrictIds,
           matches: attentionRef.current, detail: currentLod === "DETAIL" });
@@ -3787,9 +3807,10 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         const developmentDistricts = developmentGeometry?.districts ?? districts;
         const districtStatuses = new Map<string, ChunkTaskDto["status"][]>();
         for (const task of developmentTasks.values()) {
-          const statuses = districtStatuses.get(task.districtId) ?? [];
+          const workDistrictId=task.currentDistrictId??task.districtId;
+          const statuses = districtStatuses.get(workDistrictId) ?? [];
           statuses.push(latestTaskStatusPatches.get(task.id)?.status ?? task.status);
-          districtStatuses.set(task.districtId, statuses);
+          districtStatuses.set(workDistrictId, statuses);
         }
         const developmentBounds=cityResidentBounds?{minX:cityResidentBounds.minX-16,minY:cityResidentBounds.minY-16,
           maxX:cityResidentBounds.maxX+16,maxY:cityResidentBounds.maxY+16}:undefined;
@@ -3880,10 +3901,11 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
         }
         for (const site of plannedSites.values()) for (let y = 0; y < site.height; y++)
           for (let x = 0; x < site.width; x++) constructionBlocked.add(key({ x: site.origin.x + x, y: site.origin.y + y }));
-        const life = planConstructionLife(currentLod === "DETAIL" ? [...tasks.values()] : [],
+        const constructionContext=continuationConstructionContext([...tasks.values()],[...features.values()]);
+        const life = planConstructionLife(currentLod === "DETAIL" ? constructionContext.tasks : [],
           new Set([...districts.values()].filter(d => d.status === "ACTIVE").map(d => d.id)),
           constructionBlocked, new Set([...tasks.values()].filter(t => incidentMode(t) !== "NONE").map(t => t.id)),
-          { reducedMotion, economy, materialCells, features:[...features.values()] });
+          { reducedMotion, economy, materialCells, features:constructionContext.obstacles });
         const workerIds = new Set<string>(), materialIds = new Set<string>();
         for (const site of life) {
           for (const worker of site.workers) {
@@ -4029,6 +4051,7 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
           if (drawn.visual) worldObjectLayer.addChild(registerWorldObject(drawn.visual, "FEATURE"));
           featureViews.set(id, {
             signature,
+            taskId:feature.continuation?.taskId??undefined,
             platform: currentLod === "DETAIL" ? drawn.platform : undefined,
             visual: drawn.visual,
           });
@@ -4042,6 +4065,9 @@ export function WorldCanvas({ initialView,restoreView,onViewChange, viewReaderRe
             + staticDecorationParticleCount + decorationViews.size + featureViews.size,
         );
         host!.dataset.taskBuildingViews = String(taskBuildingViews.size);
+        host!.dataset.continuationSites = String([...featureViews.values()].filter(record=>record.taskId).length);
+        host!.dataset.continuationStates = JSON.stringify([...features.values()].filter(feature=>feature.continuation).slice(0,24)
+          .map(feature=>({id:feature.id,taskId:feature.continuation!.taskId,outcome:feature.continuation!.outcome,progress:feature.continuation!.progress})));
         host!.dataset.siteMarkers = String([...features.values()].filter(feature => feature.siteMarker).length);
         host!.dataset.incidents = String(incidentViews.size);
         host!.dataset.incidentEngines = String([...incidentViews.values()].filter((view) => view.fullResponse).length);

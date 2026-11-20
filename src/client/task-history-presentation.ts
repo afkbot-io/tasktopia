@@ -1,7 +1,7 @@
 import type { TaskEventDto } from '../shared/contracts';
 
 const labels: Readonly<Record<string, string>> = { title: 'Название', status: 'Этап', progress: 'Прогресс', priority: 'Приоритет',
-  estimate: 'Объём', dueAt: 'Срок', workItemType: 'Тип', assignee: 'Ответственный' };
+  estimate: 'Объём', dueAt: 'Срок', workItemType: 'Тип', assignee: 'Ответственный', currentDistrictId: 'Рабочий спринт' };
 const status: Readonly<Record<string, string>> = { PLANNING: 'В плане', STARTED: 'Начато', IN_PROGRESS: 'В работе', TESTING: 'Приёмка', COMPLETED: 'Завершено' };
 const priority: Readonly<Record<string, string>> = { LOW: 'Низкий', NORMAL: 'Обычный', HIGH: 'Высокий', CRITICAL: 'Критический' };
 const types: Readonly<Record<string, string>> = { TASK: 'Строительство', BUG: 'Ремонт', RELEASE: 'Открытие', HOTFIX: 'Срочный ремонт' };

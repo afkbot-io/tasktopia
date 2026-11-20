@@ -5,6 +5,7 @@ export type ReportTask = {
   title: string;
   status: TaskStatus;
   progress: number;
+  sprintOutcome?: "OPEN" | "CARRIED" | "COMPLETED";
   cityName: string;
   districtName: string;
   assignee: string | null;
@@ -23,10 +24,12 @@ export type CityReport = {
     testing: number;
     attention: number;
     completedPeriod: number;
+    carried?: number;
   };
 };
 export function taskAttention(task: ReportTask, now = Date.now()): string[] {
   const reasons: string[] = [];
+  if(task.sprintOutcome==='CARRIED')return reasons;
   if (task.status === "COMPLETED")
     return task.defects ? [`Нужен ремонт · ${task.defects}`] : reasons;
   if (task.dueAt && Date.parse(task.dueAt) < now) reasons.push("Срок прошёл");
@@ -42,7 +45,9 @@ export const REPORT_GROUPS = [
   "В работе",
   "Запланировано",
   "Завершено",
+  "Продолжены в другом спринте",
 ] as const;
-export function reportGroup(status: TaskStatus) {
+export function reportGroup(status: TaskStatus,outcome?:ReportTask['sprintOutcome']) {
+  if(outcome==='CARRIED')return 3;
   return status === "COMPLETED" ? 2 : status === "PLANNING" ? 1 : 0;
 }

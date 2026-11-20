@@ -9,6 +9,15 @@ export function SiteHistoryModal({ feature, onClose }: {
 }) {
   const dialogRef = useRef<HTMLElement>(null);
   useDialogFocus(dialogRef, { onClose });
+  if (feature.continuation) return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <section ref={dialogRef} className="task-modal site-history-modal" role="dialog" aria-modal="true" aria-labelledby="site-history-title">
+      <button className="modal-close" onClick={onClose} aria-label="Закрыть историю участка">×</button>
+      <p className="eyebrow">История города · этап {feature.continuation.sequence}</p>
+      <h2 id="site-history-title">Архивная площадка</h2>
+      <h3>#{feature.continuation.taskNumber} · {feature.continuation.title}</h3>
+      <p>Задача удалена. Её связанная площадка сохранена в истории города; новые постройки здесь не размещаются.</p>
+    </section>
+  </div>;
   const marker = feature.siteMarker;
   if (!marker) return null;
   const presentation = siteMarkerPresentation();

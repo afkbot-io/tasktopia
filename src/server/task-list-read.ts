@@ -27,9 +27,13 @@ export async function readTaskListPageRows(db: Db, countryId: string, options: T
     } catch { throw new DomainError("INVALID_INPUT", "Некорректный cursor списка задач"); }
   }
   const where = ["city.country_id=?"]; const parameters: unknown[] = [countryId];
-  for (const [field, column] of [["cityId", "t.city_id"], ["districtId", "t.district_id"], ["status", "t.status"],
+  for (const [field, column] of [["cityId", "t.city_id"], ["status", "t.status"],
     ["workItemType", "t.work_item_type"], ["priority", "t.priority"], ["assigneeUserId", "t.assignee_user_id"]] as const) {
     if (options[field] != null) { where.push(`${column}=?`); parameters.push(options[field]); }
+  }
+  if(options.districtId) {
+    where.push("(t.work_district_id=? OR EXISTS(SELECT 1 FROM task_sprint_phases_v1 p WHERE p.task_id=t.id AND p.district_id=?))");
+    parameters.push(options.districtId,options.districtId);
   }
   const q = options.q?.trim();
   if (q) {
@@ -44,11 +48,13 @@ export async function readTaskListPageRows(db: Db, countryId: string, options: T
   }
   if (cursor) { where.push("(t.updated_at,t.id)<(?::text::timestamptz,?::text)"); parameters.push(cursor.key, cursor.id); }
   parameters.push(limit + 1);
-  const fetched = await db.prepare(`SELECT t.id,t.task_number,t.title,t.work_item_type,t.estimate,t.priority,t.status,t.progress,t.city_id,t.district_id,
+  const fetched = await db.prepare(`SELECT t.id,t.task_number,t.title,t.work_item_type,t.estimate,t.priority,t.status,t.progress,t.city_id,t.district_id,t.work_district_id,
+    ${options.districtId?"phase.outcome AS sprint_outcome,COALESCE(phase.exit_progress,t.progress) AS sprint_progress,":""}
     t.updated_at,t.updated_at::text AS cursor_key,city.name AS city_name,city.center_x AS city_center_x,city.center_y AS city_center_y,
     city.bounds_json AS city_bounds_json,district.name AS district_name
     FROM tasks_v3 t JOIN cities_v3 city ON city.id=t.city_id JOIN districts_v3 district ON district.id=t.district_id
-    WHERE ${where.join(" AND ")} ORDER BY t.updated_at DESC,t.id DESC LIMIT ?`).all<Row>(...parameters);
+    ${options.districtId?"LEFT JOIN task_sprint_phases_v1 phase ON phase.task_id=t.id AND phase.district_id=?":""}
+    WHERE ${where.join(" AND ")} ORDER BY t.updated_at DESC,t.id DESC LIMIT ?`).all<Row>(...(options.districtId?[options.districtId,...parameters]:parameters));
   const rows = fetched.slice(0, limit); const last = rows.at(-1);
   const nextCursor = fetched.length > limit && last ? Buffer.from(JSON.stringify({ version: 1, countryId, filters,
     key: String(last.cursor_key), id: String(last.id) } satisfies ListCursor)).toString("base64url") : null;

@@ -17,7 +17,9 @@ MCP `task.create` принимает описание работы без выб
 Оценка задачи описывает объём работы и не задаёт размер здания.
 
 Новый квартал появляется, когда в существующих кварталах района нет подходящего
-места. Перенос освобождает прежний участок; история переноса остаётся в задаче.
+места. Физический перенос `task.transfer` освобождает прежний участок; история переноса остаётся в задаче.
+Продолжение `task.continue` сохраняет основное здание и выделяет связанную площадку
+в следующем районе с тем же номером задачи.
 Старые записи MOVE сохраняются в базе как история и больше не занимают землю
 и не отображаются. Руины удалённых задач остаются историческими объектами.
 
@@ -133,7 +135,7 @@ stale-while-revalidate=600`. Комментарии и невизуальные 
 - `archive.get`, `archive.record_list`, `archive.record_get`, `archive.record_create`, `archive.record_update`, `archive.record_delete`
 - `city.list`, `city.get`, `city.create`, `city.update`, `city.rename`, `city.delete`
 - `district.list`, `district.create`, `district.update`, `district.rename`, `district.activate`, `district.complete`, `district.delete`
-- `task.list`, `task.list_page`, `task.collection_list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.transfer`, `task.delete`
+- `task.list`, `task.list_page`, `task.collection_list`, `task.sprint_list`, `task.get`, `task.create`, `task.update_fields`, `task.rename`, `task.continue`, `task.transfer`, `task.delete`
 - `world_generation.get` — состояние принятой фоновой генерации по `jobId`
 - `task.defect_create`, `task.defect_update`
 - `task.set_status`, `task.report_progress`, `task.add_comment`, `task.assign`
@@ -203,9 +205,10 @@ Cursor нельзя использовать с другим набором фи
 | `GET /api/tasks/:taskId/card` | `TaskCardDto` |
 | `GET /api/tasks/:taskId/collections/:collection` | `TaskCollectionPageDto`, query `cursor`, `limit`, `order` |
 | `GET /api/tasks/:taskId/documents/:documentId` | Один полный `TaskDocumentDto` |
+| `GET /api/tasks/:taskId/sprints` | `TaskSprintPageDto`, явный query `countryId`, необязательные `cursor`, `limit` |
 | `GET /api/tasks/list-page` | `TaskListPageDto`, те же фильтры и cursor |
 
-У `task.add_comment`, `task.set_status`, `task.report_progress` и `task.transfer` необязательный
+У `task.add_comment`, `task.set_status`, `task.report_progress`, `task.continue` и `task.transfer` необязательный
 `resultMode: "compact"` возвращает отдельный `kind: "task.command-result", version: 1`
 с номером, заголовком, статусом, прогрессом и короткими полями задачи. Режим по
 умолчанию `full` сохраняет прежний ответ. Compact comment/progress не собирают
@@ -216,7 +219,7 @@ Cursor нельзя использовать с другим набором фи
 ## Фоновые пространственные команды
 
 `city.create`, `district.create`, `task.create`, `country.regenerate`,
-`task.set_status` (также `task.report_progress`), `task.transfer`, `task.delete`,
+`task.set_status` (также `task.report_progress`), `task.transfer`, `task.continue`, `task.delete`,
 `city.delete`, `district.delete` и `district.complete` сначала сохраняют durable job
 с уникальным `(country, operation, idempotencyKey)`. MCP ограниченно ждёт результат.
 Если worker успел завершить команду, возвращается прежний результат в выбранном
@@ -250,7 +253,7 @@ Polling проверяет актуальное членство и право �
 также не раскрывают внутренние сообщения сервера.
 
 У `world_generation.get` необязательный `view: "compact"` возвращает для завершённых
-`task.create`/`task.set_status`/`task.transfer` короткий `task.command-result`
+`task.create`/`task.set_status`/`task.transfer`/`task.continue` короткий `task.command-result`
 без комментариев, документов и истории.
 Другие результаты сохраняют форму. По умолчанию polling возвращает полный результат;
 изменение `view` или `resultMode` на retry не меняет payload и не повторяет команду.
@@ -300,7 +303,56 @@ Accepted подтверждает постановку в очередь: про
 
 Удаление использует отдельные destructive-инструменты и точное подтверждение текущего названия: `task.delete` принимает `confirmTitle`, а `district.delete` и `city.delete` — `confirmName`. Прежние площадки задач остаются заняты постоянными руинами с краткой историей и никогда не используются повторно. Удаление города сохраняет эту историю на уровне страны; удаление самой страны очищает её вместе с остальными данными. Активный удалённый район передаёт активность следующему плановому.
 
-### Перенос в другой спринт
+### Продолжение задачи между спринтами
+
+Если работа начата в одном спринте и заканчивается в другом, используйте только
+MCP `task.continue` с правом `tasks:write` и ролью OWNER/MEMBER:
+
+```json
+{
+  "countryId": "<uuid страны>",
+  "taskId": "<uuid задачи>",
+  "fromDistrictId": "<текущий рабочий спринт>",
+  "targetDistrictId": "<следующий открытый спринт того же города>",
+  "comment": "Передаём оставшуюся работу",
+  "idempotencyKey": "task-85-continue-sprint-24-v1",
+  "resultMode": "compact"
+}
+```
+
+`comment` необязателен, до 4000 символов. `resultMode` — `full` по умолчанию
+или `compact`. Остальные поля обязательны; неизвестные поля отклоняются.
+Сначала прочитайте `task.get`: `fromDistrictId` должен совпадать с
+`currentDistrictId`, а до первого продолжения — с `districtId`.
+Это проверка от двух одновременных передач. Повторите тот же payload с тем же
+ключом при потере ответа; принятую фоновую команду читайте через `world_generation.get`.
+
+ID, номер, основной `districtId`, здание, вход и дорога сохраняются. Меняется
+`currentDistrictId`; в следующем районе появляется самостоятельная связанная
+площадка с тем же номером. Она открывает ту же карточку, не создаёт новую задачу
+или службу. Предыдущий этап фиксирует прогресс, статус и оценку с исходом
+`CARRIED`. Он не становится выполненным задним числом: SP завершённой задачи
+засчитываются только завершающему спринту. Списки с `districtId` включают участие
+в этом спринте; `sprintOutcome`/`sprintProgress` показывают его контекст, а
+`status`/`progress` остаются текущими значениями единой задачи.
+
+Разрешены только начатые незавершённые задачи, открытые исходный и целевой
+районы одного города. Завершённая задача, повторное посещение района, другая
+страна/город и возврат в основной район отклоняются. Активировать целевой
+спринт и закрыть исходный нужно отдельными обычными MCP-командами.
+Физический `task.transfer` и удаление участвующего района блокируются после
+первого продолжения; удаление задачи остаётся отдельным явным действием.
+Миграция не меняет прежние задачи или физические переносы.
+
+Для истории используйте `task.sprint_list` с `countryId`, `taskId`,
+необязательными `limit` (1–100, по умолчанию 50) и `cursor`. Ответ
+`kind: "task.sprint-page", version: 1` содержит основной/рабочий районы и
+`items` этапов с входными/выходными значениями и `nextCursor`. Cursor привязан
+к стране и задаче. До первого продолжения `items` пуст.
+В интерфейсе есть только просмотр вкладки «Спринты» и выбор площадки;
+HTTP-команды продолжения и кнопок изменения нет. Закрытие карточки сохраняет камеру.
+
+### Физический перенос в другой спринт
 
 `task.transfer` требует `tasks:write`, действующее членство с ролью OWNER/MEMBER и явный `countryId`. Это отдельная операция, а не изменение `districtId` через `task.update_fields`:
 
@@ -315,6 +367,9 @@ Accepted подтверждает постановку в очередь: про
 ```
 
 `comment` необязателен, до 4000 символов; остальные поля обязательны. Схема строгая: неизвестные поля отклоняются. ID, номер, статус, история и служебная роль задачи сохраняются. Прежний участок освобождается, новый выбирается автоматически в целевом районе. Оба изменения и запись истории атомарны; ошибка размещения откатывает перенос. Повтор с прежним ключом не выполняет перенос повторно. Перенос в другую страну/город или завершённый/заброшенный район запрещён.
+
+Задачу с историей продолжений физически переносить нельзя (`TASK_HAS_CONTINUATIONS`):
+для следующего этапа используйте `task.continue`, сохраняя основное здание.
 
 Ответ содержит актуальную задачу и канонический `url` вида `/task/<number>?countryId=<uuid>&taskId=<uuid>`. Такие же ссылки возвращают `task.get`, `task.create` и операции ссылок: номер локален стране, а UUID сохраняется после переноса. Браузерный эквивалент — `POST /api/tasks/:taskId/transfer` с тем же телом без `countryId` (страна берётся из авторизованного активного контекста). [Полный контракт постоянных площадок](PERMANENT-TASK-SITES.md).
 

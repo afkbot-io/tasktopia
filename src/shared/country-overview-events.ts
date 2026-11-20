@@ -6,7 +6,7 @@ const STRUCTURAL_EVENTS = new Set([
   "country.regenerated",
   "city.created", "city.updated", "city.renamed", "city.deleted",
   "district.created", "district.updated", "district.renamed", "district.deleted", "district.activated", "district.completed",
-  "task.created", "task.renamed", "task.deleted", "task.transferred",
+  "task.created", "task.renamed", "task.deleted", "task.transferred", "task.continued",
   "archive.record_created", "archive.record_deleted",
 ]);
 

@@ -239,8 +239,9 @@ export function App() {
     setSelectedTask(null); setTaskEntry(null); setMapTransitionError('');
     if (!wentBack) { navigationRestoringRef.current = false; if (destination) setMapMode(destination.mode); else window.history.replaceState(null, '', '/'); }
   }, [taskEntry, selectedTask, focusCity, countryId, navigationView, navigation, cityViewMemory, taskCardFocus]);
-  const selectVisibleTask = useCallback((id: string) => {
+  const selectVisibleTask = useCallback((id: string, keepCamera = false) => {
     cancelPendingNavigation(); setTaskEntry(null); setSelectedTask(id); setFocusTask(null);
+    if(keepCamera){taskCardFocus.cancel();return;}
     if (countryId && focusCity) taskCardFocus.queue({ countryId, cityId: focusCity.id, taskId: id,
       authenticationEpoch: authenticationEpochRef.current, sessionGeneration: sessionGenerationRef.current,
       navigationRequest: navigationRequestRef.current }, () => setFocusTask({ taskId: id, origin: focusCity.center, token: Date.now() }), readTaskFocusScope);

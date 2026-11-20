@@ -44,7 +44,7 @@ export type TaskPlacementV1 = {
   serviceRole?: BlockServiceRole;
 };
 
-export type SiteMarkerKind = "RUINED" | "RELOCATED";
+export type SiteMarkerKind = "RUINED" | "RELOCATED" | "CONTINUATION";
 export type SiteMarkerV1 = {
   id: string;
   blockId: string;

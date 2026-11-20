@@ -272,11 +272,12 @@ export function CityDocuments({
                 {[
                   [
                     "Готово / всего",
-                    `${data.counts.completed} / ${data.counts.working + data.counts.planned + data.counts.completed}`,
+                    `${data.counts.completed} / ${data.counts.working + data.counts.planned + data.counts.completed + (data.counts.carried??0)}`,
                   ],
                   ["В работе", data.counts.working],
                   ["На приёмке", data.counts.testing],
                   ["Запланировано", data.counts.planned],
+                  ...data.counts.carried?[["Продолжены",data.counts.carried]]:[],
                   ["Требует внимания", data.counts.attention],
                   [`Завершено за ${days} дней`, data.counts.completedPeriod],
                 ].map(([label, value]) => (
@@ -310,7 +311,7 @@ export function CityDocuments({
               </p>
               {REPORT_GROUPS.map((label, index) => {
                 const tasks = data.items.filter(
-                  (t) => reportGroup(t.status) === index,
+                  (t) => reportGroup(t.status,t.sprintOutcome) === index,
                 );
                 return (
                   tasks.length > 0 && (
@@ -321,7 +322,7 @@ export function CityDocuments({
                           <li key={t.id}>
                             <button onClick={event => { event.currentTarget.focus(); onTask(t.id); }}>
                               <i aria-hidden="true">
-                                {t.status === "COMPLETED"
+                                {t.sprintOutcome==='CARRIED'?'↗':t.status === "COMPLETED"
                                   ? "✓"
                                   : t.status === "PLANNING"
                                     ? "□"

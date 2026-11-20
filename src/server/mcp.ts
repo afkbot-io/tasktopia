@@ -90,6 +90,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
       "Task implementation materials are Markdown documents. Use task.document_upsert for the four standard files and any extra .md files; use task.checklist_replace and task.checklist_item_update to keep execution progress current.",
       "Every task has a human-facing number and canonical country/UUID url; share the url when reporting to people. Attach merge request links with task.link_add and binary evidence with task.attachment_add.",
       "Use task.transfer to move an existing task between sprints of the same city. Identity and history survive; the former parcel becomes available for another task. The destination parcel determines the artwork. Deleting a task leaves permanent ruins, never a reusable parcel.",
+      "Use task.continue for unfinished work spanning sprints: pass explicit fromDistrictId and targetDistrictId in the same city. The home districtId/building stay fixed; currentDistrictId identifies the work sprint. No new task ID/number is allocated. Read task.sprint_list with bounded cursor pages for frozen handoff results. The web UI is read-only; continuation is MCP-only.",
       "Use task.dependency_add to express task order (must be in the same city); task.activity returns the full audit trail of events, comments, defects, attachments and dependencies.",
       "Linked defects use OPEN -> IN_PROGRESS -> VERIFYING -> FIXED. Keep the parent task in TESTING while an ordinary linked defect is repaired; completion is blocked until every linked defect is FIXED.",
       "Deletion is permanent: read the entity and children, obtain explicit user approval, then pass the exact current confirmName or confirmTitle.",
@@ -132,7 +133,7 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   });
 
   server.registerTool("world_generation.get", {
-    description: "Получить состояние принятой фоновой операции по jobId. view=compact сокращает результат task.create/task.set_status/task.transfer до task.command-result без истории; full сохраняет прежний результат.",
+    description: "Получить состояние принятой фоновой операции по jobId. view=compact сокращает результат task.create/task.set_status/task.transfer/task.continue до task.command-result без истории; full сохраняет прежний результат.",
     inputSchema: z.object({ countryId: countryIdSchema, jobId: z.string().uuid(), view: metadataPage.view }),
     annotations: { readOnlyHint: true },
   }, async ({ countryId, jobId, view }) => {
@@ -338,6 +339,29 @@ export async function createMcpServer(db: Db, service: AppService, identity: Mcp
   }, async (input) => {
     try { await requireCountryAccess(db, identity, input.countryId, "tasks:write"); return response(await service.renameTask(input.countryId, { ...input, actor: actorName, actorUserId: identity.userId })); }
     catch (error) { return failure(error); }
+  });
+
+  server.registerTool("task.sprint_list", {
+    description:"Прочитать страницу истории спринтов одной задачи: основной район, текущий рабочий спринт и зафиксированные результаты этапов. cursor продолжает тот же taskId/countryId, limit 1–100, по умолчанию 50.",
+    inputSchema:z.object({countryId:countryIdSchema,taskId:z.string().uuid(),limit:z.number().int().min(1).max(100).optional(),cursor:z.string().min(1).max(8192).optional()}).strict(),
+    annotations:{readOnlyHint:true},
+  },async({countryId,taskId,...page})=>{
+    try { await requireCountryAccess(db,identity,countryId,"tasks:read"); return response(await service.listTaskSprints(countryId,taskId,page)); }
+    catch(error){return failure(error);}
+  });
+
+  server.registerTool("task.continue", {
+    description:"Продолжить начатую незавершённую задачу в другом открытом спринте того же города. Один ID и номер, основное здание остаётся на месте; выделяется связанная площадка. fromDistrictId должен совпадать с currentDistrictId задачи (или districtId, если продолжений ещё нет). Прошлый этап фиксируется без ложного завершения. Только MCP. resultMode=compact возвращает короткий receipt; принятую фоновую операцию проверяйте world_generation.get.",
+    inputSchema:z.object({countryId:countryIdSchema,taskId:z.string().uuid(),fromDistrictId:z.string().uuid(),targetDistrictId:z.string().uuid(),
+      comment:z.string().trim().max(4000).optional(),idempotencyKey:z.string().min(4).max(160),resultMode:metadataPage.view}).strict(),
+    annotations:{idempotentHint:true,destructiveHint:false},
+  },async(input,ctx)=>{
+    try {
+      await requireCountryAccess(db,identity,input.countryId,"tasks:write");
+      const {countryId,resultMode,...command}=input;
+      const task=await runWithGenerationRequestSignal(ctx.mcpReq.signal,()=>service.continueTask(countryId,{...command,actor:actorName,actorUserId:identity.userId},resultMode));
+      return response({...task,url:taskUrl(countryId,task)});
+    } catch(error){return failure(error);}
   });
 
   server.registerTool("task.transfer", {

@@ -15,7 +15,7 @@ export type TaskSprintBadgeDefinition = {
   readonly pixels: ReadonlyArray<{ readonly x: number; readonly y: number; readonly color: number }>;
 };
 
-type SprintBadgeTask = Pick<ChunkTaskDto, 'districtId' | 'status' | 'workItemType'>;
+type SprintBadgeTask = Pick<ChunkTaskDto, 'districtId' | 'currentDistrictId' | 'status' | 'workItemType'>;
 
 // Native pixel signs share the forest/cream/brass palette of the city HUD.
 // Definitions are built once so Pixi and the DOM legend reuse the same glyphs.
@@ -73,7 +73,7 @@ export const TASK_SPRINT_BADGES: Readonly<Record<TaskSprintBadgeKind, TaskSprint
 });
 
 export function taskSprintBadge(task: SprintBadgeTask, activeDistrictIds: ReadonlySet<string>): TaskSprintBadgeDefinition | undefined {
-  if (task.status === 'COMPLETED' || !activeDistrictIds.has(task.districtId)) return;
+  if (task.status === 'COMPLETED' || !activeDistrictIds.has(task.currentDistrictId??task.districtId)) return;
   switch (task.workItemType) {
     case 'BUG': return TASK_SPRINT_BADGES.BUG;
     case 'HOTFIX': return TASK_SPRINT_BADGES.HOTFIX;

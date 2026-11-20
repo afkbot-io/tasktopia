@@ -3,11 +3,13 @@ import type { TaskCardDto, TaskCollection, TaskCollectionPageDto } from '../shar
 import { api } from './api';
 import { OwnedReadCache } from './owned-read-cache';
 import { taskEventRefreshesDependencies } from './task-read-invalidation';
+import type { TaskSprintPageDto } from '../shared/task-sprints';
 
 const cards = new OwnedReadCache<TaskCardDto>(24, 4);
 const pages = new OwnedReadCache<TaskCollectionPageDto>(18, 12, { limit: 8 * 1024 * 1024,
   weight: page => page.items.reduce((bytes, item) => bytes + JSON.stringify(item).length * 2 + 128, 256) });
 const documents = new OwnedReadCache<TaskDocumentDto>(12, 4, { limit: 2 * 1024 * 1024, weight: doc => doc.content.length * 2 + 4096 });
+const sprints = new OwnedReadCache<TaskSprintPageDto>(12,4);
 
 const key = (countryId: string, taskId: string) => `${countryId}:${taskId}`;
 export function peekTaskCard(countryId: string, taskId: string): TaskCardDto | undefined { return cards.peek(key(countryId, taskId)); }
@@ -40,7 +42,18 @@ export function loadTaskDocument(countryId: string, taskId: string, documentId: 
 }
 
 export function clearTaskReadCaches(): void {
-  cards.clear(); pages.clear(); documents.clear();
+  cards.clear(); pages.clear(); documents.clear(); sprints.clear();
+}
+
+export function loadTaskSprints(countryId:string,taskId:string,cursor:string|null,consumerSignal?:AbortSignal):Promise<TaskSprintPageDto>{
+  const query=new URLSearchParams({countryId,limit:'50'});if(cursor)query.set('cursor',cursor);
+  return sprints.read(`${key(countryId,taskId)}:${cursor??''}`,async signal=>{
+    const page=await api<TaskSprintPageDto>(`/api/tasks/${encodeURIComponent(taskId)}/sprints?${query}`,{signal});
+    if(page.kind!=='task.sprint-page'||page.version!==1||page.countryId!==countryId||page.taskId!==taskId
+      ||!Array.isArray(page.items)||page.items.length>50||(page.nextCursor!==null&&(typeof page.nextCursor!=='string'||page.nextCursor===cursor)))
+      throw Error('Сервер вернул несовместимую историю спринтов');
+    return page;
+  },consumerSignal);
 }
 
 function forget(countryId: string, taskId?: string, collections?: ReadonlySet<TaskCollection>, includeDocuments = true): void {
@@ -49,6 +62,7 @@ function forget(countryId: string, taskId?: string, collections?: ReadonlySet<Ta
   for (const cacheKey of pages.keys()) if (cacheKey.startsWith(taskId ? `${prefix}:` : prefix)
     && (!collections || collections.has(cacheKey.split(':')[2] as TaskCollection))) pages.delete(cacheKey);
   if (includeDocuments) for (const cacheKey of documents.keys()) if (cacheKey.startsWith(taskId ? `${prefix}:` : prefix)) documents.delete(cacheKey);
+  for(const cacheKey of sprints.keys()) if(cacheKey.startsWith(taskId?`${prefix}:`:prefix))sprints.delete(cacheKey);
 }
 export function forgetTaskCard(countryId: string, taskId: string): void { forget(countryId, taskId); }
 export function invalidateTaskReadCaches(event: RealtimeEvent): void {

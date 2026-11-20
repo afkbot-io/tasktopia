@@ -21,6 +21,7 @@ export function projectCountryCityMiniature(input: {
   if (!layout) return miniature;
   const districts = new Map(layout.districtLayouts.map((district) => [district.id, district.districtId]));
   const placements = new Map<string, typeof layout.placements>();
+  const continuationByBlock=new Map(layout.siteMarkers.filter(marker=>marker.kind==='CONTINUATION').map(marker=>[marker.blockId,marker]));
   for (const placement of layout.placements) {
     const group = placements.get(placement.blockId) ?? [];
     group.push(placement); placements.set(placement.blockId, group);
@@ -28,8 +29,9 @@ export function projectCountryCityMiniature(input: {
   for (const block of [...layout.blocks].sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))) {
     const placed = placements.get(block.id) ?? [];
     const districtId = districts.get(block.districtLayoutId);
-    if (!districtId || placed.length === 0) continue;
-    const representative = miniatureRepresentative(placed);
+    const linked=continuationByBlock.get(block.id);
+    if (!districtId || placed.length === 0&&!linked) continue;
+    const representative = miniatureRepresentative(placed) ?? (linked?{buildingFamily:String(linked.snapshot.buildingFamily),constructionStage:5 as const}:undefined);
     if (representative) miniature.blocks.push({ id: block.id, districtId,
       x: (block.origin.x + block.width / 2 - bounds.minX) / cellSize,
       y: (block.origin.y + block.height / 2 - bounds.minY) / cellSize, family: representative.buildingFamily, stage: representative.constructionStage,
