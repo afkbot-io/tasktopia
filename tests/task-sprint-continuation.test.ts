@@ -5,6 +5,7 @@ import { createTestDb, type Db } from "../src/server/db";
 import { auditWorld } from "../src/server/world/world-audit";
 import { readCityReport } from '../src/server/city-report-read';
 import { districtDevelopmentSummary } from '../src/client/district-development';
+import { permanentSiteBounds } from '../src/server/world/permanent-task-sites';
 
 describe("one task across sequential sprints", { timeout: 60_000 }, () => {
   let db: Db, service: AppService, countryId: string, cityId: string, first: string, second: string, third: string;
@@ -53,6 +54,10 @@ describe("one task across sequential sprints", { timeout: 60_000 }, () => {
     const main = new Set(task.footprint.map(p => `${p.x},${p.y}`));
     expect(sites[0]!.footprint.some(p => main.has(`${p.x},${p.y}`))).toBe(false);
     expect((await auditWorld(db, service, countryId)).violations).toEqual([]);
+    const overview=(await service.getCountryOverview(member!.user_id,countryId)).cities.find(city=>city.id===cityId)!;
+    expect(overview.districts.find(district=>district.id===first)).toMatchObject({taskCount:1,progress:40});
+    expect(overview.districts.find(district=>district.id===second)).toMatchObject({taskCount:1,progress:100});
+    expect((await service.listPlanCities(countryId)).find(city=>city.id===cityId)?.taskCount).toBe(1);
     await db.prepare('DELETE FROM countries WHERE id=?').run(countryId);
     expect(await service.listWorldFeatures(countryId)).toEqual([]);
     expect(await db.prepare('SELECT id FROM task_sprint_phases_v1').all()).toEqual([]);
@@ -154,5 +159,10 @@ describe("one task across sequential sprints", { timeout: 60_000 }, () => {
     expect(await service.listTasks(countryId)).toEqual([]);
     expect((await service.listWorldFeatures(countryId)).filter(feature=>feature.continuation)[0]?.continuation)
       .toMatchObject({taskId:null,outcome:'REMOVED'});
+    const archived=(await service.listWorldFeatures(countryId)).filter(feature=>feature.continuation);
+    const protectedLand=await permanentSiteBounds(db,countryId,true);
+    for(const site of archived)expect(protectedLand.some(bounds=>site.footprint.every(cell=>
+      cell.x>=bounds.minX&&cell.x<=bounds.maxX&&cell.y>=bounds.minY&&cell.y<=bounds.maxY))).toBe(true);
+    expect((await auditWorld(db,service,countryId)).violations).toEqual([]);
   });
 });

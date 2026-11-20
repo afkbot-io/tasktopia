@@ -1187,11 +1187,11 @@ export class AppService {
       this.countryRow(countryId),
       this.listCities(countryId),
       this.db.prepare(`SELECT d.id, d.city_id, d.name, d.status, d.color, d.spatial_bounds_json,
-        COUNT(t.id)::integer AS task_count,
+        COUNT(t.task_id)::integer AS task_count,
         COALESCE(ROUND(AVG(t.progress)), 0)::integer AS progress
         FROM districts_v3 d
         JOIN cities_v3 c ON c.id = d.city_id
-        LEFT JOIN tasks_v3 t ON t.district_id = d.id
+        LEFT JOIN task_sprint_participation_v1 t ON t.district_id = d.id
         WHERE c.country_id = ?
         GROUP BY d.id, d.city_id, d.name, d.status, d.color, d.created_at
         ORDER BY d.created_at, d.id`).all(countryId) as Promise<Row[]>,

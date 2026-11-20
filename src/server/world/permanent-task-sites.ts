@@ -30,7 +30,7 @@ export async function freezePermanentSiteGeometry(db: Db, countryId: string): Pr
 }
 
 export async function permanentSiteBounds(db: Db, countryId: string, orphanedOnly = false): Promise<Rect[]> {
-  const rows = await db.prepare(`SELECT * FROM site_markers_v1 WHERE country_id=? AND kind='RUINED' ${orphanedOnly ? "AND layout_id IS NULL" : ""}`).all<Row>(countryId);
+  const rows = await db.prepare(`SELECT * FROM site_markers_v1 WHERE country_id=? AND kind IN ('RUINED','CONTINUATION') ${orphanedOnly ? "AND layout_id IS NULL" : ""}`).all<Row>(countryId);
   return rows.map(row => geometry(row).siteBounds);
 }
 
