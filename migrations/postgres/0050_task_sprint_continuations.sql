@@ -133,3 +133,20 @@ CREATE INDEX world_generation_jobs_v1_claim_idx ON world_generation_jobs_v1(stat
 DROP INDEX world_generation_jobs_v1_country_fifo_idx;
 CREATE INDEX world_generation_jobs_v1_country_fifo_idx ON world_generation_jobs_v1(country_id,created_at,id)
   WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING','CONTINUE_QUEUED','CONTINUE_EXECUTING');
+
+-- Every domain mutation/replay commits through world_version. An old worker
+-- may already own a legacy job when the first continuation commits: reject
+-- its entire transaction, including status, sprint and layout changes. Marker
+-- ownership outlives task deletion, so a pre-delete cannot evade this fence.
+CREATE INDEX site_markers_v1_continuation_country_idx ON site_markers_v1(country_id) WHERE kind='CONTINUATION';
+CREATE FUNCTION require_continuation_writer() RETURNS trigger AS $$
+BEGIN
+  IF NEW.world_version IS DISTINCT FROM OLD.world_version
+    AND current_setting('tasktopia.sprint_continuations',true) IS DISTINCT FROM '1'
+    AND EXISTS(SELECT 1 FROM site_markers_v1 WHERE country_id=OLD.id AND kind='CONTINUATION')
+    THEN RAISE EXCEPTION 'Continuation country requires a compatible writer'; END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER countries_continuation_writer_guard BEFORE UPDATE OF world_version ON countries
+  FOR EACH ROW EXECUTE FUNCTION require_continuation_writer();

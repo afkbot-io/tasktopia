@@ -137,6 +137,19 @@ describe("one task across sequential sprints", { timeout: 60_000 }, () => {
       .rejects.toThrow('Continuation deletion requires an explicit current task or city command');
     await expect(db.prepare('DELETE FROM districts_v3 WHERE id=?').run(current))
       .rejects.toThrow('District participates in a task continuation');
+    const beforeOldWriter=await service.getTask(countryId,task.id);
+    const districtBefore=await db.prepare('SELECT status FROM districts_v3 WHERE id=?').get(current);
+    const placementsBefore=await db.prepare('SELECT * FROM task_placements_v1 WHERE task_id=?').all(task.id);
+    await expect(db.transaction(async()=>{
+      await db.exec("SET LOCAL tasktopia.sprint_continuations = '0'");
+      await db.prepare("UPDATE tasks_v3 SET status='COMPLETED',progress=100 WHERE id=?").run(task.id);
+      await db.prepare("UPDATE districts_v3 SET status='COMPLETED' WHERE id=?").run(current);
+      await db.prepare('UPDATE task_placements_v1 SET construction_stage=5 WHERE task_id=?').run(task.id);
+      await db.prepare('UPDATE countries SET world_version=world_version+1 WHERE id=?').run(countryId);
+    })).rejects.toThrow('Continuation country requires a compatible writer');
+    expect(await service.getTask(countryId,task.id)).toEqual(beforeOldWriter);
+    expect(await db.prepare('SELECT status FROM districts_v3 WHERE id=?').get(current)).toEqual(districtBefore);
+    expect(await db.prepare('SELECT * FROM task_placements_v1 WHERE task_id=?').all(task.id)).toEqual(placementsBefore);
     await service.deleteCity(countryId,{cityId,confirmName:'One project',idempotencyKey:'race-delete-project'});
     expect(await service.listTasks(countryId)).toEqual([]);
     expect((await service.listWorldFeatures(countryId)).filter(feature=>feature.continuation)[0]?.continuation)

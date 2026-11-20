@@ -41,6 +41,9 @@ it('upgrades populated v49 without changing task identity, geometry, history or 
     await db.prepare(`INSERT INTO tasks_v3(id,city_id,district_id,title,estimate,building_type,visual_asset_key,platform_type,created_at,updated_at)
       VALUES(?,?,?,'Legacy writer after expand',1,'compact-row-v1','compact-row-v1','STONE',?,?)`).run(legacyInsert,city,district,time,time);
     expect(await db.prepare('SELECT work_district_id FROM tasks_v3 WHERE id=?').get(legacyInsert)).toEqual({work_district_id:district});
+    // The bridge still accepts pre-upgrade writes before any continuation.
+    await db.exec("SET LOCAL tasktopia.sprint_continuations = '0'");
+    await db.prepare('UPDATE countries SET world_version=world_version+1 WHERE id=?').run(user.countryId);
     await db.exec('SET CONSTRAINTS ALL IMMEDIATE');await db.exec(`DROP SCHEMA "${schema}" CASCADE`);
   });}finally{await db.close();}
 },30_000);
