@@ -16,7 +16,7 @@ describe("legacy full MCP district workloads", { timeout: 60_000 }, () => {
   let districts: DistrictDto[], emptyId: string, mixedId: string, completedId: string;
   let server: Awaited<ReturnType<typeof createMcpServer>>;
   const workloadQueries: string[] = [];
-  const workloadQuery = (query: string) => query.includes("COUNT(t.id)") && query.includes("AS task_count");
+  const workloadQuery = (query: string) => query.includes("LEFT JOIN task_sprint_participation_v1") && query.includes("AS task_count");
   const result = <T>(reply: Awaited<ReturnType<Client["callTool"]>>) => {
     expect(reply.isError).not.toBe(true);
     return (reply.structuredContent as { result: T }).result;
@@ -35,7 +35,7 @@ describe("legacy full MCP district workloads", { timeout: 60_000 }, () => {
     completedId = (await writer.createDistrict(countryId, { cityId, name: "Completed", idempotencyKey: "full-completed" })).id;
     const first = await writer.createTask(countryId, { cityId, districtId: mixedId, title: "Planning workload", estimate: 3, idempotencyKey: "full-first-task" });
     await db.prepare(`INSERT INTO tasks_v3 SELECT (jsonb_populate_record(NULL::tasks_v3,to_jsonb(t)||jsonb_build_object(
-      'id',gen_random_uuid()::text,'task_number',0,'title',entry.title,'district_id',entry.district_id,
+      'id',gen_random_uuid()::text,'task_number',0,'title',entry.title,'district_id',entry.district_id,'work_district_id',entry.district_id,
       'estimate',entry.estimate,'status',entry.status,'progress',entry.progress))).*
       FROM tasks_v3 t CROSS JOIN (VALUES
         ('Completed mixed task',?::text,5,'COMPLETED',100),
@@ -70,9 +70,9 @@ describe("legacy full MCP district workloads", { timeout: 60_000 }, () => {
   afterAll(async () => { await client?.close(); await server?.close(); await db?.close(); });
 
   const expectedWorkload = (id: string) => id === mixedId
-    ? { districtId: mixedId, targetSp: 7, plannedSp: 10, openSp: 5, taskCount: 3, overTargetBySp: 3 }
-    : id === emptyId ? { districtId: emptyId, targetSp: 4, plannedSp: 0, openSp: 0, taskCount: 0, overTargetBySp: 0 }
-      : { districtId: completedId, targetSp: 6, plannedSp: 8, openSp: 0, taskCount: 1, overTargetBySp: 2 };
+    ? { districtId: mixedId, targetSp: 7, plannedSp: 10, openSp: 5, completedSp: 5, carriedOutCount: 0, taskCount: 3, overTargetBySp: 3 }
+    : id === emptyId ? { districtId: emptyId, targetSp: 4, plannedSp: 0, openSp: 0, completedSp: 0, carriedOutCount: 0, taskCount: 0, overTargetBySp: 0 }
+      : { districtId: completedId, targetSp: 6, plannedSp: 8, openSp: 0, completedSp: 8, carriedOutCount: 0, taskCount: 1, overTargetBySp: 2 };
 
   it.each(["city.get", "district.list"] as const)("%s full preserves geometry and exact workloads using one aggregate for three districts", async name => {
     workloadQueries.length = 0;
