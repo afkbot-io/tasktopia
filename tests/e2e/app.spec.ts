@@ -106,7 +106,7 @@ test("login, map and MCP token management", async ({ page, context }) => {
   await taskRow.click();
   const taskDialog = page.getByRole("dialog");
   await expect(taskDialog).toBeVisible();
-  await expect(taskDialog.locator(".game-tabs [role=tab]")).toHaveCount(4);
+  await expect(taskDialog.locator(".game-tabs [role=tab]")).toHaveCount(5);
   await expect(taskDialog.locator(".task-checklist li")).toHaveCount(3);
   await expect(taskDialog.locator(".task-checklist li.done")).toHaveCount(2);
   await taskDialog.getByRole("tab", { name: /Материалы/ }).click();
