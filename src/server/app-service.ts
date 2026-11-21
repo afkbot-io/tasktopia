@@ -104,6 +104,7 @@ import { isTransactionActive,now,onTransactionCommit,onTransactionRollback,trans
 import type { SharedWorldCache } from "./optional-redis-cache";
 import { readTaskCardRow,readTaskCoreRow,readTaskDetailRow,taskDetailRows } from "./task-detail-read";
 import { readTaskListPageRows, type TaskListFilters } from "./task-list-read";
+import { readTaskSprints } from "./task-sprints";
 import { collectionCursor, readTaskCollectionRows, type CollectionOrder } from "./task-collection-read";
 import type { TaskListPageDto,TaskCardDto,TaskCollection,TaskCollectionItems,TaskCollectionPageDto,TaskCollectionCounts,TaskCommandResultDto,TaskDocumentMetadataDto,TaskMutationResult,TaskResultMode } from "../shared/task-read-contracts";
 import { readTaskBlockGeometry,readActiveBlockLayout,readActiveBlockLayouts,synchronizeCityBlocks,CitySceneCapacityError } from "./world/active-block-layout";
@@ -145,7 +146,7 @@ const SPATIAL_RESULT_KINDS = new Map<string, "city" | "district" | "task">([
   ...["district.create", "district.create.v3", "district.rename.v1", "district.update.v18", "district.activate.v3", "district.complete", "district.complete.v3"]
     .map(operation => [operation, "district"] as const),
   ...["task.create", "task.create.v3", "task.link.add.v1", "task.link.remove.v1", "task.rename.v1", "task.fields.v18",
-    "task.set_status", "task.status.v3", "task.comment.v3", "task.assign.v7", "task.dependency.add.v1", "task.dependency.remove.v1", "task.transfer", "task.transfer.v1"]
+    "task.set_status", "task.status.v3", "task.comment.v3", "task.assign.v7", "task.dependency.add.v1", "task.dependency.remove.v1", "task.transfer", "task.transfer.v1", "task.continue", "task.continue.v1"]
     .map(operation => [operation, "task"] as const),
 ]);
 
@@ -153,6 +154,7 @@ type Row = Record<string, unknown>;
 type GrowthDirection = DistrictDto["growthDirection"];
 type DistrictWorkload = {
   districtId: string; targetSp: number; plannedSp: number; openSp: number; taskCount: number; overTargetBySp: number;
+  completedSp: number; carriedOutCount: number;
 };
 
 export class DomainError extends Error {
@@ -221,6 +223,7 @@ function taskDto(row: Row): TaskDto {
     taskNumber: Number(row.task_number ?? 0),
     cityId: String(row.city_id),
     districtId: String(row.district_id),
+    ...(row.work_district_id && row.work_district_id !== row.district_id ? { currentDistrictId: String(row.work_district_id) } : {}),
     title: String(row.title),
     description: String(row.description),
     workItemType: String(row.work_item_type ?? "TASK") as WorkItemType,
@@ -758,7 +761,7 @@ export class AppService {
                                     JOIN city_layouts_v1 l ON l.id=s.layout_id WHERE l.country_id=? AND s.updated_at=transaction_timestamp() LIMIT 1`).get(countryId);
                                   if (changedStops) result.eventPayload.transportTopologyChanged = true;
                                 }
-                                if (["city.created", "city.deleted", "district.created", "district.deleted", "task.created", "task.deleted", "task.transferred", "country.regenerated"].includes(result.eventType)) {
+                                if (["city.created", "city.deleted", "district.created", "district.deleted", "task.created", "task.deleted", "task.transferred", "task.continued", "country.regenerated"].includes(result.eventType)) {
                                   // A newly connected remote city also needs a
                                   // fresh scene. Ordinary task changes must not
                                   // evict unrelated cities' retained canvases.
@@ -1184,11 +1187,11 @@ export class AppService {
       this.countryRow(countryId),
       this.listCities(countryId),
       this.db.prepare(`SELECT d.id, d.city_id, d.name, d.status, d.color, d.spatial_bounds_json,
-        COUNT(t.id)::integer AS task_count,
+        COUNT(t.task_id)::integer AS task_count,
         COALESCE(ROUND(AVG(t.progress)), 0)::integer AS progress
         FROM districts_v3 d
         JOIN cities_v3 c ON c.id = d.city_id
-        LEFT JOIN tasks_v3 t ON t.district_id = d.id
+        LEFT JOIN task_sprint_participation_v1 t ON t.district_id = d.id
         WHERE c.country_id = ?
         GROUP BY d.id, d.city_id, d.name, d.status, d.color, d.created_at
         ORDER BY d.created_at, d.id`).all(countryId) as Promise<Row[]>,
@@ -1469,7 +1472,7 @@ export class AppService {
       .map((district) => district.id)));
     const completedTasksByDistrict = new Map<string, Map<string, CitySceneDto["completedDistrictSnapshots"][number]["tasks"][number]>>();
     for (const chunk of chunks) for (const task of chunk.tasks) {
-      if (!completedDistrictIds.has(task.districtId)) continue;
+      if (!completedDistrictIds.has(task.districtId) || task.currentDistrictId) continue;
       const taskById = completedTasksByDistrict.get(task.districtId) ?? new Map();
       taskById.set(task.id, task);
       completedTasksByDistrict.set(task.districtId, taskById);
@@ -1486,7 +1489,7 @@ export class AppService {
       void contentHash;
       const compactContent = {
         ...content,
-        tasks: chunk.tasks.filter((task) => !completedDistrictIds.has(task.districtId)),
+        tasks: chunk.tasks.filter((task) => !completedDistrictIds.has(task.districtId) || task.currentDistrictId),
       };
       return { ...compactContent, contentHash: chunkPayloadContentHash(compactContent) } as ChunkPayloadDto;
     });
@@ -1547,7 +1550,7 @@ export class AppService {
 
   async listTasks(countryId: string, districtId?: string, cityId?: string): Promise<TaskDto[]> {
     const where = ["c.country_id = ?"], parameters: unknown[] = [countryId];
-    if (districtId) { where.push("t.district_id = ?"); parameters.push(districtId); }
+    if (districtId) { where.push("(t.work_district_id = ? OR EXISTS(SELECT 1 FROM task_sprint_phases_v1 p WHERE p.task_id=t.id AND p.district_id=?))"); parameters.push(districtId,districtId); }
     if (cityId) { where.push("t.city_id = ?"); parameters.push(cityId); }
     const rows = await this.db.prepare(`SELECT t.* FROM tasks_v3 t JOIN cities_v3 c ON c.id = t.city_id
       WHERE ${where.join(" AND ")} ORDER BY t.created_at`).all(...parameters);
@@ -1562,17 +1565,20 @@ export class AppService {
     const ids = [...new Set(districtIds)];
     if (!ids.length) return new Map();
     const rows = await this.db.prepare(`SELECT d.id, d.capacity_sp,
-      COUNT(t.id)::integer AS task_count,
-      COALESCE(SUM(t.estimate), 0)::integer AS planned_sp,
-      COALESCE(SUM(CASE WHEN t.status <> 'COMPLETED' THEN t.estimate ELSE 0 END), 0)::integer AS open_sp
+      COUNT(t.task_id)::integer AS task_count,
+      COALESCE(SUM(t.planned_sp), 0)::integer AS planned_sp,
+      COALESCE(SUM(t.open_sp), 0)::integer AS open_sp,
+      COALESCE(SUM(t.completed_sp), 0)::integer AS completed_sp,
+      COUNT(t.task_id) FILTER(WHERE t.outcome='CARRIED')::integer AS carried_count
       FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
-      LEFT JOIN tasks_v3 t ON t.district_id = d.id
+      LEFT JOIN task_sprint_participation_v1 t ON t.district_id = d.id
       WHERE c.country_id = ? AND d.id = ANY(?::text[]) GROUP BY d.id, d.capacity_sp`).all<Row>(countryId, ids);
     if (rows.length !== ids.length) throw new DomainError("NOT_FOUND", "Район не найден");
     return new Map(rows.map(row => {
       const targetSp = Number(row.capacity_sp), plannedSp = Number(row.planned_sp);
       return [String(row.id), { districtId: String(row.id), targetSp, plannedSp, openSp: Number(row.open_sp),
-        taskCount: Number(row.task_count), overTargetBySp: Math.max(0, plannedSp - targetSp) }];
+        taskCount: Number(row.task_count), overTargetBySp: Math.max(0, plannedSp - targetSp),
+        completedSp:Number(row.completed_sp),carriedOutCount:Number(row.carried_count) }];
     }));
   }
 
@@ -1630,7 +1636,7 @@ export class AppService {
     const city = await this.db.prepare("SELECT 1 FROM cities_v3 WHERE id = ? AND country_id = ?").get(cityId, countryId);
     if (!city) throw new DomainError("NOT_FOUND", "Город не найден");
     const rows = await this.db.prepare(`SELECT d.id, d.city_id, d.name, d.goal, d.description, d.deadline, d.status, d.capacity_sp, d.archetype, d.color, d.created_at,
-      (SELECT COUNT(*) FROM tasks_v3 t WHERE t.district_id = d.id) AS task_count
+      (SELECT COUNT(*) FROM task_sprint_participation_v1 p WHERE p.district_id = d.id) AS task_count
       FROM districts_v3 d WHERE d.city_id = ? ORDER BY d.created_at`).all(cityId) as Row[];
     return rows.map((row) => ({
       id: String(row.id), cityId: String(row.city_id), name: String(row.name), goal: String(row.goal),
@@ -1645,13 +1651,14 @@ export class AppService {
     const district = await this.db.prepare(`SELECT 1 FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id
       WHERE d.id = ? AND c.country_id = ?`).get(districtId, countryId);
     if (!district) throw new DomainError("NOT_FOUND", "Район не найден");
-    const rows = await this.db.prepare(`SELECT id, task_number, city_id, district_id, title, work_item_type, estimate, priority, status, progress, due_at, updated_at,
+    const rows = await this.db.prepare(`SELECT id, task_number, city_id, district_id, work_district_id, title, work_item_type, estimate, priority, status, progress, due_at, updated_at,
       (SELECT COUNT(*) FROM task_defects_v18 defect WHERE defect.task_id = tasks_v3.id AND defect.status <> 'FIXED') AS active_defect_count
-      FROM tasks_v3 WHERE district_id = ? ORDER BY created_at`).all(districtId) as Row[];
+      FROM tasks_v3 WHERE work_district_id=? OR EXISTS(SELECT 1 FROM task_sprint_phases_v1 p WHERE p.task_id=tasks_v3.id AND p.district_id=?) ORDER BY created_at`).all(districtId,districtId) as Row[];
     return rows.map((row) => {
       const status = String(row.status) as TaskStatus;
       return {
         id: String(row.id), taskNumber: Number(row.task_number), cityId: String(row.city_id), districtId: String(row.district_id), title: String(row.title),
+        ...(row.work_district_id!==row.district_id?{currentDistrictId:String(row.work_district_id)}:{}),
         workItemType: String(row.work_item_type) as WorkItemType,
         estimate: Number(row.estimate) as Estimate, priority: String(row.priority) as TaskPriority,
         status, progress: Number(row.progress), dueAt: row.due_at ? String(row.due_at) : null,
@@ -1705,7 +1712,7 @@ export class AppService {
 
   private taskCommandResult(countryId: string, task: TaskCoreDto): TaskCommandResultDto {
     return { kind: "task.command-result", version: 1, countryId, id: task.id, taskNumber: task.taskNumber,
-      cityId: task.cityId, districtId: task.districtId, title: task.title, workItemType: task.workItemType,
+      cityId: task.cityId, districtId: task.districtId, ...(task.currentDistrictId?{currentDistrictId:task.currentDistrictId}:{}), title: task.title, workItemType: task.workItemType,
       estimate: task.estimate, priority: task.priority, status: task.status, progress: task.progress,
       stage: task.stage, updatedAt: task.updatedAt };
   }
@@ -1770,6 +1777,7 @@ export class AppService {
     const projected = await this.projectTaskSearchRows(page.rows);
     return { kind: "task.list-page", version: 1, countryId,
       items: projected.map((task, index) => ({ ...task, estimate: Number(page.rows[index]!.estimate) as Estimate,
+        ...(page.rows[index]!.sprint_outcome?{sprintOutcome:page.rows[index]!.sprint_outcome as "OPEN"|"CARRIED"|"COMPLETED",sprintProgress:Number(page.rows[index]!.sprint_progress)}:{}),
         priority: String(page.rows[index]!.priority) as TaskPriority, updatedAt: String(page.rows[index]!.updated_at) })), nextCursor: page.nextCursor };
   }
 
@@ -1778,12 +1786,12 @@ export class AppService {
     if (text.length === 0) return [];
     const bounded = Math.max(1, Math.min(25, limit));
     const rows = /^\d{1,9}$/.test(text)
-      ? await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id,
+      ? await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id, t.work_district_id,
           city.name AS city_name, city.center_x AS city_center_x, city.center_y AS city_center_y, city.bounds_json AS city_bounds_json,
           district.name AS district_name
           FROM tasks_v3 t JOIN cities_v3 city ON city.id = t.city_id JOIN districts_v3 district ON district.id = t.district_id
           WHERE city.country_id = ? AND t.task_number = ?`).all(countryId, Number(text)) as Row[]
-      : await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id,
+      : await this.db.prepare(`SELECT t.id, t.task_number, t.title, t.work_item_type, t.status, t.progress, t.city_id, t.district_id, t.work_district_id,
           city.name AS city_name, city.center_x AS city_center_x, city.center_y AS city_center_y, city.bounds_json AS city_bounds_json,
           district.name AS district_name
           FROM tasks_v3 t JOIN cities_v3 city ON city.id = t.city_id JOIN districts_v3 district ON district.id = t.district_id
@@ -1794,7 +1802,7 @@ export class AppService {
 
   async resolveTask(userId: string, input: { id: string } | { number: number; countryId: string }): Promise<TaskResolutionDto> {
     const byId = "id" in input;
-    const row = await this.db.prepare(`SELECT t.id,t.task_number,t.title,t.work_item_type,t.status,t.progress,t.city_id,t.district_id,
+    const row = await this.db.prepare(`SELECT t.id,t.task_number,t.title,t.work_item_type,t.status,t.progress,t.city_id,t.district_id,t.work_district_id,
       city.country_id,city.name AS city_name,city.center_x AS city_center_x,city.center_y AS city_center_y,
       city.bounds_json AS city_bounds_json,district.name AS district_name
       FROM tasks_v3 t JOIN cities_v3 city ON city.id=t.city_id
@@ -1818,6 +1826,7 @@ export class AppService {
         cityCenter: { x: Number(row.city_center_x), y: Number(row.city_center_y) },
         cityBounds: json<Rect>(row.city_bounds_json),
         districtId: String(row.district_id), districtName: String(row.district_name),
+        ...(row.work_district_id && row.work_district_id!==row.district_id?{currentDistrictId:String(row.work_district_id)}:{}),
         origin: (() => {
           const origin = projected.get(String(row.id));
           if (!origin) throw new DomainError("WORLD_REGENERATION_REQUIRED", "Для задачи отсутствует активный участок");
@@ -2151,6 +2160,7 @@ export class AppService {
                         FROM tasks_v3 t JOIN task_placements_v1 p ON p.task_id=t.id
                         JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE t.city_id=?`).all<Row>(city.id);
                       await this.scheduleAttachmentCleanup(countryId, "city", city.id);
+                      await this.db.prepare("SELECT set_config('tasktopia.continuation_delete',?,true)").get(`city:${city.id}`);
                       await this.db.prepare("DELETE FROM tasks_v3 WHERE city_id=?").run(city.id);
                       for (const p of tasks) await this.db.prepare(`INSERT INTO site_markers_v1
                         (id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at)
@@ -2233,6 +2243,10 @@ export class AppService {
       const district=(await this.listDistricts(countryId)).find(d=>d.id===input.districtId);
       if(!district) throw new DomainError("NOT_FOUND","Район не найден");
       if(input.confirmName.trim()!==district.name) throw new DomainError("CONFIRMATION_MISMATCH","Для удаления укажите точное название района");
+      if(await this.db.prepare(`SELECT 1 FROM task_sprint_phases_v1 p JOIN tasks_v3 t ON t.id=p.task_id
+        WHERE p.district_id=? AND t.district_id<>? LIMIT 1`).get(district.id,district.id)
+        || await this.db.prepare("SELECT 1 FROM tasks_v3 WHERE district_id=? AND work_district_id<>district_id LIMIT 1").get(district.id))
+        throw new DomainError("DISTRICT_HAS_CONTINUATIONS","Район связан с задачами других спринтов; удаление уничтожило бы их историю");
       const count=await this.db.prepare("SELECT count(*) AS count FROM tasks_v3 WHERE district_id=?").get<{count:string}>(district.id);
       const markers=await this.db.prepare(`SELECT p.layout_id,p.block_id,p.slot_key,
         jsonb_build_object('taskId',t.id,'taskNumber',t.task_number,'title',t.title,'buildingFamily',t.building_type,'lastStage',p.construction_stage) AS snapshot
@@ -2281,7 +2295,7 @@ export class AppService {
                       const row = await this.db.prepare("SELECT d.* FROM districts_v3 d JOIN cities_v3 c ON c.id = d.city_id WHERE d.id = ? AND c.country_id = ?").get(districtId, countryId) as Row | undefined;
                       if (!row) throw new DomainError("NOT_FOUND", "Район не найден");
                       if (row.status === "ABANDONED") throw new DomainError("DISTRICT_ABANDONED", "Заброшенный район нельзя завершить");
-                      const unfinished = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE district_id = ? AND status <> 'COMPLETED'").get(districtId) as Row).count);
+                      const unfinished = Number((await this.db.prepare("SELECT COUNT(*) AS count FROM tasks_v3 WHERE work_district_id = ? AND status <> 'COMPLETED'").get(districtId) as Row).count);
                       if (unfinished > 0) throw new DomainError("DISTRICT_HAS_OPEN_TASKS", `В районе осталось незавершённых задач: ${unfinished}`);
                       await this.db.prepare("UPDATE districts_v3 SET status = 'COMPLETED' WHERE id = ?").run(districtId);
 
@@ -2479,6 +2493,7 @@ export class AppService {
       if(input.confirmTitle.trim()!==task.title) throw new DomainError("CONFIRMATION_MISMATCH","Для удаления укажите точное название задачи");
       const placement=await this.db.prepare("SELECT p.* FROM task_placements_v1 p JOIN city_layouts_v1 l ON l.id=p.layout_id AND l.status='ACTIVE' WHERE p.task_id=?").get<Row>(task.id);
       await this.scheduleAttachmentCleanup(countryId, "task", task.id);
+      await this.db.prepare("SELECT set_config('tasktopia.continuation_delete',?,true)").get(`task:${task.id}`);
       await this.db.prepare("DELETE FROM tasks_v3 WHERE id=?").run(task.id);
       if(placement) await this.db.prepare("INSERT INTO site_markers_v1(id,layout_id,block_id,slot_key,kind,snapshot_json,asset_variant,created_at,updated_at) VALUES(?,?,?,?,'RUINED',?::jsonb,'compact-rubble',?,?)")
         .run(randomUUID(),placement.layout_id,placement.block_id,placement.slot_key,JSON.stringify({taskId:task.id,taskNumber:task.taskNumber,title:task.title,buildingFamily:task.buildingType,lastStage:task.stage}),now(),now());
@@ -2486,6 +2501,66 @@ export class AppService {
       const data={deleted:true as const,taskId:task.id,districtId:task.districtId,cityId:task.cityId,title:task.title};
       return {data,eventType:"task.deleted",eventPayload:{...data,building,affectedBounds:layout.bounds}};
     });
+  }
+
+  async listTaskSprints(countryId: string, taskId: string, options: { cursor?: string; limit?: number } = {}) {
+    return readTaskSprints(this.db,countryId,taskId,options);
+  }
+
+  async continueTask<Mode extends TaskResultMode = "full">(countryId: string, input: {
+    taskId: string; fromDistrictId: string; targetDistrictId: string; comment?: string;
+    actor?: string; actorUserId?: string; idempotencyKey: string;
+  }, resultMode?: Mode): Promise<TaskMutationResult<Mode>> {
+    if(this.generationDispatcher) {
+      const result=await this.generationDispatcher.execute<TaskMutationResult<Mode>>(countryId,"task.continue",input.idempotencyKey,input);
+      return await this.rehydrateGenerationResult(countryId,"task.continue",result,resultMode??"full") as TaskMutationResult<Mode>;
+    }
+    return this.mutate<TaskMutationResult<Mode>>(countryId,"task.continue.v1",input.idempotencyKey,input,async()=>{
+      const task=await this.getTaskCore(countryId,input.taskId),current=task.currentDistrictId??task.districtId;
+      if(current!==input.fromDistrictId) throw new DomainError("SPRINT_CONFLICT","Рабочий спринт задачи уже изменился; перечитайте задачу");
+      if(task.status==='PLANNING'||task.status==='COMPLETED') throw new DomainError("INVALID_TRANSITION","Продолжить можно только начатую незавершённую задачу");
+      if(input.targetDistrictId===current) throw new DomainError("INVALID_INPUT","Задача уже работает в этом спринте");
+      const target=await this.db.prepare(`SELECT d.id,d.city_id,d.status,d.name FROM districts_v3 d JOIN cities_v3 c ON c.id=d.city_id
+        WHERE d.id=? AND c.country_id=?`).get<Row>(input.targetDistrictId,countryId);
+      if(!target) throw new DomainError("NOT_FOUND","Район не найден");
+      if(target.city_id!==task.cityId) throw new DomainError("INVALID_INPUT","Продолжение поддерживается только между спринтами одного города");
+      if(target.status==='COMPLETED'||target.status==='ABANDONED') throw new DomainError("DISTRICT_SEALED","В закрытом спринте нельзя продолжить задачу");
+      const source=await this.db.prepare("SELECT status,name FROM districts_v3 WHERE id=?").get<Row>(current);
+      if(!source || source.status==='COMPLETED'||source.status==='ABANDONED') throw new DomainError("DISTRICT_SEALED","Исходный спринт уже закрыт");
+      if(await this.db.prepare("SELECT id FROM task_sprint_phases_v1 WHERE task_id=? AND district_id=?").get(task.id,target.id))
+        throw new DomainError("SPRINT_ALREADY_VISITED","Задача уже участвовала в этом спринте");
+      const timestamp=now();
+      let phase=await this.db.prepare("SELECT id,sequence FROM task_sprint_phases_v1 WHERE task_id=? AND outcome='OPEN'").get<Row>(task.id);
+      if(!phase) {
+        // A confirmed creation event establishes the real initial admission.
+        // Legacy relocated/imported tasks use the observed boundary instead
+        // of fabricating a former district's status, percentage or date.
+        const id=randomUUID();
+        const creation=await this.db.prepare(`SELECT e.details_json,e.created_at FROM task_events_v7 e WHERE e.task_id=? AND e.event_type='CREATED'
+          AND NOT EXISTS(SELECT 1 FROM task_events_v7 moved WHERE moved.task_id=e.task_id AND moved.details_json->>'fromDistrictId' IS NOT NULL)
+          ORDER BY e.id LIMIT 1`).get<Row>(task.id);
+        const admitted=creation?json<Row>(creation.details_json):undefined;
+        const confirmed=admitted?.status==='PLANNING'&&[1,2,3,6].includes(Number(admitted.estimate));
+        await this.db.prepare(`INSERT INTO task_sprint_phases_v1(id,task_id,district_id,sequence,outcome,entry_status,entry_progress,entry_estimate,entered_at)
+          VALUES(?,?,?,1,'OPEN',?,?,?,?)`).run(id,task.id,current,confirmed?'PLANNING':task.status,confirmed?0:task.progress,
+            confirmed?Number(admitted!.estimate):task.estimate,confirmed?String(creation!.created_at):timestamp);
+        phase={id,sequence:1};
+      }
+      await this.db.prepare(`UPDATE task_sprint_phases_v1 SET outcome='CARRIED',exit_status=?,exit_progress=?,exit_estimate=?,exited_at=?,comment=?
+        WHERE id=? AND outcome='OPEN'`).run(task.status,task.progress,task.estimate,timestamp,input.comment?.trim()??'',phase.id);
+      await this.db.prepare("UPDATE tasks_v3 SET work_district_id=?,updated_at=? WHERE id=?").run(target.id,timestamp,task.id);
+      const phaseId=randomUUID();
+      await this.db.prepare(`INSERT INTO task_sprint_phases_v1(id,task_id,district_id,sequence,outcome,entry_status,entry_progress,entry_estimate,entered_at)
+        VALUES(?,?,?,?,'OPEN',?,?,?,?)`).run(phaseId,task.id,target.id,Number(phase.sequence)+1,task.status,task.progress,task.estimate,timestamp);
+      const layout=await this.synchronizeBlocks(countryId,task.cityId);
+      await this.recordTaskEvent(task.id,"SPRINT_CONTINUED",input.actor??"MCP",input.actorUserId,
+        {changedFields:["currentDistrictId"],fromDistrictId:current,toDistrictId:target.id,phaseId,comment:input.comment?.trim()??null,
+          changes:[{field:"currentDistrictId",before:String(source.name),after:String(target.name)}]},timestamp);
+      const updated=resultMode==='compact'?await this.getTaskCore(countryId,task.id):await this.getTask(countryId,task.id);
+      const data=(resultMode==='compact'?this.taskCommandResult(countryId,updated):updated) as TaskMutationResult<Mode>;
+      return {data,eventType:"task.continued",eventPayload:{taskId:task.id,cityId:task.cityId,fromDistrictId:current,toDistrictId:target.id,
+        currentDistrictId:target.id,phaseId,affectedBounds:layout.bounds}};
+    },resultMode);
   }
 
   async transferTask<Mode extends TaskResultMode = "full">(countryId: string, input: { taskId: string; targetDistrictId: string; comment?: string;
@@ -2496,6 +2571,8 @@ export class AppService {
     }
     return this.mutate<TaskMutationResult<Mode>>(countryId,"task.transfer.v1",input.idempotencyKey,input,async()=>{
       const task = await this.getTaskCore(countryId,input.taskId);
+      if(task.currentDistrictId || await this.db.prepare("SELECT 1 FROM task_sprint_phases_v1 WHERE task_id=?").get(task.id))
+        throw new DomainError("TASK_HAS_CONTINUATIONS","Основное здание задачи с продолжениями сохраняет свой участок; используйте task.continue");
       const target = await this.db.prepare(`SELECT d.id,d.city_id,d.status FROM districts_v3 d
         JOIN cities_v3 c ON c.id=d.city_id WHERE d.id=? AND c.country_id=?`).get<Row>(input.targetDistrictId,countryId);
       if (!target) throw new DomainError("NOT_FOUND","Район не найден");
@@ -2539,7 +2616,7 @@ export class AppService {
     }
     return await this.mutate<TaskMutationResult<Mode>>(countryId, "task.status.v3", input.idempotencyKey, input, async () => {
                       const task = await this.getTaskCore(countryId, input.taskId);
-                      const district = await this.db.prepare("SELECT status FROM districts_v3 WHERE id = ?").get(task.districtId) as Row | undefined;
+                      const district = await this.db.prepare("SELECT status FROM districts_v3 WHERE id = ?").get(task.currentDistrictId??task.districtId) as Row | undefined;
                       if (district?.status === "PLANNED" && input.status !== "PLANNING") {
                         throw new DomainError("DISTRICT_NOT_ACTIVE", "Задачу планового района нельзя начать до активации района");
                       }
@@ -2577,6 +2654,8 @@ export class AppService {
                             changes: taskScalarChanges(task, { ...task, assignee: { id: input.actorUserId!, name: autoAssignedName } }) }, updatedAt);
                       }
                       await this.db.prepare("UPDATE tasks_v3 SET status = ?, progress = ?, updated_at = ? WHERE id = ?").run(input.status, progress, updatedAt, input.taskId);
+                      if(input.status==='COMPLETED') await this.db.prepare(`UPDATE task_sprint_phases_v1 SET outcome='COMPLETED',exit_status='COMPLETED',
+                        exit_progress=100,exit_estimate=?,exited_at=? WHERE task_id=? AND outcome='OPEN'`).run(task.estimate,updatedAt,task.id);
                       if (input.comment?.trim()) await this.db.prepare("INSERT INTO task_comments_v3 (id, task_id, body, actor, created_at) VALUES (?, ?, ?, ?, ?)")
                                                                         .run(randomUUID(), input.taskId, input.comment.trim().slice(0, 8000), input.actor ?? "MCP client", updatedAt);
                       await this.recordTaskEvent(input.taskId, "STATUS_CHANGED", input.actor ?? "MCP", input.actorUserId, {
@@ -2586,11 +2665,21 @@ export class AppService {
                       if (task.stage !== TASK_STAGE[input.status]) await this.synchronizeBlocks(countryId, task.cityId);
                       const updated = resultMode === "compact" ? await this.getTaskCore(countryId, input.taskId) : await this.getTask(countryId, input.taskId);
                       const data = (resultMode === "compact" ? this.taskCommandResult(countryId, updated) : updated) as TaskMutationResult<Mode>;
+                      let affectedBounds=expandRect(boundsOf([...updated.footprint,...updated.accessPath]),1);
+                      if(updated.currentDistrictId){
+                        const bounds=await this.db.prepare(`SELECT MIN((block_snapshot_json->>'origin_x')::int)-2 AS min_x,
+                          MIN((block_snapshot_json->>'origin_y')::int)-2 AS min_y,
+                          MAX((block_snapshot_json->>'origin_x')::int+(block_snapshot_json->>'width')::int)+2 AS max_x,
+                          MAX((block_snapshot_json->>'origin_y')::int+(block_snapshot_json->>'height')::int)+2 AS max_y
+                          FROM site_markers_v1 WHERE target_task_id=? AND kind='CONTINUATION'`).get<Row>(updated.id);
+                        if(bounds?.min_x!=null)affectedBounds=unionRect(affectedBounds,{minX:Number(bounds.min_x),minY:Number(bounds.min_y),maxX:Number(bounds.max_x),maxY:Number(bounds.max_y)});
+                      }
                       return {
                         data,
                         eventType: "task.status_changed",
                         eventPayload: {
                           taskId: input.taskId,
+                          cityId:updated.cityId,
                           status: input.status,
                           ...(autoAssign ? { assigneeUserId: updated.assignee?.id } : {}),
                           progress,
@@ -2605,7 +2694,7 @@ export class AppService {
                           // access/footprint context and can land one cell into
                           // a neighbouring chunk. Invalidate that ownership halo
                           // even though ordinary building ground remains reusable.
-                          affectedBounds: expandRect(boundsOf([...updated.footprint, ...updated.accessPath]), 1),
+                          affectedBounds,
                         },
                       };
                     }, resultMode);
@@ -3220,6 +3309,7 @@ export class AppService {
       blockPlaques: nearbyDistricts.flatMap(d => (d.blockPlaques ?? []).filter(plaque => contains(chunkBounds, plaque.origin))),
       tasks: chunkTasks.map((task) => ({
         id: task.id, taskNumber: task.taskNumber, cityId: task.cityId, districtId: task.districtId, title: task.title,
+        ...(task.currentDistrictId?{currentDistrictId:task.currentDistrictId}:{}),
         workItemType: task.workItemType,
         ...(lod === "DETAIL" && defectSummaryByTask.has(task.id) ? { defectSummary: defectSummaryByTask.get(task.id) } : {}),
         status: task.status, progress: task.progress, stage: task.stage,

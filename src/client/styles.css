@@ -140,6 +140,16 @@ input:focus { border-color: var(--ui-border-control); box-shadow: none; }
 .plan-delete:disabled { opacity: .55; cursor: wait; }
 .district-dot { width: 9px; height: 9px; justify-self: center; border-radius: var(--ui-radius-card); background: var(--ui-surface); }
 .district-planned { background: #8a6aa9; }.district-active { background: #e0b849; }.district-completed { background: #6aac67; }
+.task-sprint-locations { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:0 0 20px; }
+.task-sprint-locations div { padding:12px; border:1px solid var(--ui-border); border-radius:8px; }
+.task-sprint-locations dt { font-size:12px; opacity:.75; margin-bottom:4px; }
+.task-sprint-locations dd { margin:0; font-weight:700; overflow-wrap:anywhere; }
+.task-sprint-chain { display:grid; gap:16px; padding:0; margin:0; list-style:none; }
+.task-sprint-chain li { display:flex; gap:12px; padding-bottom:16px; border-bottom:1px solid var(--ui-border); }
+.task-sprint-sequence { display:grid; place-items:center; flex:0 0 28px; height:28px; border:1px solid var(--ui-border-control); border-radius:50%; color:var(--ui-accent); }
+.task-sprint-chain li>div { min-width:0; }
+.task-sprint-chain p { margin:4px 0 0; overflow-wrap:anywhere; }
+.task-sprint-comment { white-space:pre-wrap; }
 .task-stage-dot { width: 22px; height: 22px; display: grid; place-items: center; justify-self: center; border-radius: 6px; font-size: 12px !important; font-weight: 800; }
 .plan-placeholder { padding: 16px; color: var(--muted); font-size: 12px; }
 .world-canvas, .world-canvas-element { display: block; width: 100%; height: 100%; }

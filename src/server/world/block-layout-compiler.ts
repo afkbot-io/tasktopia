@@ -25,6 +25,8 @@ export type BlockLayoutTaskInput = {
   serviceRole?: BlockServiceRole;
   serviceTrigger?: string;
   serviceRoleAssigned?: boolean;
+  /** A parcel-only placement, consumed into a linked site rather than a task. */
+  continuation?: { taskId: string; title: string; sequence: number };
 };
 export type BlockLayoutDistrictInput = { id: string; archetype: string; sequence: number; tasks: BlockLayoutTaskInput[] };
 export type BlockLayoutCompilerInput = {
@@ -353,6 +355,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   if (input.previous && input.previous.id !== layoutId) throw new Error("Previous layout identity mismatch");
   const blocks: CityBlockV1[] = []; const placements: TaskPlacementV1[] = []; const districtLayouts: DistrictLayoutV1[] = [];
   const districts = [...input.districts].sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id));
+  const continuationInputs = new Map(input.districts.flatMap(d=>d.tasks.filter(t=>t.continuation).map(t=>[t.id,t] as const)));
   const previousPlacements = new Map(input.previous?.placements.map((p) => [p.taskId, p]) ?? []);
   const kinds = new Map(input.districts.flatMap(d => d.tasks.map(t => [t.id, t.visualKind ?? "BUILDING"] as const)));
   const durableTriggers = new Set(input.districts.flatMap(d => d.tasks.flatMap(t => t.serviceTrigger ? [t.serviceTrigger] : [])));
@@ -435,6 +438,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   const homeUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>(),zones:new Map<string,Map<string,number>>() };
   const serviceUsage = { blocks: new Map<string, Map<string, number>>(), city: new Map<string, number>() };
   const recordFamily = (placement: TaskPlacementV1) => {
+    if (continuationInputs.has(placement.taskId)) return;
     if (kinds.get(placement.taskId) !== "BUILDING") return;
     // A mandatory service can use a generic home-shaped sprite. It must not
     // consume that family's residential diversity allowance.
@@ -460,6 +464,7 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
   if(infrastructure.local)for(const block of reservedBlocks)for(const [slot,role] of Object.entries(block.parameters.slotRoles as Record<string,BlockServiceRole>??{}))
     if(!closedSlots.has(`${block.id}:${slot}`))infrastructure.local.addRole(block,role);
   const recordInfrastructure = (placement: TaskPlacementV1) => {
+    if (continuationInputs.has(placement.taskId)) return;
     const context = blockContext.get(placement.blockId)!;
     if (!infrastructure.nonemptyBlocks.has(placement.blockId)) {
       infrastructure.nonemptyBlocks.add(placement.blockId); infrastructure.cityDistricts.add(context.block.districtLayoutId);
@@ -683,7 +688,19 @@ export function compileBlockLayout(input: BlockLayoutCompilerInput): CompiledBlo
       recordFamily(placement);
       recordInfrastructure(placement);
       reserveLandmark(authoredFamily, task.id, selected.block.id);
-      reserveNextInfrastructure(district, available, occupied, infrastructure);
+      if(!task.continuation) reserveNextInfrastructure(district, available, occupied, infrastructure);
+  }
+  // The temporary allocator keys never become task IDs or public numbers.
+  // Linked sites share canonical task identity while retaining their own land.
+  if(continuationInputs.size) for(let index=placements.length-1;index>=0;index--) {
+    const placement=placements[index]!;
+    const source=continuationInputs.get(placement.taskId);
+    if(!source) continue;
+    siteMarkers.push({id:source.id,blockId:placement.blockId,slotKey:placement.slotKey,kind:"CONTINUATION",
+      targetTaskId:source.continuation!.taskId,assetVariant:"sprint-worksite",
+      snapshot:{taskNumber:source.taskNumber,title:source.continuation!.title,sequence:source.continuation!.sequence,
+        buildingFamily:placement.buildingFamily,lastStage:placement.constructionStage}});
+    placements.splice(index,1);
   }
   const counts = new Map<string, number>(); const markerCounts = new Map<string, number>();
   const taskNumbers = new Map(input.districts.flatMap(d => d.tasks.map(t => [t.id, t.taskNumber] as const)));

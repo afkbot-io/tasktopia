@@ -114,11 +114,12 @@ export function createDistrictDevelopmentGeometry(scene: CitySceneDto) {
   };
 }
 
-export function districtDevelopmentSummary(name:string,tasks:readonly {id:string;status:TaskStatus}[]) {
+export function districtDevelopmentSummary(name:string,tasks:readonly {id:string;status:TaskStatus;sprintOutcome?:string}[]) {
   const unique=[...new Map(tasks.map(task=>[task.id,task])).values()];
-  const done=unique.filter(t=>t.status==='COMPLETED').length;
-  const active=unique.filter(t=>t.status==='STARTED'||t.status==='IN_PROGRESS').length;
-  const testing=unique.filter(t=>t.status==='TESTING').length;
-  const planned=unique.filter(t=>t.status==='PLANNING').length;
-  return {title:name,line:unique.length?`${done} / ${unique.length} готово · ${active} в работе`:'Задач пока нет',detail:`${testing} на проверке · ${planned} в планах`};
+  const current=unique.filter(t=>t.sprintOutcome!=='CARRIED'),carried=unique.length-current.length;
+  const done=current.filter(t=>t.status==='COMPLETED').length;
+  const active=current.filter(t=>t.status==='STARTED'||t.status==='IN_PROGRESS').length;
+  const testing=current.filter(t=>t.status==='TESTING').length;
+  const planned=current.filter(t=>t.status==='PLANNING').length;
+  return {title:name,line:unique.length?`${done} / ${unique.length} готово · ${active} в работе`:'Задач пока нет',detail:`${testing} на проверке · ${planned} в планах${carried?` · ${carried} продолжены в другом спринте`:''}`};
 }

@@ -206,9 +206,19 @@ PY
 
 check_compact_rollback_image() {
   [[ "$app_was_running" == true && -n "$previous_app_image_id" ]] || return 0
-  local compatible descriptor required_chunks
+  local compatible descriptor required_chunks continuation_usage
   if ! descriptor="$(compact_release_descriptor)"; then
     echo "Compact cutover: candidate geometry descriptor is missing/invalid; automatic image rollback cannot be proven safe." >&2
+    return 1
+  fi
+  # A legacy writer would move/free the home parcel and ignore reserved sites.
+  # Accepted commands also fence rollback before the first site is committed.
+  if ! continuation_usage="$(compact_release_query "SELECT CASE WHEN
+    EXISTS(SELECT 1 FROM site_markers_v1 WHERE kind='CONTINUATION') OR
+    EXISTS(SELECT 1 FROM world_generation_jobs_v1 WHERE operation='task.continue' AND status<>'FAILED')
+    THEN 1 ELSE 0 END AS continuation_usage;")" \
+    || [[ "$continuation_usage" != 0 && "$continuation_usage" != 1 ]]; then
+    echo "Sprint continuation usage is unreadable; previous writer compatibility is unknown." >&2
     return 1
   fi
   if ! required_chunks="$(compact_release_scene_max_chunks)" \
@@ -226,9 +236,11 @@ check_compact_rollback_image() {
       try { return crypto.createHash("sha256").update(fs.readFileSync("/app/migrations/postgres/" + name)).digest("hex") === process.argv[i + 1]; }
       catch { return false; }
     });
-    let supportsReaders = false, supportsGeometry = false, supportsCapacity = false;
+    let supportsReaders = false, supportsGeometry = false, supportsCapacity = false, supportsContinuations = false;
     try {
       const capability = JSON.parse(fs.readFileSync("/app/package.json", "utf8")).tasktopiaRuntime;
+      supportsContinuations = process.argv[6] === "0" || (process.argv[6] === "1"
+        && Number.isSafeInteger(capability?.taskSprintContinuations) && capability.taskSprintContinuations >= 1);
       const requiredChunks = Number(process.argv[5]);
       // Missing capacity is the explicitly known legacy1.26 reader limit.
       // A malformed declared value never falls back to that legacy default.
@@ -266,12 +278,12 @@ check_compact_rollback_image() {
           && fields.every(field => equal(entry[field], manifest.buildings[key][field]))
           && entry.stages.every(stage => fs.existsSync("/app/dist/public/game-assets/v5/" + stage)));
     } catch { /* Missing capability is not evidence of a compatible reader. */ }
-    process.stdout.write(ok && supportsReaders && supportsGeometry && supportsCapacity ? "compatible" : "incompatible");
+    process.stdout.write(ok && supportsReaders && supportsGeometry && supportsCapacity && supportsContinuations ? "compatible" : "incompatible");
   ' "$(compact_migration_checksum 0023_compact_block_cutover.sql)" \
     "$(compact_migration_checksum 0024_dense_slot_planning.sql)" \
-    "$(compact_migration_checksum 0029_country_road_snapshots.sql)" "$descriptor" "$required_chunks")" \
+    "$(compact_migration_checksum 0029_country_road_snapshots.sql)" "$descriptor" "$required_chunks" "$continuation_usage")" \
     || [[ "$compatible" != compatible ]]; then
-    echo "Compact cutover: previous running image cannot read this schema, geometry or actual city scene extent ($required_chunks chunks); automatic image rollback is unsafe. Preserve the current runtime for a compatible forward fix; never restart unsupported old code against expanded cities." >&2
+    echo "Compact cutover: previous running image cannot read this schema, geometry, sprint continuations or actual city scene extent ($required_chunks chunks); automatic image rollback is unsafe. Preserve the current runtime for a compatible forward fix; never restart unsupported old code against expanded cities or continued tasks." >&2
     return 1
   fi
 }

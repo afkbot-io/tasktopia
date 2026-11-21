@@ -9,7 +9,7 @@ import { startBackgroundPoll } from "./background-poll";
 import { currentGenerationRequestSignal } from "./generation-request-context";
 
 export type WorldGenerationOperation = "city.create" | "district.create" | "task.create" | "country.regenerate"
-  | "task.set_status" | "task.transfer" | "task.delete" | "city.delete" | "district.delete" | "district.complete";
+  | "task.set_status" | "task.transfer" | "task.continue" | "task.delete" | "city.delete" | "district.delete" | "district.complete";
 export type WorldGenerationJobStatus = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
 export type WorldGenerationJob = {
   id: string;
@@ -35,6 +35,7 @@ const RECEIPT_OPERATIONS: Record<WorldGenerationOperation, string> = {
   "city.create": "city.create.v3", "district.create": "district.create.v3",
   "task.create": "task.create.v3", "country.regenerate": "country.regenerate.v1",
   "task.set_status": "task.status.v3", "task.transfer": "task.transfer.v1", "task.delete": "task.delete.v1",
+  "task.continue": "task.continue.v1",
   "city.delete": "city.delete.v1", "district.delete": "district.delete.v1", "district.complete": "district.complete.v3",
 };
 const LEGACY_OPERATIONS = new Set<WorldGenerationOperation>(["city.create", "district.create", "task.create", "country.regenerate"]);
@@ -98,7 +99,7 @@ function jobFromRow(row: Row): WorldGenerationJob {
   return {
     id: String(row.id), countryId: String(row.country_id), operation: String(row.operation) as WorldGenerationOperation,
     idempotencyKey: String(row.idempotency_key), payload: json<Record<string, unknown>>(row.payload_serialized ?? row.payload_json),
-    status: (row.status === "QUEUED" ? "PENDING" : row.status === "EXECUTING" ? "RUNNING" : String(row.status)) as WorldGenerationJobStatus,
+    status: (["QUEUED","CONTINUE_QUEUED"].includes(String(row.status)) ? "PENDING" : ["EXECUTING","CONTINUE_EXECUTING"].includes(String(row.status)) ? "RUNNING" : String(row.status)) as WorldGenerationJobStatus,
     attempts: Number(row.attempts), maxAttempts: Number(row.max_attempts),
     ...(row.result_json == null ? {} : { result: json(row.result_json) }),
     ...(error ? { error: error.code === "GENERATION_FAILED" ? { code: error.code, message: GENERATION_FAILED_MESSAGE } : error } : {}),
@@ -123,7 +124,7 @@ export async function enqueueWorldGenerationJob(
       // Leading JSON whitespace keeps this TEXT value and its original key
       // order intact; JSON.parse and the DB equality constraint accept it.
       LEGACY_OPERATIONS.has(operation) ? null : ` ${JSON.stringify(normalizedPayload)}`,
-      LEGACY_OPERATIONS.has(operation) ? "PENDING" : "QUEUED", timestamp, timestamp);
+      operation==='task.continue'?'CONTINUE_QUEUED':LEGACY_OPERATIONS.has(operation) ? "PENDING" : "QUEUED", timestamp, timestamp);
   const row = await db.prepare(`SELECT * FROM world_generation_jobs_v1
     WHERE country_id = ? AND operation = ? AND idempotency_key = ?`).get(countryId, operation, idempotencyKey) as Row | undefined;
   if (!row) throw new Error("World generation job was not persisted");
@@ -148,11 +149,11 @@ export async function readWorldGenerationQueueStats(db: Db, leaseMs = 15 * 60_00
   if (!observation.pending) {
     const active = observation;
     active.pending = (async () => {
-      const row = await db.prepare(`SELECT COUNT(*) FILTER(WHERE status IN ('PENDING','QUEUED'))::int AS pending,
-        COUNT(*) FILTER(WHERE status IN ('RUNNING','EXECUTING'))::int AS running,
-        COUNT(*) FILTER(WHERE status IN ('RUNNING','EXECUTING') AND locked_at<now()-(?*INTERVAL '1 millisecond'))::int AS expired,
-        EXTRACT(EPOCH FROM (now()-MIN(created_at) FILTER(WHERE status IN ('PENDING','QUEUED'))))*1000 AS oldest_age
-        FROM world_generation_jobs_v1 WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING')`).get<Row>(leaseMs);
+      const row = await db.prepare(`SELECT COUNT(*) FILTER(WHERE status IN ('PENDING','QUEUED','CONTINUE_QUEUED'))::int AS pending,
+        COUNT(*) FILTER(WHERE status IN ('RUNNING','EXECUTING','CONTINUE_EXECUTING'))::int AS running,
+        COUNT(*) FILTER(WHERE status IN ('RUNNING','EXECUTING','CONTINUE_EXECUTING') AND locked_at<now()-(?*INTERVAL '1 millisecond'))::int AS expired,
+        EXTRACT(EPOCH FROM (now()-MIN(created_at) FILTER(WHERE status IN ('PENDING','QUEUED','CONTINUE_QUEUED'))))*1000 AS oldest_age
+        FROM world_generation_jobs_v1 WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING','CONTINUE_QUEUED','CONTINUE_EXECUTING')`).get<Row>(leaseMs);
       const value: WorldGenerationQueueStats = { sampledAt: Date.now(), pending: Number(row?.pending ?? 0), running: Number(row?.running ?? 0),
         expiredRunning: Number(row?.expired ?? 0), oldestPendingAgeMs: row?.oldest_age == null ? null : Math.max(0, Number(row.oldest_age)) };
       active.value = value; return value;
@@ -276,19 +277,20 @@ export class PostgresWorldGenerationDispatcher {
 async function claimWorldGenerationJob(db: Db, workerId: string, leaseMs: number): Promise<(WorldGenerationJob & { recoveryOnly: boolean }) | undefined> {
   const row = await db.prepare(`WITH country_heads AS (
       SELECT DISTINCT ON (country_id) id FROM world_generation_jobs_v1
-      WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING') ORDER BY country_id,created_at,id
+      WHERE status IN ('PENDING','RUNNING','QUEUED','EXECUTING','CONTINUE_QUEUED','CONTINUE_EXECUTING') ORDER BY country_id,created_at,id
     ), candidate AS (
       SELECT job.id,job.country_id,job.attempts >= job.max_attempts AS recovery_only
       FROM world_generation_jobs_v1 job JOIN country_heads head ON head.id=job.id
       JOIN countries country ON country.id=job.country_id
-      WHERE (job.status IN ('PENDING','QUEUED') AND job.attempts < job.max_attempts)
-        OR (job.status IN ('RUNNING','EXECUTING') AND job.locked_at < now() - (? * interval '1 millisecond'))
+      WHERE (job.status IN ('PENDING','QUEUED','CONTINUE_QUEUED') AND job.attempts < job.max_attempts)
+        OR (job.status IN ('RUNNING','EXECUTING','CONTINUE_EXECUTING') AND job.locked_at < now() - (? * interval '1 millisecond'))
       ORDER BY country.generation_last_served_at,job.created_at,job.id FOR UPDATE OF country,job SKIP LOCKED LIMIT 1
     ), served AS (
       UPDATE countries country SET generation_last_served_at=clock_timestamp()
       FROM candidate WHERE country.id=candidate.country_id RETURNING country.id
     ) UPDATE world_generation_jobs_v1 job SET
-      status=CASE WHEN job.status IN ('QUEUED','EXECUTING') THEN 'EXECUTING' ELSE 'RUNNING' END,
+      status=CASE WHEN job.status IN ('CONTINUE_QUEUED','CONTINUE_EXECUTING') THEN 'CONTINUE_EXECUTING'
+        WHEN job.status IN ('QUEUED','EXECUTING') THEN 'EXECUTING' ELSE 'RUNNING' END,
       attempts=job.attempts + CASE WHEN candidate.recovery_only THEN 0 ELSE 1 END,
       locked_at=now(), locked_by=?, updated_at=now()
     FROM candidate,served WHERE job.id=candidate.id AND served.id=candidate.country_id
@@ -320,6 +322,7 @@ async function executeJob(service: AppService, job: WorldGenerationJob): Promise
   if (job.operation === "country.regenerate") return service.regenerateCountry(job.countryId, input);
   if (job.operation === "task.set_status") return service.updateTaskStatus(job.countryId, input, "compact");
   if (job.operation === "task.transfer") return service.transferTask(job.countryId, input, "compact");
+  if (job.operation === "task.continue") return service.continueTask(job.countryId, input, "compact");
   if (job.operation === "task.delete") return service.deleteTask(job.countryId, input);
   if (job.operation === "city.delete") return service.deleteCity(job.countryId, input);
   if (job.operation === "district.delete") return service.deleteDistrict(job.countryId, input);
@@ -339,7 +342,7 @@ export async function processNextWorldGenerationJob(
   const heartbeatEveryMs = Math.max(10, Math.floor(leaseMs / 3));
   const heartbeat = startBackgroundPoll(async () => {
     await db.prepare(`UPDATE world_generation_jobs_v1 SET locked_at=now(), updated_at=now()
-      WHERE id=? AND locked_by=? AND status IN ('RUNNING','EXECUTING')`).run(job.id, workerId);
+      WHERE id=? AND locked_by=? AND status IN ('RUNNING','EXECUTING','CONTINUE_EXECUTING')`).run(job.id, workerId);
   }, heartbeatEveryMs, onError);
   try {
     const result = job.recoveryOnly ? await recoverCommittedFinalAttempt(db, job) : await executeJob(service, job);
@@ -356,7 +359,8 @@ export async function processNextWorldGenerationJob(
     }
     const terminal = error instanceof DomainError;
     await db.prepare(`UPDATE world_generation_jobs_v1 SET
-      status=CASE WHEN attempts >= max_attempts OR ? THEN 'FAILED' WHEN status='EXECUTING' THEN 'QUEUED' ELSE 'PENDING' END,
+      status=CASE WHEN attempts >= max_attempts OR ? THEN 'FAILED' WHEN status='CONTINUE_EXECUTING' THEN 'CONTINUE_QUEUED'
+        WHEN status='EXECUTING' THEN 'QUEUED' ELSE 'PENDING' END,
       error_json=?::jsonb, locked_at=NULL, locked_by=NULL,
       finished_at=CASE WHEN attempts >= max_attempts OR ? THEN now() ELSE NULL END, updated_at=now()
       WHERE id=? AND locked_by=?`).run(terminal, JSON.stringify(failure), terminal, job.id, workerId);

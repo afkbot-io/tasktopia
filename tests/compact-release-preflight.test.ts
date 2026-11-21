@@ -19,6 +19,7 @@ const currentCapabilities = {
   countryOverviewSchemaVersions: [7,COUNTRY_OVERVIEW_SCHEMA_VERSION],
   countryRoadSnapshotTables: ["country_road_snapshots_v1"],
   citySceneMaxChunks: CITY_SCENE_MAX_CHUNKS,
+  taskSprintContinuations: 1,
   blockStructuralShapes: COMPACT_BUILDING_SHAPES,
 };
 const publicManifest = JSON.parse(readFileSync(new URL("../public/game-assets/v5/manifest.json", import.meta.url), "utf8"));
@@ -33,6 +34,7 @@ const candidateDescriptor = {
 function inspectPrevious(capability: unknown, options: {
   manifest?: typeof publicManifest; candidate?: typeof candidateDescriptor; missingManifest?: boolean; missingStage?: boolean;
   requiredChunks?: unknown;
+  continuationUsage?: unknown;
 } = {}) {
   const program = readFileSync(script, "utf8").match(/--entrypoint node "\$previous_app_image_id" -e '([\s\S]*?)\n {2}'/)![1]!;
   const hash = createHash("sha256").update("migration").digest("hex");
@@ -50,7 +52,7 @@ function inspectPrevious(capability: unknown, options: {
       },
       existsSync: (path: string) => !options.missingStage && path.startsWith("/app/dist/public/game-assets/v5/buildings/"),
     } : { createHash },
-    process: { argv: ["node", hash, hash, hash, JSON.stringify(options.candidate ?? candidateDescriptor), String(options.requiredChunks ?? 1)],
+    process: { argv: ["node", hash, hash, hash, JSON.stringify(options.candidate ?? candidateDescriptor), String(options.requiredChunks ?? 1), String(options.continuationUsage ?? 0)],
       stdout: { write: (value: string) => { output += value; } } },
   });
   return output;
@@ -77,6 +79,10 @@ set -eu
 printf '%s\\n' "$*" >> "$FAKE_CALLS"
 if [[ "$1" == run ]]; then printf '%s' "$FAKE_COMPATIBLE"; exit 0; fi
 case "$*" in
+  *continuation_usage*)
+    [[ "$FAKE_MODE" != unavailable_continuations ]] || exit 8
+    [[ "$FAKE_MODE" != invalid_continuations ]] || { printf invalid; exit 0; }
+    printf 0 ;;
   *city_scene_layouts*)
     [[ "$FAKE_MODE" != unavailable_scene_extent ]] || exit 8
     [[ "$FAKE_MODE" != invalid_scene_extent ]] || { printf invalid; exit 0; }
@@ -113,6 +119,23 @@ esac
 }
 
 describe("compact release preflight", () => {
+  it("allows a legacy rollback only before any continuation site or accepted command exists", () => {
+    const legacy: Partial<typeof currentCapabilities> = { ...currentCapabilities };
+    delete legacy.taskSprintContinuations;
+    expect(inspectPrevious(legacy, { continuationUsage: 0 })).toBe("compatible");
+    expect(inspectPrevious(legacy, { continuationUsage: 1 })).toBe("incompatible");
+    expect(inspectPrevious(currentCapabilities, { continuationUsage: 1 })).toBe("compatible");
+    for (const taskSprintContinuations of [undefined, null, 0, "1", 1.5]) {
+      expect(inspectPrevious({ ...currentCapabilities, taskSprintContinuations }, { continuationUsage: 1 })).toBe("incompatible");
+    }
+    expect(inspectPrevious(currentCapabilities, { continuationUsage: "invalid" })).toBe("incompatible");
+  });
+  it.each(["unavailable_continuations", "invalid_continuations"])("fails closed when continuation usage cannot be read (%s)", mode => {
+    const result = runPreflight(mode, true);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Sprint continuation usage is unreadable");
+    expect(result.calls).not.toContain("--entrypoint node");
+  });
   it.each(["unavailable_scene_extent", "invalid_scene_extent"])("rejects unknown actual extent before inspecting an old image (%s)", mode => {
     const result = runPreflight(mode, true);
     expect(result.status).not.toBe(0);

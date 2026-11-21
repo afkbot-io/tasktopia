@@ -99,6 +99,10 @@ class PostgresDb implements Db {
     try {
       result = await this.pool.begin(async (sql) => {
         context.executor = sql;
+        // Transaction-local capability also covers maintenance CLIs. A SET
+        // utility does not take a snapshot before readWorldSnapshot selects
+        // its isolation level; it never survives COMMIT/ROLLBACK or pool reuse.
+        await sql.unsafe("SET LOCAL tasktopia.sprint_continuations = '1'", [], { prepare: false });
         return transactionContext.run(context, callback);
       }) as T;
     } catch (error) {

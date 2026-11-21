@@ -28,8 +28,8 @@ test("вход, карта, панели и карточка удобны на �
   await page.locator(".task-search-results button").first().click();
   await expect(page.locator("#task-title")).toBeVisible();
   const tabs = page.getByRole("tab");
-  await expect(tabs).toHaveCount(4);
-  for (const name of ["Задача", "Материалы", "Обсуждение", "История"]) {
+  await expect(tabs).toHaveCount(5);
+  for (const name of ["Задача", "Материалы", "Обсуждение", "История", "Спринты"]) {
     const tab = page.getByRole("tab", { name: new RegExp(`^${name}`) });
     if (hasTouch) await tab.tap(); else await tab.click();
     await expect(tab).toHaveAttribute("aria-selected", "true");

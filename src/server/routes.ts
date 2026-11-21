@@ -787,6 +787,14 @@ export async function registerRoutes(app: FastifyInstance, db: Db, service: AppS
   });
 
   const taskReadCountryQuery = z.object({ countryId: z.string().uuid() }).strict();
+  app.get("/api/tasks/:taskId/sprints",async(request,reply)=>{
+    const user=await requireUser(db,request,reply);
+    if(!user)return reply;
+    const query=parse(taskReadCountryQuery.extend({limit:z.coerce.number().int().min(1).max(100).default(50),cursor:z.string().min(1).max(8192).optional()}),request.query);
+    if(!await countryRole(db,user.id,query.countryId))throw new DomainError("FORBIDDEN","У вас нет доступа к этой стране");
+    const taskId=parse(z.string().uuid(),(request.params as {taskId:string}).taskId);
+    return reply.header("Cache-Control","private, no-store").send(await service.listTaskSprints(query.countryId,taskId,query));
+  });
   app.get("/api/tasks/:taskId/card", async (request, reply) => {
     const user = await requireUser(db, request, reply);
     if (!user) return reply;

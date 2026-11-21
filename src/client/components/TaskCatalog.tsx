@@ -40,7 +40,7 @@ export function TaskCatalog({countryId,cityId,districtId,districtName,userId,rev
       {!page.pending&&!page.error&&!page.items.length&&<p className="plan-placeholder" role="status">Подходящих задач нет</p>}
       <ul className="task-catalog-rows" aria-label="Задачи города">
         {page.items.map(task=><li key={task.id} className="plan-row"><button type="button" data-task-id={task.id} onClick={event=>{event.currentTarget.focus();onSelectTask(task);}}>
-          <i className={`task-stage-dot stage-${task.stage}`}>{task.stage}</i><span><strong>#{task.taskNumber} · {task.title}</strong><small>{task.districtName} · {TYPES[task.workItemType]} · {CATALOG_STATUS[task.status]} · {task.progress}%</small><small>{PRIORITIES[task.priority]} приоритет · Объём: {task.estimate} SP</small></span>
+          <i className={`task-stage-dot stage-${task.stage}`}>{task.sprintOutcome==='CARRIED'?'↗':task.stage}</i><span><strong>#{task.taskNumber} · {task.title}</strong><small>{task.districtName} · {TYPES[task.workItemType]} · {task.sprintOutcome==='CARRIED'?`Продолжена в другом спринте · ${task.sprintProgress}% при передаче`:`${CATALOG_STATUS[task.status]} · ${task.progress}%`}</small><small>{PRIORITIES[task.priority]} приоритет · Объём: {task.estimate} SP</small></span>
         </button></li>)}
       </ul>
     </div>

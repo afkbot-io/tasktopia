@@ -9,7 +9,7 @@ import type { BlockServiceRole, CityBlockV1, CompiledBlockLayoutV1, Construction
 import { blockSlots } from "../../shared/block-templates";
 import { isTaskParkVariant, selectTaskParkVariant, taskParkSize } from "../../shared/task-park-catalog";
 import { TASK_STAGE, type Rect, type TaskStatus } from "../../shared/contracts";
-import { compileBlockLayout, type BlockLayoutCompilerInput } from "./block-layout-compiler";
+import { compileBlockLayout, type BlockLayoutCompilerInput, type BlockLayoutTaskInput } from "./block-layout-compiler";
 import { persistReadyBlockLayout, activateBlockLayout } from "./block-layout-store";
 import { now, transaction, type Db } from "../db";
 import { isBuildableTerrain, terrainAt } from "../../shared/world-terrain";
@@ -37,7 +37,7 @@ export async function readActiveBlockLayouts(db: Db, cityIds: readonly string[])
     (SELECT COALESCE(jsonb_agg(d ORDER BY sequence),'[]') FROM district_layouts_v1 d WHERE d.layout_id=l.id) AS districts,
     (SELECT COALESCE(jsonb_agg(b ORDER BY sequence,id),'[]') FROM city_blocks_v1 b WHERE b.layout_id=l.id) AS blocks,
     (SELECT COALESCE(jsonb_agg(p ORDER BY task_id),'[]') FROM task_placements_v1 p WHERE p.layout_id=l.id) AS placements,
-    (SELECT COALESCE(jsonb_agg(m ORDER BY id),'[]') FROM site_markers_v1 m WHERE m.layout_id=l.id AND m.kind='RUINED') AS markers,
+    (SELECT COALESCE(jsonb_agg(m ORDER BY id),'[]') FROM site_markers_v1 m WHERE m.layout_id=l.id AND m.kind IN ('RUINED','CONTINUATION')) AS markers,
     (SELECT to_jsonb(r) FROM road_networks_v1 r WHERE r.layout_id=l.id) AS road
     FROM city_layouts_v1 l WHERE city_id=ANY(?::text[]) AND status='ACTIVE' ORDER BY city_id`).all<Row>(cityIds);
   return rows.map(activeBlockLayoutFromRow);
@@ -62,7 +62,7 @@ function activeBlockLayoutFromRow(row: Row): CompiledBlockLayoutV1 {
         facadeVariant: String(p.facade_variant), constructionStage: Number(p.construction_stage) as 1 | 2 | 3 | 4 | 5,
         ...(serviceRole ? { serviceRole } : {}) };
     }),
-    siteMarkers: markers.map((m) => ({ id: String(m.id), blockId: String(m.block_id), slotKey: String(m.slot_key), kind: String(m.kind) as "RUINED" | "RELOCATED", targetTaskId: m.target_task_id ? String(m.target_task_id) : undefined, snapshot: parse(m.snapshot_json), assetVariant: String(m.asset_variant) })),
+    siteMarkers: markers.map((m) => ({ id: String(m.id), blockId: String(m.block_id), slotKey: String(m.slot_key), kind: String(m.kind) as "RUINED" | "RELOCATED" | "CONTINUATION", targetTaskId: m.target_task_id ? String(m.target_task_id) : undefined, snapshot: parse(m.snapshot_json), assetVariant: String(m.asset_variant) })),
     roadNetwork: { id: String(road.id), checksum: String(road.checksum), schemaVersion: 1, nodes: parse(road.nodes_json), segments: parse(road.segments_json) },
   };
 }
@@ -123,6 +123,11 @@ async function saveActiveDelta(db: Db, previous: CompiledBlockLayoutV1, layout: 
       VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(layout_id,task_id) DO UPDATE SET block_id=excluded.block_id,slot_key=excluded.slot_key,building_family=excluded.building_family,construction_stage=excluded.construction_stage,updated_at=excluded.updated_at`)
       .run(p.taskId,layout.id,p.blockId,p.slotKey,p.buildingFamily,p.facadeVariant,p.constructionStage,timestamp,timestamp);
   }
+  const previousMarkers=new Set(previous.siteMarkers.map(marker=>marker.id));
+  for(const marker of layout.siteMarkers) if(!previousMarkers.has(marker.id)) await db.prepare(`INSERT INTO site_markers_v1
+    (id,layout_id,block_id,slot_key,kind,target_task_id,snapshot_json,asset_variant,created_at,updated_at)
+    VALUES(?,?,?,?,?,?,?::jsonb,?,?,?)`).run(marker.id,layout.id,marker.blockId,marker.slotKey,marker.kind,
+      marker.targetTaskId??null,JSON.stringify(marker.snapshot),marker.assetVariant,timestamp,timestamp);
   if (previous.roadNetwork.checksum !== layout.roadNetwork.checksum) {
     await db.prepare("UPDATE road_networks_v1 SET nodes_json=?::jsonb,segments_json=?::jsonb,checksum=? WHERE layout_id=?")
       .run(JSON.stringify(layout.roadNetwork.nodes),JSON.stringify(layout.roadNetwork.segments),layout.roadNetwork.checksum,layout.id);
@@ -185,6 +190,12 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
     const railwayReservations = await countryRailwayReservations(db,countryId,reset&&!previous?old?.id:undefined);
     const districts = await db.prepare("SELECT id,archetype,created_at FROM districts_v3 WHERE city_id=? ORDER BY created_at,id").all<Row>(cityId);
     const tasks = await db.prepare("SELECT id,district_id,task_number,status,visual_kind,visual_asset_key,visual_auto,building_type,requested_building_family,service_role,service_trigger,service_role_assigned FROM tasks_v3 WHERE city_id=? ORDER BY task_number,id").all<Row>(cityId);
+    const pendingSites=await db.prepare(`SELECT p.id,p.district_id,p.sequence,p.task_id,t.task_number,t.title
+      FROM task_sprint_phases_v1 p JOIN tasks_v3 t ON t.id=p.task_id
+      WHERE t.city_id=? AND p.sequence>1 AND NOT EXISTS(SELECT 1 FROM site_markers_v1 m WHERE m.id=p.id)
+      ORDER BY t.task_number,p.sequence`).all<Row>(cityId);
+    const sitesByDistrict=new Map<string,Row[]>();
+    for(const site of pendingSites){const id=String(site.district_id),sites=sitesByDistrict.get(id)??[];sites.push(site);sitesByDistrict.set(id,sites);}
     const existingSequence = new Map(previous?.districtLayouts.map((d) => [d.districtId,d.sequence]));
     const byDistrict = new Map<string, Row[]>();
     for (const task of tasks) {
@@ -228,7 +239,7 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
         return true;
       },
       districts:districts.map((d) => ({id:String(d.id),archetype:String(d.archetype),sequence:existingSequence.get(String(d.id)) ?? nextSequence++,
-        tasks:(byDistrict.get(String(d.id)) ?? []).map((t) => ({
+        tasks:[...(byDistrict.get(String(d.id)) ?? []).map((t): BlockLayoutTaskInput => ({
           id:String(t.id),taskNumber:Number(t.task_number),buildingFamily:String(t.building_type),facadeVariant:"south",autoVisualKind:Boolean(t.visual_auto),
           requestedFamily:t.requested_building_family ? String(t.requested_building_family) : undefined,
           serviceRole: t.service_role ? String(t.service_role) as BlockServiceRole : undefined,
@@ -238,7 +249,10 @@ export async function synchronizeCityBlocks(db: Db, countryId: string, cityId: s
           // AUTO artwork is derived from the selected slot, not durable placement intent.
           parkSize: !t.visual_auto && t.visual_kind === "PARK" ? taskParkSize(String(t.visual_asset_key)) : undefined,
           visualKind: t.visual_kind === "PARK" ? (t.visual_asset_key === "urban-lake" ? "WATER" : t.visual_asset_key === "urban-parking" ? "PARKING" : "PARK") : "BUILDING",
-        })),
+        })),...(sitesByDistrict.get(String(d.id))??[]).map(p=>({id:String(p.id),taskNumber:Number(p.task_number),
+          buildingFamily:"compact-row-v1",requestedFamily:"compact-row-v1",facadeVariant:"south",constructionStage:5 as const,
+          visualKind:"BUILDING" as const,autoVisualKind:false,serviceRoleAssigned:true,
+          continuation:{taskId:String(p.task_id),title:String(p.title),sequence:Number(p.sequence)}}))],
       })),
     };
     const layout = compileBlockLayout(input);

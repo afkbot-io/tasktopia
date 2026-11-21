@@ -39,6 +39,12 @@ describe("permanent site upgrade from populated version 25",()=>{
       await db.exec(await readFile(join(directory,"0026_permanent_task_sites.sql"),"utf8"));
       expect(await db.prepare("SELECT service_role,service_role_assigned FROM tasks_v3 WHERE id=?").get(taskId))
         .toEqual({service_role:"AIRPORT",service_role_assigned:true});
+      await db.prepare("UPDATE tasks_v3 SET visual_asset_key=building_type WHERE id=?").run(taskId);
+      // The current reader also joins sprint phases introduced after v26.
+      // Verify that the v25 parcel survives the complete supported upgrade.
+      for(const name of (await readdir(directory)).filter(name=>/^\d+.*\.sql$/.test(name)&&name>"0026_permanent_task_sites.sql").sort()) {
+        await db.exec(await readFile(join(directory,name),"utf8"));
+      }
       const original=(await readPermanentSiteFeatures(db,user.countryId))[0]!;
       expect(original).toMatchObject({id:markerId,cityId,districtId,origin:slot.origin,footprint:slot.footprint});
       await freezePermanentSiteGeometry(db,user.countryId);

@@ -2,7 +2,7 @@ import type { Db, Row } from "./db";
 
 // Keep heavy material columns out of the SELECT itself; to_jsonb(t)-keys would
 // still detoast/serialize them before discarding them.
-const coreColumns = `t.id,t.task_number,t.city_id,t.district_id,t.title,t.description,t.work_item_type,t.acceptance_criteria,
+const coreColumns = `t.id,t.task_number,t.city_id,t.district_id,t.work_district_id,t.title,t.description,t.work_item_type,t.acceptance_criteria,
   t.estimate,t.priority,t.status,t.progress,t.due_at,t.building_type,t.visual_kind,t.visual_asset_key,t.platform_type,
   t.created_at,t.updated_at,t.assignee_role,t.creator_user_id,t.assignee_user_id,t.for_user_id`;
 

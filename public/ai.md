@@ -636,6 +636,43 @@ owner remains the task creator; creator, assignee, and result owner may differ.
 
 Required scope: `tasks:write`.
 
+#### Продолжение одной задачи между спринтами: `task.continue`, `task.sprint_list`
+
+Для уже начатой, но незавершённой работы используйте MCP `task.continue`.
+Это одна задача с прежними ID и номером. Основные `districtId`, здание и
+дорога сохраняются; текущая работа получает `currentDistrictId` и связанную
+площадку в следующем районе. UI предоставляет только просмотр.
+
+```json
+{
+  "countryId": "<explicit-country-id>",
+  "taskId": "<task-id>",
+  "fromDistrictId": "<currentDistrictId-or-initial-districtId>",
+  "targetDistrictId": "<another-open-sprint-in-the-same-city>",
+  "comment": "Остаток работы переходит в следующую итерацию",
+  "idempotencyKey": "continue-task-sprint-24-v1",
+  "resultMode": "compact"
+}
+```
+
+Требуется `tasks:write`. `comment` необязателен (до 4000 символов),
+`resultMode` необязателен (`full` по умолчанию); остальные поля обязательны.
+Сначала прочитайте `task.get`: исходный рабочий район проверяется атомарно.
+При потере ответа повторите тот же payload и ключ, а принятый job опрашивайте
+через `world_generation.get`. PLANNING/COMPLETED, закрытый район, другой город
+и повторное посещение прежнего района запрещены. Активация нового и закрытие
+старого спринта выполняются отдельными MCP-командами.
+
+Читайте историю через `task.sprint_list` с явными `countryId`, `taskId`,
+`limit` (1–100, по умолчанию 50) и `cursor` из `nextCursor`. Результат
+`task.sprint-page` содержит основной/рабочий районы и этапы OPEN/CARRIED/COMPLETED.
+Переданный этап хранит процент, статус и оценку на момент передачи и не
+становится выполненным после завершения работы в другом спринте. Завершённые
+SP учитываются один раз. Списки по району показывают участие и необязательные
+`sprintOutcome`/`sprintProgress`; текущие `status`/`progress` единой задачи сохраняются.
+`task.transfer` для цепочки запрещён (`TASK_HAS_CONTINUATIONS`), как и удаление
+участвующего района (`DISTRICT_HAS_CONTINUATIONS`). HTTP-команды продолжения нет.
+
 #### `task.transfer`
 
 Moves an existing task to a different sprint in the same city and explicitly

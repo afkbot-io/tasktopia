@@ -1,49 +1,71 @@
-# Permanent task sites and sprint transfer
+# Постоянные площадки и продолжение задачи
 
-Implemented locally on 2026-09-05. A district is a sprint; a block is physical placement, not a new business grouping.
+Район — рабочий спринт; квартал и участок — физическое размещение.
+У задачи один канонический ID и номер в стране, включая работу в нескольких спринтах.
 
-## Contract
+## Продолжение работы
 
-`POST /api/tasks/:taskId/transfer` accepts a strict body:
+MCP `task.continue` сохраняет `districtId`, основное здание, вход и подъезд.
+`currentDistrictId` указывает текущий рабочий спринт; до первого продолжения
+он совпадает с `districtId` и может отсутствовать в DTO. В следующем районе
+компилятор выделяет настоящий свободный участок со входом и дорогой. Он
+сохраняется как `CONTINUATION`, ссылается на ту же задачу, не расходует её
+новый номер и не создаёт дополнительную службу.
 
-```json
-{"targetDistrictId":"UUID","comment":"Optional reason, at most 4000 characters","idempotencyKey":"4–160 characters"}
-```
+Предыдущий этап фиксирует статус, процент, оценку и время с исходом `CARRIED`.
+Следующий начинается с прежнего прогресса. Завершённые SP засчитываются только
+завершающему спринту; переданные этапы не превращаются в завершённые задним
+числом. История имеет ограниченные страницы `task.sprint_list`. Команда
+проверяет ожидаемый исходный спринт, права, страну, город и допустимые состояния;
+выделение участка, этапы, событие и receipt фиксируются одной транзакцией.
 
-The authenticated active country scopes both task and destination. OWNER/MEMBER may move; VIEWER cannot. Source and target must be different sprints in the same city/project. A completed or abandoned destination is rejected. Task identity, number, status/progress, authored family, visual kind and business history survive. The old placement is replaced by a permanent `RELOCATED` marker; destination placement, task ownership, marker, event and idempotency receipt commit atomically. Any allocation/write failure rolls them all back. A repeated key returns the same task's current canonical DTO rather than moving it again.
+Основное здание и все площадки открывают одну карточку. Вкладка «Спринты» —
+только просмотр, с загрузкой, повтором после временной ошибки и пагинацией.
+Выбор связанной площадки и закрытие карточки сохраняют камеру. Изменения
+доступны только через MCP; HTTP-команды продолжения нет.
+[Параметры, ограничения и примеры](MCP.md#продолжение-задачи-между-спринтами).
 
-`task.transferred` invalidates CITY and both atlas levels; its affected bounds cover the previous access/footprint and new layout. The notice targets the current task. Old MOVE markers retain a direct FK to the same task, not a chain of intermediate addresses. Existing authorized task resolution supplies its current location.
+## Физический перенос и удаление
 
-MCP exposes the same operation as `task.transfer` with a strict additional required `countryId` and `tasks:write` authorization against current country membership. It never reads or changes the web-selected country. Its result adds a canonical human URL containing both country and task UUID. The real SDK tests cover required/unknown fields, write scope, viewer and foreign-country rejection, reconnect/idempotency and read-after-write.
+`task.transfer` физически меняет участок задачи без истории продолжений;
+прежняя земля освобождается, ID/номер и история задачи сохраняются.
+Старые `RELOCATED` записи остаются в базе как архив и не занимают землю.
+Для цепочки продолжений эта операция запрещена: основное здание остаётся
+в исходном районе. Удаление участвующего района также блокируется, чтобы
+каскад не удалил единую задачу из другого рабочего спринта.
 
-## Durable ownership
+Явное удаление задачи оставляет руины основного участка и архивные связанные
+площадки. Ссылки на удалённую задачу обнуляются; площадки показывают краткое
+пояснение без неработающей кнопки открытия. Удаление страны каскадно удаляет
+её историю. Удаление города сохраняет исторические участки в границах страны.
 
-Migration `0026_permanent_task_sites.sql` makes site history country-owned. City/layout deletion nulls only disposable layout/block links. It retains historical city/sprint IDs, an immutable versioned block snapshot, exact geometry, limited historical task fields, marker kind and variant seed. Normal deletion and history/geometry rewriting are rejected by a database trigger. Country deletion still cascades all its history for privacy; this is not retention outside the country.
+## Долговечность и геометрия
 
-Existing version-25 markers receive ownership and a frozen block snapshot during migration. They resolve against that recorded versioned template, never a replacement active block. Their next city-layout mutation or city deletion freezes exact cells in `geometry_json`; newly created markers are frozen in their creating transaction. Template versions must remain immutable. Reads never perform this backfill. Marker-bearing city rebuilds preserve their physical block/street topology; only disposable projections are rebuilt. Orphaned markers remain queryable in any intersecting country viewport and exclude their land from later city/block selection.
+Миграция0026 закрепляет историю за страной. Удаление расходных layout/block
+обнуляет только их ссылки. Неизменяемый снимок квартала и `geometry_json`
+сохраняют исходные клетки; чтение не выполняет backfill. Исторические участки
+не занимают повторно, а перестроение marker-bearing города сохраняет улицы
+и кварталы. Продолжения используют утверждённое семейство `compact-row-v1`
+без растягивания и изменения ракурса. Они учитываются в CITY и миниатюрах,
+но не увеличивают каноническое число задач или аэропортов.
 
-The public `WorldFeatureDto.siteMarker` exposes only kind, permanence, nullable current target, deterministic `brick`/`frame`/`overgrown` variant and snapshot `{taskNumber,title,buildingFamily,lastStage,recordedAt}`. It never exposes old descriptions, comments, account details, attachments or full task payloads. Deleted targets null the MOVE FK; the old historical marker remains but cannot open a deleted task.
+Миграция0050 добавляет рабочий район и этапы, не меняя прежних задач/переносов.
+До первого продолжения история пуста; неподтверждённые прошлые проценты не
+выдумываются. После первого продолжения updater блокирует image-only откат
+на старый runtime, который не учитывает занятые площадки и рабочий спринт.
+[Порядок обновления и границы восстановления](DEPLOYMENT.md#продолжение-задач-между-спринтами-129).
 
-## Infrastructure intent
+## Проверка
 
-The first real placement records the task's nullable service role and reservation trigger durably. Moving an airport preserves that role on the same task; its old marker is not an active airport. Already-placed ordinary tasks do not consume a pending next-task infrastructure reservation when moved. New tasks still consume those reservations under the existing thresholds. No phantom tasks, automatic sprint creation or business task reassignment is introduced.
-
-## Geometry versus authored families
-
-Template v2 packs only the immutable ordered structural shapes `6×6`, `6×3`, `6×4`, using its original three shape keys. Adding or reordering catalog entries cannot change this pool. A separately persisted `block.parameters.slotFamilies[slotKey]` selects the authored building. An alias must match the exact physical footprint, centred south entrance, native width and bottom-centre anchor. Unknown, mismatched or nonexistent-slot aliases fail closed; no image or site is stretched.
-
-Explicit new-family requests map `firstFamily` to the existing structural shape key and store the actual art separately. Newly consumed FIRE reservations prefer an available compatible `6×4` parcel and use the accepted fire-family art there. If no such parcel exists, FIRE is still assigned to the next eligible task with its fitting generic family; artwork availability never postpones the business service. An already assigned FIRE family is not automatically repainted after catalog expansion. The same saved-family and footprint guarantees apply through stage changes, fresh reads, transfer and permanent-site history.
-
-An explicit service-family image does not grant a service before its business threshold. If an available parcel is already reserved for another role, mismatching service artwork is rejected even when its geometry fits; an ordinary fitting family remains allowed.
-
-`tests/block-art-family.test.ts` covers geometry/order independence, strict alias validation, new and preexisting services, explicit family mapping and the no-compatible-art fallback. `tests/block-art-family-runtime.test.ts` verifies the real catalog/database/service/transfer path.
-
-## Verification and limits
-
-- `tests/permanent-task-sites.test.ts`: repeated moves, exact footprint/identity/history, irreversible occupancy, reset, city deletion, later city exclusion, country privacy deletion, rollback injection, role preservation and next-task reservation.
-- `tests/task-transfer-route.test.ts`: anonymous/viewer/malformed input, country/project boundaries, idempotency, event and canonical resolver navigation.
-- `tests/mcp-task-transfer.test.ts`: explicit-country SDK contract, live role/scope authorization, canonical links and reconnect retry.
-- `tests/permanent-site-migration.test.ts`: populated version-25 upgrade, service intent backfill, old exact address and deletion ownership.
-- `tests/country-overview-events.test.ts` and `tests/realtime-notifications.test.ts`: transfer invalidation and canonical notice.
-
-No production migration or deployment has been performed. Migration 26 removes the retired clearable-marker column, so a pre-26 binary is not a safe application-only rollback; use a coordinated release/forward fix, never discard newly created permanent history to downgrade. The separate 20-sprint capacity policy remains pending explicit confirmation: this feature does not allow detached physical sprint blocks or silently create another sprint to evade a blocked frontier. Intercity road integration remains separate and unwired.
+- `task-sprint-continuation.test.ts`: геометрия, три спринта, отчёты/SP,
+  повтор, конкурентная передача, отказ записи, rebuild и удаление.
+- `mcp-task-continuation.test.ts`: строгая схема, scope/членство, изоляция
+  стран, reconnect, фоновая очередь и read-only HTTP.
+- `task-sprint-migration.test.ts`: заполненная схема0049 →0050, сохранность
+  канонических строк/геометрии/истории и прежнего пути вставки.
+- `task-sprint-scale.test.ts`: сцена200 задач; отдельное ограниченное чтение
+  10 000 задач с20 000 этапов без истории в scene.
+- `e2e/sprint-continuation.spec.ts`: настоящие MCP/WS, одна карточка,
+  камера и повтор чтения в desktop и эмуляциях телефона.
+- `permanent-task-sites.test.ts` и `permanent-site-migration.test.ts`:
+  прежние переносы, руины и владение историей при обновлении/удалении.

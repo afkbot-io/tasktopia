@@ -19,7 +19,7 @@ const expectedNames = [
   "country.get", "country.list", "country.update_profile", "world_generation.get",
   "city.list", "city.get", "city.create", "city.update", "city.rename", "city.delete",
   "district.list", "district.create", "district.update", "district.rename", "district.activate", "district.complete", "district.delete",
-  "task.list", "task.list_page", "task.collection_list", "task.document_get", "task.get", "task.create", "task.transfer", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete",
+  "task.list", "task.list_page", "task.collection_list", "task.document_get", "task.get", "task.create", "task.transfer", "task.continue", "task.sprint_list", "task.update_fields", "task.defect_create", "task.defect_update", "task.rename", "task.delete",
   "task.set_status", "task.report_progress", "task.add_comment", "task.assign", "task.activity", "task.dependency_add", "task.dependency_remove",
   "task.document_list", "task.document_upsert", "task.document_delete", "task.checklist_replace", "task.checklist_item_update",
   "task.link_add", "task.link_remove", "task.attachment_add", "task.attachment_list",
@@ -58,7 +58,7 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     const values: Record<string, unknown> = {
       countryId, collection: "comments", limit: 50, cityId: home.cityId, districtId: home.districtId, taskId: home.id,
       recordId: crypto.randomUUID(), defectId: crypto.randomUUID(), documentId: crypto.randomUUID(), itemId: crypto.randomUUID(),
-      targetDistrictId: home.districtId, dependsOnTaskId: home.id, jobId,
+      targetDistrictId: home.districtId, fromDistrictId: home.districtId, dependsOnTaskId: home.id, jobId,
       name: "Проверка MCP", title: "Проверка MCP", confirmName: "Проверка MCP", confirmTitle: home.title,
       description: "Контракт", body: "Комментарий", content: "# Проверка", fileName: "contract.md",
       contentBase64: Buffer.from("proof").toString("base64"), kind: "PROJECT", estimate: 1, status: "STARTED", progress: 0,
@@ -255,6 +255,10 @@ describe("real MCP HTTP catalog, authorization and lifecycle", { timeout: 60_000
     expect((await service.getTask(countryId, taskId)).assignee?.id).toBe(viewerId);
     const activity = await checked<{ events: Array<{ actorUserId?: string }> }>("task.activity", { taskId });
     expect(activity.events.some(event => event.actorUserId === userId)).toBe(true);
+    await checked("task.set_status",{taskId:dependency.id,status:"STARTED",idempotencyKey:"all-dependency-start"});
+    await checked("task.continue",{taskId:dependency.id,fromDistrictId:district.id,targetDistrictId:target.id,idempotencyKey:"all-continue"});
+    await checked("task.sprint_list",{taskId:dependency.id,limit:1});
+    await checked("task.delete",{taskId:dependency.id,confirmTitle:"Зависимая задача",idempotencyKey:"all-delete-continued"});
     await checked("district.activate", { districtId: target.id, idempotencyKey: "all-activate" });
     const moved = await checked<TaskDto>("task.transfer", { taskId, targetDistrictId: target.id, idempotencyKey: "all-transfer" });
     expect(moved).toMatchObject({ id: taskId, taskNumber: task.taskNumber, status: "COMPLETED", districtId: target.id });

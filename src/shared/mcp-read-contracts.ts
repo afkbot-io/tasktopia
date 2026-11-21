@@ -7,7 +7,8 @@ export type McpCityMetadata = Pick<CityDto, "id" | "name" | "status" | "center" 
   districtCount: number; taskCount: number;
 };
 export type McpDistrictMetadata = Pick<DistrictDto, "id" | "cityId" | "name" | "status" | "deadline" | "capacitySp" | "archetype" | "color" | "createdAt"> & {
-  workload: { districtId: string; targetSp: number; plannedSp: number; openSp: number; taskCount: number; overTargetBySp: number };
+  workload: { districtId: string; targetSp: number; plannedSp: number; openSp: number; taskCount: number; overTargetBySp: number;
+    completedSp?: number; carriedOutCount?: number };
 };
 export type McpArchiveMetadata = Omit<ArchiveRecordDto, "body"> & { bodyLength: number };
 export type McpMetadataPage<Kind extends string, Item> = {

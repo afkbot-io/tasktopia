@@ -80,17 +80,20 @@ export async function readMcpDistricts(db: Db, countryId: string, cityId: string
     WHERE city.country_id=? AND (?::text IS NULL OR district.city_id=?)
       AND (?::text::timestamptz IS NULL OR (district.created_at,district.id)>(?::text::timestamptz,?::text))
     ORDER BY district.created_at,district.id LIMIT ?
-  ), workload AS (SELECT district_id,COUNT(*) AS count,COALESCE(SUM(estimate),0) AS planned_sp,
-    COALESCE(SUM(estimate) FILTER(WHERE status<>'COMPLETED'),0) AS open_sp FROM tasks_v3
+  ), workload AS (SELECT district_id,COUNT(*) AS count,COALESCE(SUM(planned_sp),0) AS planned_sp,
+    COALESCE(SUM(open_sp),0) AS open_sp,COALESCE(SUM(completed_sp),0) AS completed_sp,
+    COUNT(*) FILTER(WHERE outcome='CARRIED') AS carried_count FROM task_sprint_participation_v1
     WHERE district_id IN(SELECT id FROM page) GROUP BY district_id)
   SELECT page.*,COALESCE(workload.count,0) AS task_count,COALESCE(workload.planned_sp,0) AS planned_sp,
-    COALESCE(workload.open_sp,0) AS open_sp FROM page LEFT JOIN workload ON workload.district_id=page.id ORDER BY page.created_at,page.id`)
+    COALESCE(workload.open_sp,0) AS open_sp,COALESCE(workload.completed_sp,0) AS completed_sp,
+    COALESCE(workload.carried_count,0) AS carried_count FROM page LEFT JOIN workload ON workload.district_id=page.id ORDER BY page.created_at,page.id`)
     .all<Row>(countryId,cityId??null,cityId??null,p.afterTime,p.afterTime,p.afterId,p.limit+1);
   return page("district.list-page",rows,p,row => ({ id: String(row.id),cityId: String(row.city_id),name: String(row.name),
     status: String(row.status) as DistrictDto["status"],deadline: row.deadline ? String(row.deadline) : null,
     capacitySp: Number(row.capacity_sp),archetype: String(row.archetype) as DistrictDto["archetype"],color: String(row.color),createdAt: String(row.created_at),
     workload: { districtId: String(row.id),targetSp: Number(row.capacity_sp),plannedSp: Number(row.planned_sp),openSp: Number(row.open_sp),
-      taskCount: Number(row.task_count),overTargetBySp: Math.max(0,Number(row.planned_sp)-Number(row.capacity_sp)) } } satisfies McpDistrictMetadata),countryId);
+      taskCount: Number(row.task_count),overTargetBySp: Math.max(0,Number(row.planned_sp)-Number(row.capacity_sp)),
+      completedSp:Number(row.completed_sp),carriedOutCount:Number(row.carried_count) } } satisfies McpDistrictMetadata),countryId);
 }
 
 export async function readMcpArchiveRecords(db: Db, countryId: string, options: McpMetadataOptions) {

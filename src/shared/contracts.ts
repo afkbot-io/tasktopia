@@ -10,7 +10,7 @@ export type PlatformKind = "YARD" | "STONE" | "ASPHALT" | "SERVICE" | "PARK";
 export type CityMorphology = "BALANCED" | "DENSE_CORE" | "GARDEN_CITY" | "POLYCENTRIC";
 export type DistrictArchetype = "NEW_BUILD" | "PRIVATE" | "MIXED_URBAN" | "COMMERCIAL" | "CIVIC";
 export type SurfaceKind = "SIDEWALK" | "PATH" | "DRIVEWAY" | "SHOULDER" | "CROSSWALK";
-export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "RUIN" | "LANDMARK" | "COUNTRY_ARCHIVE" | "AIRPORT";
+export type WorldFeatureKind = "CITY_SIGN" | "BUS_STOP" | "SERVICE_STATION" | "ROADSIDE_DECOR" | "PARK" | "GROVE" | "RUIN" | "LANDMARK" | "COUNTRY_ARCHIVE" | "AIRPORT" | "TASK_CONTINUATION";
 export type CardinalOrientation = "N" | "E" | "S" | "W";
 export type CountryRole = "OWNER" | "MEMBER" | "VIEWER";
 export type McpScope = "country:read" | "cities:write" | "districts:write" | "tasks:read" | "tasks:write" | "comments:write";
@@ -194,6 +194,7 @@ export type TaskSearchResultDto = {
   cityCenter: Cell;
   cityBounds: Rect;
   districtId: string;
+  currentDistrictId?: string;
   districtName: string;
   origin: Cell;
 };
@@ -223,7 +224,7 @@ export type BuildingEventContext = {
 export type TaskEventDto = {
   id: number;
   taskId: string;
-  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED" | "FIELDS_UPDATED" | "DEFECT_CREATED" | "DEFECT_UPDATED" | "LINK_ADDED" | "LINK_REMOVED" | "ATTACHMENT_ADDED" | "DOCUMENT_UPDATED" | "DOCUMENT_DELETED" | "CHECKLIST_REPLACED" | "CHECKLIST_ITEM_UPDATED";
+  type: "CREATED" | "TITLE_CHANGED" | "STATUS_CHANGED" | "COMMENT_ADDED" | "ASSIGNEE_CHANGED" | "FIELDS_UPDATED" | "SPRINT_CONTINUED" | "DEFECT_CREATED" | "DEFECT_UPDATED" | "LINK_ADDED" | "LINK_REMOVED" | "ATTACHMENT_ADDED" | "DOCUMENT_UPDATED" | "DOCUMENT_DELETED" | "CHECKLIST_REPLACED" | "CHECKLIST_ITEM_UPDATED";
   actor: string;
   actorUserId: string | null;
   details: Record<string, unknown>;
@@ -249,6 +250,8 @@ export type TaskDto = {
   taskNumber: number;
   cityId: string;
   districtId: string;
+  /** Physical home stays in districtId; present when work continues elsewhere. */
+  currentDistrictId?: string;
   title: string;
   description: string;
   workItemType: WorkItemType;
@@ -324,6 +327,9 @@ export type WorldFeatureDto = {
   accessPath: Cell[];
   developmentStage: 1 | 2 | 3 | 4 | 5;
   label?: string;
+  continuation?: { taskId: string | null; taskNumber: number; title: string; sequence: number;
+    outcome: "OPEN" | "CARRIED" | "COMPLETED" | "REMOVED"; status: TaskStatus | null; progress: number | null;
+    homeDistrictId: string | null; currentDistrictId: string | null };
   siteMarker?: {
     kind: "RUINED" | "RELOCATED";
     permanent: true;
@@ -344,7 +350,7 @@ export type ChunkDistrictDto = Pick<DistrictDto, "id" | "cityId" | "name" | "dea
 };
 
 export type ChunkTaskDto = Pick<TaskDto,
-  "id" | "taskNumber" | "cityId" | "districtId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "serviceRole" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint" | "accessPath" | "siteBounds"
+  "id" | "taskNumber" | "cityId" | "districtId" | "currentDistrictId" | "title" | "workItemType" | "status" | "progress" | "stage" | "buildingType" | "serviceRole" | "visualKind" | "visualAssetKey" | "platformType" | "origin" | "footprint" | "accessPath" | "siteBounds"
 > & {
   defectSummary?: { open: number; inProgress: number; verifying: number; active: number };
 };

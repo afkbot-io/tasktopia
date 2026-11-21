@@ -155,7 +155,7 @@ export function auditBlockLayout(layout: CompiledBlockLayoutV1, tasks?: readonly
 
 type CityRow = { id: string; name: string; bounds_json: BlockWorldBounds };
 type DistrictRow = { id: string; city_id: string; name: string; archetype: string; status: string };
-type TaskRow = { id: string; city_id: string; district_id: string; status: TaskStatus; building_type: string; visual_kind: string; visual_asset_key: string | null };
+type TaskRow = { id: string; city_id: string; district_id: string; work_district_id: string; status: TaskStatus; building_type: string; visual_kind: string; visual_asset_key: string | null };
 
 /** Audit only canonical layouts and product records; never old spatial tables. */
 export async function auditWorld(db: Db, _service: AppService, countryId: string): Promise<WorldAuditResult> {
@@ -164,7 +164,7 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
   const [cities, districts, tasks] = await Promise.all([
     db.prepare("SELECT id,name,bounds_json FROM cities_v3 WHERE country_id=? ORDER BY created_at,id").all<CityRow>(countryId),
     db.prepare("SELECT d.id,d.city_id,d.name,d.archetype,d.status FROM districts_v3 d JOIN cities_v3 c ON c.id=d.city_id WHERE c.country_id=? ORDER BY d.created_at,d.id").all<DistrictRow>(countryId),
-    db.prepare("SELECT t.id,t.city_id,t.district_id,t.status,t.building_type,t.visual_kind,t.visual_asset_key FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=? ORDER BY t.task_number,t.id").all<TaskRow>(countryId),
+    db.prepare("SELECT t.id,t.city_id,t.district_id,t.work_district_id,t.status,t.building_type,t.visual_kind,t.visual_asset_key FROM tasks_v3 t JOIN cities_v3 c ON c.id=t.city_id WHERE c.country_id=? ORDER BY t.task_number,t.id").all<TaskRow>(countryId),
   ]);
   const metrics: WorldAuditMetrics = {
     cities: cities.length, districts: districts.length, tasks: tasks.length, blocks: 0, roadSegments: 0, plannedSlots: 0,
@@ -178,6 +178,7 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
     zoningPrimarySharePerDistrict: {}, asphaltSharePerDistrict: {}, maximumResidentialAsphaltShare: 0, crosswalkCells: 0, roadJunctionsPerCity: {},
   };
   const violations: WorldAuditViolation[] = []; const districtSizes: number[] = []; const layouts: CompiledBlockLayoutV1[] = [];
+  const unfinishedWorkDistricts=new Set(tasks.filter(task=>task.status!=='COMPLETED').map(task=>task.work_district_id??task.district_id));
   for (const district of districts) {
     const districtTasks = tasks.filter((t) => t.district_id === district.id);
     metrics.tasksPerDistrict[district.name] = districtTasks.length;
@@ -185,7 +186,7 @@ export async function auditWorld(db: Db, _service: AppService, countryId: string
     // activateDistrict demotes the previous active sprint to PLANNED without
     // resetting its tasks. PLANNED means currently inactive, not never started;
     // stage mutations are guarded by the command, while retained progress is valid.
-    if (district.status === "COMPLETED" && districtTasks.some((t) => t.status !== "COMPLETED")) violations.push({ code: "COMPLETED_DISTRICT_HAS_OPEN_TASKS", message: district.name });
+    if (district.status === "COMPLETED" && unfinishedWorkDistricts.has(district.id)) violations.push({ code: "COMPLETED_DISTRICT_HAS_OPEN_TASKS", message: district.name });
   }
   for (const city of cities) {
     const cityTasks = tasks.filter((t) => t.city_id === city.id);
