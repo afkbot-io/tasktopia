@@ -162,10 +162,13 @@ test('transport boundary outside resident scene keeps visible terrain covered af
       expect(immutable(), 'Only transport metadata may change; no mocked terrain/tasks/resident geometry').toBe(before);
       scene.sceneRevision = hash([scene.sceneRevision, scene.railway]);
       controlled = scene;
-      const headers: Record<string, string> = { ...response.headers(), 'cache-control': 'private, no-store' };
+      // Change transport geometry only; preserve the origin's private/no-cache policy.
+      // Synthetic no-store + a native stream triggers Chromium's false terminal failure:
+      // https://github.com/microsoft/playwright/issues/42742
+      const headers: Record<string, string> = { ...response.headers() };
       delete headers['content-length']; delete headers['content-encoding']; delete headers.etag;
       await info.attach('controlled-transport-envelope', { body: JSON.stringify({ kind: 'HTTP_TRANSPORT_ENVELOPE_ONLY', naturalFixtureReproductionClaimed: false,
-        immutableResidentHash: before, stationId: original!.stationId, originalPlatform: original!.platform, controlledPlatform: scene.railway.platform }), contentType: 'application/json' });
+        immutableResidentHash: before, cacheControl: headers['cache-control'], stationId: original!.stationId, originalPlatform: original!.platform, controlledPlatform: scene.railway.platform }), contentType: 'application/json' });
       await route.fulfill({ response, headers, json: envelope.kind === 'city.scene.compact' ? encodeCitySceneWire(scene) : scene });
     })();
     deliveries.push(delivery); return delivery;
