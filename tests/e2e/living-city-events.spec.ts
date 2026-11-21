@@ -187,9 +187,15 @@ test('реальные MCP комментарии и документы ожив
   expect((await f.service.getTask(f.user.countryId,f.task.id)).comments).toHaveLength(6+negativeAttempts.length);
   expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
   await f.call('task.update_fields',{taskId:f.task.id,description:'Уточнённое описание для проверки живого обновления'});
-  await expect.poll(poses).toEqual(expect.arrayContaining([expect.objectContaining({taskId:f.task.id,kind:'UPDATE'})]));
+  // Assert the exact published UPDATE that satisfied the wait. A second page
+  // round trip may legitimately occur after this short real-time signal ends.
+  let updatedPose: ActivityPose | undefined;
+  await expect.poll(async()=>{
+   updatedPose=(await poses()).find(p=>p.taskId===f.task.id&&p.kind==='UPDATE');
+   return updatedPose;
+  }).toMatchObject({taskId:f.task.id,kind:'UPDATE'});
   expect(Number(await f.host.getAttribute('data-task-activity-started'))).toBe(starts);
-  if(!delivery)expect((await poses()).find(p=>p.taskId===f.task.id)).toMatchObject({kind:'UPDATE',phase:'SIGNAL',visitors:0,arrived:0,static:false});
+  if(!delivery)expect(updatedPose).toMatchObject({kind:'UPDATE',phase:'SIGNAL',visitors:0,arrived:0,static:false});
   await page.screenshot({path:info.outputPath('updated-document.png')});
   if(!delivery){
    // Burst and field update run before screenshots so they share the original short signal.
